@@ -122,3 +122,36 @@ Chaque décision prise sans pouvoir demander au fondateur, avec sa raison. Les p
     gains et commissions. Le générateur simulé est testé contre ce garde-fou sur les 200 produits
     et les 5 formats. La ligne « #publicité » est ajoutée par le serveur, jamais laissée au modèle.
 35. **« Déballage »** plutôt qu'« unboxing » dans l'interface (règle : mot français si possible).
+
+## Jalon 5 — Paiement
+
+36. **`lib/billing/` isole le prestataire** : interface `BillingProvider` (paiement, portail, essai,
+    résiliation) + **événements normalisés** (`subscription`, `invoice_paid`, `checkout_completed`).
+    `handleBillingEvent` ne connaît que ces événements. Passer à Lemon Squeezy ou Paddle =
+    une nouvelle implémentation + sa fonction de normalisation, rien d'autre.
+37. **Trois modes** : Stripe (clé présente) ; **simulation** (mode local uniquement, sans carte,
+    via les mêmes événements normalisés, donc plan, essai et commissions se comportent comme en
+    vrai) ; **désactivé** (Supabase configuré sans Stripe : message clair, aucun prélèvement).
+    La simulation n'est jamais disponible en production.
+38. **Webhooks robustes** : signature vérifiée ; pour les événements d'abonnement, l'état est
+    relu chez Stripe (les webhooks peuvent arriver dans le désordre) ; traitement idempotent
+    (upsert par identifiant, commission unique par facture) et événement marqué traité à la fin,
+    pour qu'un échec soit réessayé par Stripe.
+39. **Champs Stripe lus de façon défensive** : la période de facturation est lue sur la ligne
+    d'abonnement (API récente) ou sur l'abonnement (ancienne API) ; l'abonnement d'une facture
+    dans `parent.subscription_details` ou `subscription`.
+40. **Essai formateur de 3 mois sans carte** : créé directement par l'API (`trial_period_days`,
+    `missing_payment_method: cancel`) à la fin de l'onboarding, sans passer par une page de
+    paiement. L'élève ajoute une carte quand il veut via le portail ; sinon il repasse en Gratuit,
+    sans frais. Un seul essai par compte (`trial_used`).
+41. **Commission calculée hors taxes** sur chaque facture payée (montant payé − taxes Stripe),
+    au taux du formateur (30 % par défaut) ou 30 % pour un parrain classique. Les commissions
+    sont « dues » ; leur versement reste manuel en V1 (voir RAPPORT).
+42. **Plan effectif = meilleur abonnement actif** (`active`, `trialing`, `past_due`) : un
+    impayé en cours de relance garde l'accès, comme le fait Stripe pendant ses relances.
+43. **Changement de plan d'un abonné** : renvoyé vers le portail Stripe (à configurer pour
+    autoriser le changement Pro ↔ Pro+), pour éviter deux abonnements en parallèle.
+44. **Suppression du compte** : l'abonnement est résilié d'abord ; si la résiliation échoue, le
+    compte n'est pas supprimé (sinon on continuerait à prélever un compte effacé).
+45. **Pas de badge « le plus choisi »** (affirmation invérifiable) : « Recommandé ». Pas de
+    mention « TTC » tant que le régime de TVA n'est pas connu (champ `[À COMPLÉTER]` des CGV).

@@ -1,9 +1,8 @@
+import { expireSimulatedTrials } from '@/lib/billing/simulated';
 import type { Repo } from '@/lib/db';
 
-/**
- * Étapes ajoutées après le rafraîchissement (planification des e-mails, fin des essais simulés…).
- * Complété aux jalons suivants.
- */
-export async function afterRefreshHooks(_date: string, _repo: Repo): Promise<Record<string, unknown>> {
-  return {};
+/** Étapes lancées après le rafraîchissement nocturne. */
+export async function afterRefreshHooks(_date: string, repo: Repo): Promise<Record<string, unknown>> {
+  const expiredTrials = await expireSimulatedTrials(repo);
+  return { expiredTrials };
 }

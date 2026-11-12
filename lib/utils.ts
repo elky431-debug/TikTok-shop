@@ -89,14 +89,17 @@ export function formatShortDate(date: string): string {
   );
 }
 
-/** « mardi 12 novembre » */
-export function formatLongDate(date: string): string {
+/** « mardi 12 novembre » (l'année est ajoutée si ce n'est pas l'année en cours). */
+export function formatLongDate(date: string, now: Date = new Date()): string {
+  const d = new Date(`${date}T12:00:00Z`);
+  const sameYear = d.getUTCFullYear() === now.getUTCFullYear();
   return new Intl.DateTimeFormat('fr-FR', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
+    ...(sameYear ? {} : { year: 'numeric' }),
     timeZone: 'UTC',
-  }).format(new Date(`${date}T12:00:00Z`));
+  }).format(d);
 }
 
 /** « il y a 3 jours », « aujourd'hui » à partir d'un horodatage ISO. */
