@@ -1,5 +1,5 @@
 -- =====================================================================
--- TikTrend — schéma initial
+-- Tracktout — schéma initial
 -- Toutes les tables ont la RLS activée (voir 20261112000200_rls.sql).
 -- Le serveur Next.js utilise la clé service (jamais exposée au navigateur) ;
 -- la RLS protège tout accès direct avec la clé anon.

@@ -6,7 +6,7 @@ import type { ProviderProduct } from './provider';
 export type MapResult = { ok: true; product: ProviderProduct; rejectedImageHost?: string } | { ok: false; reason: string };
 
 /**
- * Range un produit dans une niche TikTrend à partir du nom de sa catégorie chez le fournisseur
+ * Range un produit dans une niche Tracktout à partir du nom de sa catégorie chez le fournisseur
  * (anglais ou français, accents ignorés). Sans correspondance : null, et le produit est écarté plutôt
  * que rangé au hasard. L'ordre compte : les niches les plus précises d'abord.
  */

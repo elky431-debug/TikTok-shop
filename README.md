@@ -1,10 +1,10 @@
-# TikTrend
+# Tracktout
 
 Le radar du matin des affiliés TikTok Shop, en français : chaque matin, les produits qui montent dans tes niches,
 un score d’opportunité expliqué, et des scripts vidéo prêts à tourner. Proposé aussi aux formateurs TikTok Shop
 pour leurs élèves.
 
-> « TikTrend » est un nom de travail : il vit dans une seule constante, `lib/brand.ts`.
+> « Tracktout » est un nom de travail : il vit dans une seule constante, `lib/brand.ts`.
 
 - `CLAUDE.md` : résumé du projet, de la stack et des règles.
 - `DECISIONS.md` : toutes les décisions techniques et de design, avec leur raison.
@@ -44,8 +44,8 @@ Ouvre http://localhost:3000. Sans clé, l’appli tourne en **mode local** :
 
 Comptes utiles (créés par `npm run seed`) — connecte-toi avec ces adresses, le lien s’affiche à l’écran :
 
-- `admin@tiktrend.local` → `/admin` (passer un compte en formateur, lancer la tâche nocturne, voir les e-mails) ;
-- `formateur@tiktrend.local` → `/formateur` (code `DEMO30`, deux élèves de démonstration) ;
+- `admin@tracktout.local` → `/admin` (passer un compte en formateur, lancer la tâche nocturne, voir les e-mails) ;
+- `formateur@tracktout.local` → `/formateur` (code `DEMO30`, deux élèves de démonstration) ;
 - n’importe quelle autre adresse → nouveau compte, onboarding puis radar.
 
 Pour tester l’essai formateur : ouvre http://localhost:3000/r/DEMO30 puis inscris-toi avec une nouvelle adresse.
@@ -139,10 +139,10 @@ rafraîchissement au lieu de charger 30 jours fictifs : aucun produit fictif n�
 
 1. https://console.cloud.google.com → crée un projet (ou choisis-en un) → **APIs & Services → OAuth consent screen**
    (« Google Auth Platform » → *Branding*) : type **External**, nom de l’appli, e-mail d’assistance, logo facultatif,
-   domaine autorisé = ton domaine (ex. `tiktrend.fr`) et `supabase.co`, liens vers `/confidentialite` et `/cgv`.
+   domaine autorisé = ton domaine (ex. `tracktout.com`) et `supabase.co`, liens vers `/confidentialite` et `/cgv`.
    Champs d’accès (*Data access*) : `openid`, `.../auth/userinfo.email`, `.../auth/userinfo.profile`, rien d’autre.
 2. **Clients → Create client** : type **Web application**.
-   - *Authorized JavaScript origins* : `https://tiktrend.fr` (ton `NEXT_PUBLIC_SITE_URL`) et `http://localhost:3000` ;
+   - *Authorized JavaScript origins* : `https://tracktout.com` (ton `NEXT_PUBLIC_SITE_URL`) et `http://localhost:3000` ;
    - *Authorized redirect URIs* : **`https://<ref>.supabase.co/auth/v1/callback`** (`<ref>` = la référence de ton projet,
      visible dans `NEXT_PUBLIC_SUPABASE_URL`). C’est Supabase qui reçoit le retour de Google, puis renvoie vers
      `/auth/callback` du site (déjà autorisé par `npm run auth:setup`).
@@ -203,7 +203,7 @@ cette commission au prorata du montant remboursé, et une résiliation repasse l
 ### Resend (e-mails)
 
 `RESEND_API_KEY` et `EMAIL_FROM` (un expéditeur d’un domaine vérifié dans Resend, ex.
-`TikTrend <bonjour@tiktrend.fr>`). `FOUNDER_EMAIL` reçoit les demandes de partenariat des formateurs (à défaut, le
+`Tracktout <bonjour@tracktout.com>`). `FOUNDER_EMAIL` reçoit les demandes de partenariat des formateurs (à défaut, le
 premier de `ADMIN_EMAILS`).
 
 - **Lien de connexion** : envoyé par Supabase à travers le SMTP de Resend (`npm run auth:setup`). Sans Supabase, le
@@ -239,7 +239,7 @@ la mention « produits fictifs ».
 
 ## 3. Mettre en ligne sur Netlify
 
-TikTrend tourne sur Netlify sans configuration spéciale : Netlify reconnaît Next.js 14 tout seul (son adaptateur
+Tracktout tourne sur Netlify sans configuration spéciale : Netlify reconnaît Next.js 14 tout seul (son adaptateur
 OpenNext), lit `netlify.toml` (commande de build, dossier des fonctions) et `.nvmrc` (Node 22).
 
 **La tâche nocturne.** Netlify lance `netlify/functions/nightly-refresh.mts` chaque jour à **3 h UTC**, soit 4 h à
@@ -301,7 +301,7 @@ project*) : chaque déploiement garde les valeurs du moment où il a été const
 
 **6. Resend**
 - *Domains → Add domain* sur resend.com, ajoute les enregistrements DNS demandés (SPF, DKIM), attends « Verified » ;
-- `EMAIL_FROM` = une adresse de ce domaine (ex. `TikTrend <bonjour@ton-domaine.fr>`), puis redéploie ;
+- `EMAIL_FROM` = une adresse de ce domaine (ex. `Tracktout <bonjour@ton-domaine.fr>`), puis redéploie ;
 - branche Resend comme SMTP de Supabase : `npm run auth:setup` en local avec les clés de production (section 2,
   Supabase, étape 3) ;
 - `npm run test:integration` doit envoyer un e-mail de test à `ADMIN_EMAILS`.

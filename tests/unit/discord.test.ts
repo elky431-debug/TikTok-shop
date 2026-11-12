@@ -49,7 +49,7 @@ function signed(body: unknown, key = privateKey) {
   const raw = JSON.stringify(body);
   const timestamp = String(Math.floor(Date.now() / 1000));
   const signature = sign(null, Buffer.from(timestamp + raw), key).toString('hex');
-  return new Request('https://tiktrend.fr/api/discord/interactions', {
+  return new Request('https://tracktout.com/api/discord/interactions', {
     method: 'POST',
     body: raw,
     headers: { 'x-signature-ed25519': signature, 'x-signature-timestamp': timestamp, 'content-type': 'application/json' },
@@ -71,7 +71,7 @@ beforeAll(() => {
     DISCORD_PRO_ROLE_ID: '333333333333333333',
     DISCORD_PUBLIC_CHANNEL_ID: '444444444444444444',
     DISCORD_PRO_CHANNEL_ID: '555555555555555555',
-    NEXT_PUBLIC_SITE_URL: 'https://tiktrend.fr',
+    NEXT_PUBLIC_SITE_URL: 'https://tracktout.com',
   });
   setDiscordFetchForTests(fakeDiscord as typeof fetch);
 });
@@ -161,7 +161,7 @@ describe('tâche horaire Discord', () => {
     const embed = (message.body!.embeds as Array<Record<string, unknown>>)[0];
     expect(embed.title).toBe('Voici tes produits du jour');
     expect(message.body!.components).toEqual([
-      { type: 1, components: [{ type: 2, style: 5, label: 'Ouvrir mon radar', url: 'https://tiktrend.fr/app' }] },
+      { type: 1, components: [{ type: 2, style: 5, label: 'Ouvrir mon radar', url: 'https://tracktout.com/app' }] },
     ]);
     expect((await repo.getDigest('ferme', DAY))?.discord_status).toBe('failed');
     expect((await repo.getDigest('gratuit', DAY))?.discord_status).toBe('skipped');
@@ -182,7 +182,7 @@ describe('tâche horaire Discord', () => {
     const teaser = String((publicPost.body!.embeds as Array<{ description: string }>)[0].description);
     expect(teaser).toContain('█');
     expect(teaser).not.toContain('/app/produit/');
-    expect(String((proPost.body!.embeds as Array<{ description: string }>)[0].description)).toContain('https://tiktrend.fr/app/produit/');
+    expect(String((proPost.body!.embeds as Array<{ description: string }>)[0].description)).toContain('https://tracktout.com/app/produit/');
     calls = [];
     expect((await runDiscordHourly({ repo, now: new Date(`${DAY}T10:00:00Z`) })).channels).toBe('deja');
     expect(calls.some((c) => c.path.startsWith('/channels/4'))).toBe(false);
@@ -205,8 +205,8 @@ describe('tâche horaire Discord', () => {
 
   it('la route horaire est protégée par CRON_SECRET', async () => {
     vi.stubEnv('CRON_SECRET', 'secret-cron');
-    expect((await discordCron(new Request('https://tiktrend.fr/api/cron/discord'))).status).toBe(401);
-    const ok = await discordCron(new Request('https://tiktrend.fr/api/cron/discord', { headers: { authorization: 'Bearer secret-cron' } }));
+    expect((await discordCron(new Request('https://tracktout.com/api/cron/discord'))).status).toBe(401);
+    const ok = await discordCron(new Request('https://tracktout.com/api/cron/discord', { headers: { authorization: 'Bearer secret-cron' } }));
     expect(ok.status).toBe(200);
     expect(await ok.json()).toMatchObject({ ok: true, dms: { sent: expect.any(Number) } });
     vi.unstubAllEnvs();

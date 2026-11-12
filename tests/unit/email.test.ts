@@ -59,9 +59,9 @@ describe('désinscription du récap', () => {
     expect(verifyUnsubscribeToken('user-b', token)).toBe(false);
     expect(verifyUnsubscribeToken('user-a', 'faux')).toBe(false);
     expect(verifyUnsubscribeToken('user-a', '')).toBe(false);
-    const links = unsubscribeUrls('user-a', 'https://tiktrend.fr');
-    expect(links.page).toBe(`https://tiktrend.fr/desinscription?u=user-a&t=${token}`);
-    expect(links.oneClick).toBe(`https://tiktrend.fr/api/recap/desinscription?u=user-a&t=${token}`);
+    const links = unsubscribeUrls('user-a', 'https://tracktout.com');
+    expect(links.page).toBe(`https://tracktout.com/desinscription?u=user-a&t=${token}`);
+    expect(links.oneClick).toBe(`https://tracktout.com/api/recap/desinscription?u=user-a&t=${token}`);
   });
 
   it('le POST en un clic de la messagerie coupe le récap e-mail (corps vide, 200)', async () => {
@@ -98,7 +98,7 @@ describe('envoi par Resend (requête HTTP simulée)', () => {
   });
 
   it('le récap part avec la désinscription en un clic, l’heure programmée et une clé d’idempotence', async () => {
-    restore = withEnv({ RESEND_API_KEY: 're_test_factice', EMAIL_FROM: 'TikTrend <recap@tiktrend.fr>', NEXT_PUBLIC_SITE_URL: 'https://tiktrend.fr' });
+    restore = withEnv({ RESEND_API_KEY: 're_test_factice', EMAIL_FROM: 'Tracktout <recap@tracktout.com>', NEXT_PUBLIC_SITE_URL: 'https://tracktout.com' });
     const calls: Array<{ url: string; init: RequestInit }> = [];
     vi.stubGlobal('fetch', async (url: string, init: RequestInit) => {
       calls.push({ url, init });
@@ -118,20 +118,20 @@ describe('envoi par Resend (requête HTTP simulée)', () => {
     expect(headers.get('authorization')).toBe('Bearer re_test_factice');
     expect(headers.get('idempotency-key')).toBe('recap-resend-2026-11-12');
     const body = JSON.parse(String(init.body));
-    expect(body.from).toBe('TikTrend <recap@tiktrend.fr>');
+    expect(body.from).toBe('Tracktout <recap@tracktout.com>');
     expect(body.to).toBe('resend@test.fr');
     expect(body.scheduled_at).toBe('2026-11-12T08:00:00.000Z');
     const token = unsubscribeToken('resend');
     expect(body.headers).toEqual({
-      'List-Unsubscribe': `<https://tiktrend.fr/api/recap/desinscription?u=resend&t=${token}>`,
+      'List-Unsubscribe': `<https://tracktout.com/api/recap/desinscription?u=resend&t=${token}>`,
       'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
     });
-    expect(body.html).toContain(`https://tiktrend.fr/desinscription?u=resend&amp;t=${token}`);
+    expect(body.html).toContain(`https://tracktout.com/desinscription?u=resend&amp;t=${token}`);
     expect(body.text).toContain('Ne plus recevoir le récap');
   });
 
   it('une demande de partenariat formateur prévient le fondateur', async () => {
-    restore = withEnv({ RESEND_API_KEY: 're_test_factice', EMAIL_FROM: 'TikTrend <bonjour@tiktrend.fr>', FOUNDER_EMAIL: 'fondateur@tiktrend.fr' });
+    restore = withEnv({ RESEND_API_KEY: 're_test_factice', EMAIL_FROM: 'Tracktout <bonjour@tracktout.com>', FOUNDER_EMAIL: 'fondateur@tracktout.com' });
     const bodies: Array<Record<string, unknown>> = [];
     vi.stubGlobal('fetch', async (_url: string, init: RequestInit) => {
       bodies.push(JSON.parse(String(init.body)));
@@ -143,7 +143,7 @@ describe('envoi par Resend (requête HTTP simulée)', () => {
     );
     expect(state.status).toBe('ok');
     expect(bodies).toHaveLength(1);
-    expect(bodies[0].to).toBe('fondateur@tiktrend.fr');
+    expect(bodies[0].to).toBe('fondateur@tracktout.com');
     expect(bodies[0].subject).toBe('Nouvelle demande formateur : Académie Shop');
     expect(String(bodies[0].html)).toContain('camille@formation.fr');
   });
@@ -168,7 +168,7 @@ describe('lien magique affiché à l’écran', () => {
     expect(state.status).toBe('error');
     expect(state.localLink).toBeUndefined();
     restore();
-    restore = withEnv({ NEXT_PUBLIC_SITE_URL: 'https://tiktrend.fr' });
+    restore = withEnv({ NEXT_PUBLIC_SITE_URL: 'https://tracktout.com' });
     expect(isPublicDeployment()).toBe(true);
     restore();
     restore = withEnv({ NEXT_PUBLIC_SITE_URL: 'https://localhost:3000' });
@@ -178,21 +178,21 @@ describe('lien magique affiché à l’écran', () => {
 
 describe('réglage de l’auth Supabase (npm run auth:setup)', () => {
   it('modèle français avec lien token_hash, sans SMTP ni Google tant que les clés manquent', () => {
-    const patch = authConfigPatch({ brand: 'TikTrend', siteUrl: 'https://tiktrend.fr/' });
-    expect(patch.site_url).toBe('https://tiktrend.fr');
-    expect(patch.uri_allow_list).toBe('https://tiktrend.fr/auth/callback**,http://localhost:3000/auth/callback**');
-    expect(patch.mailer_subjects_magic_link).toBe('Ton lien de connexion TikTrend');
-    expect(magicLinkTemplate('TikTrend')).toContain('{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=email');
+    const patch = authConfigPatch({ brand: 'Tracktout', siteUrl: 'https://tracktout.com/' });
+    expect(patch.site_url).toBe('https://tracktout.com');
+    expect(patch.uri_allow_list).toBe('https://tracktout.com/auth/callback**,http://localhost:3000/auth/callback**');
+    expect(patch.mailer_subjects_magic_link).toBe('Ton lien de connexion Tracktout');
+    expect(magicLinkTemplate('Tracktout')).toContain('{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=email');
     expect(patch).not.toHaveProperty('smtp_host');
     expect(patch).not.toHaveProperty('external_google_enabled');
   });
 
   it('SMTP de Resend et Google quand leurs clés sont là', () => {
     const patch = authConfigPatch({
-      brand: 'TikTrend',
-      siteUrl: 'https://tiktrend.fr',
+      brand: 'Tracktout',
+      siteUrl: 'https://tracktout.com',
       resendKey: 're_x',
-      emailFrom: 'TikTrend <bonjour@tiktrend.fr>',
+      emailFrom: 'Tracktout <bonjour@tracktout.com>',
       googleId: 'id.apps.googleusercontent.com',
       googleSecret: 'secret',
     });
@@ -201,11 +201,11 @@ describe('réglage de l’auth Supabase (npm run auth:setup)', () => {
       smtp_port: '465',
       smtp_user: 'resend',
       smtp_pass: 're_x',
-      smtp_admin_email: 'bonjour@tiktrend.fr',
-      smtp_sender_name: 'TikTrend',
+      smtp_admin_email: 'bonjour@tracktout.com',
+      smtp_sender_name: 'Tracktout',
       external_google_enabled: true,
       external_google_client_id: 'id.apps.googleusercontent.com',
     });
-    expect(senderAddress('bonjour@tiktrend.fr')).toBe('bonjour@tiktrend.fr');
+    expect(senderAddress('bonjour@tracktout.com')).toBe('bonjour@tracktout.com');
   });
 });

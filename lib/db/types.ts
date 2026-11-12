@@ -339,8 +339,17 @@ export interface LocalEmail {
   created_at: string;
 }
 
-/** Fiches V2 d'un utilisateur (table générique `user_records`). */
-export type RecordKind = 'gain' | 'offre' | 'publication' | 'analyse' | 'import_csv';
+/**
+ * Fiches d'un utilisateur (table générique `user_records`, RLS « chacun les siennes »). Un type = un mot en minuscules
+ * (`^[a-z_]{2,40}$`) ; les types connus sont listés pour l'autocomplétion.
+ */
+export type RecordKind =
+  | 'gain'
+  | 'offre'
+  | 'publication'
+  | 'analyse'
+  | 'import_csv'
+  | (string & { readonly __recordKind?: never });
 
 export interface UserRecord<T = Record<string, unknown>> {
   id: string;

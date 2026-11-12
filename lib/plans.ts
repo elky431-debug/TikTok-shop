@@ -23,6 +23,25 @@ export interface PlanLimits {
   analysesPerDay: number;
   /** Catalogues allemand, italien et espagnol. */
   europe: boolean;
+  // ---- Session 5 (quotas appliqués côté serveur, 0 = fermé, Infinity = illimité) ----
+  /** Recherches par mot-clé chez Nexscope, par jour. */
+  keywordSearchesPerDay: number;
+  /** Alertes personnalisées actives. */
+  alerts: number;
+  /** Export CSV du radar filtré. */
+  radarExport: boolean;
+  /** Poids du score réglables. */
+  customWeights: boolean;
+  /** Traduction des scripts pour les marchés européens. */
+  scriptTranslation: boolean;
+  /** Séries de 20 angles par produit, par jour. */
+  anglesSeriesPerDay: number;
+  /** Comparateur de produits (2 à 4). */
+  compare: boolean;
+  /** Analyse IA des accroches des vidéos d'un produit, par jour. */
+  hookAnalysesPerDay: number;
+  /** Commandes Discord /score et /script, par jour (identique à l'appli). */
+  discordCommandsPerDay: number;
   prices: Record<BillingInterval, number>; // centimes TTC
 }
 
@@ -43,6 +62,15 @@ export const PLANS: Record<PlanId, PlanLimits> = {
     offersPerDay: 0,
     analysesPerDay: 0,
     europe: false,
+    keywordSearchesPerDay: 0,
+    alerts: 0,
+    radarExport: false,
+    customWeights: false,
+    scriptTranslation: false,
+    anglesSeriesPerDay: 0,
+    compare: false,
+    hookAnalysesPerDay: 0,
+    discordCommandsPerDay: 3,
     prices: { month: 0, year: 0 },
   },
   pro: {
@@ -61,6 +89,15 @@ export const PLANS: Record<PlanId, PlanLimits> = {
     offersPerDay: 0,
     analysesPerDay: 0,
     europe: false,
+    keywordSearchesPerDay: 5,
+    alerts: 3,
+    radarExport: false,
+    customWeights: false,
+    scriptTranslation: false,
+    anglesSeriesPerDay: 3,
+    compare: true,
+    hookAnalysesPerDay: 10,
+    discordCommandsPerDay: 30,
     prices: { month: 1990, year: 16700 },
   },
   proplus: {
@@ -79,6 +116,15 @@ export const PLANS: Record<PlanId, PlanLimits> = {
     offersPerDay: 20,
     analysesPerDay: 20,
     europe: true,
+    keywordSearchesPerDay: 30,
+    alerts: Number.POSITIVE_INFINITY,
+    radarExport: true,
+    customWeights: true,
+    scriptTranslation: true,
+    anglesSeriesPerDay: 20,
+    compare: true,
+    hookAnalysesPerDay: 50,
+    discordCommandsPerDay: 100,
     prices: { month: 3990, year: 33500 },
   },
 };

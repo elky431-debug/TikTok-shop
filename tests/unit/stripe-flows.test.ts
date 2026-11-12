@@ -125,7 +125,7 @@ beforeAll(async () => {
     STRIPE_PRICE_PRO_YEARLY: PRICES.pro_y,
     STRIPE_PRICE_PROPLUS_MONTHLY: PRICES.plus_m,
     STRIPE_PRICE_PROPLUS_YEARLY: PRICES.plus_y,
-    STRIPE_PORTAL_CONFIGURATION: 'bpc_tiktrend',
+    STRIPE_PORTAL_CONFIGURATION: 'bpc_tracktout',
   });
 });
 
@@ -240,7 +240,7 @@ describe('requêtes envoyées à Stripe', () => {
     const profile = (await repo.getProfile('eleve'))!;
     expect(await new StripeBilling().createCheckout({ profile, plan: 'proplus', interval: 'month' })).toBe('https://billing.stripe.com/p/session/bps_1');
     const portal = requests.find((r) => r.path === '/v1/billing_portal/sessions')!.form;
-    expect(portal.get('configuration')).toBe('bpc_tiktrend');
+    expect(portal.get('configuration')).toBe('bpc_tracktout');
     expect(portal.get('flow_data[type]')).toBe('subscription_update_confirm');
     expect(portal.get('flow_data[subscription_update_confirm][subscription]')).toBe('sub_1');
     expect(portal.get('flow_data[subscription_update_confirm][items][0][id]')).toBe('si_sub_1');
@@ -277,10 +277,10 @@ describe('réglages créés par npm run stripe:setup', () => {
   });
 
   it('portail : changement de plan avec prorata, résiliation en fin de période', () => {
-    const config = portalConfiguration({ siteUrl: 'https://tiktrend.fr/', products: [{ product: 'prod_pro', prices: ['a', 'b'] }] });
-    expect(config.default_return_url).toBe('https://tiktrend.fr/app/compte');
+    const config = portalConfiguration({ siteUrl: 'https://tracktout.com/', products: [{ product: 'prod_pro', prices: ['a', 'b'] }] });
+    expect(config.default_return_url).toBe('https://tracktout.com/app/compte');
     expect(config.features.subscription_update).toMatchObject({ enabled: true, default_allowed_updates: ['price'], proration_behavior: 'create_prorations' });
     expect(config.features.subscription_cancel).toMatchObject({ enabled: true, mode: 'at_period_end' });
-    expect(config.business_profile).toEqual({ privacy_policy_url: 'https://tiktrend.fr/confidentialite', terms_of_service_url: 'https://tiktrend.fr/cgv' });
+    expect(config.business_profile).toEqual({ privacy_policy_url: 'https://tracktout.com/confidentialite', terms_of_service_url: 'https://tracktout.com/cgv' });
   });
 });

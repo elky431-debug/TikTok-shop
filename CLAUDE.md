@@ -1,4 +1,4 @@
-# CLAUDE.md — TikTrend (nom de travail)
+# CLAUDE.md — Tracktout (nom de travail)
 
 Référence de travail pour tout le projet. À relire avant chaque jalon.
 
@@ -8,7 +8,7 @@ Outil **en français** qui dit chaque matin aux affiliés TikTok Shop quels prod
 leur écrit les scripts vidéo pour les vendre, et que les formateurs TikTok Shop français proposent à
 leurs élèves (commission de 30 % récurrente, 3 mois de Pro offerts aux élèves).
 
-- Le nom « TikTrend » vit dans **une seule constante** : `lib/brand.ts`.
+- Le nom « Tracktout » vit dans **une seule constante** : `lib/brand.ts`.
 - Marché : TikTok Shop France ≈ 133 M€ / trimestre (T2 2026), ≈ 70 % via les affiliés, beauté n°1.
 - Un affilié gagne au volume : à partir de 20 vidéos sur un produit, chaque vidéo rapporte en
   moyenne 10× plus. Le produit pousse à produire beaucoup, sur les bons produits (objectif 20 vidéos).
@@ -85,7 +85,7 @@ Tendances : explose ≥ +40 % (et ≥ 5 ventes/j), monte ≥ +10 %, baisse ≤ �
 ## Design (refonte : style EtSmart, couleurs TikTok)
 
 Référence : le design d'EtSmart (etsmart.app, même fondateur), reproduit fidèlement — structure,
-espacements, typographie, effets — avec les couleurs TikTok et le contenu de TikTrend. Quand une mesure
+espacements, typographie, effets — avec les couleurs TikTok et le contenu de Tracktout. Quand une mesure
 du brief diverge du code EtSmart, la mesure d'EtSmart l'emporte (voir `DECISIONS.md`, refonte).
 
 - **Thème** : noir par défaut partout (site et appli). Le clair n'existe qu'en option dans le compte
@@ -102,7 +102,7 @@ du brief diverge du code EtSmart, la mesure d'EtSmart l'emporte (voir `DECISIONS
 - **Typo** : grand titre de l'accueil en gras serré (`tracking-tight`), centré, partie finale en
   italique et en dégradé (`.text-gradient-live`) ; titres de section sur deux lignes, la seconde en
   dégradé ; étiquettes en majuscules espacées (`.eyebrow`, `.eyebrow-category`) — voulues.
-- **Composants** : en-tête fixe noir flouté, logo à halo + nom en deux tons (« Tik » blanc, « Trend »
+- **Composants** : en-tête fixe noir flouté, logo à halo + nom en deux tons (« Track » blanc, « tout »
   en dégradé) ; bouton principal rose arrondi 12 px avec flèche → (monte de 2 px, halo rose, flèche
   qui glisse au survol) ; bouton secondaire bordé ; pastille d'annonce avec point cyan qui pulse ;
   bandeau de chiffres en dégradé (faits vrais uniquement) ; cartes `.feature-card` (bordure dégradée au
@@ -148,7 +148,7 @@ npm run screenshots   # captures (voir scripts/screenshots.mjs)
 ## Où trouver quoi
 
 - Décisions : `DECISIONS.md` · État et suite : `RAPPORT.md` · Installation : `README.md`
-- Comptes de démo en local (après `npm run seed`) : `admin@tiktrend.local`, `formateur@tiktrend.local` (code DEMO30)
+- Comptes de démo en local (après `npm run seed`) : `admin@tracktout.local`, `formateur@tracktout.local` (code DEMO30)
 - E-mails : `emails/*.tsx` (pragma `@jsxRuntime automatic` en tête, nécessaire pour tsx et Vitest)
 - Code de référence du design : dépôt `elky431-debug/Etsmart` (`src/app/page.tsx`, `src/components/ui/Logo.tsx`)
 - Vitest transforme le JSX via `oxc` (Vite 8) : voir `vitest.config.ts`

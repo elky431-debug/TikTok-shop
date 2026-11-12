@@ -40,42 +40,42 @@ describe('Netlify', () => {
   it('planifie la tâche Discord toutes les heures et l’envoie à /api/cron/discord', async () => {
     const hourly = await import('@/netlify/functions/discord-hourly.mts');
     expect(hourly.config).toEqual({ schedule: '0 * * * *' });
-    vi.stubEnv('URL', 'https://tiktrend.example');
+    vi.stubEnv('URL', 'https://tracktout.example');
     vi.stubEnv('CRON_SECRET', 'secret-cron-test');
     const fetchMock = vi.fn(async () => new Response(null, { status: 202 }));
     vi.stubGlobal('fetch', fetchMock);
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
-    await hourly.default(new Request('https://tiktrend.example', { method: 'POST', body: '{}' }));
+    await hourly.default(new Request('https://tracktout.example', { method: 'POST', body: '{}' }));
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
-    expect(url).toBe('https://tiktrend.example/api/cron/discord');
+    expect(url).toBe('https://tracktout.example/api/cron/discord');
     expect((init.headers as Record<string, string>).authorization).toBe('Bearer secret-cron-test');
     vi.unstubAllGlobals();
   });
 
   it('la fonction planifiée appelle /api/cron/refresh avec CRON_SECRET', async () => {
-    vi.stubEnv('URL', 'https://tiktrend.example');
+    vi.stubEnv('URL', 'https://tracktout.example');
     vi.stubEnv('CRON_SECRET', 'secret-cron-test');
     const fetchMock = vi.fn(async () => new Response(null, { status: 202 }));
     vi.stubGlobal('fetch', fetchMock);
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     const scheduled = await import('@/netlify/functions/nightly-refresh.mts');
-    await scheduled.default(new Request('https://tiktrend.example', { method: 'POST', body: JSON.stringify({ next_run: 'demain' }) }));
+    await scheduled.default(new Request('https://tracktout.example', { method: 'POST', body: JSON.stringify({ next_run: 'demain' }) }));
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
-    expect(url).toBe('https://tiktrend.example/api/cron/refresh');
+    expect(url).toBe('https://tracktout.example/api/cron/refresh');
     expect((init.headers as Record<string, string>).authorization).toBe('Bearer secret-cron-test');
     vi.unstubAllGlobals();
   });
 
   it('sur Netlify, la route lance la tâche en arrière-plan et répond 202', async () => {
     vi.stubEnv('SITE_ID', 'site-test');
-    vi.stubEnv('URL', 'https://tiktrend.example');
+    vi.stubEnv('URL', 'https://tracktout.example');
     vi.stubEnv('CRON_SECRET', 'secret-cron-test');
     const fetchMock = vi.fn(async () => new Response(null, { status: 202 }));
     vi.stubGlobal('fetch', fetchMock);
-    const response = await cronGET(new Request('https://tiktrend.example/api/cron/refresh', { headers: { authorization: 'Bearer secret-cron-test' } }));
+    const response = await cronGET(new Request('https://tracktout.example/api/cron/refresh', { headers: { authorization: 'Bearer secret-cron-test' } }));
     expect(response.status).toBe(202);
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
-    expect(url).toBe('https://tiktrend.example/.netlify/functions/nightly-refresh-background');
+    expect(url).toBe('https://tracktout.example/.netlify/functions/nightly-refresh-background');
     expect(init.method).toBe('POST');
     expect((init.headers as Record<string, string>).authorization).toBe('Bearer secret-cron-test');
     vi.unstubAllGlobals();
@@ -85,7 +85,7 @@ describe('Netlify', () => {
     vi.stubEnv('CRON_SECRET', 'secret-cron-test');
     const errors = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const background = await import('@/netlify/functions/nightly-refresh-background.mts');
-    await background.default(new Request('https://tiktrend.example', { method: 'POST', headers: { authorization: 'Bearer faux' } }));
+    await background.default(new Request('https://tracktout.example', { method: 'POST', headers: { authorization: 'Bearer faux' } }));
     expect(errors).toHaveBeenCalledWith(expect.stringContaining('appel refusé'));
     expect(await repo.listCronRuns(1)).toEqual([]);
   });

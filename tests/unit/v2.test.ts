@@ -140,7 +140,7 @@ describe('plan de publication', () => {
 
   it('exporte un calendrier .ics valide (CRLF, lignes de 75 octets, texte échappé)', () => {
     const plan = buildPlan({ productId: 'p', productName: 'Sérum, éclat; « peau » très très longue description de produit', rhythm: 5, start: '2026-11-16' });
-    const ics = planToIcs(plan, 'plan-1', 'https://tiktrend.fr', new Date('2026-11-12T10:00:00Z'));
+    const ics = planToIcs(plan, 'plan-1', 'https://tracktout.com', new Date('2026-11-12T10:00:00Z'));
     expect(ics.startsWith('BEGIN:VCALENDAR\r\nVERSION:2.0\r\n')).toBe(true);
     expect(ics.endsWith('END:VCALENDAR\r\n')).toBe(true);
     expect(ics.match(/BEGIN:VEVENT/g)).toHaveLength(20);
@@ -214,5 +214,17 @@ describe('Europe', () => {
     expect(selectLiveCatalog(all, new Date('2026-11-12T08:00:00Z')).products.map((x) => x.id)).toEqual(['fr1']);
     expect(selectLiveCatalog(all, new Date('2026-11-12T08:00:00Z'), 'DE').products.map((x) => x.id)).toEqual(['de1']);
     expect(selectLiveCatalog(all, new Date('2026-11-12T08:00:00Z'), 'IT').products).toEqual([]);
+  });
+});
+
+describe('notifications communes', () => {
+  it('garde la notification dans le centre, envoie l’e-mail demandé, une seule fois par clé et par jour', async () => {
+    const { notify, listNotifications } = await import('@/lib/notify');
+    await repo.ensureProfile({ id: 'n', email: 'n@test.fr' });
+    const first = await notify('n', { type: 'alerte', title: 'Alerte : 2 produits', body: 'Sérum, Gourde', path: '/app', channels: { email: true }, dedupeKey: 'regle-1' }, repo);
+    expect(first).toMatchObject({ type: 'alerte', read: false, channels: { push: false, email: true, discord: false } });
+    expect(await notify('n', { type: 'alerte', title: 'x', body: 'y', path: '/app', dedupeKey: 'regle-1' }, repo)).toBeNull();
+    expect(await listNotifications('n', repo)).toHaveLength(1);
+    expect((await repo.listLocalEmails!(5))[0]).toMatchObject({ to: 'n@test.fr', subject: 'Alerte : 2 produits' });
   });
 });

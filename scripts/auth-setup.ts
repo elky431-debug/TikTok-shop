@@ -18,7 +18,7 @@ function fail(message: string): never {
   process.exit(1);
 }
 
-/** « TikTrend <bonjour@domaine.fr> » → bonjour@domaine.fr */
+/** « Tracktout <bonjour@domaine.fr> » → bonjour@domaine.fr */
 export function senderAddress(from: string): string {
   return /<([^>]+)>/.exec(from)?.[1]?.trim() ?? from.trim();
 }

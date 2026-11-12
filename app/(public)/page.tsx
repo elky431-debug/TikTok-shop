@@ -29,7 +29,7 @@ import { formatEuros } from '@/lib/utils';
 export const metadata: Metadata = { title: { absolute: `${BRAND} · ${BRAND_TAGLINE}` } };
 export const revalidate = 3600;
 
-/** Chiffres vrais sur le produit (TikTrend n'a pas encore d'utilisateurs : aucun chiffre d'usage). */
+/** Chiffres vrais sur le produit (Tracktout n'a pas encore d'utilisateurs : aucun chiffre d'usage). */
 const STATS = [
   { value: 5, suffix: '', label: 'produits gagnants chaque matin' },
   { value: 10, suffix: '', label: 'accroches par produit' },
@@ -147,7 +147,7 @@ export default async function HomePage() {
       </section>
 
       {/* Bandeau de chiffres */}
-      <section className="border-y border-fg/[0.06] bg-fg/[0.01]" aria-label="TikTrend en chiffres">
+      <section className="border-y border-fg/[0.06] bg-fg/[0.01]" aria-label="Tracktout en chiffres">
         <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
           <dl className="grid grid-cols-2 gap-8 md:grid-cols-4">
             {STATS.map((s, i) => (

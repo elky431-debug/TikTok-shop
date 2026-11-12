@@ -11,6 +11,7 @@ import { noise, Rng } from './random';
  * donc l'historique d'hier est cohérent avec « aujourd'hui » vu hier.
  */
 
+// Graine historique du catalogue fictif (ancien nom), gardée pour que ses produits ne changent pas.
 const SEED = 'tiktrend-fr-v1';
 const EPOCH = '2024-01-01'; // un lundi
 

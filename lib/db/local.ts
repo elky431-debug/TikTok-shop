@@ -140,7 +140,7 @@ type Store = { data: LocalData; mtimeMs: number };
 
 declare global {
   // Partagé entre les couches de modules de Next en développement.
-  var __tiktrendLocalStores: Map<string, Store> | undefined;
+  var __tracktoutLocalStores: Map<string, Store> | undefined;
 }
 
 export class LocalRepo implements Repo {
@@ -157,8 +157,8 @@ export class LocalRepo implements Repo {
   // Persistance
   // ------------------------------------------------------------------
   private get stores(): Map<string, Store> {
-    globalThis.__tiktrendLocalStores ??= new Map();
-    return globalThis.__tiktrendLocalStores;
+    globalThis.__tracktoutLocalStores ??= new Map();
+    return globalThis.__tracktoutLocalStores;
   }
 
   private load(): LocalData {

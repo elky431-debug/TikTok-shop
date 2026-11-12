@@ -16,7 +16,7 @@ let testClient: Stripe | null = null;
 export function getStripe(): Stripe {
   if (testClient) return testClient;
   if (!env.stripeSecretKey) throw new BillingUnavailableError();
-  stripeClient ??= new Stripe(env.stripeSecretKey, { appInfo: { name: 'tiktrend' } });
+  stripeClient ??= new Stripe(env.stripeSecretKey, { appInfo: { name: 'tracktout' } });
   return stripeClient;
 }
 
