@@ -108,7 +108,7 @@ export interface Database {
           hooks: Json;
           script: Json;
           full_text: string;
-          source: 'claude' | 'simulation';
+          source: 'claude' | 'openai' | 'simulation';
           saved: boolean;
           regen_count: number;
           created_at: string;

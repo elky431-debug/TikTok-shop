@@ -1,0 +1,89 @@
+import OpenAI from 'openai';
+import { zodTextFormat } from 'openai/helpers/zod';
+import { env } from '@/lib/env';
+import { buildHookPrompt, buildUserPrompt, SYSTEM_PROMPT } from '../prompt';
+import { GenerationSchema, SingleHookSchema } from '../schema';
+import type { ScriptInput } from '../types';
+import { ModelRefusalError, withCorrection, type ScriptModel } from './types';
+
+/**
+ * OpenAI (SDK officiel `openai`, Responses API). Documentation lue : README du paquet 7.55.0, exemple officiel
+ * `examples/responses/structured-outputs.ts` et types du paquet :
+ *  - `client.responses.parse({ model, instructions, input, text: { format: zodTextFormat(Schéma, 'nom') } })`
+ *    impose un JSON Schema strict tiré du schéma Zod et remplit `output_parsed` ;
+ *  - si le JSON reçu ne passe pas le schéma, le SDK lève l'erreur de Zod : on la traite comme une sortie invalide
+ *    (nouvel essai), jamais comme une panne ;
+ *  - une réponse incomplète (`status: 'incomplete'`, par exemple plafond de jetons) n'est pas analysée :
+ *    `output_parsed` vaut null ;
+ *  - un refus arrive comme un contenu `type: 'refusal'` dans le message de sortie.
+ * `store: false` : la demande (prénom, phrase d'exemple) n'est pas conservée dans l'historique OpenAI.
+ */
+export class OpenAIScriptModel implements ScriptModel {
+  readonly name = 'openai' as const;
+  readonly source = 'openai' as const;
+  private client: OpenAI | null = null;
+
+  constructor(private readonly options: { fetch?: typeof fetch } = {}) {}
+
+  private getClient(): OpenAI {
+    this.client ??= new OpenAI({ apiKey: env.openaiKey, maxRetries: 2, timeout: 120_000, fetch: this.options.fetch });
+    return this.client;
+  }
+
+  /** Appelle l'API ; un JSON illisible ou hors schéma (erreur de Zod ou de JSON.parse) donne null, pas une panne. */
+  private async call<R extends { output: OpenAI.Responses.ResponseOutputItem[] }>(request: () => Promise<R>): Promise<R | null> {
+    let response: R;
+    try {
+      response = await request();
+    } catch (error) {
+      if (error instanceof Error && !(error instanceof OpenAI.APIError) && (error.name === 'ZodError' || error instanceof SyntaxError)) {
+        return null;
+      }
+      throw error;
+    }
+    const refused = response.output.some(
+      (item) => item.type === 'message' && item.content.some((part) => part.type === 'refusal'),
+    );
+    if (refused) throw new ModelRefusalError();
+    return response;
+  }
+
+  async generate(input: ScriptInput, correction?: string) {
+    const response = await this.call(() =>
+      this.getClient().responses.parse({
+        model: env.openaiModel,
+        instructions: SYSTEM_PROMPT,
+        input: withCorrection(buildUserPrompt(input), correction),
+        max_output_tokens: 16_000,
+        store: false,
+        text: { format: zodTextFormat(GenerationSchema, 'scripts_video') },
+      }),
+    );
+    return response?.output_parsed ?? null;
+  }
+
+  async hook(input: ScriptInput, existing: string[]) {
+    const response = await this.call(() =>
+      this.getClient().responses.parse({
+        model: env.openaiModel,
+        instructions: SYSTEM_PROMPT,
+        input: buildHookPrompt(input, existing),
+        max_output_tokens: 4_000,
+        store: false,
+        text: { format: zodTextFormat(SingleHookSchema, 'accroche') },
+      }),
+    );
+    return response?.output_parsed?.hook ?? null;
+  }
+
+  describeError(error: unknown): string {
+    if (error instanceof OpenAI.AuthenticationError) return 'La clé OPENAI_API_KEY est refusée : vérifie-la dans les réglages.';
+    if (error instanceof OpenAI.PermissionDeniedError) return 'Ce compte OpenAI n’a pas accès à ce modèle ou à ce service : vérifie OPENAI_MODEL.';
+    if (error instanceof OpenAI.RateLimitError) return 'Le service d’écriture est très sollicité (ou le crédit OpenAI est épuisé). Réessaie dans une minute.';
+    if (error instanceof OpenAI.NotFoundError) return `Le modèle « ${env.openaiModel} » est introuvable : vérifie OPENAI_MODEL.`;
+    if (error instanceof OpenAI.BadRequestError) return `Le modèle « ${env.openaiModel} » a refusé la demande (paramètre non pris en charge ?). Vérifie OPENAI_MODEL.`;
+    if (error instanceof OpenAI.APIConnectionError) return 'Impossible de joindre le service d’écriture. Vérifie la connexion et réessaie.';
+    if (error instanceof OpenAI.APIError) return `Le service d’écriture a renvoyé une erreur (${error.status ?? 'inconnue'}). Réessaie.`;
+    return 'L’écriture des scripts a échoué. Réessaie.';
+  }
+}

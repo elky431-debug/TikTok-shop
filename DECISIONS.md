@@ -520,3 +520,36 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
 102. **Liste de vérification de mise en ligne** dans le README, dans l'ordre demandé : variables Vercel, domaine,
      Supabase, Stripe, Resend, tâche nocturne testée. `SUPABASE_DB_URL` ne va jamais sur Vercel : elle ne sert
      qu'aux migrations, depuis un poste.
+
+## Générateur de scripts indépendant du fournisseur d'IA
+
+103. **`AI_PROVIDER=openai` ou `anthropic`**, un adaptateur par fournisseur (`lib/ai/providers/`) derrière une
+     interface `ScriptModel` (générer, régénérer une accroche, traduire une erreur). Tout le reste est commun
+     (`lib/ai/scripts.ts`) : schéma Zod, nouvel essai unique si le JSON est invalide ou enfreint les règles, liste
+     des interdits, mise en forme, ligne #publicité. Sans `AI_PROVIDER`, Claude si sa clé est là, sinon OpenAI ; la
+     clé du fournisseur choisi absente ⇒ générateur simulé (jamais l'autre fournisseur en douce).
+104. **OpenAI d'après sa documentation officielle actuelle** : paquet `openai` 7.55.0 (README, exemple officiel
+     `examples/responses/structured-outputs.ts`, types du paquet ; platform.openai.com n'est pas joignable d'ici).
+     Responses API : `client.responses.parse({ model, instructions, input, text: { format: zodTextFormat(…) } })`,
+     JSON Schema strict tiré du même schéma Zod que pour Claude, résultat dans `output_parsed`. Le SDK lève
+     l'erreur de Zod si le JSON ne passe pas le schéma : traitée comme une sortie invalide (nouvel essai), pas comme
+     une panne. Réponse coupée (`status: 'incomplete'`) : `output_parsed` vaut null, nouvel essai. Refus (contenu
+     `type: 'refusal'`) : message clair, sans nouvel essai. `store: false` : la demande (prénom, phrase d'exemple)
+     n'est pas gardée dans l'historique d'OpenAI. Pas de paramètre `reasoning` : il n'existe pas sur tous les
+     modèles, et `OPENAI_MODEL` peut en désigner n'importe lequel.
+105. **Modèle par défaut `gpt-5.5`** : celui des exemples du SDK officiel. Rien d'autre n'est supposé ; il se
+     change par `OPENAI_MODEL`, et une erreur « modèle introuvable » ou « paramètre refusé » le dit en français.
+106. **`scripts.source` accepte `openai`** (migration rejouable `20261113000200_scripts_openai.sql`), pour savoir
+     quel fournisseur a écrit chaque script.
+107. **Qualité du français vérifiée sur 3 vraies générations** (`npm run ai:sample`, `gpt-5.5`, un vrai produit
+     Nexscope et deux fictifs, trois formats et trois styles). Premier passage
+     (`docs/exemples-scripts/2026-11-12-openai-avant-reglage.md`) : français naturel, tutoiement, phrases courtes,
+     accroches de 8 mots au plus, aucun interdit, caractéristiques tirées des fiches seulement ; deux défauts à la
+     relecture humaine : hashtags anglais (#skincarefr, #airfryer, #kbeauty) et « le lien dans le panier orange ».
+     **La consigne a été précisée** (hashtags en mots français, « c'est le produit qui est dans le panier
+     orange ») et la relecture automatique les repère désormais. Second passage
+     (`docs/exemples-scripts/2026-11-12-openai.md`) : les deux défauts ont disparu ; reste une accroche au
+     vouvoiement sur 30 (« Je vous montre sans blabla »), signalée par la relecture automatique, volontairement
+     non bloquante (un nouvel essai complet pour une accroche coûterait trop cher ; l'utilisateur la régénère).
+108. **Proxy de cet environnement** : le `fetch` de Node n'y passe par le proxy qu'avec `NODE_USE_ENV_PROXY=1`
+     (lancer `npm run ai:sample` ainsi ici). Rien à faire sur Vercel.

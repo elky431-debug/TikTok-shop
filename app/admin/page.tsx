@@ -73,7 +73,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Record
         : `${catalog.provider ?? '—'}${catalog.dataDate ? `, relevé du ${formatDayMonth(catalog.dataDate)}` : ''}${catalog.stale ? ' (plus de 36 h)' : ''}`,
       ok: !catalog.demo && !catalog.stale,
     },
-    { name: 'Scripts', value: isAiConfigured() ? `Claude (${env.anthropicModel})` : 'Simulés', ok: isAiConfigured() },
+    { name: 'Scripts', value: env.aiModelLabel, ok: isAiConfigured() },
     { name: 'Paiement', value: billingMode() === 'stripe' ? 'Stripe' : billingMode() === 'simulation' ? 'Simulé' : 'Désactivé', ok: billingMode() === 'stripe' },
     { name: 'E-mails', value: isResendConfigured() ? 'Resend' : 'Boîte locale', ok: isResendConfigured() },
   ];

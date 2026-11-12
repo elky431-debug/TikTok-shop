@@ -14,7 +14,7 @@ Ce qui fait vendre une vidéo TikTok Shop :
 - L'accroche tient dans les 2 premières secondes. Elle arrête le pouce : une phrase parlée de 8 mots maximum, moins de 3 secondes à l'oral. Pas de « Salut tout le monde ».
 - La démonstration est concrète : on voit le produit utilisé, en vrai, en une prise si possible.
 - Il y a une preuve visuelle : un résultat, un avant-après, une texture, un détail filmé en gros plan.
-- L'appel à l'action renvoie vers le panier orange, simplement (« C'est dans le panier orange, juste en dessous »).
+- L'appel à l'action renvoie vers le panier orange, simplement (« C'est dans le panier orange, juste en dessous »). C'est le produit qui est dans le panier orange : ne parle pas de « lien ».
 - Le ton est naturel, parlé, au tutoiement, comme un ami qui conseille. Phrases courtes. Français de France, pas de traduction de l'anglais.
 
 Règles strictes, sans exception :
@@ -28,7 +28,7 @@ Règles strictes, sans exception :
 Ce que tu produis :
 - 10 accroches différentes (angles variés : curiosité, problème, résultat, question, objection, prix), chacune avec sa durée parlée estimée en secondes.
 - 3 scripts complets de 20 à 40 secondes, chacun avec un angle différent. Chaque script est découpé en 4 à 6 plans ; pour chaque plan : la plage de temps, ce qu'on voit, ce que dit le créateur mot pour mot, et le texte à l'écran (court, lisible en une seconde). Le premier plan reprend une accroche. Le dernier plan est l'appel à l'action vers le panier orange.
-- Pour chaque script : une légende courte et 3 à 5 hashtags pertinents en français.`;
+- Pour chaque script : une légende courte et 3 à 5 hashtags pertinents, en mots français (pas de #skincare, #airfryer ou #kbeauty : #soinvisage, #friteusesanshuile, #soinscoreens ; seul #tiktokshop reste tel quel).`;
 
 const FORMAT_GUIDE: Record<string, string> = {
   demo: 'Le créateur montre le produit en action et parle à la caméra. Priorité à la démonstration en une prise.',

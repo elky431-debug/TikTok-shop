@@ -41,9 +41,10 @@ leurs élèves (commission de 30 % récurrente, 3 mois de Pro offerts aux élèv
   Recharts pour les graphiques détaillés, sparklines en SVG maison.
 - Stripe isolé dans `lib/billing/` (interface `BillingProvider`). Sans clé : paiement désactivé avec
   message clair ; en mode local uniquement, paiement **simulé** qui passe par le même code de webhook.
-- Claude : `lib/ai/scripts.ts`, SDK `@anthropic-ai/sdk`, modèle `ANTHROPIC_MODEL`
-  (défaut `claude-sonnet-5-5`), sortie JSON validée par Zod, 1 nouvel essai si invalide. Sans clé :
-  générateur simulé déterministe.
+- IA des scripts : `lib/ai/scripts.ts` (commun : validation Zod, 1 nouvel essai si invalide, interdits de
+  `lib/ai/guard.ts`) + un adaptateur par fournisseur dans `lib/ai/providers/` : `AI_PROVIDER=openai` (SDK `openai`,
+  Responses API, `OPENAI_MODEL`, défaut `gpt-5.5`) ou `anthropic` (SDK `@anthropic-ai/sdk`, `ANTHROPIC_MODEL`,
+  défaut `claude-sonnet-5-5`). Sans clé : générateur simulé déterministe. `npm run ai:sample` = 3 scripts de test.
 - E-mails : Resend + React Email (`emails/`). Sans clé : journalisés en console + boîte locale.
 - Bot Discord : `bot/` (package séparé, discord.js), parle à l'appli via `/api/bot/*` + `BOT_API_SECRET`.
 - Tests : Vitest (`tests/unit`), Playwright (`tests/e2e`, 3 parcours), intégration Supabase (`tests/integration`).
@@ -129,6 +130,7 @@ npm run check:sql  # applique les migrations sur un Postgres jetable (si dispo),
 npm run db:setup   # Supabase réel : migrations, types, seed (SUPABASE_DB_URL)
 npm run test:integration  # tests contre le vrai Supabase (rien sans clés)
 npm run score:distribution  # distribution des scores sur la base actuelle
+npm run ai:sample  # 3 scripts de test avec le vrai fournisseur d'IA (docs/exemples-scripts/)
 npm run stripe:setup  # crée produits et prix Stripe
 npm run screenshots   # captures (voir scripts/screenshots.mjs)
 ```

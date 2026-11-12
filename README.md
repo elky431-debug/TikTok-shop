@@ -60,6 +60,8 @@ Pour tester l’essai formateur : ouvre http://localhost:3000/r/DEMO30 puis insc
 | `npm run seed` | 30 jours d’historique fictif (+ comptes de démo en local) ; vrai rafraîchissement si un fournisseur réel est configuré |
 | `npm run db:setup` | Supabase réel : migrations, types TypeScript, seed |
 | `npm run test:integration` | tests contre le vrai Supabase (repo, RLS, connexion) ; ne lance rien sans clés |
+| `npm run ai:sample` | 3 scripts de test avec le vrai fournisseur d’IA, français relu, dans `docs/exemples-scripts/` |
+| `npm run score:distribution` | distribution des scores sur la base actuelle |
 | `npm run check:sql` | applique les migrations sur un Postgres jetable et teste la RLS (si PostgreSQL est installé) |
 | `npm run stripe:setup` | crée les produits et prix Stripe, affiche les identifiants à copier |
 | `npm run screenshots` | captures d’écran des pages principales (voir l’en-tête de `scripts/screenshots.mjs`) |
@@ -123,10 +125,23 @@ sont présentes ; les autres restent simulées. Le détail de chaque variable es
 **Avec un fournisseur de données réel** (clés TikTok ou Nexscope présentes), `npm run seed` fait un vrai
 rafraîchissement au lieu de charger 30 jours fictifs : aucun produit fictif n’arrive dans une base de production.
 
-### Claude (scripts)
+### IA (scripts)
 
-Renseigne `ANTHROPIC_API_KEY` (https://console.anthropic.com). Le modèle est réglé par `ANTHROPIC_MODEL`
-(`claude-sonnet-5-5` par défaut).
+Le studio marche avec **OpenAI ou Claude**, au choix : `AI_PROVIDER=openai` (`OPENAI_API_KEY`, modèle
+`OPENAI_MODEL`, `gpt-5.5` par défaut) ou `AI_PROVIDER=anthropic` (`ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`). Les deux
+passent par la même chaîne : sortie JSON imposée par le schéma Zod, nouvel essai si le JSON est invalide ou enfreint
+les règles, liste des interdits (promesses médicales, superlatifs, gains), ligne #publicité ajoutée par le serveur.
+Sans clé, le générateur simulé prend le relais.
+
+Pour juger la qualité du français avant de lancer :
+
+```bash
+npm run ai:sample
+```
+
+3 générations réelles (un vrai produit, deux fictifs, formats et styles différents), relues automatiquement
+(vouvoiement, anglicismes, hashtags anglais, longueur des accroches, interdits), écrites dans
+`docs/exemples-scripts/<date>-<fournisseur>.md`. Coûte 3 générations chez le fournisseur.
 
 ### Stripe (abonnements)
 
@@ -190,7 +205,8 @@ Coche chaque ligne dans cet ordre : chacune dépend des précédentes.
          de connexion, aux retours de paiement Stripe et à tous les liens des e-mails) ;
    - [ ] `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` ;
    - [ ] `CRON_SECRET` (long et aléatoire, par exemple `openssl rand -hex 32`) et `ADMIN_EMAILS` ;
-   - [ ] `ANTHROPIC_API_KEY` (et `ANTHROPIC_MODEL` si besoin) ;
+   - [ ] `AI_PROVIDER` et la clé correspondante : `OPENAI_API_KEY` (+ `OPENAI_MODEL`) ou `ANTHROPIC_API_KEY`
+         (+ `ANTHROPIC_MODEL`) ;
    - [ ] `STRIPE_SECRET_KEY` (`sk_live_…`), les 4 `STRIPE_PRICE_…` du mode production, `STRIPE_WEBHOOK_SECRET`
          (rempli à l’étape 4) ;
    - [ ] `RESEND_API_KEY`, `EMAIL_FROM`, `FOUNDER_EMAIL` ;

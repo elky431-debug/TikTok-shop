@@ -139,7 +139,7 @@ export interface ScriptRecord {
   hooks: Hook[];
   script: VideoScript[];
   full_text: string;
-  source: 'claude' | 'simulation';
+  source: 'claude' | 'openai' | 'simulation';
   saved: boolean;
   regen_count: number;
   created_at: string;

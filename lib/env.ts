@@ -29,6 +29,31 @@ export const env = {
   get anthropicModel() {
     return read('ANTHROPIC_MODEL') || 'claude-sonnet-5-5';
   },
+  get openaiKey() {
+    return read('OPENAI_API_KEY');
+  },
+  /** Modèle OpenAI des scripts. Défaut : celui des exemples du SDK officiel (paquet openai 7.55.0). */
+  get openaiModel() {
+    return read('OPENAI_MODEL') || 'gpt-5.5';
+  },
+  /**
+   * Fournisseur d'IA des scripts : AI_PROVIDER=openai ou anthropic. Sans AI_PROVIDER : Claude si sa clé est là,
+   * sinon OpenAI. null = clé du fournisseur choisi absente ⇒ générateur simulé.
+   */
+  get aiProvider(): 'openai' | 'anthropic' | null {
+    const value = read('AI_PROVIDER').toLowerCase();
+    if (value === 'openai') return this.openaiKey ? 'openai' : null;
+    if (value === 'anthropic' || value === 'claude') return this.anthropicKey ? 'anthropic' : null;
+    if (this.anthropicKey) return 'anthropic';
+    if (this.openaiKey) return 'openai';
+    return null;
+  },
+  /** Nom lisible du modèle utilisé pour les scripts (écran admin). */
+  get aiModelLabel(): string {
+    if (this.aiProvider === 'openai') return `OpenAI (${this.openaiModel})`;
+    if (this.aiProvider === 'anthropic') return `Claude (${this.anthropicModel})`;
+    return 'Simulés';
+  },
   get stripeSecretKey() {
     return read('STRIPE_SECRET_KEY');
   },
@@ -145,8 +170,9 @@ export function isStripeConfigured(): boolean {
   return Boolean(env.stripeSecretKey);
 }
 
+/** Un fournisseur d'IA est choisi et sa clé est présente (sinon : scripts simulés). */
 export function isAiConfigured(): boolean {
-  return Boolean(env.anthropicKey);
+  return env.aiProvider !== null;
 }
 
 export function isResendConfigured(): boolean {

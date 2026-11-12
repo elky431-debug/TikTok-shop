@@ -1,18 +1,16 @@
-import Anthropic from '@anthropic-ai/sdk';
-import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 import type { Hook, VideoScript } from '@/lib/db/types';
-import { env, isAiConfigured } from '@/lib/env';
 import { DISCLOSURE_LINE, formatLabel } from './formats';
 import { findIssues, isClean, stripIssues } from './guard';
 import { generateMockScripts, hookSeconds, regenerateMockHook } from './mock-scripts';
-import { buildHookPrompt, buildUserPrompt, SYSTEM_PROMPT } from './prompt';
-import { GenerationSchema, SingleHookSchema, type Generation } from './schema';
+import { getScriptModel, ModelRefusalError, type ScriptModel } from './providers';
+import type { Generation } from './schema';
 import type { ScriptInput, ScriptOutput } from './types';
 
 /**
- * Génération des scripts vidéo.
- * - Avec ANTHROPIC_API_KEY : Claude (modèle ANTHROPIC_MODEL), sortie JSON imposée et validée par Zod,
- *   un nouvel essai si la réponse est invalide ou enfreint les règles.
+ * Génération des scripts vidéo, indépendante du fournisseur d'IA.
+ * - AI_PROVIDER=openai (OPENAI_API_KEY, OPENAI_MODEL) ou anthropic (ANTHROPIC_API_KEY, ANTHROPIC_MODEL) :
+ *   sortie JSON imposée par le schéma Zod, validée, puis vérifiée par les règles métier et la liste des
+ *   interdits (lib/ai/guard.ts) ; un seul nouvel essai si la réponse est invalide ou enfreint les règles.
  * - Sans clé : générateur simulé, mêmes formats de sortie.
  * La ligne de rappel « #publicité » est toujours ajoutée côté serveur.
  */
@@ -25,13 +23,11 @@ export class ScriptGenerationError extends Error {
 }
 
 export interface GenerationResult extends ScriptOutput {
-  source: 'claude' | 'simulation';
-}
-
-let client: Anthropic | null = null;
-function getClient(): Anthropic {
-  client ??= new Anthropic({ apiKey: env.anthropicKey, maxRetries: 2, timeout: 90_000 });
-  return client;
+  source: 'claude' | 'openai' | 'simulation';
+  /** Nombre d'appels au fournisseur (1, ou 2 après un nouvel essai). 0 en simulation. */
+  attempts: number;
+  /** Problèmes relevés sur la première réponse, qui ont déclenché le nouvel essai. */
+  firstProblems: string[];
 }
 
 /** Vérifie les règles métier que le schéma JSON ne peut pas garantir. Renvoie la liste des problèmes. */
@@ -85,80 +81,56 @@ function finalize(output: Generation, input: ScriptInput): ScriptOutput {
   return { hooks, scripts };
 }
 
-function describeApiError(error: unknown): string {
-  if (error instanceof Anthropic.AuthenticationError) return 'La clé ANTHROPIC_API_KEY est refusée : vérifie-la dans les réglages.';
-  if (error instanceof Anthropic.RateLimitError) return 'Le service d’écriture est très sollicité. Réessaie dans une minute.';
-  if (error instanceof Anthropic.NotFoundError) return `Le modèle « ${env.anthropicModel} » est introuvable : vérifie ANTHROPIC_MODEL.`;
-  if (error instanceof Anthropic.APIConnectionError) return 'Impossible de joindre le service d’écriture. Vérifie la connexion et réessaie.';
-  if (error instanceof Anthropic.APIError) return `Le service d’écriture a renvoyé une erreur (${error.status ?? 'inconnue'}). Réessaie.`;
-  return 'L’écriture des scripts a échoué. Réessaie.';
+function errorMessage(model: ScriptModel, error: unknown): ScriptGenerationError {
+  if (error instanceof ScriptGenerationError) return error;
+  if (error instanceof ModelRefusalError) return new ScriptGenerationError(error.message);
+  return new ScriptGenerationError(model.describeError(error));
 }
 
-async function callClaude(input: ScriptInput, correction?: string): Promise<Generation | null> {
-  const messages: Anthropic.MessageParam[] = [{ role: 'user', content: buildUserPrompt(input) }];
-  if (correction) {
-    messages[0] = {
-      role: 'user',
-      content: `${buildUserPrompt(input)}\n\nAttention, ta réponse précédente ne respectait pas les règles : ${correction}. Corrige ces points.`,
-    };
-  }
-  const response = await getClient().messages.parse({
-    model: env.anthropicModel,
-    max_tokens: 8000,
-    system: SYSTEM_PROMPT,
-    messages,
-    output_config: { effort: 'medium', format: zodOutputFormat(GenerationSchema) },
-  });
-  if (response.stop_reason === 'refusal') {
-    throw new ScriptGenerationError('Ce produit n’a pas pu être traité par le service d’écriture. Essaie un autre format ou un autre produit.');
-  }
-  return response.parsed_output ?? null;
-}
-
-/** Génère 10 accroches et 3 scripts. Un seul nouvel essai si la sortie est invalide. */
-export async function generateScripts(input: ScriptInput): Promise<GenerationResult> {
-  if (!isAiConfigured()) {
+/** Génère 10 accroches et 3 scripts. Un seul nouvel essai si la sortie est invalide ou enfreint les règles. */
+export async function generateScripts(input: ScriptInput, model: ScriptModel | null = getScriptModel()): Promise<GenerationResult> {
+  if (!model) {
     // Variante tirée au hasard : deux générations simulées du même produit ne sont pas identiques.
-    return { ...generateMockScripts(input, Math.floor(Math.random() * 1_000_000)), source: 'simulation' };
+    return { ...generateMockScripts(input, Math.floor(Math.random() * 1_000_000)), source: 'simulation', attempts: 0, firstProblems: [] };
   }
   try {
-    let output = await callClaude(input);
-    let problems = output ? validateGeneration(output) : ['JSON invalide'];
+    let attempts = 1;
+    let output: Generation | null = await model.generate(input);
+    let problems = output ? validateGeneration(output) : ['JSON invalide ou incomplet'];
+    const firstProblems = problems;
     if (problems.length) {
-      output = await callClaude(input, problems.slice(0, 6).join(' ; '));
-      problems = output ? validateGeneration(output) : ['JSON invalide'];
+      attempts = 2;
+      output = await model.generate(input, problems.slice(0, 6).join(' ; '));
+      problems = output ? validateGeneration(output) : ['JSON invalide ou incomplet'];
     }
     if (!output || output.hooks.length === 0 || output.scripts.length === 0) {
       throw new ScriptGenerationError('Les scripts reçus étaient incomplets, même après un nouvel essai. Réessaie.');
     }
     // Après le nouvel essai, les phrases encore fautives sont retirées et les manques complétés.
-    return { ...finalize(output, input), source: 'claude' };
+    return { ...finalize(output, input), source: model.source, attempts, firstProblems };
   } catch (error) {
-    if (error instanceof ScriptGenerationError) throw error;
-    throw new ScriptGenerationError(describeApiError(error));
+    throw errorMessage(model, error);
   }
 }
 
 /** Remplace une accroche par une nouvelle, différente des existantes. */
-export async function regenerateHook(input: ScriptInput, existing: string[], attempt: number): Promise<Hook> {
-  if (!isAiConfigured()) return regenerateMockHook(input, existing, attempt, String(Math.random()));
+export async function regenerateHook(
+  input: ScriptInput,
+  existing: string[],
+  attempt: number,
+  model: ScriptModel | null = getScriptModel(),
+): Promise<Hook> {
+  if (!model) return regenerateMockHook(input, existing, attempt, String(Math.random()));
   try {
     for (let i = 0; i < 2; i++) {
-      const response = await getClient().messages.parse({
-        model: env.anthropicModel,
-        max_tokens: 1000,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: buildHookPrompt(input, existing) }],
-        output_config: { effort: 'low', format: zodOutputFormat(SingleHookSchema) },
-      });
-      const hook = response.parsed_output?.hook;
+      const hook = await model.hook(input, existing);
       if (hook && isClean(hook.text) && !existing.includes(hook.text.trim())) {
         return { text: hook.text.trim(), seconds: Math.min(2.9, hook.seconds || hookSeconds(hook.text)) };
       }
     }
     return regenerateMockHook(input, existing, attempt);
   } catch (error) {
-    throw new ScriptGenerationError(describeApiError(error));
+    throw errorMessage(model, error);
   }
 }
 

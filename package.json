@@ -16,7 +16,8 @@
     "screenshots": "node scripts/screenshots.mjs",
     "test:integration": "node scripts/test-integration.mjs",
     "db:setup": "tsx scripts/db-setup.ts",
-    "score:distribution": "tsx scripts/score-distribution.ts"
+    "score:distribution": "tsx scripts/score-distribution.ts",
+    "ai:sample": "tsx scripts/ai-sample.ts"
   },
   "engines": {
     "node": ">=20.19"
@@ -32,6 +33,7 @@
     "lucide-react": "^1.72.0",
     "motion": "^14.12.0",
     "next": "^14.2.35",
+    "openai": "^7.55.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "recharts": "^3.10.1",
