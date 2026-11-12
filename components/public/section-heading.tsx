@@ -21,7 +21,7 @@ export function SectionHeading({
   return (
     <Reveal className={cn('mb-16 text-center', className)}>
       {eyebrow ? <p className="eyebrow mb-3">{eyebrow}</p> : null}
-      <h2 id={id} className="text-3xl font-bold leading-tight text-fg sm:text-4xl md:text-5xl">
+      <h2 id={id} className="text-3xl/tight font-bold text-fg sm:text-4xl/tight md:text-5xl/tight">
         {title}
         {accent ? (
           <>

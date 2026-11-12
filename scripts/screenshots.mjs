@@ -93,8 +93,16 @@ for (const vp of VIEWPORTS) {
       await page.waitForSelector('h1');
       name = path === '/' ? 'accueil' : path.replace(/^\//, '').replace(/[/?=&]/g, '_');
     }
+    // Les sections apparaissent au défilement : on parcourt la page avant la capture.
+    await page.evaluate(async () => {
+      for (let y = 0; y < document.body.scrollHeight; y += 300) {
+        window.scrollTo(0, y);
+        await new Promise((r) => setTimeout(r, 80));
+      }
+      window.scrollTo(0, 0);
+    });
     // En pleine page, les barres fixes apparaîtraient au milieu : on les remet dans le flux.
-    await page.addStyleTag({ content: 'header.sticky, nav.fixed { position: static !important; }' });
+    await page.addStyleTag({ content: 'header.sticky, header.fixed, nav.fixed { position: static !important; }' });
     await page.waitForTimeout(path === '/' ? 3500 : 700);
     const file = `${OUT}/${name}-${vp.name}${THEME === 'dark' ? '-sombre' : ''}${SUFFIX}.${FORMAT === 'jpeg' ? 'jpg' : 'png'}`;
     await page.screenshot({ path: file, fullPage: true, type: FORMAT, ...(FORMAT === 'jpeg' ? { quality: 72 } : {}) });

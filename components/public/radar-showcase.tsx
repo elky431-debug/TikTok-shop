@@ -109,7 +109,7 @@ export function RadarShowcase({ products, demoData }: { products: ShowcaseProduc
         </ol>
 
         {/* Produit en cours */}
-        <div className="rounded-2xl border border-line bg-bg/40 p-4" aria-live={autoplay ? 'off' : 'polite'}>
+        <div className="min-w-0 rounded-2xl border border-line bg-bg/40 p-4" aria-live={autoplay ? 'off' : 'polite'}>
           <div className="flex gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={active.imageUrl} alt="" className="h-14 w-14 shrink-0 rounded-xl bg-surface sm:h-16 sm:w-16" />

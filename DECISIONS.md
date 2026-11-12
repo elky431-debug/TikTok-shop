@@ -298,3 +298,28 @@ R15. **Aperçu du radar qui défile** : 5 produits (le meilleur produit qui mont
      change tout seul et en continu, il se met en pause au survol et au focus, et un bouton
      « Pause / Lecture » est fourni (critère WCAG 2.2.2). Pas de défilement automatique si « réduire
      les animations ». Courbe cyan avec remplissage en dégradé cyan → transparent.
+
+### Étape 4 — Accueil
+
+R16. **Structure du brief** : héros (pastille, titre, sous-titre, deux boutons, mention, aperçu du
+     radar), bandeau de chiffres, « TOUT-EN-UN » (TROUVER / VENDRE, 4 cartes chacun), « Comment ça
+     marche » (01, 02, 03 en grand et en dégradé, reliés par une ligne en dégradé comme EtSmart),
+     tarifs, bloc formateurs à halo rose, FAQ en accordéon, pied de page. La section « studio en
+     démonstration » de la V1 disparaît (absente du brief).
+R17. **Titre sur trois lignes à 96 px** : le texte de Pépite est plus long que celui d'EtSmart ; le
+     conteneur du héros passe de 896 à 1 024 px pour garder trois lignes comme sur la capture.
+     Mesures à 1 440 px : pastille à 100 px du haut (101 sur la référence), boutons à 632 px (637),
+     mention à 712 px (712).
+R18. **Interlignes corrigés** : EtSmart est en Tailwind 4, où `leading-tight` l'emporte sur la taille
+     responsive ; en Tailwind 3, `md:text-5xl` l'écrasait. On écrit taille et interligne ensemble
+     (`md:text-8xl/[1.05]`, `md:text-5xl/tight`) pour retrouver les interlignes de la capture.
+R19. **« Recommandé » et non « Le plus choisi »** sur le plan Pro : Pépite n'a pas encore
+     d'abonnés, l'affirmation serait fausse, et la règle n° 2 de `CLAUDE.md` (aucun faux chiffre ni
+     fausse preuve sociale) n'a pas été levée par le brief. À changer en une ligne
+     (`components/pricing/pricing-cards.tsx`) quand ce sera vrai.
+R20. **« Un seul outil pour tout automatiser. »** est conservé (texte du brief), avec un sous-titre
+     qui précise ce qui est automatisé (« tout le travail avant de filmer ») : Pépite ne publie jamais
+     à la place de l'affilié.
+R21. **Repli sans JavaScript** : les éléments qui apparaissent au défilement sont rendus côté serveur
+     avec une opacité nulle ; une règle `<noscript>` les rend visibles si JavaScript est désactivé.
+R22. **Espaces insécables avant « : » et « ? »** dans les textes de l'accueil (typographie française).

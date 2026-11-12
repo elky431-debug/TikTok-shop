@@ -1,252 +1,304 @@
 import type { Metadata } from 'next';
-import { Check, ShieldCheck } from 'lucide-react';
-import Link from 'next/link';
+import {
+  BellRing,
+  Check,
+  Clapperboard,
+  Gauge,
+  Gift,
+  HandCoins,
+  ListChecks,
+  Radar,
+  Sunrise,
+} from 'lucide-react';
+import { CountUp } from '@/components/motion/count-up';
+import { Reveal } from '@/components/motion/reveal';
 import { PricingCards } from '@/components/pricing/pricing-cards';
-import { HeroPreview } from '@/components/public/hero-preview';
+import { Constellation } from '@/components/public/constellation';
+import { FaqItem } from '@/components/public/faq-item';
+import { HeroIntro } from '@/components/public/hero-intro';
+import { RadarShowcase } from '@/components/public/radar-showcase';
+import { SectionHeading } from '@/components/public/section-heading';
 import { LinkButton } from '@/components/ui/button';
-import { Callout } from '@/components/ui/surface';
-import { formatLabel, SCRIPT_FORMATS } from '@/lib/ai/formats';
+import { FeatureCard } from '@/components/ui/feature-card';
 import { BRAND, BRAND_TAGLINE } from '@/lib/brand';
-import { nicheShort } from '@/lib/niches';
-import { COACH_TRIAL_DAYS, REFERRAL_COMMISSION_RATE } from '@/lib/plans';
+import { COACH_TRIAL_DAYS, getPlan, REFERRAL_COMMISSION_RATE } from '@/lib/plans';
 import { pricingCards } from '@/lib/pricing';
-import { getHeroDemo } from '@/lib/public-demo';
-import { commissionPerSale, TREND_LABELS } from '@/lib/score';
-import { formatCompact, formatEuros, formatGrowth } from '@/lib/utils';
+import { getShowcase } from '@/lib/public-demo';
+import { formatEuros } from '@/lib/utils';
 
 export const metadata: Metadata = { title: { absolute: `${BRAND} · ${BRAND_TAGLINE}` } };
 export const revalidate = 3600;
 
+/** Chiffres vrais sur le produit (Pépite n'a pas encore d'utilisateurs : aucun chiffre d'usage). */
+const STATS = [
+  { value: 5, suffix: '', label: 'produits gagnants chaque matin' },
+  { value: 10, suffix: '', label: 'accroches par produit' },
+  { value: 3, suffix: '', label: 'scripts prêts à tourner' },
+  { value: 100, suffix: ' %', label: 'en français' },
+];
+
+const FEATURES = [
+  {
+    category: 'Trouver',
+    items: [
+      { icon: Radar, title: 'Radar', desc: 'Les produits qui montent dans tes niches, triés par score chaque matin à 4 h.' },
+      {
+        icon: Gauge,
+        title: 'Score expliqué',
+        desc: 'Un score sur 100 avec le pourquoi en phrases : croissance, commission, concurrence, prix, échantillon.',
+      },
+      {
+        icon: Gift,
+        title: 'Échantillons gratuits',
+        desc: 'Repère les produits avec échantillon et demande-le avec un message prêt à copier.',
+      },
+      { icon: BellRing, title: 'Alertes de baisse', desc: 'Tu sais quand un produit que tu suis commence à retomber.' },
+    ],
+  },
+  {
+    category: 'Vendre',
+    items: [
+      {
+        icon: Clapperboard,
+        title: 'Studio de scripts',
+        desc: '10 accroches et 3 scripts plan par plan, écrits dans ton style, en un clic.',
+      },
+      {
+        icon: Sunrise,
+        title: 'Récap du matin',
+        desc: 'Tes meilleurs produits et un script prêt, par e-mail ou sur Discord, à l’heure que tu choisis.',
+      },
+      { icon: ListChecks, title: 'Mes produits', desc: 'Objectif 20 vidéos par produit, et ta progression vidéo après vidéo.' },
+      {
+        icon: HandCoins,
+        title: 'Parrainage',
+        desc: `Invite d’autres créateurs : ${Math.round(REFERRAL_COMMISSION_RATE * 100)} % de ce qu’ils paient, chaque mois.`,
+      },
+    ],
+  },
+];
+
 const STEPS = [
   {
     title: 'Chaque nuit, on analyse',
-    text: 'À 4 h, on passe en revue les produits ouverts à l’affiliation en France : ventes estimées, commission, nombre d’affiliés, échantillons.',
+    desc: 'À 4 h, on passe en revue les produits ouverts à l’affiliation en France : ventes estimées, commission, affiliés, échantillons.',
   },
   {
     title: 'Le matin, tu sais quoi vendre',
-    text: 'Ton radar classe les produits de tes niches par score d’opportunité, et te dit pourquoi en phrases simples.',
+    desc: 'Ton radar classe les produits de tes niches par score d’opportunité, et te dit pourquoi en phrases simples.',
   },
   {
     title: 'Tu tournes, beaucoup',
-    text: 'En un clic : 10 accroches et 3 scripts plan par plan, dans ton style. Tu suis ton objectif de 20 vidéos par produit.',
+    desc: 'En un clic : 10 accroches et 3 scripts dans ton style. Tu suis ton objectif de 20 vidéos par produit.',
   },
 ];
 
 const FAQ = [
   {
-    q: 'Vous vous connectez à mon compte TikTok ?',
+    q: 'Vous vous connectez à mon compte TikTok ?',
     a: 'Jamais. Pas de mot de passe, pas de publication automatique, pas de scraping de ton compte. Les données produits viennent d’API officielles ou de fournisseurs de données.',
   },
   {
     q: 'Je n’ai pas encore 1 500 abonnés.',
-    a: 'Tu démarres en mode préparation : tu vois les produits qui montent et tu t’entraînes avec les scripts. Tes vidéos font grandir ton compte en attendant de pouvoir vendre.',
+    a: 'Tu démarres en mode préparation : tu vois les produits qui montent et tu t’entraînes avec les scripts. Tes vidéos font grandir ton compte en attendant de pouvoir vendre.',
   },
   {
-    q: 'Est-ce que je vais gagner de l’argent ?',
+    q: 'Est-ce que je vais gagner de l’argent ?',
     a: 'On ne promet rien. L’outil t’aide à choisir de meilleurs produits et à produire plus de vidéos ; tes ventes dépendent de tes vidéos, de ton audience et du produit.',
   },
   {
-    q: 'Les scripts sont-ils prêts à publier ?',
+    q: 'Les scripts sont-ils prêts à publier ?',
     a: 'Ils sont prêts à tourner. Ils évitent les promesses médicales et les superlatifs, et te rappellent de signaler la collaboration commerciale (#publicité). Relis-les toujours avec ton ton à toi.',
   },
   {
-    q: 'Je peux arrêter quand je veux ?',
-    a: 'Oui. Sans engagement : tu résilies depuis ton compte en deux clics, et tu gardes l’accès jusqu’à la fin de la période payée.',
+    q: 'Je peux arrêter quand je veux ?',
+    a: 'Oui. Sans engagement : tu résilies depuis ton compte en deux clics, et tu gardes l’accès jusqu’à la fin de la période payée.',
   },
 ];
 
 export default async function HomePage() {
-  const demo = await getHeroDemo();
-  const p = demo.product;
-  const script = demo.scripts.scripts[0];
+  const showcase = await getShowcase();
+  const proPrice = formatEuros(getPlan('pro').prices.month);
 
   return (
     <>
-      {/* Premier écran : le produit lui-même (sur mobile, l'aperçu vient juste après le titre) */}
-      <section className="mx-auto grid max-w-6xl gap-x-16 gap-y-6 px-4 pb-16 pt-6 sm:px-6 sm:pt-10 lg:grid-cols-[1.1fr_1fr] lg:grid-rows-[auto_1fr] lg:items-center lg:pb-24 lg:pt-16">
-        <h1 className="text-[2.15rem] leading-[1.08] sm:text-5xl lg:self-end lg:text-[3.6rem] lg:leading-[1.05]">
-          Sache chaque matin quoi vendre sur TikTok&nbsp;Shop
-        </h1>
-        <div className="lg:col-start-2 lg:row-span-2 lg:row-start-1">
-          <HeroPreview
-            name={p.name}
-            niche={nicheShort(p.niche)}
-            imageUrl={p.image_url}
-            price={formatEuros(p.price_cents)}
-            commission={formatEuros(commissionPerSale(p.price_cents, p.commission_rate))}
-            affiliates={formatCompact(p.active_affiliates)}
-            trend={`${TREND_LABELS[p.trend]} ${formatGrowth(p.growth_7d)}`}
-            score={p.latest_score}
-            sales={p.sales_30d.slice(-14)}
-            hook={demo.hook}
-            freeSample={p.free_sample}
-            demoData={demo.demoData}
+      {/* Héros */}
+      <section className="relative overflow-hidden pb-20 pt-9">
+        <Constellation />
+        <HeroIntro
+          pill="Le radar TikTok Shop pour les affiliés français"
+          title="Sache quoi vendre sur TikTok Shop"
+          accent="chaque matin."
+          subtitle={`${BRAND} repère les produits qui vont exploser, te dit pourquoi, et t’écrit les scripts pour les vendre. Pour que tu postes ce qui marche, pas ce que tu espères.`}
+          actions={
+            <>
+              <LinkButton href="/connexion" size="lg" arrow>
+                Démarrer gratuitement
+              </LinkButton>
+              <LinkButton href="#comment" variant="outline" size="lg">
+                Voir comment ça marche
+              </LinkButton>
+            </>
+          }
+          footnote={`Gratuit sans carte bancaire · Pro dès ${proPrice}/mois`}
+        >
+          <RadarShowcase products={showcase.products} demoData={showcase.demoData} />
+        </HeroIntro>
+      </section>
+
+      {/* Bandeau de chiffres */}
+      <section className="border-y border-fg/[0.06] bg-fg/[0.01]" aria-label="Pépite en chiffres">
+        <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+          <dl className="grid grid-cols-2 gap-8 md:grid-cols-4">
+            {STATS.map((s, i) => (
+              <Reveal key={s.label} delay={i * 0.08} className="flex flex-col text-center">
+                <dt className="order-2 mt-1 text-xs text-muted sm:text-sm">{s.label}</dt>
+                <dd className="order-1 text-3xl font-bold sm:text-4xl">
+                  <CountUp value={s.value} suffix={s.suffix} className="text-gradient num" />
+                </dd>
+              </Reveal>
+            ))}
+          </dl>
+        </div>
+      </section>
+
+      {/* Tout-en-un */}
+      <section id="fonctionnalites" className="scroll-mt-16 py-20 sm:py-28">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <SectionHeading
+            eyebrow="Tout-en-un"
+            title="Un seul outil pour"
+            accent="tout automatiser."
+            subtitle="Trouver les bons produits, comprendre pourquoi, écrire tes vidéos : tout le travail avant de filmer, fait pour toi."
           />
-        </div>
-        <div className="flex flex-col lg:self-start">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center lg:order-2 lg:mt-8">
-            <LinkButton href="/connexion" size="lg">
-              Voir les produits du jour
-            </LinkButton>
-            <Link href="/prix" className="px-2 py-2 text-center font-semibold text-muted hover:text-fg">
-              Voir les prix
-            </Link>
-          </div>
-          <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted lg:order-1 lg:mt-0">
-            Les produits qui montent dans tes niches, un score expliqué, et tes scripts vidéo écrits pour toi. En français, chaque
-            matin à l’heure du café.
-          </p>
-          <ul className="mt-6 space-y-2 text-sm text-muted lg:order-3 lg:mt-8">
-            {['Gratuit pour commencer, sans carte bancaire', 'On ne se connecte jamais à ton compte TikTok', 'Résiliable en deux clics'].map((item) => (
-              <li key={item} className="flex items-center gap-2">
-                <Check className="h-4 w-4 shrink-0 text-gain" aria-hidden="true" />
-                {item}
-              </li>
-            ))}
-          </ul>
+          {FEATURES.map((group, gi) => (
+            <div key={group.category} className={gi > 0 ? 'mt-10' : ''}>
+              <Reveal>
+                <p className="eyebrow-category mb-4 pl-1">{group.category}</p>
+              </Reveal>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {group.items.map((f, i) => (
+                  <Reveal key={f.title} delay={gi * 0.05 + i * 0.08} className="h-full">
+                    <FeatureCard icon={f.icon} title={f.title}>
+                      {f.desc}
+                    </FeatureCard>
+                  </Reveal>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* Comment ça marche : une vraie séquence */}
-      <section className="border-y border-line bg-surface/60" aria-labelledby="comment">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-20">
-          <h2 id="comment" className="text-3xl">
-            Comment ça marche
-          </h2>
-          <ol className="mt-10 grid gap-8 md:grid-cols-3 md:gap-6">
-            {STEPS.map((step, i) => (
-              <li key={step.title} className="relative">
-                <div className="flex items-center gap-3">
-                  <span className="num flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-fg text-lg font-bold text-bg">
-                    {i + 1}
-                  </span>
-                  {i < STEPS.length - 1 ? <span className="hidden h-px flex-1 bg-line md:block" aria-hidden="true" /> : null}
-                </div>
-                <h3 className="mt-4 text-xl">{step.title}</h3>
-                <p className="mt-2 max-w-sm leading-relaxed text-muted">{step.text}</p>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
-
-      {/* Studio de scripts en démonstration */}
-      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-24" aria-labelledby="studio">
-        <div className="grid gap-10 lg:grid-cols-[1fr_1.3fr] lg:gap-16">
-          <div>
-            <h2 id="studio" className="text-3xl">
-              Le studio écrit tes vidéos
-            </h2>
-            <p className="mt-4 max-w-md leading-relaxed text-muted">
-              Choisis un produit et un format. Tu reçois 10 accroches de moins de 3 secondes et 3 scripts de 20 à 40 secondes, plan
-              par plan, avec le texte à l’écran. Écrits avec tes mots, pour ton style de vidéo.
-            </p>
-            <ul className="mt-6 flex flex-wrap gap-2" aria-label="Formats disponibles">
-              {SCRIPT_FORMATS.map((f) => (
-                <li key={f.id} className="rounded-full border border-line px-3 py-1.5 text-sm font-medium">
-                  {f.label}
-                </li>
-              ))}
-            </ul>
-            <Callout tone="neutral" className="mt-6" icon={<ShieldCheck className="h-5 w-5 text-gain" aria-hidden="true" />}>
-              Pas de promesse médicale, pas de superlatif inventé, et le rappel #publicité à chaque script.
-            </Callout>
-          </div>
-
-          <figure className="rounded-[1.75rem] border border-line bg-raised p-5 sm:p-6">
-            <figcaption className="text-sm text-muted">
-              Exemple : {formatLabel('demo')} pour «&nbsp;{p.name}&nbsp;»
-            </figcaption>
-            <p className="mt-4 text-sm font-semibold">Accroches</p>
-            <ol className="mt-2 space-y-1.5">
-              {demo.scripts.hooks.slice(0, 3).map((h, i) => (
-                <li key={h.text} className="flex gap-3 rounded-xl bg-surface px-3 py-2.5">
-                  <span className="num text-sm font-bold text-muted">{i + 1}</span>
-                  <span className="font-semibold">{h.text}</span>
-                </li>
-              ))}
-            </ol>
-            <p className="mt-5 text-sm font-semibold">
-              Script 1 · {script.title} · <span className="num">{script.duration_seconds} s</span>
-            </p>
-            <ol className="mt-3 space-y-3">
-              {script.shots.slice(0, 3).map((shot) => (
-                <li key={shot.time} className="grid grid-cols-[4rem_1fr] gap-3 text-sm">
-                  <span className="num h-fit w-fit rounded-full bg-fg px-2 py-0.5 text-xs font-bold text-bg">{shot.time}</span>
-                  <div>
-                    <p className="text-muted">{shot.visual}</p>
-                    <p className="mt-1 font-medium">«&nbsp;{shot.voice}&nbsp;»</p>
+      {/* Comment ça marche */}
+      <section id="comment" className="relative scroll-mt-16 overflow-hidden py-20 sm:py-28">
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-cyan-ink/[0.03] to-transparent" aria-hidden="true" />
+        <div className="relative mx-auto max-w-5xl px-4 sm:px-6">
+          <SectionHeading eyebrow="Comment ça marche" title="Du radar à la vidéo," accent="en trois étapes." />
+          <div className="relative">
+            <div className="absolute left-[calc(16.67%+48px)] right-[calc(16.67%+48px)] top-[44px] hidden h-[2px] md:block" aria-hidden="true">
+              <div className="h-full w-full rounded-full bg-[image:var(--gradient)] opacity-50" />
+              <div className="absolute inset-0 rounded-full bg-[image:var(--gradient)] opacity-30 blur-sm" />
+            </div>
+            <ol className="relative grid gap-6 md:grid-cols-3 md:gap-8">
+              {STEPS.map((step, i) => (
+                <Reveal as="li" key={step.title} delay={i * 0.15}>
+                  <div className="flex flex-col items-center text-center">
+                    <p className="num mb-6 bg-bg px-3 text-7xl font-bold leading-none tracking-tight">
+                      <span className="text-gradient">{String(i + 1).padStart(2, '0')}</span>
+                    </p>
+                    <div className="w-full rounded-2xl border border-line bg-fg/[0.02] p-6 transition-colors hover:border-line-strong hover:bg-fg/[0.03]">
+                      <h3 className="mb-2 text-lg font-bold text-fg">{step.title}</h3>
+                      <p className="text-sm leading-relaxed text-muted">{step.desc}</p>
+                    </div>
                   </div>
-                </li>
+                </Reveal>
               ))}
             </ol>
-            <p className="mt-4 text-sm text-muted">… et 2 autres scripts, chacun avec un angle différent.</p>
-          </figure>
+            <Reveal className="mt-14 text-center">
+              <LinkButton href="/connexion" size="lg" arrow className="shadow-lg shadow-rose/15">
+                Démarrer gratuitement
+              </LinkButton>
+            </Reveal>
+          </div>
         </div>
       </section>
 
-      {/* Prix */}
-      <section className="border-t border-line" aria-labelledby="prix">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
-          <h2 id="prix" className="text-center text-3xl">
-            Commence gratuitement
-          </h2>
-          <p className="mx-auto mt-3 max-w-xl text-center text-muted">Passe Pro quand tu publies tous les jours. Sans engagement.</p>
-          <div className="mt-10">
+      {/* Tarifs */}
+      <section id="prix" className="scroll-mt-16 py-20 sm:py-28">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <SectionHeading
+            eyebrow="Tarifs"
+            title="Commence gratuitement,"
+            accent="passe Pro quand tu publies."
+            subtitle="Sans engagement, résiliable en deux clics."
+          />
+          <Reveal>
             <PricingCards plans={pricingCards()} mode="public" />
-          </div>
+          </Reveal>
         </div>
       </section>
 
       {/* Formateurs */}
-      <section className="bg-ink text-white dark:border-y dark:border-line dark:bg-surface" aria-labelledby="formateurs">
-        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-16 sm:px-6 lg:grid-cols-[1.2fr_1fr] lg:items-center lg:py-20">
-          <div>
-            <h2 id="formateurs" className="text-3xl">
-              Tu es formateur TikTok Shop ?
-            </h2>
-            <p className="mt-4 max-w-xl leading-relaxed text-white/75">
-              Donne à tes élèves l’outil qui leur dit quoi vendre chaque matin. Tu suis leur progression, et tu touches une
-              commission sur leurs abonnements.
-            </p>
-          </div>
-          <div>
-            <ul className="space-y-3">
-              {[
-                `${Math.round(REFERRAL_COMMISSION_RATE * 100)} % de commission récurrente sur tes élèves`,
-                `${Math.round(COACH_TRIAL_DAYS / 30)} mois de Pro offerts à chacun de tes élèves`,
-                'Un espace pour suivre leur progression',
-              ].map((item) => (
-                <li key={item} className="flex items-start gap-2.5">
-                  <Check className="mt-0.5 h-5 w-5 shrink-0 text-[#25F4EE]" aria-hidden="true" />
-                  {item}
-                </li>
-              ))}
-            </ul>
-            <LinkButton href="/formateurs" size="lg" className="mt-6">
-              Devenir partenaire
-            </LinkButton>
-          </div>
+      <section className="py-20 sm:py-28" aria-labelledby="formateurs">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <Reveal>
+            <div className="relative overflow-hidden rounded-3xl border border-line bg-raised p-8 sm:p-12 md:p-16">
+              <div
+                className="pointer-events-none absolute -right-24 -top-24 h-[28rem] w-[28rem] rounded-full blur-3xl"
+                style={{ background: 'radial-gradient(circle, rgba(254,44,85,0.22) 0%, transparent 65%)' }}
+                aria-hidden="true"
+              />
+              <div className="relative grid items-center gap-10 md:grid-cols-2">
+                <div>
+                  <p className="eyebrow mb-3">Formateurs</p>
+                  <h2 id="formateurs" className="text-3xl/tight font-bold text-fg sm:text-4xl/tight">
+                    Tu es formateur
+                    <br />
+                    <span className="text-gradient-live">TikTok Shop&nbsp;?</span>
+                  </h2>
+                  <p className="mt-5 text-base leading-relaxed text-muted">
+                    Donne à tes élèves l’outil qui leur dit quoi vendre chaque matin. Tu suis leur progression, et tu touches une
+                    commission sur leurs abonnements.
+                  </p>
+                </div>
+                <div>
+                  <ul className="space-y-3">
+                    {[
+                      `${Math.round(REFERRAL_COMMISSION_RATE * 100)} % de commission récurrente sur tes élèves`,
+                      `${Math.round(COACH_TRIAL_DAYS / 30)} mois de Pro offerts à chacun de tes élèves`,
+                      'Un espace pour suivre leur progression',
+                    ].map((item) => (
+                      <li key={item} className="flex items-start gap-3 rounded-xl border border-line bg-bg/40 px-4 py-3 text-sm text-fg/90">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-cyan-ink" aria-hidden="true" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                  <LinkButton href="/formateurs" size="lg" arrow className="mt-6">
+                    Devenir partenaire
+                  </LinkButton>
+                </div>
+              </div>
+            </div>
+          </Reveal>
         </div>
       </section>
 
       {/* FAQ */}
-      <section className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:py-24" aria-labelledby="faq">
-        <h2 id="faq" className="text-3xl">
-          Questions fréquentes
-        </h2>
-        <div className="mt-8 divide-y divide-line border-y border-line">
-          {FAQ.map((item) => (
-            <details key={item.q} className="group py-4">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-lg font-semibold">
-                {item.q}
-                <span className="text-2xl font-normal text-muted transition-transform group-open:rotate-45" aria-hidden="true">
-                  +
-                </span>
-              </summary>
-              <p className="mt-3 max-w-prose leading-relaxed text-muted">{item.a}</p>
-            </details>
-          ))}
+      <section className="py-20 sm:py-28" aria-labelledby="faq">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6">
+          <Reveal className="mb-12 text-center">
+            <h2 id="faq" className="mb-2 text-3xl font-bold text-fg sm:text-4xl">
+              Questions fréquentes
+            </h2>
+            <p className="text-sm text-muted">Tout ce qu’il faut savoir avant de commencer.</p>
+          </Reveal>
+          <div className="space-y-3">
+            {FAQ.map((item) => (
+              <FaqItem key={item.q} question={item.q} answer={item.a} />
+            ))}
+          </div>
         </div>
       </section>
     </>

@@ -39,12 +39,12 @@ export function HeroIntro({
       : { initial: { opacity: 0, y }, animate: { opacity: 1, y: 0 }, transition: { duration, delay, ease: EASE } };
 
   return (
-    <div className="relative z-10 mx-auto max-w-4xl px-4 text-center sm:px-6">
+    <div className="relative z-10 mx-auto max-w-5xl px-4 text-center sm:px-6">
       <motion.div {...fade(0, 8, 0.4)}>
         <AnnouncementPill className="mb-10">{pill}</AnnouncementPill>
       </motion.div>
 
-      <h1 className="mb-8 text-[2.6rem] font-bold leading-[1.05] tracking-tight min-[400px]:text-5xl sm:text-6xl md:text-8xl">
+      <h1 className="mb-8 text-[2.6rem]/[1.05] font-bold tracking-tight min-[400px]:text-5xl/[1.05] sm:text-6xl/[1.05] md:text-8xl/[1.05]">
         <span className="sr-only">
           {title} {accent}
         </span>

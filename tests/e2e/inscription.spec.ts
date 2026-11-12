@@ -3,8 +3,8 @@ import { completeOnboarding, signIn, uniqueEmail } from './helpers';
 
 test('inscription : de l’accueil au radar, en mode préparation', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Sache chaque matin quoi vendre');
-  await page.getByRole('link', { name: 'Voir les produits du jour' }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Sache quoi vendre sur TikTok Shop chaque matin.');
+  await page.getByRole('link', { name: 'Démarrer gratuitement' }).first().click();
   await expect(page).toHaveURL(/\/connexion/);
 
   await signIn(page, uniqueEmail('inscription'));

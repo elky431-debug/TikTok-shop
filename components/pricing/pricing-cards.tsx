@@ -40,8 +40,8 @@ export function PricingCards({
 
   return (
     <div>
-      <div className="mb-8 flex justify-center">
-        <div role="radiogroup" aria-label="Période de facturation" className="inline-flex rounded-full bg-surface p-1">
+      <div className="mb-10 flex justify-center">
+        <div role="radiogroup" aria-label="Période de facturation" className="inline-flex rounded-xl border border-line bg-surface p-1">
           {(
             [
               ['month', 'Mensuel'],
@@ -55,18 +55,20 @@ export function PricingCards({
               aria-checked={interval === value}
               onClick={() => setInterval(value)}
               className={cn(
-                'h-10 rounded-full px-5 text-sm font-semibold transition-colors',
-                interval === value ? 'bg-bg text-fg shadow-sm' : 'text-muted hover:text-fg',
+                'h-9 rounded-lg px-5 text-sm font-semibold transition-colors',
+                interval === value ? 'bg-fg text-bg' : 'text-muted hover:text-fg',
               )}
             >
               {label}
-              {value === 'year' ? <span className="ml-1.5 text-gain">−30&nbsp;%</span> : null}
+              {value === 'year' ? (
+                <span className={cn('ml-1.5', interval === value ? 'text-bg/60' : 'text-gain')}>−30&nbsp;%</span>
+              ) : null}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3 lg:items-start">
+      <div className="grid gap-4 lg:grid-cols-3">
         {plans.map((plan) => {
           const highlighted = plan.id === 'pro';
           const current = currentPlan === plan.id;
@@ -74,42 +76,46 @@ export function PricingCards({
             <div
               key={plan.id}
               className={cn(
-                'flex flex-col rounded-2xl p-5 sm:p-6',
-                highlighted ? 'border-2 border-fg bg-raised lg:-mt-3 lg:pb-9' : 'border border-line bg-raised',
-                plan.id === 'free' && 'bg-surface border-transparent',
+                'relative flex flex-col rounded-2xl p-6',
+                highlighted
+                  ? 'gradient-border bg-raised bg-[radial-gradient(ellipse_at_top,_rgba(254,44,85,0.12),_transparent_60%)] shadow-[var(--glow-pink)]'
+                  : 'border border-line bg-raised',
               )}
             >
-              <div className="flex items-center justify-between gap-2">
-                <h3 className="text-xl">{plan.name}</h3>
-                {highlighted ? <span className="rounded-full bg-fg px-2.5 py-0.5 text-xs font-semibold text-bg">Recommandé</span> : null}
-              </div>
-              <p className="mt-1 text-sm text-muted">{plan.tagline}</p>
-              <div className="mt-5 min-h-[4.5rem]">
+              {highlighted ? (
+                <span className="absolute -top-3 right-4 rounded-full border border-rose/40 bg-rose-soft px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-rose-ink">
+                  Recommandé
+                </span>
+              ) : null}
+              <h3 className="text-lg font-semibold text-fg">{plan.name}</h3>
+              <p className="mt-1 text-xs text-muted">{plan.tagline}</p>
+              <div className="mt-5 min-h-[4.25rem]">
                 {plan.id === 'free' ? (
-                  <p className="num text-4xl font-bold">0&nbsp;€</p>
+                  <p className="num text-3xl font-bold text-fg">0&nbsp;€</p>
                 ) : interval === 'month' ? (
-                  <p className="num text-4xl font-bold">
-                    {plan.monthly}
-                    <span className="text-base font-medium text-muted"> / mois</span>
+                  <p className="num flex items-baseline gap-1.5 text-3xl font-bold text-fg">
+                    {plan.monthly}{' '}
+                    <span className="text-sm font-medium text-muted">/ mois</span>
                   </p>
                 ) : (
                   <>
-                    <p className="num text-4xl font-bold">
-                      {plan.yearly}
-                      <span className="text-base font-medium text-muted"> / an</span>
+                    <p className="num flex items-baseline gap-1.5 text-3xl font-bold text-fg">
+                      {plan.yearly}{' '}
+                      <span className="text-sm font-medium text-muted">/ an</span>
                     </p>
-                    <p className="num mt-1 text-sm text-muted">
-                      soit {plan.yearlyMonthly} par mois · <span className="font-semibold text-gain">{plan.yearlySavings} économisés</span>
+                    <p className="num mt-1 text-xs text-muted">
+                      soit {plan.yearlyMonthly} par mois ·{' '}
+                      <span className="font-semibold text-gain">{plan.yearlySavings} économisés</span>
                     </p>
                   </>
                 )}
               </div>
 
-              <ul className="mt-5 flex-1 space-y-2.5 text-sm">
+              <ul className="mt-5 flex-1 space-y-2.5 text-sm text-fg/85">
                 {plan.features.map((f) => (
                   <li key={f.text} className={cn('flex gap-2.5', !f.included && 'text-muted')}>
                     {f.included ? (
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-gain" aria-hidden="true" />
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-cyan-ink" aria-hidden="true" />
                     ) : (
                       <Minus className="mt-0.5 h-4 w-4 shrink-0 text-subtle" aria-hidden="true" />
                     )}

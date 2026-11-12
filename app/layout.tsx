@@ -40,6 +40,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="fr" className={sans.variable} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        {/* Sans JavaScript, les éléments animés à l'apparition restent visibles. */}
+        <noscript>
+          <style>{`[style*="opacity:0"]{opacity:1!important;transform:none!important;filter:none!important}`}</style>
+        </noscript>
       </head>
       <body className="min-h-dvh font-sans">
         <a
