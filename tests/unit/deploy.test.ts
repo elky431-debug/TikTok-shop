@@ -37,6 +37,21 @@ describe('Netlify', () => {
     expect(scheduled.config).toEqual({ schedule: '0 3 * * *' });
   });
 
+  it('planifie la tâche Discord toutes les heures et l’envoie à /api/cron/discord', async () => {
+    const hourly = await import('@/netlify/functions/discord-hourly.mts');
+    expect(hourly.config).toEqual({ schedule: '0 * * * *' });
+    vi.stubEnv('URL', 'https://tiktrend.example');
+    vi.stubEnv('CRON_SECRET', 'secret-cron-test');
+    const fetchMock = vi.fn(async () => new Response(null, { status: 202 }));
+    vi.stubGlobal('fetch', fetchMock);
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    await hourly.default(new Request('https://tiktrend.example', { method: 'POST', body: '{}' }));
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe('https://tiktrend.example/api/cron/discord');
+    expect((init.headers as Record<string, string>).authorization).toBe('Bearer secret-cron-test');
+    vi.unstubAllGlobals();
+  });
+
   it('la fonction planifiée appelle /api/cron/refresh avec CRON_SECRET', async () => {
     vi.stubEnv('URL', 'https://tiktrend.example');
     vi.stubEnv('CRON_SECRET', 'secret-cron-test');

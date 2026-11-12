@@ -69,6 +69,7 @@ export interface LocalData {
   cron_runs: CronRun[];
   emails: LocalEmail[];
   provider_cache: Array<{ key: string; value: unknown; expires_at: string }>;
+  daily_tasks: Array<{ task: string; day: string; claimed_at: string }>;
 }
 
 export function emptyLocalData(): LocalData {
@@ -93,6 +94,7 @@ export function emptyLocalData(): LocalData {
     cron_runs: [],
     emails: [],
     provider_cache: [],
+    daily_tasks: [],
   };
 }
 
@@ -777,6 +779,22 @@ export class LocalRepo implements Repo {
       const before = d.provider_cache.length;
       d.provider_cache = d.provider_cache.filter((e) => e.expires_at > nowIso);
       return before - d.provider_cache.length;
+    });
+  }
+
+  async claimDailyTask(task: string, day: string) {
+    return this.write((d) => {
+      if (d.daily_tasks.some((t) => t.task === task && t.day === day)) return false;
+      d.daily_tasks.push({ task, day, claimed_at: now() });
+      // On ne garde que 30 jours.
+      d.daily_tasks = d.daily_tasks.filter((t) => t.day >= new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10));
+      return true;
+    });
+  }
+
+  async releaseDailyTask(task: string, day: string) {
+    this.write((d) => {
+      d.daily_tasks = d.daily_tasks.filter((t) => !(t.task === task && t.day === day));
     });
   }
 

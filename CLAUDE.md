@@ -48,7 +48,9 @@ leurs élèves (commission de 30 % récurrente, 3 mois de Pro offerts aux élèv
 - E-mails : Resend + React Email (`emails/`). Sans clé : journalisés en console + boîte locale. Lien de connexion
   par Supabase via le SMTP de Resend ; lien affiché à l'écran en local seulement (`isLocalLoginAllowed`). Récap :
   désinscription en un clic (`lib/unsubscribe.ts`, RFC 8058), clé d'idempotence par personne et par jour.
-- Bot Discord : `bot/` (package séparé, discord.js), parle à l'appli via `/api/bot/*` + `BOT_API_SECRET`.
+- Discord sans serveur à héberger (`lib/discord/`) : interactions HTTP signées (Ed25519) sur `/api/discord/interactions`
+  pour `/lier` et `/delier`, API REST depuis la fonction Netlify horaire `discord-hourly` (récaps privés à l'heure de
+  chacun, salons du jour, rôle Pro). `npm run discord:setup` enregistre les commandes et l'adresse des interactions.
 - Tests : Vitest (`tests/unit`), Playwright (`tests/e2e`, 3 parcours), intégration Supabase (`tests/integration`).
 - Déploiement : Netlify (`netlify.toml`, fonction planifiée `netlify/functions/nightly-refresh.mts` à 3 h UTC qui
   appelle `/api/cron/refresh`, travail dans `nightly-refresh-background`), `/api/health`, liste de vérification
@@ -58,7 +60,7 @@ leurs élèves (commission de 30 % récurrente, 3 mois de Pro offerts aux élèv
 
 `profiles`, `products`, `product_snapshots`, `scripts`, `saved_products`, `subscriptions`, `usage`,
 `coaches`, `referrals`, `commissions`, `digests`, `coach_applications`, `discord_link_codes`,
-`billing_events`, `cron_runs`, `provider_cache`. Catalogue (`products`, `product_snapshots`) lisible seulement côté
+`billing_events`, `cron_runs`, `provider_cache`, `daily_tasks`. Catalogue (`products`, `product_snapshots`) lisible seulement côté
 serveur (service role) pour que les limites de plan ne soient pas contournables. Un formateur ne voit
 ses élèves qu'à travers la fonction `coach_students()` (données agrégées, jamais l'e-mail sans
 consentement).
@@ -136,7 +138,8 @@ npm run auth:setup # Supabase réel : retours, modèle du lien magique, SMTP Res
 npm run test:integration  # tests contre les vrais services dont les clés sont là (rien sans clés)
 npm run score:distribution  # distribution des scores sur la base actuelle
 npm run ai:sample  # 3 scripts de test avec le vrai fournisseur d'IA (docs/exemples-scripts/)
-npm run stripe:setup  # crée produits et prix Stripe
+npm run stripe:setup  # produits, prix, portail client (et webhook avec -- --webhook)
+npm run discord:setup # commandes /lier /delier et adresse des interactions Discord
 npm run screenshots   # captures (voir scripts/screenshots.mjs)
 ```
 

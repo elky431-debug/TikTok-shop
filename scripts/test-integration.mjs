@@ -14,7 +14,7 @@ const services = {
   Supabase: has('NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_ROLE_KEY'),
   Resend: has('RESEND_API_KEY', 'EMAIL_FROM', 'ADMIN_EMAILS'),
   Stripe: has('STRIPE_SECRET_KEY'),
-  Discord: has('DISCORD_BOT_TOKEN'),
+  Discord: has('DISCORD_BOT_TOKEN', 'DISCORD_APPLICATION_ID', 'DISCORD_GUILD_ID'),
   Google: has('GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET') && process.env.E2E_GOOGLE === '1',
 };
 const present = Object.entries(services).filter(([, ok]) => ok).map(([name]) => name);

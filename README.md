@@ -255,7 +255,7 @@ laisse les portées (*scopes*) par défaut : elles doivent inclure **Builds** et
 | `NEXSCOPE_API_KEY` | ta clé Nexscope (sinon, produits fictifs signalés comme tels) |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, 4 × `STRIPE_PRICE_…`, `STRIPE_PORTAL_CONFIGURATION` | étape 5 |
 | `RESEND_API_KEY`, `EMAIL_FROM`, `FOUNDER_EMAIL` | étape 6 |
-| `DISCORD_…` | section 4 (Discord) |
+| `DISCORD_…`, `NEXT_PUBLIC_DISCORD_INVITE_URL` | section 4 (Discord) |
 
 Ne mets **jamais** `SUPABASE_DB_URL` ni `SUPABASE_ACCESS_TOKEN` sur Netlify : ils ne servent qu’à `npm run db:setup`,
 depuis ton poste. Après chaque changement de variable, il faut **redéployer** (*Deploys → Trigger deploy → Deploy
@@ -294,20 +294,52 @@ project*) : chaque déploiement garde les valeurs du moment où il a été const
 4. `curl -sS "<NEXT_PUBLIC_SITE_URL>/api/health"` doit répondre `"status":"ok"`.
 5. Le lendemain matin, `/admin` doit montrer une tâche « Planifiée » réussie.
 
-## 4. Lancer le bot Discord
+## 4. Brancher Discord (rien à héberger à part)
 
-Le bot est un service à part, dans `bot/` (il parle à l’appli par HTTP, jamais à la base). Toutes les étapes
-(création du bot, rôle Pro, salons, hébergement) sont dans **`bot/README.md`**. En résumé :
+Le bot n’a **pas de processus permanent** : Discord appelle le site pour les commandes (« interactions HTTP »,
+route `/api/discord/interactions`), et une fonction planifiée Netlify, toutes les heures, envoie les messages par
+l’API de Discord. Pas de serveur à louer, pas de second hébergeur : c’est la solution la plus simple et la moins
+chère (0 € de plus que le site).
 
-```bash
-cd bot
-cp .env.example .env
-npm install
-npm run dev
-```
+Ce qu’il fait :
+- `/lier CODE` : lie un compte Discord à un compte de l’appli (code obtenu sur la page **Récap**, valable 15 minutes,
+  une seule fois) ; `/delier` retire la liaison ;
+- chaque matin, à l’heure choisie par chacun : le récap en **message privé** (Pro et Pro+, si « Discord » est coché
+  dans les réglages du récap), une seule fois par jour ;
+- chaque jour à `DISCORD_PUBLIC_POST_HOUR` (8 h, heure de Paris, par défaut) : 3 produits **masqués** dans le salon
+  public, le radar complet dans le salon Pro ;
+- le rôle Pro suit le plan : tout de suite à la liaison et à chaque changement d’abonnement, et une vérification
+  complète par jour.
 
-Côté appli : `BOT_API_SECRET` (même valeur que dans `bot/.env`) et `NEXT_PUBLIC_DISCORD_INVITE_URL`.
-Héberge-le sur un service qui garde un processus allumé (Railway, Fly.io, Render, VPS) : pas sur Vercel.
+**Pas à pas**
+1. https://discord.com/developers/applications → **New Application** → nomme-la.
+2. **General Information** : copie l’*Application ID* dans `DISCORD_APPLICATION_ID` et la *Public Key* dans
+   `DISCORD_PUBLIC_KEY`.
+3. Onglet **Bot** → **Reset Token** → copie le jeton dans `DISCORD_BOT_TOKEN` (secret : seulement dans `.env.local`
+   et sur Netlify).
+4. **OAuth2 → URL Generator** : coche `bot` et `applications.commands`, puis les permissions *Manage Roles*,
+   *Send Messages*, *Embed Links*. Ouvre l’URL générée et invite le bot sur ton serveur.
+5. Dans ton serveur (Paramètres → Avancés → mode développeur, puis clic droit → *Copier l’identifiant*) :
+   - copie l’identifiant du serveur dans `DISCORD_GUILD_ID` ;
+   - crée un rôle **Pro**, place le rôle du bot **au-dessus**, copie son identifiant dans `DISCORD_PRO_ROLE_ID` ;
+   - crée `#produits-du-jour` (visible par tous) et `#radar-pro` (visible seulement par le rôle Pro), copie leurs
+     identifiants dans `DISCORD_PUBLIC_CHANNEL_ID` et `DISCORD_PRO_CHANNEL_ID` ;
+   - crée un lien d’invitation permanent et mets-le dans `NEXT_PUBLIC_DISCORD_INVITE_URL` (affiché dans l’appli).
+6. Mets toutes ces variables sur Netlify (portées *Builds* et *Functions*), redéploie, puis, en local avec les mêmes
+   valeurs et `NEXT_PUBLIC_SITE_URL` = l’adresse publique :
+
+   ```bash
+   npm run discord:setup
+   ```
+
+   Il enregistre `/lier` et `/delier` sur ton serveur et règle l’adresse des interactions de l’application
+   (`<NEXT_PUBLIC_SITE_URL>/api/discord/interactions`) ; Discord la vérifie aussitôt en envoyant un message signé.
+7. Vérifie : `npm run test:integration` (jeton, adresse, commandes, salons et rôle, en lecture seule), puis tape
+   `/lier` avec un code de la page Récap. Dans Netlify, *Logs & metrics → Functions* : `discord-hourly` porte le badge
+   **Scheduled** ; `discord-hourly-background` journalise chaque heure les récaps envoyés.
+
+Sans `DISCORD_BOT_TOKEN`, rien n’est envoyé et l’appli marche normalement ; chaque partie manquante (salons, rôle) est
+simplement sautée.
 
 ---
 
@@ -317,12 +349,12 @@ Héberge-le sur un service qui garde un processus allumé (Railway, Fly.io, Rend
 app/(public)/       accueil, prix, formateurs, pages légales
 app/app/            l'appli : radar, fiche produit, studio, mes produits, récap, parrainage, compte
 app/formateur/      espace formateur        app/admin/   administration
-app/api/            cron, webhook Stripe, routes du bot, visuels produits
+app/api/            cron, webhook Stripe, interactions Discord, désinscription, visuels produits
 lib/db/             accès aux données (Supabase ou fichier local), une seule interface
 lib/data/           fournisseurs de données produits (mock, TikTok, Nexscope)
 lib/score.ts        score d'opportunité          lib/plans.ts   plans et limites
-lib/ai/             génération des scripts (Claude + simulé), garde-fou
+lib/ai/             génération des scripts (OpenAI, Claude, simulé), garde-fou
 lib/billing/        paiement (Stripe, simulation), indépendant du reste
-emails/             e-mails React Email          bot/          bot Discord
+emails/             e-mails React Email          lib/discord/  Discord (interactions + API REST)
 supabase/           migrations SQL + tests RLS   tests/        Vitest et Playwright
 ```

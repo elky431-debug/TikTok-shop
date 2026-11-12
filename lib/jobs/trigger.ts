@@ -1,3 +1,4 @@
+import { runDiscordHourly, type DiscordRunResult } from '@/lib/discord/jobs';
 import { env } from '@/lib/env';
 import { runNightly, type NightlyResult } from './nightly';
 
@@ -25,4 +26,25 @@ export async function triggerNightly(trigger: 'cron' | 'manuel', fetchImpl: type
     return { queued: true };
   }
   return { queued: false, result: await runNightly({ trigger }) };
+}
+
+/** Lance une fonction d'arrière-plan Netlify (réponse 202 attendue, doc Netlify), protégée par CRON_SECRET. */
+async function queueBackground(name: string, body: unknown, fetchImpl: typeof fetch): Promise<void> {
+  const response = await fetchImpl(`${process.env.URL}/.netlify/functions/${name}`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${env.cronSecret}`, 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (response.status !== 202) throw new Error(`Lancement en arrière-plan refusé (HTTP ${response.status}).`);
+}
+
+/** Tâche horaire Discord : même règle que la tâche nocturne (arrière-plan sur Netlify, directe ailleurs). */
+export async function triggerDiscordHourly(
+  fetchImpl: typeof fetch = fetch,
+): Promise<{ queued: true } | { queued: false; result: DiscordRunResult }> {
+  if (runsOnNetlify() && env.cronSecret) {
+    await queueBackground('discord-hourly-background', {}, fetchImpl);
+    return { queued: true };
+  }
+  return { queued: false, result: await runDiscordHourly() };
 }

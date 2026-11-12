@@ -688,6 +688,17 @@ export class SupabaseRepo implements Repo {
   // ------------------------------------------------------------------
   // Tâches planifiées
   // ------------------------------------------------------------------
+
+  async claimDailyTask(task: string, day: string) {
+    const { error } = await this.db.from('daily_tasks').insert({ task, day });
+    if (!error) return true;
+    if (error.code === '23505') return false;
+    throw new DbError('tâche du jour', error.message);
+  }
+
+  async releaseDailyTask(task: string, day: string) {
+    check('tâche du jour', await this.db.from('daily_tasks').delete().eq('task', task).eq('day', day).select('task'));
+  }
   async startCronRun(job: string, trigger: CronRun['trigger']) {
     return check('tâche', await this.db.from('cron_runs').insert({ job, trigger }).select('*').single()) as CronRun;
   }

@@ -122,6 +122,10 @@ export interface Repo {
   setProviderCache(key: string, value: unknown, expiresAt: string): Promise<void>;
   /** Supprime les entrées expirées ; renvoie le nombre supprimé. */
   purgeProviderCache(): Promise<number>;
+  /** Réserve une tâche quotidienne (une seule fois par jour, même si deux exécutions se chevauchent). */
+  claimDailyTask(task: string, day: string): Promise<boolean>;
+  /** Libère la réservation après un échec, pour réessayer à l'exécution suivante. */
+  releaseDailyTask(task: string, day: string): Promise<void>;
 
   // Tâches planifiées
   startCronRun(job: string, trigger: CronRun['trigger']): Promise<CronRun>;

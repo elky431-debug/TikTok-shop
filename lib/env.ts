@@ -87,14 +87,33 @@ export const env = {
   get discordBotToken() {
     return read('DISCORD_BOT_TOKEN');
   },
+  /** Identifiant de l'application Discord (Developer Portal → General Information → Application ID). */
+  get discordApplicationId() {
+    return read('DISCORD_APPLICATION_ID');
+  },
+  /** Clé publique de l'application : vérifie la signature des interactions (Ed25519). */
+  get discordPublicKey() {
+    return read('DISCORD_PUBLIC_KEY');
+  },
   get discordGuildId() {
     return read('DISCORD_GUILD_ID');
   },
+  get discordPublicChannelId() {
+    return read('DISCORD_PUBLIC_CHANNEL_ID');
+  },
+  get discordProChannelId() {
+    return read('DISCORD_PRO_CHANNEL_ID');
+  },
+  get discordProRoleId() {
+    return read('DISCORD_PRO_ROLE_ID');
+  },
+  /** Heure de Paris de la publication dans les salons « produits du jour » (8 h par défaut). */
+  get discordPublicPostHour() {
+    const hour = Number(read('DISCORD_PUBLIC_POST_HOUR') || 8);
+    return Number.isInteger(hour) && hour >= 0 && hour <= 23 ? hour : 8;
+  },
   get discordInviteUrl() {
     return read('NEXT_PUBLIC_DISCORD_INVITE_URL');
-  },
-  get botApiSecret() {
-    return read('BOT_API_SECRET');
   },
   /**
    * Fournisseur demandé. `auto` (ou vide) : TikTok si ses clés sont là, sinon Nexscope, sinon données fictives.

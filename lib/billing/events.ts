@@ -1,5 +1,6 @@
 import { createElement } from 'react';
 import { PaymentFailedEmail } from '@/emails/payment-failed';
+import { syncDiscordRole } from '@/lib/discord/link';
 import { getRepo, type Repo } from '@/lib/db';
 import type { PlanId, Profile, ReferralStatus, Subscription } from '@/lib/db/types';
 import { sendEmail } from '@/lib/email/send';
@@ -80,6 +81,10 @@ async function onSubscription(repo: Repo, event: SubscriptionChanged): Promise<H
 
   const all = (await repo.listSubscriptions()).filter((s) => s.user_id === profile.id);
   const newPlan = bestPlan(all);
+  // Rôle Pro sur Discord tout de suite (sans attendre la synchronisation du jour) ; jamais bloquant.
+  if (newPlan !== profile.plan && profile.discord_user_id) {
+    await syncDiscordRole({ discord_user_id: profile.discord_user_id, plan: newPlan });
+  }
   await repo.updateProfile(profile.id, {
     plan: newPlan,
     ...(event.customerId && event.provider === 'stripe' && !profile.stripe_customer_id ? { stripe_customer_id: event.customerId } : {}),

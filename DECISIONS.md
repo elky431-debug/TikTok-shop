@@ -777,3 +777,31 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      utilisateur relu chez Stripe était écrasé par celui, vide, de l'événement. `tests/integration/stripe.test.ts`
      refait les mêmes parcours contre le vrai mode test dès qu'une clé `sk_test_` et les prix sont là (les
      événements sont relus par `GET /v1/events`, faute d'adresse publique pour le webhook).
+
+### Étape 6 — Récap et Discord sans serveur
+
+141. **Le bot n'a plus de processus permanent** (dossier `bot/` et routes `/api/bot/*` supprimés, `BOT_API_SECRET`
+     inutile). D'après la doc officielle de Discord (dépôt `discord/discord-api-docs`, discord.com n'étant pas
+     joignable depuis la session) : les commandes peuvent arriver par **interactions HTTP** sur une adresse du site
+     (« Interactions Endpoint URL »), et tout le reste (message privé, salons, rôles) passe par l'API REST avec le
+     jeton du bot. Plus besoin de Railway, Fly.io ou d'un VPS : c'est l'hébergement le plus simple et le moins cher
+     (rien en plus du site). Un bot à connexion permanente (gateway) n'apporterait rien ici : on n'écoute aucun
+     événement du serveur.
+142. **Signature des interactions** : Ed25519 de `X-Signature-Timestamp + corps brut` avec la clé publique de
+     l'application, vérifiée par `node:crypto` (clé brute passée en JWK), 401 sinon ; PING (type 1) → PONG. Réponse
+     immédiate (type 4, drapeau 64 « éphémère ») : Discord exige une réponse en 3 secondes, d'où un délai court
+     (1,5 s) pour l'ajout du rôle pendant `/lier`, rattrapé au besoin par la vérification quotidienne.
+143. **Tâche horaire** (`netlify/functions/discord-hourly.mts`, `0 * * * *`) qui appelle `/api/cron/discord`, puis le
+     travail dans `discord-hourly-background` (même schéma que la tâche nocturne, 15 minutes au plus) :
+     - récap privé quand l'heure de Paris atteint l'heure choisie (`POST /users/@me/channels` puis
+       `POST /channels/{id}/messages`), une seule fois (statut `discord_status` du récap ; 50007 = messages privés
+       fermés → `failed`, pas de nouvel essai) ; le récap e-mail reste programmé la nuit chez Resend à la même heure ;
+     - salons du jour une fois par jour, réservés dans la nouvelle table `daily_tasks` (insertion unique (tâche, jour),
+       libérée en cas d'échec pour réessayer l'heure suivante) ; rien si les données ont plus de 36 h ;
+     - rôle Pro : à la liaison, à chaque changement de plan (traitement des paiements) et une vérification complète
+       par jour (`PUT`/`DELETE /guilds/{guild}/members/{user}/roles/{role}`) ; 10007 « membre inconnu » ignoré.
+144. **Limites de débit** : sur 429, attente de `retry_after` (corps JSON) ou de `Retry-After`, deux nouveaux essais au
+     plus, comme le décrit la doc (`topics/rate-limits`).
+145. `npm run discord:setup` enregistre `/lier` et `/delier` sur le serveur
+     (`PUT /applications/{app}/guilds/{guild}/commands`, prise en compte immédiate contrairement aux commandes
+     globales) et règle `interactions_endpoint_url` (`PATCH /applications/@me`) quand l'adresse du site est publique.

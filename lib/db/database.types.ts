@@ -176,6 +176,24 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_tasks: {
+        Row: {
+          claimed_at: string
+          day: string
+          task: string
+        }
+        Insert: {
+          claimed_at?: string
+          day: string
+          task: string
+        }
+        Update: {
+          claimed_at?: string
+          day?: string
+          task?: string
+        }
+        Relationships: []
+      }
       digests: {
         Row: {
           content: Json

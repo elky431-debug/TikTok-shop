@@ -7,6 +7,7 @@ import { getRepo } from '@/lib/db';
 import { sendDigestEmail } from '@/lib/digest/deliver';
 import { getTodayDigest } from '@/lib/digest/today';
 import { createDiscordLinkCode } from '@/lib/discord';
+import { unlinkDiscordAccount } from '@/lib/discord/link';
 import { getPlan } from '@/lib/plans';
 import { DIGEST_HOURS } from '@/lib/profile-rules';
 
@@ -32,7 +33,7 @@ export async function createDiscordCodeAction() {
 
 export async function unlinkDiscordAction() {
   const { profile } = await requireOnboardedViewer('/app/recap');
-  await getRepo().updateProfile(profile.id, { discord_user_id: null, digest_discord: false });
+  if (profile.discord_user_id) await unlinkDiscordAccount(profile.discord_user_id);
   revalidatePath('/app/recap');
   redirect('/app/recap?ok=delie#discord');
 }
