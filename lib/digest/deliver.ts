@@ -5,7 +5,8 @@ import type { Digest, Profile } from '@/lib/db/types';
 import { sendEmail } from '@/lib/email/send';
 import { env } from '@/lib/env';
 import { getPlan } from '@/lib/plans';
-import { unsubscribeUrls } from '@/lib/unsubscribe';
+import { rememberScheduledEmail } from '@/lib/lifecycle/scheduled';
+import { unsubscribeHeaders, unsubscribeUrls } from '@/lib/unsubscribe';
 import { parisTimeToUtc } from '@/lib/utils';
 
 export function digestSubject(digest: Digest): string {
@@ -52,12 +53,15 @@ export async function sendDigestEmail(profile: Profile, digest: Digest, now = ne
   const due = parisTimeToUtc(digest.day, profile.digest_hour);
   const scheduledAt = due.getTime() > now.getTime() + 60_000 ? due.toISOString() : undefined;
   const links = unsubscribeUrls(profile.id);
-  return sendEmail({
+  const result = await sendEmail({
     to: profile.email,
     subject: digestSubject(digest),
     react: createElement(MorningDigestEmail, { content: digest.content, siteUrl: env.siteUrl, unsubscribeUrl: links.page }),
     scheduledAt,
-    headers: { 'List-Unsubscribe': `<${links.oneClick}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
+    headers: unsubscribeHeaders(profile.id, 'matin'),
     idempotencyKey: `recap-${profile.id}-${digest.day}`,
   });
+  // Gardé pour annuler l'envoi si le compte est supprimé avant l'heure prévue.
+  if (scheduledAt && result.id) await rememberScheduledEmail(profile.id, result.id, scheduledAt).catch(() => undefined);
+  return result;
 }

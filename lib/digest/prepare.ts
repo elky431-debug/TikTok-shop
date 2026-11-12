@@ -5,6 +5,7 @@ import type { Product, Profile, RegionId } from '@/lib/db/types';
 import { regionFor } from '@/lib/regions';
 import { parisDate } from '@/lib/utils';
 import { buildDigestContent, type DigestExtras } from './build';
+import { buildPersonal, type PersonalDigestContent } from './personal';
 
 /** Accroche et script du récap, générés une fois par produit et par nuit (cache), sans coût d'API. */
 export function defaultDigestExtras(day: string): DigestExtras {
@@ -48,7 +49,9 @@ export async function prepareDigests(
       const other = await getLiveCatalog(repo, new Date(), region);
       byRegion.set(region, other.stale || !other.products.length ? catalog.products : other.products);
     }
-    const content = await buildDigestContent(profile, byRegion.get(region)!, day, extras);
+    const base = await buildDigestContent(profile, byRegion.get(region)!, day, extras);
+    // Alertes et baisses depuis la veille, défi du jour (plans de publication, produits suivis).
+    const content: PersonalDigestContent = { ...base, personal: await buildPersonal(profile, base, day, repo) };
     const existing = await repo.getDigest(profile.id, day);
     await repo.upsertDigest({
       user_id: profile.id,

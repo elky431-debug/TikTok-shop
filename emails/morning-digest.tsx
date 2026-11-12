@@ -1,20 +1,45 @@
 /** @jsxRuntime automatic */
 /** @jsxImportSource react */
 import { Button, Heading, Link, Section, Text } from '@react-email/components';
-import type { DigestContent } from '@/lib/db/types';
+import type { DigestNotice, PersonalDigestContent } from '@/lib/digest/personal';
 import { nicheShort } from '@/lib/niches';
 import { TREND_LABELS } from '@/lib/score';
 import { formatEuros, formatGrowth, formatLongDate } from '@/lib/utils';
 import { colors, EmailLayout } from './layout';
 
 export interface MorningDigestProps {
-  content: DigestContent;
+  content: PersonalDigestContent;
   siteUrl: string;
   /** Lien de désinscription en un clic, sans connexion (absent dans l'aperçu de l'appli). */
   unsubscribeUrl?: string;
 }
 
-/** Récap du matin : les meilleurs produits de ses niches, une accroche prête, un bouton vers l'appli. */
+function Notices({ title, items, total, siteUrl, tone }: { title: string; items: DigestNotice[]; total: number; siteUrl: string; tone: string }) {
+  if (!items.length) return null;
+  return (
+    <Section style={{ marginTop: 20 }}>
+      <Text style={{ margin: 0, fontSize: 13, fontWeight: 700, color: tone, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+        {title}
+      </Text>
+      {items.map((n, i) => (
+        <Text key={i} style={{ margin: '8px 0 0', fontSize: 14, lineHeight: '20px' }}>
+          <Link href={`${siteUrl}${n.path}`} style={{ color: colors.ink, fontWeight: 600 }}>
+            {n.title}
+          </Link>
+          {n.body ? <span style={{ color: colors.muted }}> · {n.body}</span> : null}
+        </Text>
+      ))}
+      {total > items.length ? (
+        <Text style={{ margin: '6px 0 0', fontSize: 13, color: colors.muted }}>+ {total - items.length} autres dans tes notifications.</Text>
+      ) : null}
+    </Section>
+  );
+}
+
+/**
+ * Récap du matin : le défi du jour, les meilleurs produits de ses niches, les alertes et produits suivis en baisse depuis
+ * la veille, une accroche prête, un bouton vers l'appli.
+ */
 export function MorningDigestEmail({ content, siteUrl, unsubscribeUrl }: MorningDigestProps) {
   const top = content.products[0];
   const preview = top ? `N°1 aujourd’hui : ${top.name} (${formatGrowth(top.growth_7d)} en 7 jours)` : 'Tes produits du jour sont prêts';
@@ -43,6 +68,18 @@ export function MorningDigestEmail({ content, siteUrl, unsubscribeUrl }: Morning
         <Text style={{ margin: '8px 0 0', fontSize: 14, color: colors.muted }}>
           Produits fictifs : démonstration en attendant le branchement des vraies données.
         </Text>
+      ) : null}
+
+      {content.personal?.challenge ? (
+        <Section style={{ border: `2px solid ${colors.cyan}`, borderRadius: 12, padding: '12px 16px', marginTop: 18 }}>
+          <Text style={{ margin: 0, fontSize: 12, fontWeight: 700, color: colors.cyan, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Défi du jour
+          </Text>
+          <Link href={`${siteUrl}${content.personal.challenge.path}`} style={{ color: colors.ink, textDecoration: 'none' }}>
+            <Text style={{ margin: '4px 0 0', fontSize: 18, fontWeight: 700, lineHeight: '24px' }}>{content.personal.challenge.text}</Text>
+          </Link>
+          <Text style={{ margin: '2px 0 0', fontSize: 13, color: colors.muted }}>{content.personal.challenge.detail}</Text>
+        </Section>
       ) : null}
 
       <Section style={{ marginTop: 20 }}>
@@ -77,6 +114,21 @@ export function MorningDigestEmail({ content, siteUrl, unsubscribeUrl }: Morning
           + {content.locked_count} autres produits dans tes niches avec le plan Pro.
         </Text>
       ) : null}
+
+      <Notices
+        title="Tes alertes depuis hier"
+        items={content.personal?.alerts ?? []}
+        total={content.personal?.alerts_total ?? 0}
+        siteUrl={siteUrl}
+        tone={colors.cyan}
+      />
+      <Notices
+        title="Produits suivis en baisse"
+        items={content.personal?.drops ?? []}
+        total={content.personal?.drops_total ?? 0}
+        siteUrl={siteUrl}
+        tone={colors.rose}
+      />
 
       {content.hook ? (
         <Section style={{ backgroundColor: '#F1F1F2', borderRadius: 12, padding: '14px 16px', marginTop: 20 }}>
