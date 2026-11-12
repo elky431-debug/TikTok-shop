@@ -1,7 +1,10 @@
 import { z } from 'zod';
 import { askStructured } from '@/lib/ai/structured';
+import type { Repo } from '@/lib/db';
 import type { Product } from '@/lib/db/types';
+import { notify } from '@/lib/notify';
 import { NICHE_IDS, nicheLabel, type NicheId } from '@/lib/niches';
+import { getPlan } from '@/lib/plans';
 
 /**
  * Tri des propositions de marques : l'IA lit le message (marque, produit, commission, échantillon, conditions) ;
@@ -36,6 +39,10 @@ export interface OfferScore {
   score: number;
   /** Commission médiane des produits du radar dans la niche, en pourcentage. */
   nicheMedianPercent: number | null;
+  /** Commission moyenne des produits du radar dans la niche, en pourcentage (absente des anciennes fiches). */
+  nicheAveragePercent?: number | null;
+  /** Nombre de produits du radar servant de comparaison. */
+  comparedWith?: number;
   /** Contre-proposition chiffrée (commission en %), null si l'offre est déjà au niveau. */
   counterPercent: number | null;
   reasons: Array<{ tone: 'gain' | 'rose' | 'neutral'; text: string }>;
@@ -50,6 +57,10 @@ export interface OfferData {
   replies: OfferReplies;
   status: OfferStatus;
   simulated: boolean;
+  /** Date de relance choisie (AAAA-MM-JJ) : notification ce jour-là. */
+  follow_up_on?: string | null;
+  /** Date de relance déjà notifiée (évite un deuxième rappel). */
+  follow_up_sent?: string | null;
 }
 
 const median = (values: number[]) => {
@@ -106,7 +117,100 @@ export function scoreOffer(offer: OfferExtraction, radar: Pick<Product, 'niche' 
     med !== null && (offer.commission_percent === null || offer.commission_percent < med)
       ? Math.ceil(Math.max(med, (offer.commission_percent ?? 0) + 5))
       : null;
-  return { score: Math.max(0, Math.min(100, score)), nicheMedianPercent: med === null ? null : Math.round(med * 10) / 10, counterPercent: counter, reasons };
+  const avg = pool.length ? pool.reduce((sum, c) => sum + c, 0) / pool.length : null;
+  return {
+    score: Math.max(0, Math.min(100, score)),
+    nicheMedianPercent: med === null ? null : Math.round(med * 10) / 10,
+    nicheAveragePercent: avg === null ? null : Math.round(avg * 10) / 10,
+    comparedWith: pool.length,
+    counterPercent: counter,
+    reasons,
+  };
+}
+
+export type OfferWarningCode = 'commission_basse' | 'exclusivite' | 'delai_court' | 'echantillon_remboursable';
+
+export interface OfferWarning {
+  code: OfferWarningCode;
+  title: string;
+  text: string;
+}
+
+/** Délai sous lequel une publication demandée est jugée trop courte (tourner, monter, poster). */
+export const SHORT_DEADLINE_DAYS = 7;
+
+/**
+ * Points d'attention avant de répondre : commission sous la moyenne de la niche (médiane pour les anciennes fiches),
+ * exclusivité, délai trop court, échantillon remboursable.
+ */
+export function offerWarnings(offer: OfferExtraction, score: OfferScore): OfferWarning[] {
+  const warnings: OfferWarning[] = [];
+  const reference = score.nicheAveragePercent ?? score.nicheMedianPercent;
+  if (offer.commission_percent !== null && reference !== null && reference !== undefined && offer.commission_percent < reference) {
+    warnings.push({
+      code: 'commission_basse',
+      title: 'Commission sous la moyenne',
+      text: `${fmt(offer.commission_percent)} % proposés, quand les produits du radar ${offer.niche ? `en ${nicheLabel(offer.niche).toLowerCase()}` : 'comparables'} sont à ${fmt(reference)} % en moyenne.`,
+    });
+  }
+  if (offer.exclusivity === true) {
+    warnings.push({ code: 'exclusivite', title: 'Exclusivité', text: 'Tu ne pourrais plus présenter de produits concurrents : demande la durée exacte et ce qu’elle couvre.' });
+  }
+  if (offer.deadline_days !== null && offer.deadline_days < SHORT_DEADLINE_DAYS) {
+    warnings.push({
+      code: 'delai_court',
+      title: 'Délai trop court',
+      text: `${offer.deadline_days} jour${offer.deadline_days > 1 ? 's' : ''} pour publier : compte la livraison de l’échantillon, le tournage et le montage.`,
+    });
+  }
+  if (offer.sample_refundable === true) {
+    warnings.push({
+      code: 'echantillon_remboursable',
+      title: 'Échantillon remboursable',
+      text: 'Tu avances le prix du produit : fais préciser par écrit quand et comment il est remboursé.',
+    });
+  }
+  return warnings;
+}
+
+/** Relance : date valide entre demain et dans un an, sinon null. */
+export function followUpDate(raw: string, today: string): string | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return null;
+  const max = new Date(`${today}T12:00:00Z`);
+  max.setUTCFullYear(max.getUTCFullYear() + 1);
+  return raw > today && raw <= max.toISOString().slice(0, 10) ? raw : null;
+}
+
+/**
+ * Tâche nocturne : le jour de la relance choisie, une notification (centre, push, e-mail) avec le lien vers la
+ * proposition et ses réponses prêtes. Une seule fois par date de relance ; rien pour une proposition acceptée ou refusée.
+ */
+export async function sendOfferFollowUps(date: string, repo: Repo): Promise<number> {
+  let sent = 0;
+  for (const record of await repo.listAllRecords<OfferData>('offre')) {
+    const offer = record.data;
+    if (!offer.follow_up_on || offer.follow_up_on > date || offer.follow_up_sent === offer.follow_up_on) continue;
+    if (offer.status === 'acceptee' || offer.status === 'refusee') continue;
+    const profile = await repo.getProfile(record.user_id);
+    if (!profile || !getPlan(profile.plan).offersPerDay) continue;
+    const brand = offer.extracted.brand ?? 'la marque';
+    const done = await notify(
+      record.user_id,
+      {
+        type: 'rappel',
+        title: `Relance ${brand} aujourd’hui`,
+        body: `Tu voulais relancer ${brand}${offer.extracted.product ? ` pour ${offer.extracted.product}` : ''}. Statut : ${OFFER_STATUS_LABELS[offer.status].toLowerCase()}. Tes réponses sont prêtes à copier.`,
+        path: `/app/offres?offre=${record.id}`,
+        action: 'Ouvrir la proposition',
+        channels: { push: true, email: true, discord: false },
+        dedupeKey: `relance-offre:${record.id}:${offer.follow_up_on}`,
+      },
+      repo,
+    );
+    await repo.saveRecord<OfferData>(record.user_id, 'offre', { ...offer, follow_up_sent: offer.follow_up_on }, record.id);
+    if (done) sent++;
+  }
+  return sent;
 }
 
 const fmt = (n: number) => String(Math.round(n * 10) / 10).replace('.', ',');
