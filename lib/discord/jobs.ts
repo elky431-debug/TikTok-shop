@@ -5,21 +5,26 @@ import { getPlan } from '@/lib/plans';
 import { parisDate, parisHour } from '@/lib/utils';
 import { discordStatus } from './config';
 import { sendPublicationDiscordReminders } from '@/lib/v2/reminders';
+import { getVeilleSelection } from '@/lib/tendances';
+import { postWeeklyLeaderboard, type LeaderboardOutcome } from './leaderboard';
 import { syncDiscordRole } from './link';
-import { channelMessages, digestMessage, type DiscordMessage } from './messages';
+import { digestMessage, proChannelMessage, veilleMessage, type DiscordMessage } from './messages';
 import { DiscordApiError, discordApi } from './rest';
 
 /**
  * Tâche horaire Discord (fonction planifiée Netlify, toutes les heures) :
  * - récaps en message privé des abonnés dont l'heure est arrivée (une fois par jour : statut du récap) ;
- * - salons « produits du jour » à l'heure prévue (une fois par jour : tâche réservée) ;
- * - rôle Pro de chaque compte lié, une fois par jour (la liaison et chaque changement de plan le font déjà sur le coup).
+ * - salons à l'heure prévue (une fois par jour : tâche réservée) : produits d'hier dans le salon public (non-abonnés),
+ *   produits du jour dans le salon Pro (réservé au rôle Pro par les permissions du serveur) ;
+ * - rôle Pro de chaque compte lié, une fois par jour (la liaison et chaque changement de plan le font déjà sur le coup) ;
+ * - classement des séries le lundi (membres inscrits seulement).
  */
 export interface DiscordRunResult {
   dms: { sent: number; failed: number };
   channels: 'publies' | 'deja' | 'pas-encore' | 'donnees-anciennes' | 'non-configure' | 'echec';
   roles: number | null;
   reminders: number;
+  leaderboard: LeaderboardOutcome;
 }
 
 async function send(channelId: string, message: DiscordMessage) {
@@ -67,9 +72,14 @@ export async function postDiscordChannels(repo: Repo, now: Date): Promise<Discor
     const catalog = await getLiveCatalog(repo, now);
     // Données de plus de 36 heures : pas de « produits du jour » (on ne réessaie pas avant demain).
     if (catalog.stale || catalog.products.length === 0) return 'donnees-anciennes';
-    const { teaser, full } = channelMessages({ products: catalog.products, demo: catalog.demo, siteUrl: env.siteUrl });
-    if (env.discordPublicChannelId) await send(env.discordPublicChannelId, teaser);
-    if (env.discordProChannelId) await send(env.discordProChannelId, full);
+    if (env.discordPublicChannelId) {
+      // Non-abonnés : le relevé de la veille (mêmes produits que les pages publiques /tendances), sans score.
+      const veille = await getVeilleSelection(repo, now, { includeDemo: true });
+      if (veille.date && veille.date < catalog.dataDate! && veille.products.length) {
+        await send(env.discordPublicChannelId, veilleMessage({ entries: veille.products, date: veille.date, demo: veille.demo, siteUrl: env.siteUrl }));
+      }
+    }
+    if (env.discordProChannelId) await send(env.discordProChannelId, proChannelMessage({ products: catalog.products, demo: catalog.demo, siteUrl: env.siteUrl }));
     return 'publies';
   } catch (error) {
     console.error('[discord] salons', (error as Error).message);
@@ -97,5 +107,6 @@ export async function runDiscordHourly(opts: { repo?: Repo; now?: Date } = {}): 
     channels: await postDiscordChannels(repo, now),
     roles: await syncAllDiscordRoles(repo, now),
     reminders: await sendPublicationDiscordReminders(parisDate(now), repo, now),
+    leaderboard: await postWeeklyLeaderboard(repo, now),
   };
 }
