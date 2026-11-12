@@ -263,3 +263,18 @@ R6. **Tokens du brief tels quels** (`--bg-elevated`, `--text-muted`, `--gradient
     `--border` / `--border-strong` (blanc à 8 % / 14 %).
 R7. **Échelle typographique et arrondis Tailwind par défaut**, comme EtSmart (text-sm 14 px,
     text-8xl 96 px, rounded-xl 12 px…), au lieu de l'échelle maison précédente.
+
+### Étape 2 — Composants
+
+R8. **En-tête** copié d'EtSmart : fixe, 64 px, noir à 60 % flouté, bordure basse très fine,
+    conteneur de 1 280 px, liens centrés en gris (blancs au survol), pastille de langue (globe cyan,
+    « FR », chevron), « Se connecter » en texte, bouton « Commencer » rose. Menu mobile identique
+    (bouton 36 px bordé, panneau flottant). La pastille de langue ouvre un petit menu « Français »
+    (seule langue en V1) plutôt qu'un faux sélecteur inerte.
+R9. **Logo** : la pépite avec le décalage cyan / rose posée sur un halo radial flou, comme le « e »
+    d'EtSmart, qui grossit et pivote légèrement au survol ; nom en deux tons (« Pé » blanc, « pite » en
+    dégradé), coupe définie par `BRAND_SPLIT` dans `lib/brand.ts`.
+R10. **Boutons** : tous arrondis à 12 px (8 px pour la petite taille de l'en-tête, comme EtSmart).
+     Principal rose : monte de 2 px et allume `--glow-pink` au survol, flèche qui glisse de 4 px.
+     Secondaire : transparent, bordure `--border-strong`, fond `--bg-subtle` au survol.
+R11. **Cases et champs** : accent cyan (case cochée cyan, bordure cyan au focus) au lieu du noir.

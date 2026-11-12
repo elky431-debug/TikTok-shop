@@ -11,3 +11,9 @@ export const BRAND_SLUG = BRAND.normalize('NFD')
   .replace(/[̀-ͯ]/g, '')
   .toLowerCase()
   .replace(/[^a-z0-9]+/g, '-');
+
+/**
+ * Nom en deux tons dans le logo, comme « Ets » + « mart » sur EtSmart :
+ * la première partie en blanc, la seconde en dégradé. Ajuste la coupe si le nom change.
+ */
+export const BRAND_SPLIT: [string, string] = [BRAND.slice(0, 2), BRAND.slice(2)];

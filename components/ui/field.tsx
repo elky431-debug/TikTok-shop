@@ -2,7 +2,7 @@ import type { ComponentProps, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 const control =
-  'w-full rounded-xl border border-line bg-raised px-3.5 text-[0.95rem] text-fg placeholder:text-subtle transition-colors focus:border-fg/40 focus:outline-none focus-visible:outline-2 focus-visible:outline-rose aria-[invalid=true]:border-rose-ink';
+  'w-full rounded-xl border border-line-strong bg-surface px-3.5 text-[0.95rem] text-fg placeholder:text-subtle transition-colors focus:border-cyan-ink/50 focus:outline-none focus-visible:outline-2 focus-visible:outline-cyan aria-[invalid=true]:border-rose-ink';
 
 export function Input({ className, ...props }: ComponentProps<'input'>) {
   return <input className={cn(control, 'h-11', className)} {...props} />;
@@ -79,7 +79,7 @@ export function ChoiceChip({
   return (
     <label
       className={cn(
-        'group relative flex cursor-pointer items-start gap-3 rounded-xl border border-line bg-raised px-4 py-3 transition-colors hover:border-fg/30 has-[:checked]:border-fg has-[:checked]:bg-surface has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-rose',
+        'group relative flex cursor-pointer items-start gap-3 rounded-xl border border-line bg-raised px-4 py-3 transition-colors hover:border-line-strong has-[:checked]:border-cyan-ink/50 has-[:checked]:bg-cyan-ink/[0.06] has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-cyan',
         disabled && 'cursor-not-allowed opacity-50',
         className,
       )}
@@ -95,7 +95,7 @@ export function ChoiceChip({
       <span
         aria-hidden="true"
         className={cn(
-          'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center border-2 border-line transition-colors peer-checked:border-fg peer-checked:bg-fg',
+          'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center border-2 border-line-strong transition-colors peer-checked:border-cyan-ink peer-checked:bg-cyan-ink',
           type === 'radio' ? 'rounded-full' : 'rounded-md',
         )}
       >
