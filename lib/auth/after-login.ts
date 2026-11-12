@@ -13,6 +13,9 @@ export async function finishLogin(user: { id: string; email: string }, next: str
     await applyReferralCode(profile, code);
   }
   await repo.updateProfile(user.id, { last_seen_at: new Date().toISOString() });
+  const destination = safeNextPath(next);
+  // L'admin et les formateurs peuvent aller directement à leur espace, sans onboarding.
+  if (destination.startsWith('/admin') || destination.startsWith('/formateur')) return destination;
   if (!profile.onboarded_at) return '/bienvenue';
-  return safeNextPath(next);
+  return destination;
 }

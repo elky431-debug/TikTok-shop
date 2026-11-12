@@ -179,3 +179,17 @@ Chaque décision prise sans pouvoir demander au fondateur, avec sa raison. Les p
     produit suivi et en tête de « Mes produits ».
 52. **Versement des commissions** : calculées automatiquement, versées par virement mensuel dès
     50 € cumulés (hypothèse business notée dans RAPPORT.md, à confirmer).
+
+## Jalon 7 — Espace formateur et admin
+
+53. **Espace formateur et admin hors de `/app`**, dans une coquille légère : ce sont des outils de
+    pilotage, pas l'expérience quotidienne de l'affilié. Le formateur garde l'accès à l'appli.
+54. **Le formateur ne voit que la vue agrégée** (prénom, plan, statut, nombre de scripts, produits
+    suivis, dernière connexion, e-mail seulement avec consentement), y compris en mode local
+    (même règle que la fonction SQL). Testé.
+55. **Rôle formateur attribué à la main par l'admin**, avec code promo choisi (unicité vérifiée
+    contre les codes formateurs **et** les codes de parrainage, qui partagent le lien `/r/CODE`).
+56. **Admin désigné par `ADMIN_EMAILS`** ; en mode local sans valeur, `admin@pepite.local`. L'admin
+    et les formateurs peuvent se connecter directement à leur espace sans passer par l'onboarding.
+57. **État des services visible dans l'admin** (base, données, scripts, paiement, e-mails) pour savoir
+    d'un coup d'œil ce qui est encore simulé.
