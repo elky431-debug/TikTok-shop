@@ -66,14 +66,13 @@ describe('radar et limites du plan', () => {
     expect(await canAccessProduct(await user('pro'), hidden.id)).toBe(true);
   });
 
-  it('filtre par prix, commission, échantillon et tendance', async () => {
+  it('filtre par prix, commission et tendance', async () => {
     const products = await repo.listProducts();
-    const result = applyFilters(products, parseFilters({ prix: '15-30', commission: '20', echantillon: '1' }));
+    const result = applyFilters(products, parseFilters({ prix: '15-30', commission: '20' }));
     for (const p of result) {
       expect(p.price_cents).toBeGreaterThanOrEqual(1500);
       expect(p.price_cents).toBeLessThanOrEqual(3000);
       expect(p.commission_rate).toBeGreaterThanOrEqual(0.2);
-      expect(p.free_sample).toBe(true);
     }
     expect(parseFilters({ prix: 'n-importe', commission: '7', tendance: 'baisse' })).toEqual({});
     const view = toProductView(products[0], 'free');

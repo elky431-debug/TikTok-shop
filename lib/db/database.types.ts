@@ -304,7 +304,7 @@ export type Database = {
           active_affiliates: number | null
           commission_rate: number
           description: string
-          free_sample: boolean | null
+          details: Json | null
           growth_7d: number
           id: string
           image_url: string
@@ -320,12 +320,13 @@ export type Database = {
           top_videos: Json
           trend: Database["public"]["Enums"]["product_trend"]
           updated_at: string
+          videos_fetched_at: string | null
         }
         Insert: {
           active_affiliates?: number | null
           commission_rate: number
           description?: string
-          free_sample?: boolean | null
+          details?: Json | null
           growth_7d?: number
           id: string
           image_url?: string
@@ -341,12 +342,13 @@ export type Database = {
           top_videos?: Json
           trend?: Database["public"]["Enums"]["product_trend"]
           updated_at?: string
+          videos_fetched_at?: string | null
         }
         Update: {
           active_affiliates?: number | null
           commission_rate?: number
           description?: string
-          free_sample?: boolean | null
+          details?: Json | null
           growth_7d?: number
           id?: string
           image_url?: string
@@ -362,6 +364,7 @@ export type Database = {
           top_videos?: Json
           trend?: Database["public"]["Enums"]["product_trend"]
           updated_at?: string
+          videos_fetched_at?: string | null
         }
         Relationships: []
       }

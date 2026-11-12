@@ -62,6 +62,8 @@ export interface ProviderRequest<T> {
   body?: string;
   /** Clé de cache stable, sans secret. null = pas de cache. */
   cacheKey: string | null;
+  /** Délai propre à cette requête (une route lente de la source), sinon celui du client. */
+  timeoutMs?: number;
   /** Lit la réponse ; lève ProviderHttpError (retryable ou non) sur une erreur. */
   parse: (response: RawResponse) => T;
 }
@@ -196,7 +198,8 @@ export class ProviderClient {
 
   private async send(request: ProviderRequest<unknown>): Promise<RawResponse> {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+    const timeoutMs = request.timeoutMs ?? this.timeoutMs;
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const response = await this.fetchImpl(request.url, {
         method: request.method,
@@ -216,7 +219,7 @@ export class ProviderClient {
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         // Délai dépassé : non rejoué (issue incertaine).
-        throw new ProviderHttpError(`${this.options.provider} : pas de réponse en ${this.timeoutMs / 1000} s`, 0, false);
+        throw new ProviderHttpError(`${this.options.provider} : pas de réponse en ${timeoutMs / 1000} s`, 0, false);
       }
       throw error;
     }

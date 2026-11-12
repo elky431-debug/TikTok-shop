@@ -16,6 +16,7 @@ import type {
   SavedProduct,
   ScriptRecord,
   Subscription,
+  TopVideo,
 } from './types';
 import type { NicheId } from '@/lib/niches';
 import { env } from '@/lib/env';
@@ -69,6 +70,8 @@ const toProduct = (r: Row): Product => ({
   commission_rate: Number(r.commission_rate),
   growth_7d: Number(r.growth_7d),
   top_videos: (r.top_videos ?? []) as Product['top_videos'],
+  videos_fetched_at: r.videos_fetched_at ?? null,
+  details: (r.details ?? null) as Product['details'],
   latest_breakdown: r.latest_breakdown && Object.keys(r.latest_breakdown).length ? r.latest_breakdown : null,
   sales_30d: (r.sales_30d ?? []) as number[],
 });
@@ -221,6 +224,10 @@ export class SupabaseRepo implements Repo {
     return check('produits', await this.db.from('products').select('*').in('id', ids)).map(toProduct);
   }
 
+
+  async updateProductVideos(id: string, videos: TopVideo[], fetchedAt: string) {
+    check('vidéos', await this.db.from('products').update({ top_videos: videos, videos_fetched_at: fetchedAt }).eq('id', id).select('id'));
+  }
   async upsertSnapshots(snapshots: ProductSnapshot[]) {
     for (let i = 0; i < snapshots.length; i += 500) {
       check(

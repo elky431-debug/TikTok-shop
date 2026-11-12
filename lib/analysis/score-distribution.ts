@@ -55,7 +55,7 @@ export function summarize(products: Product[], snapshots: ProductSnapshot[]) {
       today: distribution(list.map((p) => p.latest_score)),
       trends: trendCounts(list),
       missing: Object.fromEntries(
-        ['croissance', 'saturation', 'echantillon'].map((key) => [
+        ['croissance', 'saturation'].map((key) => [
           key,
           list.filter((p) => p.latest_breakdown?.parts.find((part) => part.key === key)?.available === false).length,
         ]),

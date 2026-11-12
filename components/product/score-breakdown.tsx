@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 
 const fr = (n: number) => String(Math.round(n * 10) / 10).replace('.', ',');
 
-/** Liste lisible : « l’échantillon et le nombre d’affiliés ». */
+/** Liste lisible : « la croissance et le nombre d’affiliés ». */
 function joinFr(items: string[]): string {
   return items.length <= 1 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')} et ${items.at(-1)}`;
 }
@@ -12,14 +12,17 @@ function joinFr(items: string[]): string {
 const MISSING_NAMES: Record<string, string> = {
   croissance: 'la croissance',
   saturation: 'le nombre d’affiliés',
-  echantillon: 'l’échantillon gratuit',
 };
+
+/** Ancien critère « échantillon » (retiré, aucune source ne le fournit) : ignoré dans les scores déjà enregistrés. */
+const RETIRED = new Set(['echantillon']);
 
 /**
  * « Pourquoi ce score » : une phrase par critère, avec les points si le plan les montre.
  * Un critère que la source ne fournit pas est signalé, et son poids réparti sur les autres.
  */
-export function ScoreBreakdownList({ breakdown, score }: { breakdown: NonNullable<ProductView['breakdown']>; score?: number | null }) {
+export function ScoreBreakdownList({ breakdown: stored, score }: { breakdown: NonNullable<ProductView['breakdown']>; score?: number | null }) {
+  const breakdown = { ...stored, parts: stored.parts.filter((p) => !RETIRED.has(p.key)) };
   const missing = breakdown.parts.filter((p) => !p.available).map((p) => MISSING_NAMES[p.key] ?? p.label.toLowerCase());
   return (
     <div>

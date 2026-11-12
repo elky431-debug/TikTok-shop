@@ -67,7 +67,6 @@ export function MorningDigestEmail({ content, siteUrl, unsubscribeUrl }: Morning
               <span style={{ color: p.trend === 'baisse' ? colors.rose : colors.cyan }}>
                 {TREND_LABELS[p.trend]} {formatGrowth(p.growth_7d)}
               </span>
-              {p.free_sample ? ' · échantillon gratuit' : ''}
             </Text>
           </Section>
         ))}

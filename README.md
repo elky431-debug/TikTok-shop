@@ -65,6 +65,7 @@ Pour tester l’essai formateur : ouvre http://localhost:3000/r/DEMO30 puis insc
 | `npm run test:integration` | tests contre les vrais services présents (Supabase, Resend…) ; ne lance rien sans clés |
 | `npm run ai:sample` | 3 scripts de test avec le vrai fournisseur d’IA, français relu, dans `docs/exemples-scripts/` |
 | `npm run score:distribution` | distribution des scores sur la base actuelle |
+| `npm run data:enrich -- --videos 3` | complète les produits réels en base : ventes par période, vidéos des N meilleurs (appels payants) |
 | `npm run check:sql` | applique les migrations sur un Postgres jetable et teste la RLS (si PostgreSQL est installé) |
 | `npm run stripe:setup` | crée les produits et prix Stripe, affiche les identifiants à copier |
 | `npm run screenshots` | captures d’écran des pages principales (voir l’en-tête de `scripts/screenshots.mjs`) |
@@ -202,7 +203,8 @@ premier de `ADMIN_EMAILS`).
 
 - **Nexscope** (la voie réaliste aujourd’hui pour la France) : crée une clé sur
   https://www.nexscope.ai/seller/api-access et mets-la dans `NEXSCOPE_API_KEY`. Chaque nuit : 7 niches ×
-  `DATA_PAGES_PER_NICHE` pages de 10 produits, plus les vidéos des `DATA_VIDEO_PRODUCTS` meilleurs produits.
+  `DATA_PAGES_PER_NICHE` pages de 10 produits, plus les vidéos des `NEXSCOPE_MAX_VIDEO_CALLS_PER_NIGHT` meilleurs produits (10 par défaut, sauf ceux chargés
+  il y a moins de 3 jours) et les ventes par période des produits qui ont moins de 7 jours de relevés.
   Chaque appel coûte des crédits Nexscope : règle `DATA_MAX_CALLS_PER_NIGHT` en conséquence.
 - **API officielle TikTok Shop** (`TIKTOK_APP_KEY`, `TIKTOK_APP_SECRET`, `TIKTOK_ACCESS_TOKEN`) : application
   créée sur le Partner Center, API « Affiliate Creator » activée par TikTok, et jeton d’un compte créateur qui a

@@ -26,7 +26,6 @@ const product = {
   description: 'Flacon de 30 ml.',
   price_cents: 1990,
   commission_rate: 0.2,
-  free_sample: true,
   shop_name: 'Atelier Test',
 };
 const input = { product, format: 'demo' as const, style: 'face_camera', examplePhrase: null, firstName: 'Léa', topVideos: [] };

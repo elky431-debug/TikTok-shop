@@ -123,7 +123,6 @@ export function mapTikTokProduct(raw: TikTokOpenProduct, niche?: NicheId | null)
       price_cents: priceCents,
       // Centièmes de pour cent : 3587 = 35,87 %.
       commission_rate: Math.min(1, rate / 10_000),
-      free_sample: null,
       active_affiliates: null,
       image_url: image,
       estimated_sales: null,

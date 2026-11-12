@@ -1,0 +1,229 @@
+{
+  "code": 0,
+  "msg": "ok",
+  "data": {
+    "total": 2,
+    "data": [
+      {
+        "productId": "1729948256989124949",
+        "totalVideoSaleCnt": 200,
+        "videoDesc": "",
+        "dataSize": "14102633",
+        "videoId": "7704347066079677729",
+        "totalDiggCnt": 2546,
+        "userId": "10000000000000000",
+        "officialUrl": "https://www.tiktok.com/@createur.exemple0/video/7704347066079677729",
+        "coverUrl": "https://agent-files.linkfox.com/tiktok/20261112/7704347066079677729.jpg",
+        "duration": 58,
+        "totalSharesCnt": 683,
+        "totalVideoSaleGmvAmt": 7901,
+        "sourceType": "Tiktok",
+        "totalFavoritesCnt": 1278,
+        "playAddr": "https://v45.tiktokcdn-eu.com/exemple/video/tos",
+        "totalViewsCnt": 1373460,
+        "width": "576",
+        "totalCommentsCnt": 55,
+        "region": "FR",
+        "createDate": "2026-11-05 00:01:31",
+        "ratio": "540p",
+        "height": "1024"
+      },
+      {
+        "productId": "1729948256989124949",
+        "totalVideoSaleCnt": 53,
+        "videoDesc": "Ma routine du soir avec ce sérum #skincare #tiktokshop",
+        "dataSize": "1475816",
+        "videoId": "7699917904954821921",
+        "totalDiggCnt": 621,
+        "userId": "10000000000000001",
+        "officialUrl": "https://www.tiktok.com/@createur.exemple1/video/7699917904954821921",
+        "coverUrl": "https://agent-files.linkfox.com/tiktok/20261112/7699917904954821921.jpg",
+        "duration": 17,
+        "totalSharesCnt": 105,
+        "totalVideoSaleGmvAmt": 1969,
+        "sourceType": "Tiktok",
+        "totalFavoritesCnt": 233,
+        "playAddr": "https://v45.tiktokcdn-eu.com/exemple/video/tos",
+        "totalViewsCnt": 529386,
+        "width": "576",
+        "totalCommentsCnt": 24,
+        "region": "FR",
+        "createDate": "2026-10-24 01:34:07",
+        "ratio": "540p",
+        "height": "1024"
+      }
+    ],
+    "columns": [
+      {
+        "filterable": true,
+        "cellType": "text",
+        "field": "videoId",
+        "sortable": true,
+        "title": "视频ID"
+      },
+      {
+        "filterable": true,
+        "cellType": "text",
+        "field": "officialUrl",
+        "sortable": true,
+        "title": "TikTok官方视频地址"
+      },
+      {
+        "filterable": true,
+        "cellType": "text",
+        "field": "productId",
+        "sortable": true,
+        "title": "商品ID"
+      },
+      {
+        "filterable": true,
+        "cellType": "text",
+        "field": "userId",
+        "sortable": true,
+        "title": "达人ID"
+      },
+      {
+        "filterable": true,
+        "cellType": "text",
+        "field": "videoDesc",
+        "sortable": true,
+        "title": "视频描述"
+      },
+      {
+        "filterable": true,
+        "cellType": "text",
+        "field": "hashTag",
+        "sortable": true,
+        "title": "话题标签"
+      },
+      {
+        "filterable": true,
+        "cellType": "text",
+        "field": "createDate",
+        "sortable": true,
+        "title": "视频发布日期"
+      },
+      {
+        "filterable": true,
+        "cellType": "text",
+        "field": "coverUrl",
+        "sortable": true,
+        "title": "视频封面URL"
+      },
+      {
+        "filterable": true,
+        "cellType": "text",
+        "field": "playAddr",
+        "sortable": true,
+        "title": "视频播放地址(可能过期)"
+      },
+      {
+        "filterable": true,
+        "cellType": "text",
+        "field": "region",
+        "sortable": true,
+        "title": "区域代码"
+      },
+      {
+        "filterable": true,
+        "cellType": "number",
+        "field": "duration",
+        "sortable": true,
+        "title": "视频时长(秒)"
+      },
+      {
+        "filterable": true,
+        "cellType": "text",
+        "field": "ratio",
+        "sortable": true,
+        "title": "视频清晰度"
+      },
+      {
+        "filterable": true,
+        "cellType": "text",
+        "field": "width",
+        "sortable": true,
+        "title": "视频宽度"
+      },
+      {
+        "filterable": true,
+        "cellType": "text",
+        "field": "height",
+        "sortable": true,
+        "title": "视频高度"
+      },
+      {
+        "filterable": true,
+        "cellType": "text",
+        "field": "dataSize",
+        "sortable": true,
+        "title": "视频文件大小"
+      },
+      {
+        "filterable": true,
+        "cellType": "number",
+        "field": "totalViewsCnt",
+        "sortable": true,
+        "title": "播放量"
+      },
+      {
+        "filterable": true,
+        "cellType": "number",
+        "field": "totalDiggCnt",
+        "sortable": true,
+        "title": "点赞数"
+      },
+      {
+        "filterable": true,
+        "cellType": "number",
+        "field": "totalCommentsCnt",
+        "sortable": true,
+        "title": "评论数"
+      },
+      {
+        "filterable": true,
+        "cellType": "number",
+        "field": "totalSharesCnt",
+        "sortable": true,
+        "title": "分享数"
+      },
+      {
+        "filterable": true,
+        "cellType": "number",
+        "field": "totalFavoritesCnt",
+        "sortable": true,
+        "title": "收藏数"
+      },
+      {
+        "filterable": true,
+        "cellType": "number",
+        "field": "totalVideoSaleCnt",
+        "sortable": true,
+        "title": "视频销量(估算)"
+      },
+      {
+        "filterable": true,
+        "cellType": "number",
+        "field": "totalVideoSaleGmvAmt",
+        "sortable": true,
+        "title": "视频销售GMV(估算)"
+      },
+      {
+        "filterable": true,
+        "cellType": "text",
+        "field": "sourceTool",
+        "sortable": true,
+        "title": "来源工具"
+      },
+      {
+        "filterable": true,
+        "cellType": "text",
+        "field": "sourceType",
+        "sortable": true,
+        "title": "商品来源"
+      }
+    ],
+    "type": "tableListWorkbenches"
+  },
+  "cost": "11621"
+}

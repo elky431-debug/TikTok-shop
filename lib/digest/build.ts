@@ -13,7 +13,6 @@ export interface DigestExtras {
 function reason(product: Product): string {
   const measured = product.latest_breakdown ? product.latest_breakdown.growth_7d !== null : true;
   const bits = [measured ? `${TREND_LABELS[product.trend]} · ${formatGrowth(product.growth_7d)} en 7 jours` : 'Nouveau dans le radar, tendance en mesure'];
-  if (product.free_sample) bits.push('échantillon gratuit');
   return bits.join(' · ');
 }
 
@@ -37,7 +36,6 @@ export async function buildDigestContent(
     score: plan.showScore ? p.latest_score : null,
     trend: p.trend,
     growth_7d: p.growth_7d,
-    free_sample: p.free_sample,
     reason: reason(p),
   }));
   const top = chosen[0];

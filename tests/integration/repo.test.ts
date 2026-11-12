@@ -26,9 +26,10 @@ function product(n: number, score: number): Product {
     price_cents: 1990 + n,
     commission_rate: 0.15,
     active_affiliates: n === 1 ? null : 12 * n, // inconnu chez certaines sources
-    free_sample: n === 1 ? null : n % 2 === 0,
     image_url: '',
     top_videos: [],
+    videos_fetched_at: null,
+    details: null,
     snapshot_date: '2026-11-12',
     latest_score: score,
     latest_breakdown: breakdown(score),
@@ -105,7 +106,6 @@ describe.skipIf(!supabaseReady)('SupabaseRepo contre la vraie base', () => {
     const one = await repo.getProduct(products[0].id);
     expect(one?.commission_rate).toBe(0.15);
     expect(one?.active_affiliates).toBeNull();
-    expect(one?.free_sample).toBeNull();
     expect(one?.latest_breakdown?.total).toBe(91);
     expect((await repo.getProducts(products.map((p) => p.id))).length).toBe(products.length);
     expect((await repo.listProducts({ niches: ['animaux'] })).some((p) => p.id === products[0].id)).toBe(true);

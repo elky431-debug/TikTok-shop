@@ -25,8 +25,7 @@ function product(overrides: Partial<ScoreInput> = {}): ScoreInput {
     id: 'p',
     niche: 'beaute',
     price_cents: 2490,
-    commission_rate: 0.15,
-    free_sample: false,
+    commission_rate: 0.15, 
     affiliates: 50,
     sales: rising(100, 150),
     ...overrides,
@@ -34,9 +33,11 @@ function product(overrides: Partial<ScoreInput> = {}): ScoreInput {
 }
 
 describe('poids', () => {
-  it('totalisent 100', () => {
-    expect(Object.values(WEIGHTS).reduce((a, b) => a + b, 0)).toBe(100);
-    expect(WEIGHTS).toEqual({ croissance: 35, commission: 25, saturation: 20, prix: 10, echantillon: 10 });
+  it('gardent 35/25/20/10 sans l’échantillon (retiré), réparti au prorata sur 100', () => {
+    expect(Object.values(WEIGHTS).reduce((a, b) => a + b, 0)).toBe(90);
+    const applied = scoreOne(product({}), 0.5).parts.reduce((sum, p) => sum + (p.applied_weight ?? 0), 0);
+    expect(Math.round(applied)).toBe(100);
+    expect(WEIGHTS).toEqual({ croissance: 35, commission: 25, saturation: 20, prix: 10 });
   });
 });
 
@@ -133,12 +134,12 @@ describe('composantes', () => {
 describe('score complet', () => {
   it('donne 100 au produit parfait et 0 au pire', () => {
     const best = scoreOne(
-      product({ commission_rate: 0.3, free_sample: true, affiliates: 5, sales: rising(100, 400), price_cents: 2990 }),
+      product({ commission_rate: 0.3,  affiliates: 5, sales: rising(100, 400), price_cents: 2990 }),
       1,
     );
     expect(best.total).toBe(100);
     const worst = scoreOne(
-      product({ commission_rate: 0.05, free_sample: false, affiliates: 5000, sales: rising(100, 50), price_cents: 500 }),
+      product({ commission_rate: 0.05,  affiliates: 5000, sales: rising(100, 50), price_cents: 500 }),
       0,
     );
     expect(worst.total).toBe(0);
@@ -147,14 +148,14 @@ describe('score complet', () => {
   it('plafonne la croissance d’un produit en baisse', () => {
     const declining = scoreOne(product({ sales: rising(100, 60) }), 1);
     const part = declining.parts.find((p) => p.key === 'croissance')!;
-    expect(part.points).toBeLessThanOrEqual(17.5);
+    // Plafond : la moitié des points de croissance (poids 35 sur 90, ramené à 38,9 sur 100).
+    expect(part.points).toBeLessThanOrEqual(19.5);
   });
 
   it('explique chaque composante en phrase', () => {
-    const b = scoreOne(product({ free_sample: true }), 0.9);
-    expect(b.parts).toHaveLength(5);
+    const b = scoreOne(product({}), 0.9);
+    expect(b.parts).toHaveLength(4);
     for (const part of b.parts) expect(part.sentence.length).toBeGreaterThan(20);
-    expect(b.parts.find((p) => p.key === 'echantillon')!.sentence).toMatch(/Échantillon gratuit disponible/);
     expect(b.parts.find((p) => p.key === 'commission')!.sentence).toMatch(/3,74/);
     expect(b.summary.length).toBeGreaterThan(10);
   });
@@ -186,8 +187,7 @@ describe('score complet', () => {
           commission_rate: Math.random() * 0.4,
           affiliates: Math.floor(Math.random() * 5000),
           price_cents: 500 + Math.floor(Math.random() * 15000),
-          sales: Array.from({ length: 14 }, () => Math.floor(Math.random() * 1000)),
-          free_sample: Math.random() > 0.5,
+          sales: Array.from({ length: 14 }, () => Math.floor(Math.random() * 1000)), 
         }),
         Math.random(),
       );
@@ -199,12 +199,12 @@ describe('score complet', () => {
 
 describe('critères non fournis par la source', () => {
   it('ignore le critère et répartit son poids au prorata', () => {
-    const b = scoreOne(product({ affiliates: null, free_sample: null }), 0.8);
+    const b = scoreOne(product({ affiliates: null }), 0.8);
     const unavailable = b.parts.filter((p) => p.available === false).map((p) => p.key);
-    expect(unavailable.sort()).toEqual(['echantillon', 'saturation']);
+    expect(unavailable.sort()).toEqual(['saturation']);
     const applied = Object.fromEntries(b.parts.map((p) => [p.key, p.applied_weight]));
     // 35 + 25 + 10 = 70 points disponibles, ramenés à 100.
-    expect(applied).toEqual({ croissance: 50, commission: 35.7, saturation: 0, prix: 14.3, echantillon: 0 });
+    expect(applied).toEqual({ croissance: 50, commission: 35.7, saturation: 0, prix: 14.3 });
     for (const part of b.parts.filter((p) => p.available === false)) {
       expect(part.points).toBe(0);
       expect(part.sentence).toMatch(/réparti sur les autres critères/);
@@ -214,7 +214,7 @@ describe('critères non fournis par la source', () => {
   });
 
   it('sans historique ni cumuls : la croissance attend, le reste compte', () => {
-    const b = scoreOne(product({ sales: [], affiliates: null, free_sample: null }), 0);
+    const b = scoreOne(product({ sales: [], affiliates: null }), 0);
     expect(b.growth_7d).toBeNull();
     expect(b.daily_sales_7d).toBeNull();
     expect(b.parts.find((p) => p.key === 'croissance')!.sentence).toMatch(/pas encore mesurable/);
@@ -231,8 +231,7 @@ describe('échelle du jour (15 à 90)', () => {
         commission_rate: 0.05 + ((i * 7) % 26) / 100,
         affiliates: (i * 37) % 900,
         price_cents: 600 + ((i * 1234) % 9000),
-        sales: Array.from({ length: 14 }, (_, d) => 20 + ((i * 13 + d * (i % 5)) % 200)),
-        free_sample: i % 3 === 0,
+        sales: Array.from({ length: 14 }, (_, d) => 20 + ((i * 13 + d * (i % 5)) % 200)), 
       }),
     );
 

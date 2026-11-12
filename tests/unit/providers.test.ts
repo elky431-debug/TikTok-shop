@@ -9,19 +9,22 @@ import {
   checkNexscopeResponse,
   findList,
   mapNexscopeProduct,
+  mapNexscopeDetails,
   mapNexscopeVideo,
   type NexscopeDiscoveryProduct,
 } from '@/lib/data/nexscope';
 import type { ProductDataProvider, ProviderProduct } from '@/lib/data/provider';
 import { TikTokProvider, mapTikTokProduct, parseCategoryMap, signTikTokRequest, type TikTokOpenProduct } from '@/lib/data/tiktok';
 import { LocalRepo } from '@/lib/db/local';
+import { periodBars } from '@/lib/product-periods';
 import type { Product } from '@/lib/db/types';
 import { refreshCatalog } from '@/lib/jobs/refresh';
 
 const fixture = (name: string) => JSON.parse(readFileSync(path.join(__dirname, '..', 'fixtures', name), 'utf8'));
 const tiktokFixture = fixture('tiktok-search-open-collaboration-products.json');
 const nexscopeFixture = fixture('nexscope-tiktok-product-discovery.json');
-const videoFixture = fixture('nexscope-tiktok-video-search.json');
+const videoFixture = fixture('nexscope-et-list-product-video.reel.json');
+const detailFixture = fixture('nexscope-et-batch-product-detail.reel.json');
 
 const SECRETS = { TIKTOK_APP_KEY: 'cle-app-test', TIKTOK_APP_SECRET: 'secret-app-test', TIKTOK_ACCESS_TOKEN: 'jeton-createur-test', NEXSCOPE_API_KEY: 'cle-nexscope-test' };
 
@@ -55,7 +58,6 @@ describe('TikTok Shop : correspondance des champs (réponse d’exemple)', () =>
         shop_name: 'Boutique Exemple Beauté',
         price_cents: 2460, // prix promo le plus bas
         commission_rate: 0.15, // 1500 centièmes de pour cent
-        free_sample: null, // non fourni par cette API
         active_affiliates: null, // non fourni par cette API
         image_url: products[0].main_image_url,
         estimated_sales: null,
@@ -180,7 +182,6 @@ describe('Nexscope : correspondance des champs (réponse d’exemple)', () => {
         shop_name: 'Boutique Exemple Lèvres',
         price_cents: 1290,
         commission_rate: 0.18,
-        free_sample: null, // aucun champ chez Nexscope
         active_affiliates: 212, // totalIflCnt
         image_url: products[0].imageUrl,
         estimated_sales: 330, // 2 310 ventes sur 7 jours ÷ 7 (totalSale1dCnt n'est pas fiable, voir la vraie réponse)
@@ -209,12 +210,42 @@ describe('Nexscope : correspondance des champs (réponse d’exemple)', () => {
     expect(mapNexscopeProduct(products[3], 'beaute')).toEqual({ ok: false, reason: 'région ES' });
   });
 
-  it('lit les vidéos sans données du créateur', () => {
+  it('lit les vidéos de la vraie réponse (listProductVideo), sans données du créateur', () => {
     const videos = (findList(videoFixture, 'data') ?? []).map(mapNexscopeVideo);
-    expect(videos).toEqual([
-      { title: 'Je teste le gloss repulpant pendant 7 jours #gloss', views: 182000, estimated_sales: 640, hook: null, format: 'Vidéo' },
-      { title: 'Vidéo sans description', views: 950000, estimated_sales: 1210, hook: null, format: 'Vidéo' },
+    expect(videos[0]).toEqual({
+      title: 'Vidéo sans description',
+      views: 1373460,
+      estimated_sales: 200,
+      hook: null,
+      format: 'Vidéo',
+      url: 'https://www.tiktok.com/@createur.exemple0/video/7704347066079677729',
+      duration_s: 58,
+      likes: 2546,
+      shares: 683,
+      published_at: '2026-11-05',
+      cover_url: 'https://agent-files.linkfox.com/tiktok/20261112/7704347066079677729.jpg',
+    });
+    expect(videos[1]).toMatchObject({ title: 'Ma routine du soir avec ce sérum #skincare #tiktokshop', estimated_sales: 53, duration_s: 17 });
+    expect(JSON.stringify(videos)).not.toContain('1000000000000000');
+  });
+
+  it('lit les ventes par période, la note et le premier relevé (batchProductDetail)', () => {
+    const [first, second] = (findList(detailFixture, 'products') ?? []).map((raw) => mapNexscopeDetails(raw, '2026-11-12T03:00:00Z'));
+    expect(first).toEqual({
+      sales: { d1: 203, d7: 203, d15: 203, d30: 203, d60: 203, d90: 203 },
+      first_seen: '2026-11-10',
+      rating: 4.9,
+      review_count: 105,
+      fetched_at: '2026-11-12T03:00:00Z',
+    });
+    // Premier relevé le 27 octobre : au 12 novembre, seules les périodes de 24 h, 7 et 15 jours veulent dire quelque chose.
+    expect(periodBars(second, '2026-11-12').map((b) => [b.label, b.perDay])).toEqual([
+      ['24 h', 3602],
+      ['7 j', 1550.7],
+      ['15 j', 1072.3],
     ]);
+    // Vu depuis 3 jours seulement : la seule période parlante est la dernière journée.
+    expect(periodBars(first, '2026-11-12').map((b) => b.label)).toEqual(['24 h']);
   });
 
   it('rejoue le code 13012 mais pas une clé refusée', () => {
@@ -263,7 +294,6 @@ describe('Nexscope : vraie réponse enregistrée (12 novembre 2026)', () => {
       estimated_sales: Math.round(5001 / 7),
       units_sold_total: products[0].totalSaleCnt,
       sales_windows: { last7: 5001, prev7: (9982 - 5001) / 3 },
-      free_sample: null,
     });
     expect(first?.description).toBe('Catégorie TikTok Shop : Beauty & Personal Care › Perfume › Unisex Perfume');
     expect(new URL(first!.image_url).hostname).toBe('agent-files.linkfox.com');
@@ -294,7 +324,6 @@ describe('Tâche nocturne avec une source réelle', () => {
     shop_name: '',
     price_cents: 2490,
     commission_rate: 0.15,
-    free_sample: null,
     active_affiliates: null,
     image_url: '',
     estimated_sales: null,
@@ -313,11 +342,10 @@ describe('Tâche nocturne avec une source réelle', () => {
     await refreshCatalog({ repo, date: '2026-11-10', provider: fakeProvider([base]) });
     const product = (await repo.getProduct('tts-1'))!;
     expect(product.active_affiliates).toBeNull();
-    expect(product.free_sample).toBeNull();
     expect(product.sales_30d).toEqual([]);
     expect(product.latest_breakdown?.growth_7d).toBeNull();
     const unavailable = product.latest_breakdown!.parts.filter((p) => p.available === false).map((p) => p.key);
-    expect(unavailable.sort()).toEqual(['croissance', 'echantillon', 'saturation']);
+    expect(unavailable.sort()).toEqual(['croissance', 'saturation']);
     // Le poids des critères manquants est réparti : commission et prix se partagent les 100 points.
     const applied = product.latest_breakdown!.parts.reduce((sum, p) => sum + (p.applied_weight ?? 0), 0);
     expect(applied).toBeCloseTo(100, 0);
@@ -364,10 +392,11 @@ describe('Catalogue montré : jamais de fictif présenté comme réel', () => {
     shop_name: '',
     price_cents: 1500,
     commission_rate: 0.1,
-    free_sample: null,
     active_affiliates: null,
     image_url: '',
     top_videos: [],
+    videos_fetched_at: null,
+    details: null,
     snapshot_date: date,
     latest_score: 50,
     latest_breakdown: null,

@@ -4,7 +4,6 @@ import {
   Check,
   Clapperboard,
   Gauge,
-  Gift,
   HandCoins,
   ListChecks,
   Radar,
@@ -46,12 +45,12 @@ const FEATURES = [
       {
         icon: Gauge,
         title: 'Score expliqué',
-        desc: 'Un score sur 100 avec le pourquoi en phrases : croissance, commission, concurrence, prix, échantillon.',
+        desc: 'Un score sur 100 avec le pourquoi en phrases : croissance, commission, concurrence, prix.',
       },
       {
-        icon: Gift,
-        title: 'Échantillons gratuits',
-        desc: 'Repère les produits avec échantillon et demande-le avec un message prêt à copier.',
+        icon: Clapperboard,
+        title: 'Vidéos qui vendent',
+        desc: 'Pour chaque produit phare, les vidéos qui ont le plus vendu, avec leurs vues et leur durée.',
       },
       { icon: BellRing, title: 'Alertes de baisse', desc: 'Tu sais quand un produit que tu suis commence à retomber.' },
     ],
@@ -82,7 +81,7 @@ const FEATURES = [
 const STEPS = [
   {
     title: 'Chaque nuit, on analyse',
-    desc: 'Chaque nuit, on passe en revue les produits ouverts à l’affiliation en France : ventes estimées, commission, affiliés, échantillons.',
+    desc: 'Chaque nuit, on passe en revue les produits ouverts à l’affiliation en France : ventes estimées, commission, affiliés, vidéos qui vendent.',
   },
   {
     title: 'Le matin, tu sais quoi vendre',

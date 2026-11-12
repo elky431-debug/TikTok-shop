@@ -8,8 +8,9 @@ import { clamp, formatEuros, formatGrowth, formatInt } from '@/lib/utils';
  *  - 25 % taux de commission
  *  - 20 % faible saturation (peu d'affiliés par rapport aux ventes)
  *  - 10 % prix dans la zone 15 à 60 €
- *  - 10 % échantillon gratuit disponible
- * Le détail est toujours expliqué en phrases simples.
+ * Le critère « échantillon gratuit » (10 %) prévu au départ est retiré : aucune source ne le fournit (Nexscope n'a
+ * aucun champ pour cela, l'API TikTok non plus). Comme pour tout critère absent, son poids est réparti au prorata :
+ * 38,9 / 27,8 / 22,2 / 11,1. Le détail est toujours expliqué en phrases simples.
  */
 
 export const WEIGHTS = {
@@ -17,7 +18,6 @@ export const WEIGHTS = {
   commission: 25,
   saturation: 20,
   prix: 10,
-  echantillon: 10,
 } as const;
 
 /**
@@ -45,8 +45,6 @@ export interface ScoreInput {
   niche: NicheId;
   price_cents: number;
   commission_rate: number;
-  /** null = la source ne le dit pas : critère « échantillon » ignoré. */
-  free_sample: boolean | null;
   /** null = la source ne le dit pas : critère « concurrence » ignoré. */
   affiliates: number | null;
   /** Ventes quotidiennes connues, du plus ancien au plus récent (14 jours conseillés). */
@@ -233,12 +231,6 @@ function priceSentence(priceCents: number): string {
   return `Prix de ${price} : au-dessus de 60 €, l'achat demande plus de conviction.`;
 }
 
-function sampleSentence(freeSample: boolean): string {
-  return freeSample
-    ? 'Échantillon gratuit disponible : tu peux le recevoir et le tester avant de filmer.'
-    : "Pas d'échantillon gratuit pour l'instant : il faudra acheter le produit pour le filmer.";
-}
-
 /** Phrase affichée quand la source ne fournit pas la donnée d'un critère. */
 const UNAVAILABLE_SENTENCES: Record<ScorePart['key'], string> = {
   croissance:
@@ -247,8 +239,6 @@ const UNAVAILABLE_SENTENCES: Record<ScorePart['key'], string> = {
   saturation:
     'Nombre d’affiliés non fourni par la source de données : ce critère est ignoré et son poids est réparti sur les autres critères.',
   prix: 'Prix inconnu.',
-  echantillon:
-    'La source de données ne dit pas s’il existe un échantillon gratuit : vérifie dans l’appli TikTok Shop. Ce critère est ignoré et son poids est réparti sur les autres critères.',
 };
 
 const PART_LABELS: Record<ScorePart['key'], string> = {
@@ -256,7 +246,6 @@ const PART_LABELS: Record<ScorePart['key'], string> = {
   commission: 'Commission',
   saturation: 'Concurrence',
   prix: 'Prix',
-  echantillon: 'Échantillon',
 };
 
 function summarize(allParts: ScorePart[]): string {
@@ -282,7 +271,6 @@ export function scoreOne(input: ScoreInput, growthPercentile: number, growth: Gr
     commission: true,
     saturation: input.affiliates !== null && daily !== null,
     prix: true,
-    echantillon: input.free_sample !== null,
   };
   // Un produit en baisse ne peut pas prendre tous les points de croissance, même s'il est le
   // « moins pire » de sa niche.
@@ -292,7 +280,6 @@ export function scoreOne(input: ScoreInput, growthPercentile: number, growth: Gr
     commission: commissionValue(input.commission_rate),
     saturation: available.saturation ? saturationValue(input.affiliates!, daily!) : 0,
     prix: priceValue(input.price_cents),
-    echantillon: input.free_sample ? 1 : 0,
   };
   const sentences: Record<ScorePart['key'], string> = {
     croissance: growth ? growthSentence(growth, growthPercentile, input.niche) : UNAVAILABLE_SENTENCES.croissance,
@@ -301,7 +288,6 @@ export function scoreOne(input: ScoreInput, growthPercentile: number, growth: Gr
       ? saturationSentence(values.saturation, input.affiliates!, daily!)
       : UNAVAILABLE_SENTENCES.saturation,
     prix: priceSentence(input.price_cents),
-    echantillon: input.free_sample === null ? UNAVAILABLE_SENTENCES.echantillon : sampleSentence(input.free_sample),
   };
   // Poids des critères indisponibles réparti au prorata sur les autres : le total reste sur 100.
   const keys = Object.keys(WEIGHTS) as Array<ScorePart['key']>;

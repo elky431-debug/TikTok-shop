@@ -1,7 +1,7 @@
 import { getProvider, type ProductDataProvider, type ProviderProduct, type ProviderRunStats } from '@/lib/data';
 import type { SalesPoint } from '@/lib/data/provider';
 import { getRepo, type Repo } from '@/lib/db';
-import type { Product, ProductSnapshot, ScoreBreakdown, TopVideo } from '@/lib/db/types';
+import type { Product, ProductDetails, ProductSnapshot, ScoreBreakdown, TopVideo } from '@/lib/db/types';
 import { env } from '@/lib/env';
 import { scoreProducts, trendOf, type ScoreInput } from '@/lib/score';
 import { addDays, dateRange, daysBetween, parisDate } from '@/lib/utils';
@@ -23,6 +23,18 @@ export interface RefreshResult {
   durationMs: number;
   /** Compteurs du fournisseur réel (appels, cache, reprises, quota, produits écartés, images refusées). */
   stats?: ProviderRunStats;
+  /** Vidéos chargées cette nuit, et produits dont les ventes par période ont été lues. */
+  videos?: number;
+  details?: number;
+}
+
+/** Vidéos : on ne redemande rien à la source pendant 3 jours. */
+export const VIDEO_CACHE_DAYS = 3;
+/** En dessous de 7 jours de relevés, la fiche montre les ventes par période de la source au lieu de la courbe. */
+export const MIN_DAYS_FOR_CURVE = 7;
+
+export function videosAreFresh(fetchedAt: string | null | undefined, now = new Date()): boolean {
+  return Boolean(fetchedAt) && now.getTime() - new Date(fetchedAt!).getTime() < VIDEO_CACHE_DAYS * 86_400_000;
 }
 
 const HISTORY_DAYS = 30;
@@ -90,7 +102,6 @@ export async function refreshCatalog(options: RefreshOptions = {}): Promise<Refr
       niche: p.niche,
       price_cents: p.price_cents,
       commission_rate: p.commission_rate,
-      free_sample: p.free_sample,
       affiliates: points[i].at(-1)?.affiliates ?? p.active_affiliates,
       sales: knownSales(points[i]).slice(-GROWTH_WINDOW),
       windows: day === date ? (p.sales_windows ?? null) : null,
@@ -113,18 +124,44 @@ export async function refreshCatalog(options: RefreshOptions = {}): Promise<Refr
     if (day === date) todayScores = scores;
   }
 
-  // Vidéos de référence : tous les produits pour le mock ; seulement les mieux notés pour une source payante.
+  // Vidéos de référence : tous les produits pour le mock (gratuit) ; pour une source payante, seulement les
+  // NEXSCOPE_MAX_VIDEO_CALLS_PER_NIGHT meilleurs produits de la nuit, et pas ceux chargés il y a moins de 3 jours.
   const ranked = [...products].sort((a, b) => (todayScores.get(b.id)?.total ?? 0) - (todayScores.get(a.id)?.total ?? 0));
-  const videoTargets = new Set((provider.name === 'mock' ? ranked : ranked.slice(0, env.dataVideoProducts)).map((p) => p.id));
   const existing = new Map((await repo.getProducts(products.map((p) => p.id))).map((p) => [p.id, p]));
+  const now = new Date();
+  const videoTargets =
+    provider.name === 'mock'
+      ? ranked.map((p) => p.id)
+      : ranked
+          .slice(0, env.nexscopeMaxVideoCallsPerNight)
+          .map((p) => p.id)
+          .filter((id) => !videosAreFresh(existing.get(id)?.videos_fetched_at, now));
   const videos = new Map<string, TopVideo[]>();
-  await mapWithConcurrency([...videoTargets], 6, async (id) => {
+  await mapWithConcurrency(videoTargets, 4, async (id) => {
     try {
       videos.set(id, await provider.fetchTopVideos(id));
     } catch {
-      videos.set(id, existing.get(id)?.top_videos ?? []);
+      // Échec (quota, réseau) : on garde les vidéos déjà connues, on réessaiera la nuit suivante.
     }
   });
+
+  // Ventes par période : seulement pour les produits dont nos relevés sont encore trop courts pour la courbe.
+  let details = new Map<string, ProductDetails>();
+  if (provider.fetchProductDetails) {
+    // Les mieux notés d'abord, plafonnés pour une source payante (NEXSCOPE_MAX_DETAIL_PRODUCTS_PER_NIGHT, 40).
+    const shortIds = new Set(
+      products.filter((p, i) => knownSales(series[i].filter((h) => h.date <= date)).length < MIN_DAYS_FOR_CURVE).map((p) => p.id),
+    );
+    const shortRanked = ranked.filter((p) => shortIds.has(p.id)).map((p) => p.id);
+    const short = provider.name === 'mock' ? shortRanked : shortRanked.slice(0, env.nexscopeMaxDetailProductsPerNight);
+    if (short.length) {
+      try {
+        details = await provider.fetchProductDetails(short, date);
+      } catch {
+        // Facultatif : la fiche dit simplement que la courbe se remplit chaque nuit.
+      }
+    }
+  }
 
   const nowIso = new Date().toISOString();
   const rows: Product[] = products.map((p: ProviderProduct, i) => {
@@ -139,10 +176,11 @@ export async function refreshCatalog(options: RefreshOptions = {}): Promise<Refr
       shop_name: p.shop_name,
       price_cents: p.price_cents,
       commission_rate: p.commission_rate,
-      free_sample: p.free_sample,
       active_affiliates: p.active_affiliates,
       image_url: p.image_url,
-      top_videos: videos.get(p.id)?.length ? videos.get(p.id)! : (existing.get(p.id)?.top_videos ?? []),
+      top_videos: videos.has(p.id) ? videos.get(p.id)! : (existing.get(p.id)?.top_videos ?? []),
+      videos_fetched_at: videos.has(p.id) ? now.toISOString() : (existing.get(p.id)?.videos_fetched_at ?? null),
+      details: details.get(p.id) ?? existing.get(p.id)?.details ?? null,
       snapshot_date: date,
       latest_score: breakdown.total,
       latest_breakdown: breakdown,
@@ -162,6 +200,8 @@ export async function refreshCatalog(options: RefreshOptions = {}): Promise<Refr
     products: rows.length,
     snapshots: snapshots.length,
     durationMs: Date.now() - started,
+    videos: videos.size,
+    details: details.size,
     ...(provider.stats ? { stats: provider.stats() } : {}),
   };
 }

@@ -9,7 +9,6 @@ export interface RadarFilters {
   niche?: NicheId;
   prix?: PriceBucket;
   commission?: number; // pourcentage minimum, ex. 15
-  echantillon?: boolean;
   tendance?: Exclude<Trend, 'baisse'>;
 }
 
@@ -34,7 +33,6 @@ export function parseFilters(params: Record<string, string | string[] | undefine
   if (PRICE_BUCKETS.some((b) => b.id === prix)) filters.prix = prix as PriceBucket;
   const commission = Number(get('commission'));
   if (COMMISSION_STEPS.includes(commission)) filters.commission = commission;
-  if (get('echantillon') === '1') filters.echantillon = true;
   const tendance = get('tendance');
   if (tendance === 'explose' || tendance === 'monte' || tendance === 'stable') filters.tendance = tendance;
   return filters;
@@ -50,7 +48,6 @@ export function applyFilters(products: Product[], filters: RadarFilters): Produc
     if (filters.niche && p.niche !== filters.niche) return false;
     if (bucket && (p.price_cents < bucket.min || p.price_cents > bucket.max)) return false;
     if (filters.commission && p.commission_rate * 100 < filters.commission - 0.001) return false;
-    if (filters.echantillon && !p.free_sample) return false;
     if (filters.tendance && p.trend !== filters.tendance) return false;
     return true;
   });

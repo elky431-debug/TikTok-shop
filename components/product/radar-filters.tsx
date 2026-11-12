@@ -15,12 +15,9 @@ const selectClass =
 export function RadarFilterBar({
   filters,
   niches,
-  showSample = true,
 }: {
   filters: RadarFilters;
   niches: NicheId[];
-  /** Masqué quand la source de données ne dit pas quels produits ont un échantillon. */
-  showSample?: boolean;
 }) {
   const router = useRouter();
   const available = niches.length ? NICHES.filter((n) => niches.includes(n.id)) : NICHES;
@@ -76,17 +73,6 @@ export function RadarFilterBar({
           </option>
         ))}
       </select>
-      {showSample || filters.echantillon ? (
-        <label
-          className={cn(
-            'relative inline-flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-xl border px-3.5 text-sm font-medium has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-cyan',
-            filters.echantillon ? 'border-cyan-ink/50 bg-cyan-ink/10 text-cyan-ink' : 'border-line-strong bg-surface hover:border-cyan-ink/30',
-          )}
-        >
-          <input type="checkbox" name="echantillon" value="1" defaultChecked={filters.echantillon} className="sr-only" />
-          Échantillon gratuit
-        </label>
-      ) : null}
       {active ? (
         <Link
           href="/app"

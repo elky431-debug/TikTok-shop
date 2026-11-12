@@ -17,6 +17,7 @@ import type {
   SavedProduct,
   ScriptRecord,
   Subscription,
+  TopVideo,
 } from './types';
 import type { NicheId } from '@/lib/niches';
 import { eligibilityFor } from '@/lib/profile-rules';
@@ -362,6 +363,13 @@ export class LocalRepo implements Repo {
     return this.read((d) => d.products.filter((p) => wanted.has(p.id)));
   }
 
+
+  async updateProductVideos(id: string, videos: TopVideo[], fetchedAt: string) {
+    this.write((d) => {
+      const product = d.products.find((p) => p.id === id);
+      if (product) Object.assign(product, { top_videos: videos, videos_fetched_at: fetchedAt });
+    });
+  }
   async upsertSnapshots(snapshots: ProductSnapshot[]) {
     this.write((d) => {
       const key = (s: ProductSnapshot) => `${s.product_id}|${s.date}`;

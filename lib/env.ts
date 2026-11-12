@@ -143,8 +143,13 @@ export const env = {
     return positiveInt(read('DATA_PAGES_PER_NICHE'), 3);
   },
   /** Produits les mieux notés dont on demande les vidéos qui vendent (fournisseur réel). */
-  get dataVideoProducts() {
-    return positiveInt(read('DATA_VIDEO_PRODUCTS'), 10);
+  /** Produits dont on lit les ventes par période chaque nuit (les mieux notés parmi ceux à l'historique court). */
+  get nexscopeMaxDetailProductsPerNight() {
+    return positiveInt(read('NEXSCOPE_MAX_DETAIL_PRODUCTS_PER_NIGHT'), 40);
+  },
+  /** Vidéos chargées chez Nexscope par nuit : les N meilleurs produits, sauf ceux chargés il y a moins de 3 jours. */
+  get nexscopeMaxVideoCallsPerNight() {
+    return positiveInt(read('NEXSCOPE_MAX_VIDEO_CALLS_PER_NIGHT'), 10);
   },
   /** Correspondance niche → catégorie de 1er niveau TikTok Shop, ex. « beaute:601450,maison:600001 ». */
   get tiktokCategoryMap() {

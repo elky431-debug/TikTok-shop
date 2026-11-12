@@ -1,29 +1,38 @@
 import type { Metadata } from 'next';
-import { BookmarkCheck, Eye, Gift, Lock, ShoppingBag, Sprout } from 'lucide-react';
+import { BookmarkCheck } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ProductImage, TrendBadge } from '@/components/product/bits';
 import { SalesChart } from '@/components/product/sales-chart';
+import { SalesPeriodsChart } from '@/components/product/sales-periods-chart';
 import { ScoreBreakdownList } from '@/components/product/score-breakdown';
 import { ScoreValue, scoreTier } from '@/components/product/score';
+import { TopVideoList } from '@/components/product/top-videos';
 import { LinkButton } from '@/components/ui/button';
-import { CopyButton } from '@/components/ui/copy-button';
 import { SubmitButton } from '@/components/ui/submit-button';
 import { Callout, Card, EmptyState, Panel } from '@/components/ui/surface';
 import { requireOnboardedViewer } from '@/lib/auth/session';
 import { getRepo } from '@/lib/db';
+import { MIN_DAYS_FOR_CURVE, videosAreFresh } from '@/lib/jobs/refresh';
 import { nicheLabel } from '@/lib/niches';
+import { isPaidPlan } from '@/lib/plans';
+import { periodBars } from '@/lib/product-periods';
 import { canAccessProduct, toProductView } from '@/lib/radar';
-import { SAMPLE_STEPS, sampleRequestMessage } from '@/lib/sample';
-import { cn, formatCompact, formatEuros, formatInt, formatShortDate, quote } from '@/lib/utils';
-import { saveProductAction } from './actions';
+import { cn, formatCompact, formatEuros, formatInt, formatShortDate, parisDate } from '@/lib/utils';
+import { loadVideosAction, saveProductAction } from './actions';
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const product = await getRepo().getProduct(params.id);
   return { title: product?.name ?? 'Produit' };
 }
 
-export default async function ProductPage({ params }: { params: { id: string } }) {
+export default async function ProductPage({
+  params,
+  searchParams = {},
+}: {
+  params: { id: string };
+  searchParams?: Record<string, string | undefined>;
+}) {
   const { profile } = await requireOnboardedViewer(`/app/produit/${params.id}`);
   const repo = getRepo();
   const product = await repo.getProduct(params.id);
@@ -59,7 +68,11 @@ export default async function ProductPage({ params }: { params: { id: string } }
       : { label: 'Ventes', value: '—', sub: 'mesurées dès la prochaine nuit' },
     ...(view.active_affiliates !== null ? [{ label: 'Affiliés actifs', value: formatInt(view.active_affiliates) }] : []),
   ];
-  const message = sampleRequestMessage(profile, product.name);
+  // Moins de 7 jours de relevés : ventes par période de la source (si elle les donne), sinon la courbe se remplit.
+  const bars = knownDays < MIN_DAYS_FOR_CURVE ? periodBars(product.details, product.snapshot_date ?? parisDate()) : [];
+  const rating = product.details?.rating ?? null;
+  const reviews = product.details?.review_count ?? null;
+  const canLoadVideos = !view.top_videos.length && !videosAreFresh(product.videos_fetched_at) && product.provider !== 'tiktok';
   const tier = view.score !== null ? scoreTier(view.score) : null;
 
   return (
@@ -93,10 +106,9 @@ export default async function ProductPage({ params }: { params: { id: string } }
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <TrendBadge trend={view.trend} growth={view.growth_7d} measured={view.growth_known} />
-                {view.free_sample ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-cyan-soft px-2 py-0.5 text-xs font-semibold text-cyan-ink">
-                    <Gift className="h-3.5 w-3.5" aria-hidden="true" />
-                    Échantillon gratuit
+                {rating !== null ? (
+                  <span className="num text-xs text-muted">
+                    ★ {String(rating).replace('.', ',')} / 5{reviews !== null ? ` · ${formatInt(reviews)} avis` : ''}
                   </span>
                 ) : null}
               </div>
@@ -119,27 +131,42 @@ export default async function ProductPage({ params }: { params: { id: string } }
             ))}
           </dl>
 
-          {/* Courbe 30 jours */}
+          {/* Courbe 30 jours, ou ventes par période tant que l'historique est court */}
           <Card>
-            <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-              <h2 className="text-lg">Ventes sur 30 jours</h2>
-              <p className={cn('flex items-center gap-3 text-xs text-muted', knownDays < 2 && 'hidden')}>
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="h-0.5 w-4 rounded bg-cyan-ink" aria-hidden="true" /> Ventes estimées
-                </span>
-                {hasAffiliates ? (
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="h-0 w-4 border-t-2 border-dashed border-subtle" aria-hidden="true" /> Affiliés
-                  </span>
-                ) : null}
-              </p>
-            </div>
-            {knownDays >= 2 ? (
-              <SalesChart data={chart} showAffiliates={hasAffiliates} />
+            {bars.length && knownDays < MIN_DAYS_FOR_CURVE ? (
+              <>
+                <div className="mb-3">
+                  <h2 className="text-lg">Ventes par période</h2>
+                  <p className="mt-1 text-xs text-muted">
+                    Moyenne par jour sur chaque période, d’après la source de données. La courbe jour par jour prend le relais
+                    après {MIN_DAYS_FOR_CURVE} jours de relevés.
+                  </p>
+                </div>
+                <SalesPeriodsChart bars={bars} />
+              </>
             ) : (
-              <p className="py-10 text-center text-sm text-muted">
-                La courbe se remplit chaque nuit : il faut au moins deux relevés pour la tracer.
-              </p>
+              <>
+                <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+                  <h2 className="text-lg">Ventes sur 30 jours</h2>
+                  <p className={cn('flex items-center gap-3 text-xs text-muted', knownDays < 2 && 'hidden')}>
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="h-0.5 w-4 rounded bg-cyan-ink" aria-hidden="true" /> Ventes estimées
+                    </span>
+                    {hasAffiliates ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="h-0 w-4 border-t-2 border-dashed border-subtle" aria-hidden="true" /> Affiliés
+                      </span>
+                    ) : null}
+                  </p>
+                </div>
+                {knownDays >= 2 ? (
+                  <SalesChart data={chart} showAffiliates={hasAffiliates} />
+                ) : (
+                  <p className="py-10 text-center text-sm text-muted">
+                    La courbe se remplit chaque nuit : il faut au moins deux relevés pour la tracer.
+                  </p>
+                )}
+              </>
             )}
           </Card>
 
@@ -164,35 +191,34 @@ export default async function ProductPage({ params }: { params: { id: string } }
           ) : null}
 
           {/* Vidéos qui vendent */}
-          <section aria-labelledby="videos">
-            <h2 id="videos" className="mb-3 text-lg">
+          <section aria-labelledby="videos" id="videos">
+            <h2 id="videos-titre" className="mb-3 text-lg">
               Les vidéos qui vendent le mieux
             </h2>
+            {searchParams.videos === 'erreur' ? (
+              <Callout tone="rose" className="mb-3" title="Les vidéos n’ont pas pu être chargées. Réessaie dans un moment." />
+            ) : null}
             {view.top_videos.length ? (
-              <ol className="space-y-2">
-                {view.top_videos.map((video, index) => (
-                  <li key={video.title} className="flex gap-3 rounded-2xl border border-line p-3.5">
-                    <span className="num flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface text-sm font-bold">
-                      {index + 1}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold leading-snug">{video.title}</p>
-                      {video.hook ? <p className="mt-1 text-sm text-muted">Accroche : {quote(video.hook)}</p> : null}
-                      <p className="num mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
-                        <span className="inline-flex items-center gap-1">
-                          <Eye className="h-3.5 w-3.5" aria-hidden="true" /> {formatCompact(video.views)} vues
-                        </span>
-                        <span className="inline-flex items-center gap-1">
-                          <ShoppingBag className="h-3.5 w-3.5" aria-hidden="true" /> {formatInt(video.estimated_sales)} ventes estimées
-                        </span>
-                        <span>{video.format}</span>
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ol>
+              <TopVideoList videos={view.top_videos} />
+            ) : canLoadVideos && isPaidPlan(profile.plan) ? (
+              <Panel className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm text-muted">Les vidéos de ce produit n’ont pas encore été chargées.</p>
+                <form action={loadVideosAction}>
+                  <input type="hidden" name="produit" value={view.id} />
+                  <SubmitButton variant="outline" size="sm" pendingLabel="Chargement…">
+                    Charger les vidéos
+                  </SubmitButton>
+                </form>
+              </Panel>
+            ) : canLoadVideos ? (
+              <p className="text-sm text-muted">
+                Les vidéos de chaque produit s’ouvrent avec le plan Pro.{' '}
+                <Link href="/app/passer-pro" className="font-semibold text-rose-ink hover:underline">
+                  Passer Pro
+                </Link>
+              </p>
             ) : (
-              <p className="text-sm text-muted">Pas encore de vidéo de référence pour ce produit.</p>
+              <p className="text-sm text-muted">Aucune vidéo qui vend ce produit n’a été trouvée pour l’instant.</p>
             )}
           </section>
         </div>
@@ -228,44 +254,6 @@ export default async function ProductPage({ params }: { params: { id: string } }
             </p>
           </Card>
 
-          {view.free_sample ? (
-            <Card>
-              <h2 className="flex items-center gap-2 text-lg">
-                <Gift className="h-5 w-5 text-cyan-ink" aria-hidden="true" />
-                Demande ton échantillon
-              </h2>
-              {profile.eligibility === 'preparation' ? (
-                <Callout tone="neutral" className="mt-3" icon={<Sprout className="h-4 w-4 text-gain" aria-hidden="true" />}>
-                  Les échantillons sont réservés aux comptes affiliés (environ 1 500 abonnés). Garde ce message pour plus tard.
-                </Callout>
-              ) : null}
-              <ol className="mt-3 space-y-3">
-                {SAMPLE_STEPS.map((step, i) => (
-                  <li key={step} className="flex gap-3 text-sm">
-                    <span className="num flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-fg text-xs font-bold text-bg">
-                      {i + 1}
-                    </span>
-                    <span className="leading-relaxed">{step}</span>
-                  </li>
-                ))}
-              </ol>
-              <div className="mt-4 rounded-xl bg-surface p-3">
-                <p className="whitespace-pre-line text-sm leading-relaxed">{message}</p>
-                <CopyButton text={message} label="Copier le message" copiedLabel="Message copié" className="mt-3" />
-              </div>
-            </Card>
-          ) : view.free_sample === false ? (
-            <Panel className="flex gap-3 text-sm text-muted">
-              <Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-              Pas d’échantillon gratuit sur ce produit pour l’instant : il faudra l’acheter pour le filmer.
-            </Panel>
-          ) : (
-            <Panel className="flex gap-3 text-sm text-muted">
-              <Gift className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-              Échantillon gratuit : notre source de données ne le précise pas. Regarde la fiche du produit dans
-              l’onglet Affiliation de l’appli TikTok Shop.
-            </Panel>
-          )}
         </aside>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import { nicheLabel } from '@/lib/niches';
 import { videoStyleLabel } from '@/lib/profile-rules';
-import { formatEuros } from '@/lib/utils';
+import type { TopVideo } from '@/lib/db/types';
+import { formatEuros, formatInt } from '@/lib/utils';
 import { formatLabel, SCRIPT_FORMATS } from './formats';
 import type { ScriptInput } from './types';
 
@@ -39,6 +40,20 @@ const FORMAT_GUIDE: Record<string, string> = {
   unboxing: 'Le créateur ouvre le colis, découvre le produit et fait un premier test à chaud.',
 };
 
+/**
+ * Une vidéo de référence en une ligne : son texte, et seulement les chiffres que la source donne (ventes, vues,
+ * durée). La durée des vidéos qui vendent guide la longueur du script.
+ */
+export function describeVideo(v: TopVideo): string {
+  const facts = [
+    v.estimated_sales !== null ? `${formatInt(v.estimated_sales)} ventes estimées` : null,
+    v.views !== null ? `${formatInt(v.views)} vues` : null,
+    v.duration_s != null ? `${v.duration_s} secondes` : null,
+  ].filter(Boolean);
+  const text = v.title === 'Vidéo sans description' ? 'vidéo sans description' : `« ${v.title} »`;
+  return `${text}${facts.length ? ` (${facts.join(', ')})` : ''}${v.hook ? `, accroche : « ${v.hook} »` : ''}`;
+}
+
 /** Message utilisateur : fiche produit, format, style du créateur et vidéos de référence. */
 export function buildUserPrompt(input: ScriptInput): string {
   const p = input.product;
@@ -50,7 +65,6 @@ export function buildUserPrompt(input: ScriptInput): string {
     `- Description : ${p.description || 'non fournie'}`,
     `- Prix : ${formatEuros(p.price_cents)}`,
     `- Boutique : ${p.shop_name || 'non précisée'}`,
-    `- Échantillon gratuit : ${p.free_sample === null ? 'inconnu' : p.free_sample ? 'oui' : 'non'}`,
     '',
     '## Format demandé',
     `${formatLabel(input.format)} : ${FORMAT_GUIDE[input.format] ?? ''}`,
@@ -62,7 +76,7 @@ export function buildUserPrompt(input: ScriptInput): string {
     '',
     '## Vidéos qui vendent déjà ce produit (pour t’inspirer, sans copier)',
     ...(videos.length
-      ? videos.map((v) => `- « ${v.title} » (${v.format})${v.hook ? `, accroche : « ${v.hook} »` : ''}`)
+      ? videos.map((v) => `- ${describeVideo(v)}`)
       : ['- Aucune donnée disponible.']),
     '',
     'Écris les 10 accroches et les 3 scripts.',

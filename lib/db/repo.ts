@@ -14,6 +14,7 @@ import type {
   SavedProduct,
   ScriptRecord,
   Subscription,
+  TopVideo,
 } from './types';
 import type { NicheId } from '@/lib/niches';
 
@@ -42,6 +43,8 @@ export interface Repo {
   listProducts(opts?: { niches?: NicheId[] }): Promise<Product[]>;
   getProduct(id: string): Promise<Product | null>;
   getProducts(ids: string[]): Promise<Product[]>;
+  /** Vidéos chargées à la demande depuis la fiche produit (cache de 3 jours). */
+  updateProductVideos(id: string, videos: TopVideo[], fetchedAt: string): Promise<void>;
   upsertSnapshots(snapshots: ProductSnapshot[]): Promise<void>;
   getProductSnapshots(productId: string, days: number): Promise<ProductSnapshot[]>;
   countProducts(): Promise<number>;

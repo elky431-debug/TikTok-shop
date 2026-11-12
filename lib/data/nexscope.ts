@@ -1,4 +1,4 @@
-import type { TopVideo } from '@/lib/db/types';
+import type { ProductDetails, TopVideo } from '@/lib/db/types';
 import { env } from '@/lib/env';
 import { NICHE_IDS, type NicheId } from '@/lib/niches';
 import { checkImage, toCents, toCount, type MapResult } from './classify';
@@ -16,17 +16,32 @@ import { ProviderConfigError } from './provider';
  *    fenêtre glissante d'1 s, 429 + code 13012 (débit) ou 13013 (concurrence) avec Retry-After ;
  *  - docs/data/tiktok-product-discovery.md : recherche par catégorie (nom anglais), région FR, tri
  *    `day7_units_sold`, 10 produits par page au maximum ;
- *  - docs/data/tiktok-video-search.md : vidéos d'un produit (`productId`, région FR, tri par vues).
+ *  Pages officielles lues sur www.nexscope.ai/api-docs (12 novembre 2026), pour les routes « ET » :
+ *  - data-et-list-product-video : POST https://api.nexscope.ai/et/listProductVideo (`productId`,
+ *    `productVideoSortField` 4 = ventes de la vidéo, `sortType` 1 = décroissant, `pageSize` multiple de 10), ~11 crédits ;
+ *  - tiktok-batch-product-detail : POST https://api.nexscope.ai/et/batchProductDetail (`productIds`, 1000 au plus),
+ *    ventes sur 1, 7, 15, 30, 60 et 90 jours, note, avis, date du premier relevé (`firstCrawlDt`), ~22 crédits.
+ *  Les vraies réponses (2 appels, 12 novembre 2026) contiennent aussi des champs que la page ne liste pas, mais que
+ *  la réponse décrit elle-même dans `columns` (titre de chaque champ) : vues, likes, partages, durée, couverture.
  * Les exemples de réponse publiés sont d'anciens gabarits « pas encore réconciliés avec l'enveloppe HTTP
  * actuelle » : la lecture cherche donc la liste `products` sous `data`/`result`, comme le fait le client de
  * Nexscope lui-même, et tout champ absent reste vide.
  *
- * Ce que la source ne fournit pas : échantillon gratuit (aucun champ), historique jour par jour (seulement des
- * cumuls sur 1, 7, 28 et 90 jours, d'où la croissance « 7 derniers jours / moyenne des 3 semaines d'avant »).
+ * Ce que la source ne fournit pas : échantillon gratuit (aucun champ dans aucune des routes TikTok, d'où le retrait
+ * de ce critère partout), historique jour par jour (seulement des cumuls par période, d'où la croissance « 7 derniers
+ * jours / moyenne des 3 semaines d'avant » et le graphique par période tant que nos relevés sont courts).
  */
 
 export const NEXSCOPE_API_BASE = 'https://api.nexscope.ai/api/skill-api/v1/skills';
-export const NEXSCOPE_SLUGS = { discovery: 'tiktok-product-discovery', videos: 'tiktok-video-search' } as const;
+export const NEXSCOPE_SLUGS = { discovery: 'tiktok-product-discovery' } as const;
+/** Routes « ET » documentées sur www.nexscope.ai/api-docs. */
+export const NEXSCOPE_ET_BASE = 'https://api.nexscope.ai/et';
+/**
+ * batchProductDetail accepte 1000 identifiants, mais la vraie route a mis plus de 30 s pour ~100 produits (12 novembre
+ * 2026) et une dizaine de secondes pour 10 : lots de 20, avec un délai de 60 s.
+ */
+const DETAIL_BATCH = 20;
+const DETAIL_TIMEOUT_MS = 60_000;
 
 /** Taille de page maximum de tiktok-product-discovery. */
 const PAGE_SIZE = 10;
@@ -145,7 +160,6 @@ export function mapNexscopeProduct(raw: NexscopeDiscoveryProduct, niche: NicheId
       shop_name: raw.shopName?.trim() ?? '',
       price_cents: priceCents,
       commission_rate: Math.min(1, rate),
-      free_sample: null,
       active_affiliates: toCount(raw.totalIflCnt),
       image_url: image,
       estimated_sales: daily === null ? null : Math.round(daily),
@@ -157,17 +171,56 @@ export function mapNexscopeProduct(raw: NexscopeDiscoveryProduct, niche: NicheId
   };
 }
 
-/** Vidéo documentée de tiktok-video-search. Les données du créateur (pseudo, avatar) ne sont pas lues. */
+const text = (v: unknown) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim() : '');
+
+/**
+ * Vidéo de listProductVideo. Les nombres arrivent en texte (« "200" ») dans la vraie réponse. Les données du
+ * créateur (identifiant, pseudo dans l'adresse) ne sont pas stockées à part ; seule l'adresse officielle est gardée,
+ * pour ouvrir la vidéo sur TikTok. Le lien de lecture direct (`playAddr`, « peut expirer ») n'est pas utilisé.
+ */
 export function mapNexscopeVideo(raw: Record<string, unknown>): TopVideo | null {
-  const views = toCount(raw.totalViewsCnt);
-  if (views === null) return null;
-  const description = typeof raw.videoDesc === 'string' ? raw.videoDesc.replace(/\s+/g, ' ').trim() : '';
+  if (!raw.videoId) return null;
+  const url = text(raw.officialUrl);
+  const { image } = checkImage(text(raw.coverUrl));
+  const date = /^(\d{4}-\d{2}-\d{2})/.exec(text(raw.createDate))?.[1] ?? null;
   return {
-    title: description.slice(0, 120) || 'Vidéo sans description',
-    views,
-    estimated_sales: toCount(raw.totalVideoSaleCnt) ?? 0,
+    title: text(raw.videoDesc).slice(0, 160) || 'Vidéo sans description',
+    views: toCount(raw.totalViewsCnt),
+    estimated_sales: toCount(raw.totalVideoSaleCnt),
     hook: null,
     format: 'Vidéo',
+    url: /^https:\/\/www\.tiktok\.com\//.test(url) ? url : null,
+    duration_s: toCount(raw.duration),
+    likes: toCount(raw.totalDiggCnt),
+    shares: toCount(raw.totalSharesCnt),
+    published_at: date,
+    cover_url: image || null,
+  };
+}
+
+/** « 20261110 » → « 2026-11-10 ». */
+function crawlDate(value: unknown): string | null {
+  const m = /^(\d{4})(\d{2})(\d{2})$/.exec(text(String(value ?? '')));
+  return m ? `${m[1]}-${m[2]}-${m[3]}` : null;
+}
+
+/** Produit de batchProductDetail : ventes par période, note, avis. Les prix (annoncés en dollars) ne sont pas lus. */
+export function mapNexscopeDetails(raw: Record<string, unknown>, fetchedAt: string): ProductDetails | null {
+  if (!raw.productId) return null;
+  const rating = Number(raw.productRating);
+  return {
+    sales: {
+      d1: toCount(raw.totalSale1dCnt),
+      d7: toCount(raw.totalSale7dCnt),
+      d15: toCount(raw.totalSale15dCnt),
+      d30: toCount(raw.totalSale30dCnt),
+      d60: toCount(raw.totalSale60dCnt),
+      d90: toCount(raw.totalSale90dCnt),
+    },
+    first_seen: crawlDate(raw.firstCrawlDt),
+    rating: Number.isFinite(rating) && rating > 0 && rating <= 5 ? Math.round(rating * 10) / 10 : null,
+    review_count: toCount(raw.reviewCount),
+    fetched_at: fetchedAt,
   };
 }
 
@@ -202,10 +255,14 @@ export class NexscopeProvider implements ProductDataProvider {
   }
 
   private run(slug: string, body: Record<string, unknown>): Promise<unknown> {
+    return this.post(`${NEXSCOPE_API_BASE}/${slug}/run`, slug, body);
+  }
+
+  private post(url: string, cacheName: string, body: Record<string, unknown>, timeoutMs?: number): Promise<unknown> {
     this.assertConfigured();
     const payload = JSON.stringify(body);
     return this.client.request({
-      url: `${NEXSCOPE_API_BASE}/${slug}/run`,
+      url,
       method: 'POST',
       headers: {
         authorization: `Bearer ${env.nexscopeApiKey}`,
@@ -213,7 +270,8 @@ export class NexscopeProvider implements ProductDataProvider {
         accept: 'application/json',
       },
       body: payload,
-      cacheKey: `${slug}|${payload}`,
+      cacheKey: `${cacheName}|${payload}`,
+      timeoutMs,
       parse: checkNexscopeResponse,
     });
   }
@@ -256,22 +314,35 @@ export class NexscopeProvider implements ProductDataProvider {
     return [];
   }
 
+  /** Les 5 vidéos qui vendent le plus ce produit (tri par ventes de la vidéo chez Nexscope, 10 demandées). */
   async fetchTopVideos(productId: string): Promise<TopVideo[]> {
-    const json = await this.run(NEXSCOPE_SLUGS.videos, {
-      region: 'FR',
+    const json = await this.post(`${NEXSCOPE_ET_BASE}/listProductVideo`, 'et-listProductVideo', {
       productId: productId.replace(/^nx-/, ''),
-      videoSortField: 3,
+      productVideoSortField: 4,
       sortType: 1,
       pageNum: 1,
       pageSize: 10,
     });
-    // TODO(nexscope) : la doc range les vidéos sous `data` et décrit leurs champs sous `columns[]` ; on accepte
-    // les deux et on confirmera au premier appel réel.
-    const list = findList(json, 'data') ?? findList(json, 'videos') ?? [];
+    // Vraie réponse : { code, data: { total, data: [vidéos], columns, type } }.
+    const list = findList(json, 'data') ?? [];
     return list
       .map(mapNexscopeVideo)
       .filter((v): v is TopVideo => v !== null)
-      .sort((a, b) => b.views - a.views)
+      .sort((a, b) => (b.estimated_sales ?? 0) - (a.estimated_sales ?? 0))
       .slice(0, 5);
+  }
+
+  async fetchProductDetails(productIds: string[]): Promise<Map<string, ProductDetails>> {
+    const result = new Map<string, ProductDetails>();
+    const fetchedAt = new Date().toISOString();
+    for (let i = 0; i < productIds.length; i += DETAIL_BATCH) {
+      const ids = productIds.slice(i, i + DETAIL_BATCH).map((id) => id.replace(/^nx-/, ''));
+      const json = await this.post(`${NEXSCOPE_ET_BASE}/batchProductDetail`, 'et-batchProductDetail', { productIds: ids }, DETAIL_TIMEOUT_MS);
+      for (const raw of findList(json, 'products') ?? []) {
+        const details = mapNexscopeDetails(raw, fetchedAt);
+        if (details) result.set(`nx-${String(raw.productId)}`, details);
+      }
+    }
+    return result;
   }
 }

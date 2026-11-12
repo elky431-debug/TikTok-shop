@@ -1,4 +1,4 @@
-import type { TopVideo } from '@/lib/db/types';
+import type { ProductDetails, TopVideo } from '@/lib/db/types';
 import { NICHE_IDS, type NicheId } from '@/lib/niches';
 import { addDays, dateRange, daysBetween, parisDate } from '@/lib/utils';
 import { CATALOG, NICHE_DESCRIPTIONS, SHOP_PREFIXES, SHOP_SUFFIXES, VIDEO_TEMPLATES } from './catalog-fr';
@@ -25,7 +25,6 @@ interface MockSpec {
   shop: string;
   price_cents: number;
   commission_rate: number;
-  free_sample: boolean;
   archetype: Archetype;
   base: number; // ventes/jour au sommet
   cycle: number; // jours
@@ -69,7 +68,8 @@ function buildSpecs(): MockSpec[] {
         shop: `${rng.pick(SHOP_PREFIXES)} ${rng.pick(SHOP_SUFFIXES)}`,
         price_cents: Math.round(price * 100),
         commission_rate: Math.round(rng.float(niche === 'beaute' ? 0.1 : 0.05, 0.3) * 100) / 100,
-        free_sample: rng.bool(0.36),
+        // Ancien tirage de l'échantillon gratuit, gardé pour ne pas changer le reste du catalogue fictif.
+        ...(rng.bool(0.36) ? {} : {}),
         archetype,
         base,
         cycle: rng.int(60, 130),
@@ -145,7 +145,6 @@ function toProviderProduct(spec: MockSpec, date: string): ProviderProduct {
     shop_name: spec.shop,
     price_cents: spec.price_cents,
     commission_rate: spec.commission_rate,
-    free_sample: spec.free_sample,
     active_affiliates: affiliatesOn(spec, t),
     image_url: `/api/produit-image/${spec.id}`,
     estimated_sales: salesOn(spec, t),
@@ -186,9 +185,29 @@ export class MockProvider implements ProductDataProvider {
           estimated_sales: Math.max(5, Math.round(views * rng.float(0.0006, 0.004))),
           hook: tpl.hook,
           format: tpl.format,
+          duration_s: rng.int(15, 60),
         };
       })
       .sort((a, b) => b.estimated_sales - a.estimated_sales);
+  }
+
+  /** Ventes par période calculées sur la même série fictive que l'historique : cohérentes avec la courbe. */
+  async fetchProductDetails(productIds: string[], date: string): Promise<Map<string, ProductDetails>> {
+    const result = new Map<string, ProductDetails>();
+    for (const id of productIds) {
+      const spec = specById(id);
+      if (!spec) continue;
+      const rng = new Rng(`${SEED}|details|${id}`);
+      const total = (days: number) => dateRange(date, days).reduce((sum, day) => sum + salesOn(spec, dayIndex(day)), 0);
+      result.set(id, {
+        sales: { d1: total(1), d7: total(7), d15: total(15), d30: total(30), d60: total(60), d90: total(90) },
+        first_seen: addDays(date, -120),
+        rating: Math.round(rng.float(4.1, 4.9) * 10) / 10,
+        review_count: rng.int(12, 2400),
+        fetched_at: new Date().toISOString(),
+      });
+    }
+    return result;
   }
 
   /** Utilitaire pour le seed : jour précédent. */

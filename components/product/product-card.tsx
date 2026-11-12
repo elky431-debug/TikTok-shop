@@ -1,4 +1,4 @@
-import { BookmarkCheck, Gift, Lock, Users } from 'lucide-react';
+import { BookmarkCheck, Lock, Users } from 'lucide-react';
 import Link from 'next/link';
 import type { ProductView } from '@/lib/radar';
 import { nicheShort } from '@/lib/niches';
@@ -42,12 +42,6 @@ function Signals({ product }: { product: ProductView }) {
         <span className="num inline-flex items-center gap-1 text-xs text-muted">
           <Users className="h-3.5 w-3.5" aria-hidden="true" />
           {formatCompact(product.active_affiliates)} affiliés
-        </span>
-      ) : null}
-      {product.free_sample ? (
-        <span className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-ink">
-          <Gift className="h-3.5 w-3.5" aria-hidden="true" />
-          Échantillon
         </span>
       ) : null}
       {product.saved ? (

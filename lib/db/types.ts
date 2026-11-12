@@ -35,15 +35,44 @@ export interface Profile {
   created_at: string;
 }
 
+/** Vidéo qui vend un produit. Tout champ inconnu de la source reste null : jamais de valeur inventée. */
 export interface TopVideo {
   title: string;
-  views: number;
-  estimated_sales: number;
+  views: number | null;
+  estimated_sales: number | null;
   hook: string | null;
   format: string;
+  /** Adresse officielle de la vidéo sur TikTok. */
+  url?: string | null;
+  duration_s?: number | null;
+  likes?: number | null;
+  shares?: number | null;
+  /** Date de publication (AAAA-MM-JJ). */
+  published_at?: string | null;
+  cover_url?: string | null;
 }
 
-export type ScorePartKey = 'croissance' | 'commission' | 'saturation' | 'prix' | 'echantillon';
+/** Ventes (unités) sur les N derniers jours, d'après la source. */
+export interface SalesPeriods {
+  d1: number | null;
+  d7: number | null;
+  d15: number | null;
+  d30: number | null;
+  d60: number | null;
+  d90: number | null;
+}
+
+/** Données complémentaires de la source, lues tant que nos relevés quotidiens sont trop courts. */
+export interface ProductDetails {
+  sales: SalesPeriods;
+  /** Premier relevé du produit chez la source (AAAA-MM-JJ) : une fenêtre plus longue que cet historique ne dit rien. */
+  first_seen: string | null;
+  rating: number | null;
+  review_count: number | null;
+  fetched_at: string;
+}
+
+export type ScorePartKey = 'croissance' | 'commission' | 'saturation' | 'prix';
 
 export interface ScorePart {
   key: ScorePartKey;
@@ -81,11 +110,12 @@ export interface Product {
   price_cents: number;
   commission_rate: number;
   /** null = la source ne le dit pas. */
-  free_sample: boolean | null;
-  /** null = la source ne le dit pas. */
   active_affiliates: number | null;
   image_url: string;
   top_videos: TopVideo[];
+  /** Dernier chargement des vidéos chez la source (cache de 3 jours). */
+  videos_fetched_at: string | null;
+  details: ProductDetails | null;
   snapshot_date: string | null;
   latest_score: number;
   latest_breakdown: ScoreBreakdown | null;
@@ -215,7 +245,6 @@ export interface DigestProduct {
   score: number | null;
   trend: Trend;
   growth_7d: number;
-  free_sample: boolean | null;
   reason: string;
 }
 

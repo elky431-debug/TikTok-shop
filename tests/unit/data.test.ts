@@ -20,7 +20,6 @@ describe('MockProvider', () => {
       expect(p.commission_rate).toBeLessThanOrEqual(0.3);
       expect(p.image_url).toMatch(/^\/api\/produit-image\//);
     }
-    expect(products.some((p) => p.free_sample)).toBe(true);
     expect(new Set(products.map((p) => p.id)).size).toBe(200);
   });
 
@@ -36,7 +35,7 @@ describe('MockProvider', () => {
   it('propose des vidéos de référence', async () => {
     const videos = await provider.fetchTopVideos('fr-tech-003');
     expect(videos.length).toBeGreaterThanOrEqual(3);
-    expect(videos[0].estimated_sales).toBeGreaterThanOrEqual(videos[videos.length - 1].estimated_sales);
+    expect(videos[0].estimated_sales!).toBeGreaterThanOrEqual(videos[videos.length - 1].estimated_sales!);
   });
 
   it('n’utilise aucune vraie marque connue', async () => {
@@ -54,7 +53,7 @@ describe('tâche nocturne', () => {
     expect(result.snapshots).toBe(600);
     const products = await repo.listProducts();
     expect(products[0].latest_score).toBeGreaterThanOrEqual(products[1].latest_score);
-    expect(products[0].latest_breakdown?.parts).toHaveLength(5);
+    expect(products[0].latest_breakdown?.parts).toHaveLength(4);
     expect(products[0].sales_30d.length).toBe(30);
     expect(products[0].snapshot_date).toBe(DATE);
     const history = await repo.getProductSnapshots(products[0].id, 30);

@@ -1,4 +1,4 @@
-import type { TopVideo } from '@/lib/db/types';
+import type { ProductDetails, TopVideo } from '@/lib/db/types';
 import type { NicheId } from '@/lib/niches';
 
 /**
@@ -18,8 +18,6 @@ export interface ProviderProduct {
   price_cents: number;
   /** Taux de commission affilié, entre 0 et 1. */
   commission_rate: number;
-  /** Échantillon gratuit disponible ; null = la source ne le dit pas. */
-  free_sample: boolean | null;
   /** Créateurs affiliés qui font la promotion du produit ; null = la source ne le dit pas. */
   active_affiliates: number | null;
   /** URL https d'une image autorisée (voir config/image-hosts.mjs), ou '' pour le visuel générique. */
@@ -66,6 +64,11 @@ export interface ProductDataProvider {
   fetchProductHistory(productId: string, days: number, endDate?: string): Promise<SalesPoint[]>;
   /** Vidéos qui vendent le plus ce produit. [] = la source n'en fournit pas. */
   fetchTopVideos(productId: string): Promise<TopVideo[]>;
+  /**
+   * Ventes par période (1 à 90 jours), note et avis, pour plusieurs produits à la fois. Facultatif : utilisé tant que
+   * nos relevés quotidiens d'un produit sont trop courts pour tracer sa courbe.
+   */
+  fetchProductDetails?(productIds: string[], date: string): Promise<Map<string, ProductDetails>>;
   /** Compteurs de l'exécution en cours (fournisseurs réels seulement). */
   stats?(): ProviderRunStats;
 }

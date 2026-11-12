@@ -36,6 +36,8 @@ leurs élèves (commission de 30 % récurrente, 3 mois de Pro offerts aux élèv
   dans l'UE), sinon Nexscope, sinon fictif. Client commun `lib/data/http.ts` (débit, reprises, quota, cache).
   Champ inconnu = `null`, jamais inventé. Ce que voient les utilisateurs passe par `lib/catalog.ts` : jamais de
   fictif présenté comme réel, « Données du [date] » au-delà de 36 h.
+- Fiche produit : vidéos (`/et/listProductVideo`, 10 produits par nuit au plus, cache 3 jours, à la demande en Pro)
+  et ventes par période (`/et/batchProductDetail`, tant qu'il y a moins de 7 jours de relevés). `npm run data:enrich`.
 - Accès aux données uniquement via `lib/db` (`getRepo()`), qui choisit Supabase ou local.
 - Tailwind + composants maison (`components/ui`), Motion (`motion/react`) pour les animations.
   Recharts pour les graphiques détaillés, sparklines en SVG maison.
@@ -68,8 +70,8 @@ consentement).
 ## Score d'opportunité (`lib/score.ts`)
 
 35 % croissance 7 j (percentile dans la niche) · 25 % commission · 20 % faible saturation ·
-10 % prix dans 15–60 € · 10 % échantillon gratuit. Toujours expliqué en phrases. Critère non fourni par la
-source : ignoré, poids réparti au prorata. Score affiché = points étalés chaque jour entre 15 et 90.
+10 % prix dans 15–60 €. Le critère « échantillon gratuit » est retiré partout (aucune source ne le fournit) : ses
+10 points sont répartis au prorata, comme pour tout critère non fourni. Toujours expliqué en phrases. Score affiché = points étalés chaque jour entre 15 et 90.
 Tendances : explose ≥ +40 % (et ≥ 5 ventes/j), monte ≥ +10 %, baisse ≤ −20 %.
 
 ## Plans (`lib/plans.ts`)

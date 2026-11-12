@@ -79,7 +79,7 @@ export default async function RadarPage({
       </div>
 
       <div className="mt-6">
-        <RadarFilterBar key={JSON.stringify(filters)} filters={filters} niches={radar.niches} showSample={radar.sampleKnown} />
+        <RadarFilterBar key={JSON.stringify(filters)} filters={filters} niches={radar.niches} />
       </div>
 
       <div className="mt-5">

@@ -1,7 +1,7 @@
 'use client';
 
 import { ProductImage } from '@/components/product/product-image';
-import { Clapperboard, Gift, Pause, Play, Users } from 'lucide-react';
+import { Clapperboard, Pause, Play, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -21,7 +21,6 @@ export interface ShowcaseProduct {
   score: number;
   sales: number[];
   hook: string;
-  freeSample: boolean | null;
 }
 
 function curve(values: number[], width: number, height: number) {
@@ -143,11 +142,6 @@ export function RadarShowcase({ products, demoData }: { products: ShowcaseProduc
               {active.affiliates !== null ? (
                 <span className="num inline-flex items-center gap-1 text-muted">
                   <Users className="h-3.5 w-3.5" aria-hidden="true" /> {active.affiliates} affiliés
-                </span>
-              ) : null}
-              {active.freeSample ? (
-                <span className="inline-flex items-center gap-1 font-semibold text-cyan-ink">
-                  <Gift className="h-3.5 w-3.5" aria-hidden="true" /> Échantillon gratuit
                 </span>
               ) : null}
             </div>

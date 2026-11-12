@@ -58,7 +58,6 @@ export async function getShowcase(): Promise<{ products: ShowcaseProduct[]; demo
       score: p.latest_score,
       sales: p.sales_30d.slice(-14),
       hook: quickHook(p, p.snapshot_date ?? parisDate()),
-      freeSample: p.free_sample,
     })),
   };
 }

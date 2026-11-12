@@ -805,3 +805,36 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
 145. `npm run discord:setup` enregistre `/lier` et `/delier` sur le serveur
      (`PUT /applications/{app}/guilds/{guild}/commands`, prise en compte immédiate contrairement aux commandes
      globales) et règle `interactions_endpoint_url` (`PATCH /applications/@me`) quand l'adresse du site est publique.
+
+### Étape 7 — Fiche produit complète
+
+146. **Sources lues** : pages officielles www.nexscope.ai/api-docs (`data-et-list-product-video`,
+     `tiktok-batch-product-detail`, `tiktok-product-discovery`, `data-et-batch-video-detail`, `data-et-list-seller-product`).
+     Les deux routes utilisées ont une adresse REST documentée (`POST https://api.nexscope.ai/et/listProductVideo`,
+     `…/et/batchProductDetail`, même clé Bearer, même enveloppe `{ code, msg, data }`) : pas besoin du protocole MCP.
+     Deux vrais appels ont confirmé la forme exacte avant d'écrire les correspondances (réponses anonymisées gardées
+     dans `tests/fixtures/*.reel.json`).
+147. **Champs non listés par la page, mais décrits par la réponse** : la vraie réponse vidéo contient vues, likes,
+     partages, commentaires, durée, couverture ; la page n'en parle pas, mais chaque réponse les décrit elle-même dans
+     `columns` (titre de chaque champ). Ils sont lus, et chacun reste `null` s'il manque. Rien n'est déduit d'autre chose.
+148. **Graphique par période tant que l'historique est court** : moins de 7 jours de relevés → barres « ventes moyennes
+     par jour » sur 24 h, 7, 15, 30, 60, 90 jours (une moyenne par jour se compare d'une barre à l'autre ; un cumul
+     non). Une période plus longue que l'historique de la source (`firstCrawlDt`) est **masquée** : un produit vu
+     depuis 3 jours affichait 203 ventes sur 24 h comme sur 90 jours, ce qui aurait laissé croire à une moyenne de
+     2 ventes par jour. À 7 jours de relevés, la courbe jour par jour reprend la main et l'appel n'est plus fait.
+149. **Coûts maîtrisés** : vidéos des `NEXSCOPE_MAX_VIDEO_CALLS_PER_NIGHT` (10) meilleurs produits de la nuit, sauf
+     ceux chargés il y a moins de 3 jours (`products.videos_fetched_at`) ; ventes par période pour
+     `NEXSCOPE_MAX_DETAIL_PRODUCTS_PER_NIGHT` (40) produits au plus, les mieux notés, en lots de 20 (la vraie route a
+     dépassé 30 s pour une centaine d'identifiants : délai porté à 60 s pour elle seule). Bouton « Charger les vidéos »
+     de la fiche réservé à Pro et Pro+, soumis au même cache de 3 jours : un produit coûte au plus un appel tous les
+     3 jours, quel que soit le nombre de visiteurs. Tri des vidéos : ventes de la vidéo (`productVideoSortField` 4).
+150. **Échantillon gratuit retiré partout** (score, filtre du radar, fiche, carte, récap e-mail et Discord, accueil,
+     consignes de l'IA, base : colonne `products.free_sample` supprimée). Aucune route TikTok de Nexscope n'a de champ
+     pour cela (`freeShipping` est la livraison offerte, autre chose) ; l'API officielle TikTok non plus. Ses 10 points
+     sont répartis au prorata sur les 4 autres critères (38,9 / 27,8 / 22,2 / 11,1). Les scores déjà enregistrés qui
+     contiennent encore ce critère l'ignorent à l'affichage jusqu'au relevé suivant. Le tirage aléatoire du catalogue
+     fictif est gardé pour que ses produits restent les mêmes.
+151. **Les vidéos nourrissent le studio** : chaque vidéo de référence entre dans le prompt avec son texte et ses vrais
+     chiffres (ventes, vues, durée) ; une vidéo sans description n'est citée que par ses chiffres.
+152. **`npm run data:enrich`** complète les produits réels déjà en base (ventes par période, vidéos des N meilleurs)
+     sans refaire le relevé du jour : utilisé ici pour vérifier les deux routes en réel (20 produits, 3 × 5 vidéos).

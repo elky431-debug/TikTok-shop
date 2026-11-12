@@ -26,7 +26,6 @@ export interface ProductView {
   commission_rate: number;
   commission_cents: number;
   /** null = la source ne le dit pas. */
-  free_sample: boolean | null;
   /** null = la source ne le dit pas. */
   active_affiliates: number | null;
   trend: Trend;
@@ -69,7 +68,6 @@ export function toProductView(product: Product, plan: PlanId, saved = false): Pr
     price_cents: product.price_cents,
     commission_rate: product.commission_rate,
     commission_cents: commissionPerSale(product.price_cents, product.commission_rate),
-    free_sample: product.free_sample,
     active_affiliates: product.active_affiliates,
     trend: product.trend,
     growth_7d: product.growth_7d,
@@ -110,8 +108,6 @@ export interface Radar {
   demo: boolean;
   /** Dernier relevé de plus de 36 heures : afficher « Données du [date] ». */
   stale: boolean;
-  /** La source dit-elle quels produits ont un échantillon gratuit ? Sinon, le filtre est masqué. */
-  sampleKnown: boolean;
   plan: PlanId;
   niches: NicheId[];
   items: RadarItem[];
@@ -145,7 +141,6 @@ export async function getRadar(profile: Profile, filters: RadarFilters): Promise
     date: catalog.dataDate,
     demo: catalog.demo,
     stale: catalog.stale,
-    sampleKnown: products.some((p) => p.free_sample !== null),
     plan: profile.plan,
     niches: profile.niches,
     items,
