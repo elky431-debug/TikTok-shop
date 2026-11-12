@@ -176,7 +176,7 @@ export class MockProvider implements ProductDataProvider {
     const rng = new Rng(`${SEED}|videos|${productId}`);
     const count = rng.int(3, 5);
     const templates = rng.shuffle(VIDEO_TEMPLATES).slice(0, count);
-    const quoted = `« ${spec.name} »`;
+    const quoted = `«\u00a0${spec.name}\u00a0»`;
     return templates
       .map((tpl) => {
         const views = Math.round(rng.logUniform(15_000, 2_400_000) * (spec.base / 300));

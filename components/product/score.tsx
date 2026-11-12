@@ -33,12 +33,20 @@ export function ScoreValue({
   className?: string;
 }) {
   if (locked || score === null) {
+    if (size === 'sm') {
+      return (
+        <span className={cn('inline-flex items-center gap-1 rounded-full bg-surface px-2 py-0.5 text-xs font-semibold text-muted', className)}>
+          <Lock className="h-3 w-3" aria-hidden="true" />
+          Score Pro
+        </span>
+      );
+    }
     return (
-      <span className={cn('inline-flex items-center gap-1.5 font-bold text-subtle', className)}>
-        <span className={cn('num select-none leading-none tracking-tight blur-[3px]', sizes[size])} aria-hidden="true">
+      <span className={cn('inline-flex items-center gap-2 font-bold text-subtle', className)}>
+        <span className={cn('num select-none leading-none tracking-tight blur-[4px]', sizes[size])} aria-hidden="true">
           88
         </span>
-        <span className="inline-flex items-center gap-1 rounded-full bg-surface px-2 py-0.5 text-xs font-semibold text-muted">
+        <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-surface px-2 py-0.5 text-xs font-semibold text-muted">
           <Lock className="h-3 w-3" aria-hidden="true" />
           Score Pro
         </span>

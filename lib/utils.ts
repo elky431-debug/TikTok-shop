@@ -136,3 +136,8 @@ export function plural(count: number, singular: string, pluralForm?: string): st
   const word = Math.abs(count) >= 2 ? pluralForm ?? `${singular}s` : singular;
   return `${formatInt(count)} ${word}`;
 }
+
+/** Guillemets français avec espaces insécables : « texte ». */
+export function quote(text: string): string {
+  return `« ${text} »`;
+}
