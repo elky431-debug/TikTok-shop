@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { PricingCards } from '@/components/pricing/pricing-cards';
+import { SectionHeading } from '@/components/public/section-heading';
 import { COACH_TRIAL_DAYS } from '@/lib/plans';
 import { pricingCards } from '@/lib/pricing';
 
@@ -37,24 +38,27 @@ const FAQ = [
 
 export default function PrixPage() {
   return (
-    <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:py-20">
-      <div className="mx-auto max-w-2xl text-center">
-        <h1 className="text-4xl sm:text-5xl">Des prix simples</h1>
-        <p className="mt-4 text-lg text-muted">Commence gratuitement. Passe Pro quand tu publies tous les jours.</p>
+    <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-28">
+      <div className="mx-auto mb-16 max-w-2xl text-center">
+        <p className="eyebrow mb-3">Tarifs</p>
+        <h1 className="text-4xl/tight font-bold sm:text-5xl/tight">
+          Des prix simples,
+          <br />
+          <span className="text-gradient-live">sans engagement.</span>
+        </h1>
+        <p className="mx-auto mt-4 max-w-xl text-base text-muted">Commence gratuitement. Passe Pro quand tu publies tous les jours.</p>
       </div>
-      <div className="mt-12">
+      <div>
         <PricingCards plans={pricingCards()} mode="public" />
       </div>
 
       <section className="mx-auto mt-20 max-w-3xl" aria-labelledby="faq-paiement">
-        <h2 id="faq-paiement" className="text-2xl">
-          Questions sur le paiement
-        </h2>
-        <dl className="mt-6 divide-y divide-line border-y border-line">
+        <SectionHeading eyebrow="Paiement" title="Tes questions" accent="sur le paiement." id="faq-paiement" className="mb-10" />
+        <dl className="space-y-3">
           {FAQ.map((item) => (
-            <div key={item.q} className="py-5">
-              <dt className="font-semibold">{item.q}</dt>
-              <dd className="mt-1.5 max-w-prose leading-relaxed text-muted">{item.a}</dd>
+            <div key={item.q} className="rounded-2xl border border-line bg-fg/[0.02] px-6 py-5">
+              <dt className="text-[15px] font-semibold text-fg">{item.q}</dt>
+              <dd className="mt-2 text-sm leading-relaxed text-muted">{item.a}</dd>
             </div>
           ))}
         </dl>

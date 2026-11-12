@@ -45,7 +45,7 @@ export function SidebarNav({ items }: { items: NavItem[] }) {
               active ? 'bg-surface font-semibold text-fg' : 'text-muted hover:bg-surface/60 hover:text-fg',
             )}
           >
-            <Icon className={cn('h-5 w-5', active ? 'text-rose' : '')} aria-hidden="true" />
+            <Icon className={cn('h-5 w-5', active ? 'text-cyan-ink' : '')} aria-hidden="true" />
             {item.label}
           </Link>
         );
@@ -59,7 +59,7 @@ export function BottomNav({ items }: { items: NavItem[] }) {
   return (
     <nav
       aria-label="Navigation principale"
-      className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg/95 backdrop-blur lg:hidden"
+      className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg/80 backdrop-blur-xl lg:hidden"
     >
       <ul className="mx-auto grid max-w-lg grid-cols-5">
         {items
@@ -77,7 +77,7 @@ export function BottomNav({ items }: { items: NavItem[] }) {
                     active ? 'text-fg' : 'text-muted',
                   )}
                 >
-                  <Icon className={cn('h-6 w-6', active ? 'text-rose' : '')} strokeWidth={active ? 2.4 : 2} aria-hidden="true" />
+                  <Icon className={cn('h-6 w-6', active ? 'text-cyan-ink' : '')} strokeWidth={active ? 2.4 : 2} aria-hidden="true" />
                   {item.label}
                 </Link>
               </li>

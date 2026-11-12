@@ -323,3 +323,18 @@ R20. **« Un seul outil pour tout automatiser. »** est conservé (texte du brie
 R21. **Repli sans JavaScript** : les éléments qui apparaissent au défilement sont rendus côté serveur
      avec une opacité nulle ; une règle `<noscript>` les rend visibles si JavaScript est désactivé.
 R22. **Espaces insécables avant « : » et « ? »** dans les textes de l'accueil (typographie française).
+
+### Étape 5 — Appli et autres pages
+
+R23. **Mêmes tokens partout**, sans réécrire chaque page : fond noir, cartes `--bg-elevated`, bordures
+     fines, boutons roses, accents cyan (navigation active, cases cochées, focus, graphiques).
+R24. **Pas de constellation dans l'appli** : seulement un halo très léger (cyan à gauche, rose à droite)
+     en haut de page, aussi sur la connexion, l'onboarding et les espaces formateur et admin.
+R25. **Cartes du radar** au style des cartes de fonctionnalités (bordure dégradée et montée au
+     survol) ; le produit n°1 a une bordure dégradée permanente et un halo cyan.
+R26. **Barre du bas mobile** noire à 80 % floutée, icône active en cyan (et non plus rose).
+R27. **Recharts** : ventes en cyan avec remplissage dégradé cyan → transparent, affiliés en pointillés
+     gris, grille blanche à 6 % ; barres d'inscriptions de l'espace formateur en dégradé cyan.
+     Barres de progression (objectif 20 vidéos, onboarding) en dégradé cyan → rose.
+R28. **Pages Prix et Formateurs** : en-têtes EtSmart (étiquette + titre sur deux lignes en dégradé),
+     cartes de fonctionnalités pour les avantages formateur, halo rose.

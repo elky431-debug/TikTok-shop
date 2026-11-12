@@ -9,7 +9,7 @@ import { COMMISSION_STEPS, PRICE_BUCKETS, type RadarFilters } from '@/lib/radar-
 import { cn } from '@/lib/utils';
 
 const selectClass =
-  'h-10 rounded-full border border-line bg-raised pl-3.5 pr-8 text-sm font-medium text-fg hover:border-fg/30 focus:outline-none focus-visible:outline-2 focus-visible:outline-rose';
+  'h-10 rounded-xl border border-line-strong bg-surface pl-3.5 pr-8 text-sm font-medium text-fg hover:border-cyan-ink/30 focus:outline-none focus-visible:outline-2 focus-visible:outline-cyan';
 
 /** Filtres du radar : un formulaire GET classique, soumis automatiquement au changement. */
 export function RadarFilterBar({ filters, niches }: { filters: RadarFilters; niches: NicheId[] }) {
@@ -69,8 +69,8 @@ export function RadarFilterBar({ filters, niches }: { filters: RadarFilters; nic
       </select>
       <label
         className={cn(
-          'relative inline-flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-full border px-3.5 text-sm font-medium has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-rose',
-          filters.echantillon ? 'border-fg bg-fg text-bg' : 'border-line bg-raised hover:border-fg/30',
+          'relative inline-flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-xl border px-3.5 text-sm font-medium has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-cyan',
+          filters.echantillon ? 'border-cyan-ink/50 bg-cyan-ink/10 text-cyan-ink' : 'border-line-strong bg-surface hover:border-cyan-ink/30',
         )}
       >
         <input type="checkbox" name="echantillon" value="1" defaultChecked={filters.echantillon} className="sr-only" />
@@ -80,7 +80,7 @@ export function RadarFilterBar({ filters, niches }: { filters: RadarFilters; nic
         <Link
           href="/app"
           scroll={false}
-          className="inline-flex h-10 shrink-0 items-center gap-1 rounded-full px-3 text-sm font-semibold text-muted hover:text-fg"
+          className="inline-flex h-10 shrink-0 items-center gap-1 rounded-xl px-3 text-sm font-semibold text-muted hover:text-fg"
         >
           <X className="h-4 w-4" aria-hidden="true" />
           Effacer

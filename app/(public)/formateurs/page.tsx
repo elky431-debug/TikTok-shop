@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { BarChart3, Gift, Wallet } from 'lucide-react';
+import { Reveal } from '@/components/motion/reveal';
+import { FeatureCard } from '@/components/ui/feature-card';
 import { Card } from '@/components/ui/surface';
 import { BRAND } from '@/lib/brand';
 import { COACH_TRIAL_DAYS, getPlan, REFERRAL_COMMISSION_RATE } from '@/lib/plans';
@@ -35,31 +37,42 @@ export default function FormateursPage() {
   ];
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:py-20">
-      <div className="max-w-3xl">
-        <h1 className="text-4xl sm:text-5xl">Propose {BRAND} à tes élèves</h1>
-        <p className="mt-4 text-lg leading-relaxed text-muted">
+    <div className="relative mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-28">
+      <div
+        className="pointer-events-none absolute -top-10 right-0 h-[28rem] w-[28rem] rounded-full blur-3xl"
+        style={{ background: 'radial-gradient(circle, rgba(254,44,85,0.16) 0%, transparent 65%)' }}
+        aria-hidden="true"
+      />
+      <div className="relative mx-auto max-w-3xl text-center">
+        <p className="eyebrow mb-3">Formateurs</p>
+        <h1 className="text-4xl/tight font-bold sm:text-5xl/tight">
+          Propose {BRAND}
+          <br />
+          <span className="text-gradient-live">à tes élèves.</span>
+        </h1>
+        <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-muted">
           Tu leur apprends TikTok Shop. {BRAND} leur dit chaque matin quoi vendre et leur écrit leurs scripts. Ils produisent plus,
           tu suis leur progression, et tu touches une commission sur leurs abonnements.
         </p>
       </div>
 
-      <ul className="mt-12 grid gap-4 md:grid-cols-3">
-        {benefits.map(({ icon: Icon, title, text }) => (
-          <li key={title}>
-            <Card className="h-full">
-              <Icon className="h-6 w-6 text-rose" aria-hidden="true" />
-              <h2 className="mt-4 text-xl">{title}</h2>
-              <p className="mt-2 text-sm leading-relaxed text-muted">{text}</p>
-            </Card>
-          </li>
+      <ul className="relative mt-16 grid gap-3 md:grid-cols-3">
+        {benefits.map(({ icon, title, text }, i) => (
+          <Reveal as="li" key={title} delay={i * 0.08} className="h-full">
+            <FeatureCard icon={icon} title={title}>
+              {text}
+            </FeatureCard>
+          </Reveal>
         ))}
       </ul>
 
       <section className="mt-16 grid gap-10 lg:grid-cols-[1fr_1.2fr]" aria-labelledby="demande">
         <div>
-          <h2 id="demande" className="text-3xl">
-            Demande ton partenariat
+          <p className="eyebrow mb-3">Partenariat</p>
+          <h2 id="demande" className="text-3xl/tight font-bold sm:text-4xl/tight">
+            Demande ton
+            <br />
+            <span className="text-gradient">partenariat.</span>
           </h2>
           <ol className="mt-6 space-y-4">
             {[
@@ -68,7 +81,7 @@ export default function FormateursPage() {
               'Tu le partages à tes élèves : leur inscription et leurs abonnements te sont rattachés.',
             ].map((step, i) => (
               <li key={step} className="flex gap-3">
-                <span className="num flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-fg text-sm font-bold text-bg">
+                <span className="num flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-cyan-ink/20 bg-cyan-ink/[0.08] text-sm font-bold text-cyan-ink">
                   {i + 1}
                 </span>
                 <span className="pt-0.5 leading-relaxed">{step}</span>

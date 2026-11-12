@@ -98,7 +98,7 @@ export function ProgressBar({
       className={cn('h-2.5 w-full overflow-hidden rounded-full bg-surface', className)}
     >
       <div
-        className={cn('h-full rounded-full transition-[width] duration-500', pct >= 100 ? 'bg-gain' : 'bg-fg')}
+        className={cn('h-full rounded-full transition-[width] duration-500', pct >= 100 ? 'bg-gain' : 'bg-[image:var(--gradient)]')}
         style={{ width: `${pct}%` }}
       />
     </div>

@@ -33,6 +33,8 @@ export function Sparkline({
   const resolved = tone ?? (rising ? 'up' : 'down');
   const color = resolved === 'up' ? 'text-cyan-ink' : resolved === 'down' ? 'text-rose-ink' : 'text-subtle';
   const [lastX, lastY] = points[points.length - 1];
+  // Identifiant unique et stable (pas de doublon d'id quand plusieurs courbes sont affichées).
+  const gradientId = `spark-${resolved}-${width}-${values.reduce((h, v, i) => (h * 31 + v * (i + 7)) % 1_000_003, 17)}`;
 
   return (
     <svg
@@ -43,7 +45,13 @@ export function Sparkline({
       role="img"
       aria-label={label ?? `Ventes des 7 derniers jours, de ${values[0]} à ${values[values.length - 1]} par jour`}
     >
-      <path d={area} fill="currentColor" fillOpacity="0.12" />
+      <defs>
+        <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={area} fill={`url(#${gradientId})`} />
       <polyline points={line} fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
       <circle cx={lastX} cy={lastY} r="2.6" fill="currentColor" />
     </svg>

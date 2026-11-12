@@ -36,7 +36,13 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[15.5rem_1fr]">
-      <aside className="sticky top-0 hidden h-dvh flex-col border-r border-line px-4 py-6 lg:flex">
+      {/* Halo très léger en haut de page (pas de constellation dans l'appli) */}
+      <div
+        className="pointer-events-none fixed inset-x-0 top-0 z-0 h-72"
+        style={{ background: 'radial-gradient(ellipse 60% 100% at 30% 0%, rgba(37,244,238,0.06), transparent 70%), radial-gradient(ellipse 50% 100% at 80% 0%, rgba(254,44,85,0.05), transparent 70%)' }}
+        aria-hidden="true"
+      />
+      <aside className="sticky top-0 z-10 hidden h-dvh flex-col border-r border-line bg-bg/60 px-4 py-6 backdrop-blur-xl lg:flex">
         <Logo href="/app" className="px-2" />
         <div className="mt-8 flex-1">
           <SidebarNav items={items} />
@@ -59,8 +65,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      <div className="min-w-0">
-        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-line bg-bg/95 px-4 backdrop-blur lg:hidden">
+      <div className="relative z-10 min-w-0">
+        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-line bg-bg/80 px-4 backdrop-blur-xl lg:hidden">
           <Logo href="/app" />
           <div className="flex items-center gap-2">
             {coach ? (

@@ -63,9 +63,9 @@ export function FeaturedProductCard({ product }: { product: ProductView }) {
   return (
     <Link
       href={`/app/produit/${product.id}`}
-      className="group block rounded-2xl border border-fg/15 bg-raised p-4 transition-colors hover:border-fg/40 sm:p-5"
+      className="group gradient-border block rounded-2xl bg-raised p-4 shadow-[0_0_60px_-24px_rgba(37,244,238,0.35)] transition-transform duration-200 hover:-translate-y-0.5 sm:p-5"
     >
-      <p className="text-sm font-semibold text-rose-ink">N°1 dans tes niches aujourd’hui</p>
+      <p className="eyebrow">N°1 dans tes niches aujourd’hui</p>
       <div className="mt-3 flex gap-4">
         <ProductImage src={product.image_url} alt="" className="w-24 sm:w-32" />
         <div className="min-w-0 flex-1">
@@ -96,7 +96,7 @@ export function ProductCard({ product, rank }: { product: ProductView; rank: num
   return (
     <Link
       href={`/app/produit/${product.id}`}
-      className="group flex gap-3 rounded-2xl p-3 transition-colors hover:bg-surface sm:p-3.5"
+      className="feature-card group flex h-full gap-3 p-3 sm:p-3.5"
     >
       <div className="relative">
         <ProductImage src={product.image_url} alt="" className="w-[4.5rem]" />
@@ -122,7 +122,7 @@ export function ProductCard({ product, rank }: { product: ProductView; rank: num
 /** Produit réservé au Pro : aucune donnée réelle n'est envoyée au navigateur. */
 export function LockedProductCard({ rank, niche, className }: { rank: number; niche: string; className?: string }) {
   return (
-    <div className={cn('relative flex gap-3 rounded-2xl p-3 sm:p-3.5', className)} aria-hidden="true">
+    <div className={cn('relative flex gap-3 rounded-2xl border border-line bg-raised/60 p-3 sm:p-3.5', className)} aria-hidden="true">
       <div className="relative">
         <div className="aspect-square w-[4.5rem] rounded-xl bg-line" />
         <span className="num absolute -left-1.5 -top-1.5 flex h-6 min-w-6 items-center justify-center rounded-full bg-bg px-1.5 text-xs font-bold text-muted">

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { Logo } from '@/components/brand/logo';
+import { PageGlow } from '@/components/ui/page-glow';
 import { ChoiceChip, Field, Input, Textarea } from '@/components/ui/field';
 import { SubmitButton } from '@/components/ui/submit-button';
 import { Callout } from '@/components/ui/surface';
@@ -39,20 +40,21 @@ export default async function BienvenuePage({ searchParams }: { searchParams: { 
   const coach = profile.coach_id ? await getRepo().getCoachById(profile.coach_id) : null;
 
   return (
-    <div className="flex min-h-dvh flex-col">
-      <header className="flex items-center justify-between px-4 py-5 sm:px-8">
+    <div className="relative flex min-h-dvh flex-col">
+      <PageGlow />
+      <header className="relative flex items-center justify-between px-4 py-5 sm:px-8">
         <Logo href="/bienvenue" />
         <span className="num text-sm text-muted">
           Étape {step} sur {STEPS.length}
         </span>
       </header>
 
-      <main id="contenu" className="mx-auto w-full max-w-lg flex-1 px-4 pb-16">
+      <main id="contenu" className="relative mx-auto w-full max-w-lg flex-1 px-4 pb-16">
         <ol className="mb-8 grid grid-cols-4 gap-1.5" aria-label="Progression">
           {STEPS.map((label, i) => (
             <li key={label} className="min-w-0">
               <span
-                className={`block h-1.5 rounded-full ${i < step ? 'bg-fg' : 'bg-surface'}`}
+                className={`block h-1.5 rounded-full ${i < step ? 'bg-[image:var(--gradient)]' : 'bg-surface'}`}
                 aria-hidden="true"
               />
               <span className={`mt-1.5 block truncate text-xs ${i + 1 === step ? 'font-semibold text-fg' : 'text-muted'}`}>

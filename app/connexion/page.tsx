@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Logo } from '@/components/brand/logo';
+import { PageGlow } from '@/components/ui/page-glow';
 import { Button } from '@/components/ui/button';
 import { Callout } from '@/components/ui/surface';
 import { getSessionUser } from '@/lib/auth/session';
@@ -37,13 +38,16 @@ export default async function ConnexionPage({
   const error = searchParams.erreur ? ERRORS[searchParams.erreur] ?? ERRORS.session : null;
 
   return (
-    <div className="flex min-h-dvh flex-col">
-      <header className="px-4 py-5 sm:px-8">
+    <div className="relative flex min-h-dvh flex-col">
+      <PageGlow />
+      <header className="relative px-4 py-5 sm:px-8">
         <Logo />
       </header>
-      <main id="contenu" className="flex flex-1 items-start justify-center px-4 pb-16 pt-4 sm:items-center sm:pt-0">
+      <main id="contenu" className="relative flex flex-1 items-start justify-center px-4 pb-16 pt-4 sm:items-center sm:pt-0">
         <div className="w-full max-w-sm">
-          <h1 className="text-3xl">Connecte-toi</h1>
+          <h1 className="text-3xl font-bold">
+            Connecte-<span className="text-gradient">toi</span>
+          </h1>
           <p className="mt-2 text-muted">Ou crée ton compte : c'est le même lien. Gratuit, sans carte bancaire.</p>
 
           <div className="mt-6 space-y-4">
