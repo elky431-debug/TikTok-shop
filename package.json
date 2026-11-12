@@ -19,7 +19,8 @@
     "score:distribution": "tsx scripts/score-distribution.ts",
     "ai:sample": "tsx scripts/ai-sample.ts",
     "prebuild": "node scripts/check-deps.mjs",
-    "check:deps": "node scripts/check-deps.mjs"
+    "check:deps": "node scripts/check-deps.mjs",
+    "auth:setup": "tsx scripts/auth-setup.ts"
   },
   "engines": {
     "node": ">=20.19"

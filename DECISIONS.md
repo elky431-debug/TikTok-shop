@@ -715,3 +715,32 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      création du site, variables (portées Builds et Functions, redéploiement après chaque changement), domaine,
      Supabase, Stripe, Resend, puis test de la tâche planifiée (badge « Scheduled », bouton « Run now », journaux
      de la fonction d'arrière-plan, `/api/health`).
+
+### Étape 4 — E-mails réels (Resend)
+
+129. **Lien de connexion par le SMTP de Resend, réglé par l'API de gestion de Supabase** (pas de hook d'envoi) :
+     d'après la doc Supabase, le SMTP personnalisé garde l'envoi, les limites et les modèles chez Supabase, alors
+     qu'un hook d'envoi demanderait une route publique de plus, signée, à maintenir. `npm run auth:setup` fait un
+     `PATCH /v1/projects/{ref}/config/auth` (champs de la spécification officielle : `site_url`, `uri_allow_list`,
+     `mailer_subjects_magic_link`, `mailer_templates_magic_link_content`, `smtp_host`, `smtp_port` en texte,
+     `smtp_user`, `smtp_pass`, `smtp_admin_email`, `smtp_sender_name`, `external_google_*`). Valeurs SMTP de la
+     doc Resend : `smtp.resend.com`, port 465, utilisateur `resend`, mot de passe = clé d'API. Lancé pour de vrai :
+     adresse du site, retours autorisés et modèle français appliqués au projet ; SMTP et Google attendent leurs clés.
+130. **Modèle du lien magique en `token_hash`** vers `/auth/callback` (la route le gérait déjà) : il marche même si
+     l'e-mail est ouvert sur un autre appareil, contrairement au lien PKCE qui exige le cookie du navigateur de départ.
+     Le paramètre `suite` est perdu dans ce cas (retour sur `/app`) : `{{ .RedirectTo }}` le garderait, mais retombe
+     sur l'adresse du site sans paramètres si l'adresse n'est pas autorisée, ce qui casserait le lien.
+131. **Lien affiché à l'écran : jamais sur un site public.** `isLocalLoginAllowed()` = mode local et pas de
+     déploiement public (`SITE_ID` de Netlify, ou adresse https hors localhost). Sinon la demande de lien et la route
+     de retour refusent : sans Supabase, n'importe qui pourrait ouvrir le compte de n'importe qui.
+132. **Récap : désinscription en un clic** comme le demande la doc Resend (RFC 8058) : en-têtes `List-Unsubscribe`
+     (adresse qui accepte un POST, `/api/recap/desinscription`, corps vide, 200) et `List-Unsubscribe-Post:
+     List-Unsubscribe=One-Click`, plus un lien visible vers `/desinscription` (page avec un bouton, pas de
+     désinscription sur un simple GET : les antivirus de messagerie ouvrent les liens). Jeton HMAC-SHA256 de
+     l'identifiant (clé dérivée de `APP_SIGNING_SECRET`, sinon `CRON_SECRET`), comparé en temps constant, sans
+     connexion requise.
+133. **Un seul récap par personne et par jour**, même si la tâche est relancée : en plus du statut du récap en base,
+     clé d'idempotence Resend `recap-<id>-<jour>` (doc Resend : 24 h, second argument de `emails.send`).
+134. **E-mail de test réel** : `tests/integration/email.test.ts` envoie `emails/test-email.tsx` au premier de
+     `ADMIN_EMAILS` quand `RESEND_API_KEY`, `EMAIL_FROM` et `ADMIN_EMAILS` sont là. `npm run test:integration` lance
+     désormais les tests de chaque service dont les clés sont présentes, et dit lesquels il ignore.

@@ -22,6 +22,8 @@ export async function sendEmail(input: {
   react: ReactElement;
   scheduledAt?: string;
   headers?: Record<string, string>;
+  /** Clé d'idempotence Resend (24 h) : le même e-mail n'est jamais envoyé deux fois. */
+  idempotencyKey?: string;
 }): Promise<SendResult> {
   const html = await render(input.react);
   const text = await render(input.react, { plainText: true });
@@ -36,15 +38,18 @@ export async function sendEmail(input: {
   }
 
   resend ??= new Resend(env.resendKey);
-  const { data, error } = await resend.emails.send({
-    from: env.emailFrom || `${BRAND} <onboarding@resend.dev>`,
-    to: input.to,
-    subject: input.subject,
-    html,
-    text,
-    scheduledAt: input.scheduledAt,
-    headers: input.headers,
-  });
+  const { data, error } = await resend.emails.send(
+    {
+      from: env.emailFrom || `${BRAND} <onboarding@resend.dev>`,
+      to: input.to,
+      subject: input.subject,
+      html,
+      text,
+      scheduledAt: input.scheduledAt,
+      headers: input.headers,
+    },
+    input.idempotencyKey ? { idempotencyKey: input.idempotencyKey } : undefined,
+  );
   if (error) throw new Error(`Resend : ${error.message}`);
   return { id: data?.id ?? null, mode: 'resend' };
 }

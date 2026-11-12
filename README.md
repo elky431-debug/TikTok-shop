@@ -61,7 +61,8 @@ Pour tester l’essai formateur : ouvre http://localhost:3000/r/DEMO30 puis insc
 | `npm run test:e2e` | 3 parcours Playwright (inscription, scripts, paiement) |
 | `npm run seed` | 30 jours d’historique fictif (+ comptes de démo en local) ; vrai rafraîchissement si un fournisseur réel est configuré |
 | `npm run db:setup` | Supabase réel : migrations, types TypeScript, seed |
-| `npm run test:integration` | tests contre le vrai Supabase (repo, RLS, connexion) ; ne lance rien sans clés |
+| `npm run auth:setup` | Supabase réel : adresses de retour, modèle français du lien magique, SMTP Resend, Google |
+| `npm run test:integration` | tests contre les vrais services présents (Supabase, Resend…) ; ne lance rien sans clés |
 | `npm run ai:sample` | 3 scripts de test avec le vrai fournisseur d’IA, français relu, dans `docs/exemples-scripts/` |
 | `npm run score:distribution` | distribution des scores sur la base actuelle |
 | `npm run check:sql` | applique les migrations sur un Postgres jetable et teste la RLS (si PostgreSQL est installé) |
@@ -87,26 +88,26 @@ sont présentes ; les autres restent simulées. Le détail de chaque variable es
    - ou **Connect → Session pooler** : la chaîne de connexion (avec le mot de passe de la base) dans
      `SUPABASE_DB_URL`.
    Ni l’un ni l’autre ne sert à l’appli : ne les mets pas sur Netlify.
-3. **Authentication → URL Configuration** :
-   - *Site URL* : la valeur de `NEXT_PUBLIC_SITE_URL` (ex. `https://tiktrend.fr`) ;
-   - *Redirect URLs* : ajoute `https://tiktrend.fr/auth/callback**` et `http://localhost:3000/auth/callback**`
-     (les `**` laissent passer le paramètre `?suite=` qui ramène à la page demandée).
-4. **Authentication → Email Templates → Magic Link** : remplace le contenu par un texte en français, avec ce lien
-   (il marche même si l’e-mail est ouvert sur un autre appareil) :
+3. **Réglage de la connexion, en une commande** (avec `SUPABASE_ACCESS_TOKEN`) :
 
-   ```html
-   <h2>Ton lien de connexion</h2>
-   <p>Appuie sur le bouton pour te connecter. Le lien expire dans une heure.</p>
-   <p><a href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=email">Me connecter</a></p>
-   <p>Tu n’as rien demandé ? Ignore cet e-mail.</p>
+   ```bash
+   npm run auth:setup
    ```
 
-   Sujet conseillé : `Ton lien de connexion`.
-5. **Authentication → Sign In / Providers → Google** : active-le avec un identifiant OAuth créé dans Google Cloud
-   (type « Application Web », URI de redirection autorisée : `https://<ref>.supabase.co/auth/v1/callback`).
-6. **Project Settings → Authentication → SMTP** : branche Resend (hôte `smtp.resend.com`, port `465`, utilisateur
-   `resend`, mot de passe = ta clé Resend). Sans SMTP, Supabase limite fortement les e-mails de connexion.
-7. Mets la base en place, en une commande :
+   Elle règle par l’API de gestion de Supabase :
+   - *Site URL* = `NEXT_PUBLIC_SITE_URL`, et les adresses de retour `…/auth/callback**` du site et de
+     `http://localhost:3000` (les `**` laissent passer le paramètre `?suite=` qui ramène à la page demandée) ;
+   - le sujet et le modèle **en français** du lien magique, avec un lien `token_hash` vers `/auth/callback` (il marche
+     même si l’e-mail est ouvert sur un autre appareil) ;
+   - si `RESEND_API_KEY` et `EMAIL_FROM` sont là : l’envoi des e-mails de connexion par le **SMTP de Resend**
+     (`smtp.resend.com`, port `465`, utilisateur `resend`, mot de passe = la clé). Sans SMTP, Supabase n’envoie que
+     quelques e-mails de connexion par heure : indispensable avant d’ouvrir le site ;
+   - si `GOOGLE_CLIENT_ID` et `GOOGLE_CLIENT_SECRET` sont là : la connexion Google (voir « Connexion Google »).
+
+   Relance-la après chaque changement de domaine ou de clé. Sans jeton, les mêmes réglages se font à la main :
+   **Authentication → URL Configuration**, **Email Templates → Magic Link** (modèle dans `scripts/auth-setup.ts`),
+   **Sign In / Providers → Google** et **Project Settings → Authentication → SMTP**.
+4. Mets la base en place, en une commande :
 
    ```bash
    npm run db:setup
@@ -116,7 +117,7 @@ sont présentes ; les autres restent simulées. Le détail de chaque variable es
    `npm run seed`. Avec `SUPABASE_ACCESS_TOKEN`, chaque migration est enregistrée sous son nom de fichier chez
    Supabase : une relance n’applique que les nouvelles. Avec `SUPABASE_DB_URL` : `psql` s’il est installé, sinon
    la CLI Supabase (les migrations sont rejouables). Options : `-- --sans-types`, `-- --sans-seed`.
-8. Vérifie tout contre la vraie base :
+5. Vérifie tout contre les vrais services :
 
    ```bash
    npm run test:integration
@@ -124,9 +125,11 @@ sont présentes ; les autres restent simulées. Le détail de chaque variable es
 
    Chaque méthode de `SupabaseRepo`, la RLS avec deux utilisateurs et un formateur, l’authentification (lien
    magique, lien réutilisé, déconnexion) puis le parcours de connexion dans le navigateur (Playwright, port 3300).
-   Les tests créent des comptes `itest-…@example.com` et les suppriment à la fin ; aucun e-mail n’est envoyé.
-   Ajoute `E2E_GOOGLE=1` une fois Google activé pour vérifier aussi le bouton Google. Sans clés, la commande
-   dit lesquelles manquent et ne lance rien (`INTEGRATION_REQUIRED=1` la fait échouer dans ce cas, pour la CI).
+   Les tests créent des comptes `itest-…@example.com` et les suppriment à la fin. Chaque autre service est testé
+   pour de vrai quand ses clés sont là (Resend : un e-mail de test à `ADMIN_EMAILS` ; Stripe, Discord : voir leurs
+   sections) ; la commande dit lesquels sont ignorés. Ajoute `E2E_GOOGLE=1` une fois Google activé pour vérifier
+   aussi le bouton Google. Sans aucune clé, elle ne lance rien (`INTEGRATION_REQUIRED=1` la fait échouer dans ce
+   cas, pour la CI).
 
 **Avec un fournisseur de données réel** (clés TikTok ou Nexscope présentes), `npm run seed` fait un vrai
 rafraîchissement au lieu de charger 30 jours fictifs : aucun produit fictif n’arrive dans une base de production.
@@ -167,7 +170,17 @@ npm run ai:sample
 ### Resend (e-mails)
 
 `RESEND_API_KEY` et `EMAIL_FROM` (un expéditeur d’un domaine vérifié dans Resend, ex.
-`TikTrend <bonjour@tiktrend.fr>`). `FOUNDER_EMAIL` reçoit les demandes de partenariat des formateurs.
+`TikTrend <bonjour@tiktrend.fr>`). `FOUNDER_EMAIL` reçoit les demandes de partenariat des formateurs (à défaut, le
+premier de `ADMIN_EMAILS`).
+
+- **Lien de connexion** : envoyé par Supabase à travers le SMTP de Resend (`npm run auth:setup`). Sans Supabase, le
+  lien s’affiche à l’écran, **en local seulement** : sur un site déployé (Netlify ou adresse https publique), la
+  connexion est refusée tant que Supabase n’est pas branché.
+- **Récap du matin** : programmé à l’heure choisie par chacun (`scheduledAt`), une seule fois par jour (clé
+  d’idempotence par personne et par jour), avec la désinscription en un clic des messageries (en-têtes
+  `List-Unsubscribe` et `List-Unsubscribe-Post`) et un lien visible vers `/desinscription`.
+- **Vérifier** : avec `ADMIN_EMAILS` renseigné, `npm run test:integration` envoie un vrai e-mail de test au premier
+  administrateur.
 
 ### Données produits
 
@@ -254,7 +267,9 @@ project*) : chaque déploiement garde les valeurs du moment où il a été const
 **6. Resend**
 - *Domains → Add domain* sur resend.com, ajoute les enregistrements DNS demandés (SPF, DKIM), attends « Verified » ;
 - `EMAIL_FROM` = une adresse de ce domaine (ex. `TikTrend <bonjour@ton-domaine.fr>`), puis redéploie ;
-- branche aussi Resend comme SMTP de Supabase pour les e-mails de connexion (section 2, « E-mails »).
+- branche Resend comme SMTP de Supabase : `npm run auth:setup` en local avec les clés de production (section 2,
+  Supabase, étape 3) ;
+- `npm run test:integration` doit envoyer un e-mail de test à `ADMIN_EMAILS`.
 
 **7. Tester la tâche nocturne**
 1. *Logs & metrics → Functions* : `nightly-refresh` doit porter le badge **Scheduled** et afficher sa prochaine

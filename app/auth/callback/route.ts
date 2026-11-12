@@ -5,7 +5,7 @@ import { finishLogin } from '@/lib/auth/after-login';
 import { LOCAL_SESSION_COOKIE } from '@/lib/auth/constants';
 import { createLocalSessionToken } from '@/lib/auth/local-session';
 import { getLocalRepo } from '@/lib/db';
-import { isLocalMode } from '@/lib/env';
+import { isLocalLoginAllowed, isLocalMode } from '@/lib/env';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
   const next = params.get('suite');
 
   if (isLocalMode()) {
+    if (!isLocalLoginAllowed()) return fail(request, 'session');
     const token = params.get('token');
     if (!token) return fail(request, 'lien');
     const user = await getLocalRepo().consumeMagicToken(token);

@@ -170,6 +170,20 @@ export function isLocalMode(): boolean {
   return !isSupabaseConfigured();
 }
 
+/** Site déployé publiquement : sur Netlify (SITE_ID fourni à l'exécution) ou adresse https hors machine locale. */
+export function isPublicDeployment(): boolean {
+  if (process.env.SITE_ID) return true;
+  return /^https:\/\//.test(env.siteUrl) && !/^https:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(env.siteUrl);
+}
+
+/**
+ * Le lien magique affiché à l'écran (mode local) n'est permis que sur une machine de développement : sur un site
+ * public sans Supabase, n'importe qui pourrait se connecter au compte de n'importe qui.
+ */
+export function isLocalLoginAllowed(): boolean {
+  return isLocalMode() && !isPublicDeployment();
+}
+
 export function isStripeConfigured(): boolean {
   return Boolean(env.stripeSecretKey);
 }

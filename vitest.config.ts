@@ -23,6 +23,8 @@ export default defineConfig({
       CRON_SECRET: '',
       STRIPE_SECRET_KEY: '',
       RESEND_API_KEY: '',
+      EMAIL_FROM: '',
+      SITE_ID: '',
       LOCAL_DB_PATH: '.data/test-db.json',
     },
   },

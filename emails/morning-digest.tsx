@@ -10,10 +10,12 @@ import { colors, EmailLayout } from './layout';
 export interface MorningDigestProps {
   content: DigestContent;
   siteUrl: string;
+  /** Lien de désinscription en un clic, sans connexion (absent dans l'aperçu de l'appli). */
+  unsubscribeUrl?: string;
 }
 
 /** Récap du matin : les meilleurs produits de ses niches, une accroche prête, un bouton vers l'appli. */
-export function MorningDigestEmail({ content, siteUrl }: MorningDigestProps) {
+export function MorningDigestEmail({ content, siteUrl, unsubscribeUrl }: MorningDigestProps) {
   const top = content.products[0];
   const preview = top ? `N°1 aujourd’hui : ${top.name} (${formatGrowth(top.growth_7d)} en 7 jours)` : 'Tes produits du jour sont prêts';
   return (
@@ -23,7 +25,11 @@ export function MorningDigestEmail({ content, siteUrl }: MorningDigestProps) {
         <>
           Tu reçois ce récap parce que tu l’as activé.{' '}
           <Link href={`${siteUrl}/app/recap`} style={{ color: colors.muted, textDecoration: 'underline' }}>
-            Changer l’heure ou ne plus le recevoir
+            Changer l’heure
+          </Link>
+          {' · '}
+          <Link href={unsubscribeUrl ?? `${siteUrl}/app/recap`} style={{ color: colors.muted, textDecoration: 'underline' }}>
+            Ne plus recevoir le récap
           </Link>
           .
         </>

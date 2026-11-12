@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { safeNextPath } from '@/lib/auth/redirects';
 import { getLocalRepo } from '@/lib/db';
-import { env, isLocalMode } from '@/lib/env';
+import { env, isLocalLoginAllowed, isLocalMode } from '@/lib/env';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export interface LoginState {
@@ -29,6 +29,9 @@ export async function requestMagicLink(_prev: LoginState, formData: FormData): P
   }
 
   if (isLocalMode()) {
+    if (!isLocalLoginAllowed()) {
+      return { status: 'error', email, message: 'La connexion n’est pas encore configurée sur ce site. Réessaie plus tard.' };
+    }
     const token = await getLocalRepo().createMagicToken(email);
     return {
       status: 'sent',

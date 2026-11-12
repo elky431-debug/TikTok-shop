@@ -45,7 +45,9 @@ leurs élèves (commission de 30 % récurrente, 3 mois de Pro offerts aux élèv
   `lib/ai/guard.ts`) + un adaptateur par fournisseur dans `lib/ai/providers/` : `AI_PROVIDER=openai` (SDK `openai`,
   Responses API, `OPENAI_MODEL`, défaut `gpt-6-luna`, le moins cher avec sorties structurées) ou `anthropic` (SDK `@anthropic-ai/sdk`, `ANTHROPIC_MODEL`,
   défaut `claude-sonnet-5-5`). Sans clé : générateur simulé déterministe. `npm run ai:sample` = 3 scripts de test.
-- E-mails : Resend + React Email (`emails/`). Sans clé : journalisés en console + boîte locale.
+- E-mails : Resend + React Email (`emails/`). Sans clé : journalisés en console + boîte locale. Lien de connexion
+  par Supabase via le SMTP de Resend ; lien affiché à l'écran en local seulement (`isLocalLoginAllowed`). Récap :
+  désinscription en un clic (`lib/unsubscribe.ts`, RFC 8058), clé d'idempotence par personne et par jour.
 - Bot Discord : `bot/` (package séparé, discord.js), parle à l'appli via `/api/bot/*` + `BOT_API_SECRET`.
 - Tests : Vitest (`tests/unit`), Playwright (`tests/e2e`, 3 parcours), intégration Supabase (`tests/integration`).
 - Déploiement : Netlify (`netlify.toml`, fonction planifiée `netlify/functions/nightly-refresh.mts` à 3 h UTC qui
@@ -129,8 +131,9 @@ npm run seed       # 30 jours d'historique fictif
 npm run build && npm run lint && npm test
 npm run test:e2e   # Playwright
 npm run check:sql  # applique les migrations sur un Postgres jetable (si dispo), deux fois
-npm run db:setup   # Supabase réel : migrations, types, seed (SUPABASE_DB_URL)
-npm run test:integration  # tests contre le vrai Supabase (rien sans clés)
+npm run db:setup   # Supabase réel : migrations, types, seed (SUPABASE_ACCESS_TOKEN ou SUPABASE_DB_URL)
+npm run auth:setup # Supabase réel : retours, modèle du lien magique, SMTP Resend, Google (API de gestion)
+npm run test:integration  # tests contre les vrais services dont les clés sont là (rien sans clés)
 npm run score:distribution  # distribution des scores sur la base actuelle
 npm run ai:sample  # 3 scripts de test avec le vrai fournisseur d'IA (docs/exemples-scripts/)
 npm run stripe:setup  # crée produits et prix Stripe
