@@ -1,9 +1,10 @@
-import { createProvider, providerChain, type ProductDataProvider } from '@/lib/data';
+import { createProvider, providerChain, type ProductDataProvider, type ProviderName } from '@/lib/data';
 import { getRepo, type Repo } from '@/lib/db';
 import type { CronRun } from '@/lib/db/types';
 import { prepareDigests } from '@/lib/digest/prepare';
 import { getLiveCatalog } from '@/lib/catalog';
 import { env, isLocalMode } from '@/lib/env';
+import { enabledRegions } from '@/lib/regions';
 import { parisDate } from '@/lib/utils';
 import { MockProvider } from '@/lib/data/mock';
 import { refreshCatalog, type RefreshResult } from './refresh';
@@ -63,6 +64,18 @@ export async function runNightly(
     if (fallbacks.length) {
       console.warn(`[tâche nocturne] repli sur « ${refresh.provider} » après ${fallbacks.length} échec(s).`);
     }
+    // Autres pays (ENABLED_REGIONS), seulement avec une vraie source : jamais de catalogue fictif hors de France.
+    const regions: Record<string, number | string> = {};
+    if (refresh.provider !== 'mock' && !options.provider) {
+      for (const region of enabledRegions().filter((r) => r !== 'FR')) {
+        try {
+          regions[region] = (await refreshCatalog({ date, repo, region, provider: createProvider(refresh.provider as ProviderName) })).products;
+        } catch (error) {
+          regions[region] = error instanceof Error ? error.message : String(error);
+          console.error(`[tâche nocturne] pays ${region} : ${regions[region]}`);
+        }
+      }
+    }
     const digests = await prepareDigests(date, repo);
     const extra = await afterRefreshHooks(date, repo);
     const result = { refresh, digests, extra, fallbacks };
@@ -71,6 +84,7 @@ export async function runNightly(
       digests: digests.prepared,
       ...(digests.skipped ? { recaps_non_prepares: digests.skipped } : {}),
       ...extra,
+      ...(Object.keys(regions).length ? { pays: regions } : {}),
       ...(fallbacks.length ? { repli: fallbacks } : {}),
     });
     return result;

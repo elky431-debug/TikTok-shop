@@ -120,10 +120,18 @@ export function checkNexscopeResponse(response: RawResponse): unknown {
   return response.json;
 }
 
-export function mapNexscopeProduct(raw: NexscopeDiscoveryProduct, niche: NicheId): MapResult {
+/** Identifiant chez nous : `nx-<id>` pour la France (inchangé), `nx-de-<id>` pour un autre pays. */
+export function nexscopeId(productId: string, region = 'FR'): string {
+  return region === 'FR' ? `nx-${productId}` : `nx-${region.toLowerCase()}-${productId}`;
+}
+
+/** Identifiant de la source à partir du nôtre. */
+export const sourceProductId = (id: string) => id.replace(/^nx-(?:[a-z]{2}-)?/, '');
+
+export function mapNexscopeProduct(raw: NexscopeDiscoveryProduct, niche: NicheId, region = 'FR'): MapResult {
   if (!raw.productId || !raw.title) return { ok: false, reason: 'identifiant ou titre absent' };
-  if (raw.region && raw.region !== 'FR') return { ok: false, reason: `région ${raw.region}` };
-  // Région FR demandée : une devise absente est l'euro ; la vraie réponse écrit « € » (la doc annonçait un code).
+  if (raw.region && raw.region !== region) return { ok: false, reason: `région ${raw.region}` };
+  // Pays de la zone euro demandés : une devise absente est l'euro ; la vraie réponse écrit « € » (la doc annonçait un code).
   const currency = raw.currency?.trim();
   if (currency && currency !== 'EUR' && currency !== '€') return { ok: false, reason: `devise ${currency}` };
   const priceCents = toCents(raw.price) ?? toCents(raw.minPrice);
@@ -153,7 +161,7 @@ export function mapNexscopeProduct(raw: NexscopeDiscoveryProduct, niche: NicheId
   return {
     ok: true,
     product: {
-      id: `nx-${raw.productId}`,
+      id: nexscopeId(raw.productId, region),
       name: raw.title.trim().slice(0, 200),
       niche,
       description: category ? `Catégorie TikTok Shop : ${category}` : '',
@@ -221,6 +229,29 @@ export function mapNexscopeDetails(raw: Record<string, unknown>, fetchedAt: stri
     rating: Number.isFinite(rating) && rating > 0 && rating <= 5 ? Math.round(rating * 10) / 10 : null,
     review_count: toCount(raw.reviewCount),
     fetched_at: fetchedAt,
+  };
+}
+
+/** Données d'une vidéo lue par son lien (batchVideoDetail) : seulement ce que la source donne. */
+export interface VideoFacts {
+  description: string;
+  duration_s: number | null;
+  views: number | null;
+  likes: number | null;
+  shares: number | null;
+  sales: number | null;
+  published_at: string | null;
+}
+
+export function mapNexscopeVideoFacts(raw: Record<string, unknown>): VideoFacts {
+  return {
+    description: text(raw.videoDesc),
+    duration_s: toCount(raw.duration),
+    views: toCount(raw.totalViewsCnt),
+    likes: toCount(raw.totalDiggCnt),
+    shares: toCount(raw.totalSharesCnt),
+    sales: toCount(raw.totalVideoSaleCnt),
+    published_at: /^(\d{4}-\d{2}-\d{2})/.exec(text(raw.createDate))?.[1] ?? null,
   };
 }
 
@@ -292,7 +323,7 @@ export class NexscopeProvider implements ProductDataProvider {
           });
           const products = findList(json, 'products') ?? [];
           for (const raw of products) {
-            const result = mapNexscopeProduct(raw as NexscopeDiscoveryProduct, niche);
+            const result = mapNexscopeProduct(raw as NexscopeDiscoveryProduct, niche, query.country);
             if (!result.ok) {
               this.client.noteSkipped();
               continue;
@@ -317,7 +348,7 @@ export class NexscopeProvider implements ProductDataProvider {
   /** Les 5 vidéos qui vendent le plus ce produit (tri par ventes de la vidéo chez Nexscope, 10 demandées). */
   async fetchTopVideos(productId: string): Promise<TopVideo[]> {
     const json = await this.post(`${NEXSCOPE_ET_BASE}/listProductVideo`, 'et-listProductVideo', {
-      productId: productId.replace(/^nx-/, ''),
+      productId: sourceProductId(productId),
       productVideoSortField: 4,
       sortType: 1,
       pageNum: 1,
@@ -332,15 +363,28 @@ export class NexscopeProvider implements ProductDataProvider {
       .slice(0, 5);
   }
 
+  /**
+   * Une vidéo TikTok à partir de son lien (data-et-batch-video-detail : `videoUrls`, le serveur en extrait l'identifiant),
+   * ~10 crédits. null si la source ne la connaît pas.
+   */
+  async fetchVideoDetail(url: string): Promise<VideoFacts | null> {
+    const json = await this.post(`${NEXSCOPE_ET_BASE}/batchVideoDetail`, 'et-batchVideoDetail', { videoUrls: [url] });
+    const raw = (findList(json, 'videos') ?? [])[0];
+    return raw ? mapNexscopeVideoFacts(raw) : null;
+  }
+
   async fetchProductDetails(productIds: string[]): Promise<Map<string, ProductDetails>> {
     const result = new Map<string, ProductDetails>();
     const fetchedAt = new Date().toISOString();
     for (let i = 0; i < productIds.length; i += DETAIL_BATCH) {
-      const ids = productIds.slice(i, i + DETAIL_BATCH).map((id) => id.replace(/^nx-/, ''));
+      const batch = productIds.slice(i, i + DETAIL_BATCH);
+      const ours = new Map(batch.map((id) => [sourceProductId(id), id]));
+      const ids = [...ours.keys()];
       const json = await this.post(`${NEXSCOPE_ET_BASE}/batchProductDetail`, 'et-batchProductDetail', { productIds: ids }, DETAIL_TIMEOUT_MS);
       for (const raw of findList(json, 'products') ?? []) {
         const details = mapNexscopeDetails(raw, fetchedAt);
-        if (details) result.set(`nx-${String(raw.productId)}`, details);
+        const id = ours.get(String(raw.productId));
+        if (details && id) result.set(id, details);
       }
     }
     return result;

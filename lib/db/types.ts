@@ -25,6 +25,8 @@ export interface Profile {
   digest_email: boolean;
   digest_discord: boolean;
   digest_hour: number;
+  /** Pays du catalogue affiché (FR par défaut ; DE, IT, ES avec Pro+). L'interface reste en français. */
+  region: RegionId;
   discord_user_id: string | null;
   theme: Theme;
   share_email_with_coach: boolean;
@@ -116,6 +118,8 @@ export interface Product {
   /** Dernier chargement des vidéos chez la source (cache de 3 jours). */
   videos_fetched_at: string | null;
   details: ProductDetails | null;
+  /** Pays du catalogue (FR par défaut). */
+  region?: RegionId;
   snapshot_date: string | null;
   latest_score: number;
   latest_breakdown: ScoreBreakdown | null;
@@ -324,7 +328,7 @@ export type ProfileSelfUpdate = Partial<
 
 /** Champs modifiables uniquement par le serveur (paiement, parrainage…). */
 export type ProfileSystemUpdate = ProfileSelfUpdate &
-  Partial<Pick<Profile, 'plan' | 'coach_id' | 'referred_by' | 'stripe_customer_id' | 'trial_used' | 'discord_user_id'>>;
+  Partial<Pick<Profile, 'plan' | 'coach_id' | 'referred_by' | 'stripe_customer_id' | 'trial_used' | 'discord_user_id' | 'region'>>;
 
 export interface LocalEmail {
   id: string;
@@ -334,3 +338,17 @@ export interface LocalEmail {
   scheduled_at: string | null;
   created_at: string;
 }
+
+/** Fiches V2 d'un utilisateur (table générique `user_records`). */
+export type RecordKind = 'gain' | 'offre' | 'publication' | 'analyse' | 'import_csv';
+
+export interface UserRecord<T = Record<string, unknown>> {
+  id: string;
+  user_id: string;
+  kind: RecordKind;
+  data: T;
+  created_at: string;
+  updated_at: string;
+}
+
+export type RegionId = 'FR' | 'DE' | 'IT' | 'ES';

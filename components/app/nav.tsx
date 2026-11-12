@@ -1,6 +1,6 @@
 'use client';
 
-import { Clapperboard, Gift, GraduationCap, ListChecks, Radar, Shield, Sunrise, UserRound } from 'lucide-react';
+import { CalendarDays, Clapperboard, Gift, GraduationCap, Handshake, ListChecks, Radar, ScanSearch, Shield, Sunrise, UserRound, Wallet } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -11,6 +11,10 @@ const ICONS = {
   produits: ListChecks,
   recap: Sunrise,
   parrainage: Gift,
+  plan: CalendarDays,
+  gains: Wallet,
+  offres: Handshake,
+  analyse: ScanSearch,
   compte: UserRound,
   formateur: GraduationCap,
   admin: Shield,

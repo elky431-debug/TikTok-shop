@@ -1,7 +1,8 @@
 import { generateMockScripts, quickHook } from '@/lib/ai/mock-scripts';
 import { getLiveCatalog } from '@/lib/catalog';
 import { getRepo, type Repo } from '@/lib/db';
-import type { Product, Profile } from '@/lib/db/types';
+import type { Product, Profile, RegionId } from '@/lib/db/types';
+import { regionFor } from '@/lib/regions';
 import { parisDate } from '@/lib/utils';
 import { buildDigestContent, type DigestExtras } from './build';
 
@@ -38,10 +39,16 @@ export async function prepareDigests(
   const [profiles, catalog] = await Promise.all([repo.listOnboardedProfiles(), getLiveCatalog(repo)]);
   // Pas de récap « du matin » avec des données de plus de 36 heures : mieux vaut rien qu'un récap trompeur.
   if (catalog.stale) return { prepared: 0, skipped: 'données de plus de 36 heures' };
-  const products = catalog.products;
+  // Chacun reçoit les produits de son pays (Pro+ hors France), si ce pays a un relevé frais ; sinon la France.
+  const byRegion = new Map<RegionId, Product[]>([['FR', catalog.products]]);
   let prepared = 0;
   for (const profile of profiles) {
-    const content = await buildDigestContent(profile, products, day, extras);
+    const region = regionFor(profile);
+    if (!byRegion.has(region)) {
+      const other = await getLiveCatalog(repo, new Date(), region);
+      byRegion.set(region, other.stale || !other.products.length ? catalog.products : other.products);
+    }
+    const content = await buildDigestContent(profile, byRegion.get(region)!, day, extras);
     const existing = await repo.getDigest(profile.id, day);
     await repo.upsertDigest({
       user_id: profile.id,

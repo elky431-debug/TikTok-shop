@@ -1,7 +1,7 @@
 import { getProvider, type ProductDataProvider, type ProviderProduct, type ProviderRunStats } from '@/lib/data';
 import type { SalesPoint } from '@/lib/data/provider';
 import { getRepo, type Repo } from '@/lib/db';
-import type { Product, ProductDetails, ProductSnapshot, ScoreBreakdown, TopVideo } from '@/lib/db/types';
+import type { Product, ProductDetails, ProductSnapshot, RegionId, ScoreBreakdown, TopVideo } from '@/lib/db/types';
 import { env } from '@/lib/env';
 import { scoreProducts, trendOf, type ScoreInput } from '@/lib/score';
 import { addDays, dateRange, daysBetween, parisDate } from '@/lib/utils';
@@ -13,6 +13,8 @@ export interface RefreshOptions {
   provider?: ProductDataProvider;
   /** Nombre de jours d'instantanés à (re)calculer, en remontant depuis `date`. 1 = seulement le jour. */
   backfillDays?: number;
+  /** Pays collecté (FR par défaut). */
+  region?: RegionId;
 }
 
 export interface RefreshResult {
@@ -84,9 +86,10 @@ export async function refreshCatalog(options: RefreshOptions = {}): Promise<Refr
   const provider = options.provider ?? getProvider();
   const backfillDays = Math.max(1, options.backfillDays ?? 1);
 
-  const products = await provider.fetchTrendingProducts({ country: 'FR', date });
+  const region = options.region ?? 'FR';
+  const products = await provider.fetchTrendingProducts({ country: region, date });
   if (provider.name !== 'mock' && products.length === 0) {
-    throw new Error(`${provider.name} : aucun produit vendu en France n’a été reçu.`);
+    throw new Error(`${provider.name} : aucun produit vendu ${region === 'FR' ? 'en France' : `dans le pays ${region}`} n’a été reçu.`);
   }
   const totalDays = HISTORY_DAYS + GROWTH_WINDOW + backfillDays;
   const series = await mapWithConcurrency(products, 8, (p) => seriesFor(p, provider, repo, date, totalDays));
@@ -181,6 +184,7 @@ export async function refreshCatalog(options: RefreshOptions = {}): Promise<Refr
       top_videos: videos.has(p.id) ? videos.get(p.id)! : (existing.get(p.id)?.top_videos ?? []),
       videos_fetched_at: videos.has(p.id) ? now.toISOString() : (existing.get(p.id)?.videos_fetched_at ?? null),
       details: details.get(p.id) ?? existing.get(p.id)?.details ?? null,
+      region,
       snapshot_date: date,
       latest_score: breakdown.total,
       latest_breakdown: breakdown,

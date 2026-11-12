@@ -13,6 +13,16 @@ export interface PlanLimits {
   filters: boolean;
   export: boolean;
   priorityFeatures: boolean;
+  /** Suivi des gains (saisie, import CSV, tableau de bord). */
+  earnings: boolean;
+  /** Plan de publication de 20 vidéos, rappels, export .ics. */
+  planning: boolean;
+  /** Tri des propositions de marques par l'IA : nombre par jour (0 = fermé). */
+  offersPerDay: number;
+  /** Analyses de vidéos virales par jour (0 = fermé). */
+  analysesPerDay: number;
+  /** Catalogues allemand, italien et espagnol. */
+  europe: boolean;
   prices: Record<BillingInterval, number>; // centimes TTC
 }
 
@@ -28,6 +38,11 @@ export const PLANS: Record<PlanId, PlanLimits> = {
     filters: true,
     export: false,
     priorityFeatures: false,
+    earnings: false,
+    planning: false,
+    offersPerDay: 0,
+    analysesPerDay: 0,
+    europe: false,
     prices: { month: 0, year: 0 },
   },
   pro: {
@@ -41,6 +56,11 @@ export const PLANS: Record<PlanId, PlanLimits> = {
     filters: true,
     export: false,
     priorityFeatures: false,
+    earnings: true,
+    planning: true,
+    offersPerDay: 0,
+    analysesPerDay: 0,
+    europe: false,
     prices: { month: 1990, year: 16700 },
   },
   proplus: {
@@ -54,6 +74,11 @@ export const PLANS: Record<PlanId, PlanLimits> = {
     filters: true,
     export: true,
     priorityFeatures: true,
+    earnings: true,
+    planning: true,
+    offersPerDay: 20,
+    analysesPerDay: 20,
+    europe: true,
     prices: { month: 3990, year: 33500 },
   },
 };

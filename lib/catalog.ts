@@ -1,5 +1,5 @@
 import { getRepo, type Repo } from '@/lib/db';
-import type { Product } from '@/lib/db/types';
+import type { Product, RegionId } from '@/lib/db/types';
 
 /**
  * Catalogue montré aux utilisateurs. Règle : jamais de produits fictifs présentés comme réels.
@@ -28,9 +28,11 @@ export interface LiveCatalog {
 
 export const isDemoProduct = (product: Pick<Product, 'provider'>) => product.provider === 'mock';
 
-export function selectLiveCatalog(all: Product[], now: Date = new Date()): LiveCatalog {
-  const real = all.filter((p) => !isDemoProduct(p));
-  const pool = real.length ? real : all;
+export function selectLiveCatalog(all: Product[], now: Date = new Date(), region: RegionId = 'FR'): LiveCatalog {
+  // Un pays à la fois : chaque pays a son propre relevé nocturne (et sa propre heure d'exécution).
+  const inRegion = all.filter((p) => (p.region ?? 'FR') === region);
+  const real = inRegion.filter((p) => !isDemoProduct(p));
+  const pool = real.length ? real : inRegion;
   const dataDate = pool.reduce<string | null>((max, p) => (p.snapshot_date && (!max || p.snapshot_date > max) ? p.snapshot_date : max), null);
   const sameDay = pool.filter((p) => p.snapshot_date === dataDate);
   const refreshedAt = sameDay.reduce<string | null>((max, p) => (!max || p.updated_at > max ? p.updated_at : max), null);
@@ -48,6 +50,6 @@ export function selectLiveCatalog(all: Product[], now: Date = new Date()): LiveC
   };
 }
 
-export async function getLiveCatalog(repo: Repo = getRepo(), now: Date = new Date()): Promise<LiveCatalog> {
-  return selectLiveCatalog(await repo.listProducts(), now);
+export async function getLiveCatalog(repo: Repo = getRepo(), now: Date = new Date(), region: RegionId = 'FR'): Promise<LiveCatalog> {
+  return selectLiveCatalog(await repo.listProducts(), now, region);
 }

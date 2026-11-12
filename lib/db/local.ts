@@ -18,6 +18,8 @@ import type {
   ScriptRecord,
   Subscription,
   TopVideo,
+  RecordKind,
+  UserRecord,
 } from './types';
 import type { NicheId } from '@/lib/niches';
 import { eligibilityFor } from '@/lib/profile-rules';
@@ -71,6 +73,7 @@ export interface LocalData {
   emails: LocalEmail[];
   provider_cache: Array<{ key: string; value: unknown; expires_at: string }>;
   daily_tasks: Array<{ task: string; day: string; claimed_at: string }>;
+  user_records: UserRecord[];
 }
 
 export function emptyLocalData(): LocalData {
@@ -96,6 +99,7 @@ export function emptyLocalData(): LocalData {
     emails: [],
     provider_cache: [],
     daily_tasks: [],
+    user_records: [],
   };
 }
 
@@ -120,6 +124,7 @@ function defaultProfile(user: { id: string; email: string }, referralCode: strin
     digest_email: true,
     digest_discord: false,
     digest_hour: 8,
+    region: 'FR',
     discord_user_id: null,
     theme: 'system',
     share_email_with_coach: false,
@@ -788,6 +793,46 @@ export class LocalRepo implements Repo {
       d.provider_cache = d.provider_cache.filter((e) => e.expires_at > nowIso);
       return before - d.provider_cache.length;
     });
+  }
+
+  async listRecords<T>(userId: string, kind: RecordKind) {
+    return this.read((d) =>
+      d.user_records
+        .filter((r) => r.user_id === userId && r.kind === kind)
+        .sort((a, b) => b.created_at.localeCompare(a.created_at)) as Array<UserRecord<T>>,
+    );
+  }
+
+  async getRecord<T>(userId: string, id: string) {
+    return this.read((d) => (d.user_records.find((r) => r.id === id && r.user_id === userId) as UserRecord<T> | undefined) ?? null);
+  }
+
+  async saveRecord<T>(userId: string, kind: RecordKind, data: T, id?: string) {
+    return this.write((d) => {
+      const at = now();
+      const existing = id ? d.user_records.find((r) => r.id === id && r.user_id === userId) : undefined;
+      if (existing) {
+        Object.assign(existing, { data, updated_at: at });
+        return clone(existing) as UserRecord<T>;
+      }
+      const record = { id: randomId(), user_id: userId, kind, data, created_at: at, updated_at: at } as UserRecord;
+      d.user_records.push(record);
+      return clone(record) as UserRecord<T>;
+    });
+  }
+
+  async deleteRecord(userId: string, id: string) {
+    this.write((d) => {
+      d.user_records = d.user_records.filter((r) => !(r.id === id && r.user_id === userId));
+    });
+  }
+
+  async countRecordsSince(userId: string, kind: RecordKind, sinceIso: string) {
+    return this.read((d) => d.user_records.filter((r) => r.user_id === userId && r.kind === kind && r.created_at >= sinceIso).length);
+  }
+
+  async listAllRecords<T>(kind: RecordKind) {
+    return this.read((d) => d.user_records.filter((r) => r.kind === kind) as Array<UserRecord<T>>);
   }
 
   async claimDailyTask(task: string, day: string) {

@@ -1,6 +1,6 @@
 import { getLiveCatalog, isDemoProduct } from '@/lib/catalog';
 import { getRepo } from '@/lib/db';
-import type { PlanId, Product, Profile, ScoreBreakdown, Trend } from '@/lib/db/types';
+import type { PlanId, Product, Profile, RegionId, ScoreBreakdown, Trend } from '@/lib/db/types';
 import { ensureCatalog } from '@/lib/jobs/nightly';
 import type { NicheId } from '@/lib/niches';
 import { applyFilters, hasFilters, type RadarFilters } from '@/lib/radar-filters';
@@ -8,6 +8,7 @@ import { getPlan, isPaidPlan } from '@/lib/plans';
 import { rankForUser, visibleProductIds } from '@/lib/radar-rules';
 import { fallbackImageUrl } from '@/lib/product-image';
 import { commissionPerSale } from '@/lib/score';
+import { regionFor } from '@/lib/regions';
 import { parisDate } from '@/lib/utils';
 
 export * from '@/lib/radar-filters';
@@ -108,6 +109,8 @@ export interface Radar {
   demo: boolean;
   /** Dernier relevé de plus de 36 heures : afficher « Données du [date] ». */
   stale: boolean;
+  /** Pays du catalogue affiché. */
+  region: RegionId;
   plan: PlanId;
   niches: NicheId[];
   items: RadarItem[];
@@ -124,7 +127,8 @@ export interface Radar {
 export async function getRadar(profile: Profile, filters: RadarFilters): Promise<Radar> {
   await ensureCatalog();
   const repo = getRepo();
-  const [catalog, saved] = await Promise.all([getLiveCatalog(repo), repo.listSavedProducts(profile.id)]);
+  const region = regionFor(profile);
+  const [catalog, saved] = await Promise.all([getLiveCatalog(repo, new Date(), region), repo.listSavedProducts(profile.id)]);
   const products = catalog.products;
   const savedIds = new Set(saved.map((s) => s.product_id));
   const ranked = rankForUser(products, profile.niches);
@@ -141,6 +145,7 @@ export async function getRadar(profile: Profile, filters: RadarFilters): Promise
     date: catalog.dataDate,
     demo: catalog.demo,
     stale: catalog.stale,
+    region,
     plan: profile.plan,
     niches: profile.niches,
     items,
@@ -159,7 +164,7 @@ export async function canAccessProduct(profile: Profile, productId: string): Pro
   if (isPaidPlan(profile.plan)) return true;
   const repo = getRepo();
   if (await repo.getSavedProduct(profile.id, productId)) return true;
-  const ranked = rankForUser((await getLiveCatalog(repo)).products, profile.niches);
+  const ranked = rankForUser((await getLiveCatalog(repo, new Date(), regionFor(profile))).products, profile.niches);
   return visibleProductIds(ranked, profile.plan).has(productId);
 }
 

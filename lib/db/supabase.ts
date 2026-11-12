@@ -17,6 +17,8 @@ import type {
   ScriptRecord,
   Subscription,
   TopVideo,
+  RecordKind,
+  UserRecord,
 } from './types';
 import type { NicheId } from '@/lib/niches';
 import { env } from '@/lib/env';
@@ -695,6 +697,49 @@ export class SupabaseRepo implements Repo {
   // ------------------------------------------------------------------
   // Tâches planifiées
   // ------------------------------------------------------------------
+
+  async listRecords<T>(userId: string, kind: RecordKind) {
+    return check(
+      'fiches',
+      await this.db.from('user_records').select('*').eq('user_id', userId).eq('kind', kind).order('created_at', { ascending: false }).limit(2000),
+    ) as Array<UserRecord<T>>;
+  }
+
+  async getRecord<T>(userId: string, id: string) {
+    return (check('fiche', await this.db.from('user_records').select('*').eq('id', id).eq('user_id', userId).maybeSingle()) ??
+      null) as UserRecord<T> | null;
+  }
+
+  async saveRecord<T>(userId: string, kind: RecordKind, data: T, id?: string) {
+    const at = new Date().toISOString();
+    if (id) {
+      const updated = check(
+        'fiche',
+        await this.db.from('user_records').update({ data, updated_at: at }).eq('id', id).eq('user_id', userId).select('*').maybeSingle(),
+      );
+      if (updated) return updated as UserRecord<T>;
+    }
+    return check('fiche', await this.db.from('user_records').insert({ user_id: userId, kind, data }).select('*').single()) as UserRecord<T>;
+  }
+
+  async deleteRecord(userId: string, id: string) {
+    check('fiche', await this.db.from('user_records').delete().eq('id', id).eq('user_id', userId).select('id'));
+  }
+
+  async countRecordsSince(userId: string, kind: RecordKind, sinceIso: string) {
+    const { count, error } = await this.db
+      .from('user_records')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('kind', kind)
+      .gte('created_at', sinceIso);
+    if (error) throw new DbError('fiches', error.message);
+    return count ?? 0;
+  }
+
+  async listAllRecords<T>(kind: RecordKind) {
+    return check('fiches', await this.db.from('user_records').select('*').eq('kind', kind).limit(10000)) as Array<UserRecord<T>>;
+  }
 
   async claimDailyTask(task: string, day: string) {
     const { error } = await this.db.from('daily_tasks').insert({ task, day });

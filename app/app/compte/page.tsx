@@ -9,16 +9,19 @@ import { billingMode } from '@/lib/billing';
 import { getRepo } from '@/lib/db';
 import { NICHES } from '@/lib/niches';
 import { getPlan, isPaidPlan } from '@/lib/plans';
+import { enabledRegions, REGION_IDS, REGIONS } from '@/lib/regions';
 import { FOLLOWER_RANGES, VIDEO_STYLES } from '@/lib/profile-rules';
 import { formatLongDate } from '@/lib/utils';
 import { openPortalAction } from '../passer-pro/actions';
-import { deleteAccountAction, updatePreferencesAction, updateProfileAction } from './actions';
+import { deleteAccountAction, updatePreferencesAction, updateProfileAction, updateRegionAction } from './actions';
 
 export const metadata: Metadata = { title: 'Mon compte' };
 
 const MESSAGES: Record<string, { tone: 'gain' | 'rose'; text: string }> = {
   'ok=profil': { tone: 'gain', text: 'Profil enregistré.' },
   'ok=preferences': { tone: 'gain', text: 'Préférences enregistrées.' },
+  'ok=pays': { tone: 'gain', text: 'Pays du catalogue enregistré.' },
+  'erreur=pays': { tone: 'rose', text: 'Le choix du pays est réservé au plan Pro+.' },
   'paiement=ok': { tone: 'gain', text: 'Paiement confirmé : ton plan est actif. Bienvenue !' },
   'resiliation=ok': { tone: 'gain', text: 'Abonnement résilié. Tu repasses en Gratuit.' },
   'erreur=prenom': { tone: 'rose', text: 'Indique ton prénom.' },
@@ -110,6 +113,34 @@ export default async function ComptePage({ searchParams }: { searchParams: Recor
                 : 'Mode local : le portail est simulé.'}
             </p>
           ) : null}
+        </Card>
+
+        {/* Pays du catalogue */}
+        <Card id="pays">
+          <h2 className="text-lg">Pays du catalogue</h2>
+          <p className="mt-1 text-sm text-muted">
+            La France par défaut. Avec Pro+, ouvre aussi les produits d’Allemagne, d’Italie et d’Espagne (l’appli reste en
+            français).
+          </p>
+          {plan.europe ? (
+            <form action={updateRegionAction} className="mt-4 flex flex-wrap items-end gap-3">
+              <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Pays du catalogue">
+                {REGION_IDS.map((id) => (
+                  <ChoiceChip key={id} type="radio" name="pays" value={id} defaultChecked={(profile.region ?? 'FR') === id}>
+                    {REGIONS[id].label}
+                    {enabledRegions().includes(id) ? '' : ' (bientôt)'}
+                  </ChoiceChip>
+                ))}
+              </div>
+              <SubmitButton variant="outline" size="sm" pendingLabel="Enregistrement…">
+                Enregistrer le pays
+              </SubmitButton>
+            </form>
+          ) : (
+            <LinkButton href="/app/passer-pro" variant="outline" size="sm" className="mt-4">
+              Passer Pro+
+            </LinkButton>
+          )}
         </Card>
 
         {/* Profil */}

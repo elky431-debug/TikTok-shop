@@ -10,6 +10,7 @@ import { getPlan, isPaidPlan } from '@/lib/plans';
 import { AFFILIATE_THRESHOLD } from '@/lib/profile-rules';
 import { getRadar, parseFilters } from '@/lib/radar';
 import { formatDayMonth, formatInt, formatLongDate, plural } from '@/lib/utils';
+import { enabledRegions, REGIONS } from '@/lib/regions';
 
 export const metadata: Metadata = { title: 'Radar' };
 
@@ -53,6 +54,15 @@ export default async function RadarPage({
       </div>
 
       <div className="space-y-3">
+        {radar.region !== 'FR' ? (
+          <Callout tone="cyan" title={`Catalogue : ${REGIONS[radar.region].label}`}>
+            {radar.totalToday
+              ? 'Tu vois les produits de ce pays. Change de pays dans ton compte.'
+              : enabledRegions().includes(radar.region)
+                ? 'Le premier relevé de ce pays arrive cette nuit.'
+                : 'Ce pays n’est pas encore collecté chaque nuit. Repasse sur la France dans ton compte en attendant.'}
+          </Callout>
+        ) : null}
         {radar.demo ? (
           <Callout tone="neutral" title="Produits fictifs : démonstration">
             Ces produits n’existent pas sur TikTok Shop : ils montrent comment marche le radar en attendant le

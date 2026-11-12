@@ -143,6 +143,10 @@ export const env = {
     return positiveInt(read('DATA_PAGES_PER_NICHE'), 3);
   },
   /** Produits les mieux notés dont on demande les vidéos qui vendent (fournisseur réel). */
+  /** Pays collectés chaque nuit en plus de la France (« DE,IT,ES ») ; vide = France seulement. */
+  get enabledRegions() {
+    return read('ENABLED_REGIONS') || 'FR';
+  },
   /** Produits dont on lit les ventes par période chaque nuit (les mieux notés parmi ceux à l'historique court). */
   get nexscopeMaxDetailProductsPerNight() {
     return positiveInt(read('NEXSCOPE_MAX_DETAIL_PRODUCTS_PER_NIGHT'), 40);

@@ -1,4 +1,4 @@
-import type { ProductDetails, TopVideo } from '@/lib/db/types';
+import type { ProductDetails, RegionId, TopVideo } from '@/lib/db/types';
 import type { NicheId } from '@/lib/niches';
 
 /**
@@ -37,7 +37,8 @@ export interface SalesPoint {
 }
 
 export interface TrendingQuery {
-  country: 'FR';
+  /** Pays du catalogue (FR par défaut ; DE, IT, ES si ENABLED_REGIONS les active). */
+  country: RegionId;
   category?: NicheId;
   /** Jour demandé (AAAA-MM-JJ, heure de Paris). */
   date: string;

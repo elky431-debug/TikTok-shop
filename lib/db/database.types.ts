@@ -314,6 +314,7 @@ export type Database = {
           niche: string
           price_cents: number
           provider: string
+          region: string
           sales_30d: number[]
           shop_name: string
           snapshot_date: string | null
@@ -336,6 +337,7 @@ export type Database = {
           niche: string
           price_cents: number
           provider?: string
+          region?: string
           sales_30d?: number[]
           shop_name?: string
           snapshot_date?: string | null
@@ -358,6 +360,7 @@ export type Database = {
           niche?: string
           price_cents?: number
           provider?: string
+          region?: string
           sales_30d?: number[]
           shop_name?: string
           snapshot_date?: string | null
@@ -388,6 +391,7 @@ export type Database = {
           plan: Database["public"]["Enums"]["plan_id"]
           referral_code: string
           referred_by: string | null
+          region: string
           share_email_with_coach: boolean
           stripe_customer_id: string | null
           theme: string
@@ -414,6 +418,7 @@ export type Database = {
           plan?: Database["public"]["Enums"]["plan_id"]
           referral_code: string
           referred_by?: string | null
+          region?: string
           share_email_with_coach?: boolean
           stripe_customer_id?: string | null
           theme?: string
@@ -440,6 +445,7 @@ export type Database = {
           plan?: Database["public"]["Enums"]["plan_id"]
           referral_code?: string
           referred_by?: string | null
+          region?: string
           share_email_with_coach?: boolean
           stripe_customer_id?: string | null
           theme?: string
@@ -711,6 +717,41 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "usage_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_records: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          kind: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          id?: string
+          kind: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          kind?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_records_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"

@@ -847,3 +847,31 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      `npm run auth:setup` l'active par l'API de gestion (`external_google_enabled`, `external_google_client_id`,
      `external_google_secret`, champs de la spécification officielle), et `E2E_GOOGLE=1 npm run test:integration`
      vérifie le bouton. Les deux clés ne vont pas sur Netlify : seul Supabase s'en sert.
+
+### Étape 9 — Fonctionnalités V2 (sans l'API affiliés de TikTok)
+
+154. **Une table générique `user_records`** (`kind` + `data` jsonb, RLS « chacun ses fiches ») pour les gains, les
+     propositions, les plans de publication, les analyses : 5 fonctions sans 5 tables ni 30 méthodes de dépôt. Toutes
+     les méthodes filtrent par utilisateur (une fiche d'un autre est introuvable, même par son identifiant).
+155. **Plans** : gains et plan de publication en Pro ; propositions de marques (20/jour), analyses de vidéo (20/jour)
+     et Europe en Pro+. Quotas comptés côté serveur sur les fiches créées depuis minuit (heure de Paris).
+156. **IA structurée générique** (`lib/ai/structured.ts`) : mêmes mécanismes que le studio (OpenAI `responses.parse` +
+     `zodTextFormat`, `store: false` ; Claude `messages.parse` + `output_config.format`), un nouvel essai si la sortie
+     est hors schéma, réponse simulée et signalée comme telle sans clé.
+157. **Propositions** : l'IA lit le message ; la note sur 100 et la contre-proposition sont **calculées par le code**
+     (commission comparée aux produits du radar de la même niche, 60 points ; échantillon offert +15 ; fixe +15 ;
+     exclusivité −15 ; délai < 7 jours −10 ; échantillon remboursable −10), jamais par l'IA. Les 3 réponses reprennent
+     le chiffre exact de la contre-proposition (médiane de la niche, ou offre + 5 points).
+158. **Plan de publication** : 20 vidéos, rythme 3 (lun., mer., ven.), 5 (jours ouvrés) ou 7 par semaine, à partir du
+     lendemain. Rappel le jour J par e-mail (programmé à l'heure du récap, une fois par jour) et par message privé
+     Discord (tâche horaire). Export `.ics` conforme à la RFC 5545 (CRLF, lignes de 75 octets, texte échappé, journée
+     entière). Marquer « postée » met à jour le compteur de Mes produits. Aucune publication automatique.
+159. **Analyse de vidéo** : avec un lien TikTok et la clé Nexscope, description, durée et chiffres de la vidéo par
+     `POST /et/batchVideoDetail` (`videoUrls`, doc officielle, ~10 crédits, mis en cache) ; sinon le texte collé.
+     Découpage accroche / problème / démonstration / preuve / appel à l'action avec les secondes, ce qui marche,
+     version adaptée au produit et au style de l'utilisateur, envoyable au studio. Pas de téléchargement de la vidéo.
+160. **Europe** : `profiles.region` et `products.region` ; identifiants France inchangés (`nx-<id>`), autres pays
+     `nx-de-<id>` ; la tâche nocturne collecte la France, puis les pays de `ENABLED_REGIONS` avec une vraie source
+     seulement (jamais de fictif hors de France) ; chaque pays a son propre relevé dans le catalogue. Le récap suit le
+     pays choisi s'il a un relevé frais, sinon la France. Mots-clés des niches traduits (DE, IT, ES) dans
+     `lib/regions.ts`. L'interface reste en français.

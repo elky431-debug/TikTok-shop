@@ -26,6 +26,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     { href: '/app/studio', label: 'Studio', icon: 'studio', mobile: true },
     { href: '/app/mes-produits', label: 'Mes produits', icon: 'produits', mobile: true },
     { href: '/app/recap', label: 'Récap', icon: 'recap', mobile: true },
+    { href: '/app/plan', label: 'Plan de publication', icon: 'plan' },
+    { href: '/app/gains', label: 'Mes gains', icon: 'gains' },
+    { href: '/app/offres', label: 'Propositions de marques', icon: 'offres' },
+    { href: '/app/analyse', label: 'Analyse de vidéo', icon: 'analyse' },
     { href: '/app/parrainage', label: 'Parrainage', icon: 'parrainage' },
     { href: '/app/compte', label: 'Compte', icon: 'compte', mobile: true },
   ];

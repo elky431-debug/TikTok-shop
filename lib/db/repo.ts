@@ -15,6 +15,8 @@ import type {
   ScriptRecord,
   Subscription,
   TopVideo,
+  RecordKind,
+  UserRecord,
 } from './types';
 import type { NicheId } from '@/lib/niches';
 
@@ -125,6 +127,15 @@ export interface Repo {
   setProviderCache(key: string, value: unknown, expiresAt: string): Promise<void>;
   /** Supprime les entrées expirées ; renvoie le nombre supprimé. */
   purgeProviderCache(): Promise<number>;
+  // Fiches V2 (gains, propositions, publications, analyses) : toujours filtrées par utilisateur.
+  listRecords<T>(userId: string, kind: RecordKind): Promise<Array<UserRecord<T>>>;
+  getRecord<T>(userId: string, id: string): Promise<UserRecord<T> | null>;
+  /** Crée la fiche, ou la met à jour si `id` est donné (et appartient à l'utilisateur). */
+  saveRecord<T>(userId: string, kind: RecordKind, data: T, id?: string): Promise<UserRecord<T>>;
+  deleteRecord(userId: string, id: string): Promise<void>;
+  countRecordsSince(userId: string, kind: RecordKind, sinceIso: string): Promise<number>;
+  /** Tâches serveur (rappels) : fiches d'un type, tous utilisateurs confondus. */
+  listAllRecords<T>(kind: RecordKind): Promise<Array<UserRecord<T>>>;
   /** Réserve une tâche quotidienne (une seule fois par jour, même si deux exécutions se chevauchent). */
   claimDailyTask(task: string, day: string): Promise<boolean>;
   /** Libère la réservation après un échec, pour réessayer à l'exécution suivante. */

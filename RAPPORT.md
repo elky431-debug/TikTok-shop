@@ -305,3 +305,51 @@ cd bot && npm install && npm run dev             # bot Discord
    et rappels « il te reste N vidéos sur ce produit » dans le récap.
 10. **Qualité des scripts** : constituer un jeu d’évaluation (20 produits × 5 formats), le relire avec des affiliés,
     ajuster le prompt système, et proposer des scripts « suite » (vidéo 2, 3… sur le même produit).
+
+---
+
+## Session 4 : tout rendre fonctionnel
+
+Branche `claude/kind-galileo-ardtih`, un commit par étape. Tests : 162 tests unitaires, intégration Supabase réelle
+(dépôt, RLS, connexion, remboursement de commission), Playwright local.
+
+| Fonctionnalité | État | Ce qui manque pour le réel |
+| --- | --- | --- |
+| Nom TikTrend partout (`lib/brand.ts`, logo deux tons) | marche en réel | — |
+| Dépendances déclarées, `npm ci` + build dans un dossier vierge (`check:deps` avant chaque build) | marche en réel | — |
+| Netlify : `netlify.toml`, tâche nocturne planifiée 3 h UTC + fonction d'arrière-plan, `/api/health` | marche en simulé | un site Netlify (étapes du README, section 3) |
+| Lien magique en français, adresses de retour (`npm run auth:setup`) | marche en réel | — (appliqué au projet Supabase) |
+| Lien magique envoyé par le SMTP de Resend | marche en simulé | `RESEND_API_KEY`, `EMAIL_FROM` (domaine vérifié), puis `npm run auth:setup` |
+| Lien affiché à l'écran : local seulement, refusé sur un site déployé | marche en réel | — |
+| Récap e-mail à l'heure choisie, une fois par jour, désinscription en un clic (RFC 8058) | marche en simulé | `RESEND_API_KEY`, `EMAIL_FROM` |
+| E-mail de partenariat formateur au fondateur | marche en simulé | `RESEND_API_KEY`, `EMAIL_FROM`, `FOUNDER_EMAIL` |
+| E-mail de test réel à `ADMIN_EMAILS` (`npm run test:integration`) | bloqué | `RESEND_API_KEY`, `EMAIL_FROM`, `ADMIN_EMAILS` |
+| Stripe : produits, prix, portail, webhook (`npm run stripe:setup`) | marche en simulé | `STRIPE_SECRET_KEY` (sk_test_), puis la commande ; ID de prix à reporter ici |
+| Mensuel / annuel, Gratuit → Pro → Pro+ (confirmation du portail), résiliation | marche en simulé | idem ; parcours réels prêts dans `tests/integration/stripe.test.ts` |
+| Échec de paiement : accès gardé, e-mail, bandeau « Mettre à jour ma carte » | marche en simulé | idem |
+| Essai formateur de 3 mois sans carte | marche en simulé | idem |
+| Commission créée par un paiement, annulée par un remboursement (au prorata) | marche en simulé (base réelle) | idem ; la colonne et la logique tournent déjà sur le vrai Supabase |
+| Discord : `/lier`, `/delier` (interactions HTTP signées), récap privé, salons du jour, rôle Pro | marche en simulé | `DISCORD_APPLICATION_ID`, `DISCORD_PUBLIC_KEY`, `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID`, salons, rôle ; `npm run discord:setup` |
+| Hébergement du bot | marche (rien à héberger) | — : fonctions Netlify, 0 € de plus |
+| Fiche produit : ventes par période (< 7 jours de relevés), puis courbe | marche en réel | — (20 vrais produits enrichis) |
+| Vidéos qui vendent (10 produits par nuit, cache 3 jours, à la demande en Pro) | marche en réel | — (3 × 5 vraies vidéos) |
+| Échantillon gratuit | retiré partout | aucune source ne le fournit (ni Nexscope, ni l'API TikTok) |
+| Vidéos dans le studio (texte et vrais chiffres dans le prompt) | marche en réel | — |
+| Connexion Google | bloqué | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (procédure dans le README), puis `npm run auth:setup` |
+| Suivi des gains : saisie, import CSV, par produit / vidéo / semaine, produit le plus rentable (Pro) | marche en réel | — |
+| Propositions de marques : lecture IA, note 0–100 face au radar, 3 réponses, historique (Pro+) | marche en réel | — (OpenAI branché) |
+| Plan de publication : 20 vidéos, rappels e-mail et Discord, export .ics (Pro) | marche en simulé (e-mail, Discord) | clés Resend et Discord pour les rappels réels ; le plan et l'.ics marchent en réel |
+| Analyse de vidéo virale : lien (Nexscope) ou texte, découpage, version adaptée (Pro+) | marche en réel | — |
+| Europe DE / IT / ES (Pro+), FR par défaut | marche en simulé | `ENABLED_REGIONS=DE,IT,ES` pour collecter ces pays (crédits Nexscope en plus) |
+
+**Budget Nexscope de la session : 9 appels sur 30.**
+- 2 appels de vérification (forme réelle des réponses) : `et/batchProductDetail` (10 produits), champ `cost` = 96 136 ;
+  `et/listProductVideo`, `cost` = 11 621. Le champ `costToken` annoncé par la doc n'est pas dans les vraies réponses ;
+  `cost` correspond, à 1 000 près, aux crédits annoncés (~96 et ~11) : à confirmer dans l'historique d'usage Nexscope.
+- 1 appel `et/batchProductDetail` d'une centaine de produits, sans réponse en 30 s (d'où les lots de 20, délai 60 s).
+- 6 appels par `npm run data:enrich` : ventes par période de 20 produits et vidéos de 3 produits.
+
+**Identifiants de prix Stripe** : pas encore créés (pas de clé). Après `npm run stripe:setup`, les reporter ici.
+
+**Échantillon gratuit** : retiré du score (poids réparti au prorata), du filtre, de la fiche, des cartes, des récaps,
+de l'accueil et de la base. Aucune route TikTok de Nexscope n'a ce champ ; `freeShipping` est la livraison offerte.

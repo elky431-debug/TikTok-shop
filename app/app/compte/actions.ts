@@ -12,6 +12,8 @@ import { isLocalMode } from '@/lib/env';
 import { isNicheId, type NicheId } from '@/lib/niches';
 import { isFollowerRange, isVideoStyle } from '@/lib/profile-rules';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { getPlan } from '@/lib/plans';
+import { isRegionId } from '@/lib/regions';
 
 function back(param: string): never {
   redirect(`/app/compte?${param}`);
@@ -72,4 +74,14 @@ export async function deleteAccountAction(formData: FormData) {
   else await createSupabaseServerClient().auth.signOut();
   cookies().delete(THEME_COOKIE);
   redirect('/compte-supprime');
+}
+
+/** Pays du catalogue (Pro+). L'interface reste en français. */
+export async function updateRegionAction(formData: FormData) {
+  const { profile } = await requireOnboardedViewer('/app/compte');
+  const region = formData.get('pays');
+  if (!getPlan(profile.plan).europe || !isRegionId(region)) redirect('/app/compte?erreur=pays#pays');
+  await getRepo().updateProfile(profile.id, { region });
+  revalidatePath('/app');
+  redirect('/app/compte?ok=pays#pays');
 }

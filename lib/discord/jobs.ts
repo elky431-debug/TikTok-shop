@@ -4,6 +4,7 @@ import { env } from '@/lib/env';
 import { getPlan } from '@/lib/plans';
 import { parisDate, parisHour } from '@/lib/utils';
 import { discordStatus } from './config';
+import { sendPublicationDiscordReminders } from '@/lib/v2/reminders';
 import { syncDiscordRole } from './link';
 import { channelMessages, digestMessage, type DiscordMessage } from './messages';
 import { DiscordApiError, discordApi } from './rest';
@@ -18,6 +19,7 @@ export interface DiscordRunResult {
   dms: { sent: number; failed: number };
   channels: 'publies' | 'deja' | 'pas-encore' | 'donnees-anciennes' | 'non-configure' | 'echec';
   roles: number | null;
+  reminders: number;
 }
 
 async function send(channelId: string, message: DiscordMessage) {
@@ -94,5 +96,6 @@ export async function runDiscordHourly(opts: { repo?: Repo; now?: Date } = {}): 
     dms: status.digests ? await deliverDiscordDigests(repo, now) : { sent: 0, failed: 0 },
     channels: await postDiscordChannels(repo, now),
     roles: await syncAllDiscordRoles(repo, now),
+    reminders: await sendPublicationDiscordReminders(parisDate(now), repo, now),
   };
 }
