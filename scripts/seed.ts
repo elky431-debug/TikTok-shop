@@ -1,7 +1,11 @@
 /**
- * Remplit la base avec 30 jours d'historique fictif (fournisseur mock), puis prépare les récaps.
+ * Remplit le catalogue, puis prépare les récaps.
+ * - Fournisseur fictif (DATA_PROVIDER=mock, par défaut) : 30 jours d'historique fictif.
+ * - Fournisseur réel (tiktok ou nexscope) : un vrai rafraîchissement du jour, sans aucune donnée fictive,
+ *   pour qu'une base de production ne contienne jamais de produits inventés.
  * Usage : npm run seed                 (base locale ou Supabase selon .env.local)
  *         npm run seed -- --sans-demo  (en local : sans les comptes de démonstration)
+ *         npm run seed -- --fictif     (force les données fictives, même avec un fournisseur réel)
  */
 import { loadEnvConfig } from '@next/env';
 
@@ -20,9 +24,13 @@ async function main() {
     console.log(`✓ Comptes de démonstration : ${demo.join(', ')}`);
   }
 
+  const { env } = await import('@/lib/env');
   const started = Date.now();
-  // Le seed utilise toujours les données fictives, quel que soit DATA_PROVIDER.
-  const result = await runNightly({ trigger: 'seed', repo, backfillDays: 30, provider: new MockProvider() });
+  const real = env.dataProvider !== 'mock' && !process.argv.includes('--fictif');
+  console.log(`Fournisseur : ${real ? env.dataProvider : 'données fictives (mock)'}`);
+  const result = real
+    ? await runNightly({ trigger: 'seed', repo })
+    : await runNightly({ trigger: 'seed', repo, backfillDays: 30, provider: new MockProvider() });
   console.log(
     `✓ ${result.refresh.products} produits, ${result.refresh.snapshots} instantanés sur 30 jours, ` +
       `${result.digests.prepared} récaps préparés (${Date.now() - started} ms)`,

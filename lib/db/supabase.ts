@@ -77,6 +77,19 @@ const toSnapshot = (r: Row): ProductSnapshot => ({
 });
 const toCoach = (r: Row): Coach => ({ ...(r as Coach), commission_rate: Number(r.commission_rate) });
 
+// Colonnes NOT NULL côté base : un détail de score absent s'écrit {} ; les ventes estimées d'un fournisseur
+// réel peuvent être décimales, les colonnes sont entières.
+const productRow = (p: Product) => ({
+  ...p,
+  latest_breakdown: p.latest_breakdown ?? {},
+  sales_30d: p.sales_30d.map((n) => Math.round(n)),
+});
+const snapshotRow = (s: ProductSnapshot) => ({
+  ...s,
+  estimated_sales: Math.round(s.estimated_sales),
+  score_breakdown: s.score_breakdown ?? {},
+});
+
 export class SupabaseRepo implements Repo {
   readonly kind = 'supabase' as const;
   constructor(private readonly db: Client = getServiceClient()) {}
@@ -187,7 +200,7 @@ export class SupabaseRepo implements Repo {
   // ------------------------------------------------------------------
   async upsertProducts(products: Product[]) {
     for (let i = 0; i < products.length; i += 200) {
-      check('produits', await this.db.from('products').upsert(products.slice(i, i + 200), { onConflict: 'id' }));
+      check('produits', await this.db.from('products').upsert(products.slice(i, i + 200).map(productRow), { onConflict: 'id' }));
     }
   }
 
@@ -211,7 +224,9 @@ export class SupabaseRepo implements Repo {
     for (let i = 0; i < snapshots.length; i += 500) {
       check(
         'instantanés',
-        await this.db.from('product_snapshots').upsert(snapshots.slice(i, i + 500), { onConflict: 'product_id,date' }),
+        await this.db
+          .from('product_snapshots')
+          .upsert(snapshots.slice(i, i + 500).map(snapshotRow), { onConflict: 'product_id,date' }),
       );
     }
   }

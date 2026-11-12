@@ -351,3 +351,40 @@ R30. **Captures** : le script défile désormais toute la page avant la capture 
      `docs/captures/` est entièrement régénéré au nouveau design.
 R31. **Comparaison aux références** : deux images côte à côte (capture EtSmart ramenée à l'échelle
      CSS, Pépite à 1 440 px) pour le haut de page et la section « TOUT-EN-UN ».
+
+## Session 3 — Brancher Pépite au réel
+
+### Étape 1 — Supabase pour de vrai
+
+71. **Aucune clé Supabase dans cet environnement** : rien n'a pu tourner contre une vraie base. Tout est
+    prêt pour que deux commandes suffisent une fois les clés posées : `npm run db:setup` puis
+    `npm run test:integration`. La documentation de Supabase (site non joignable d'ici) a été lue dans son
+    dépôt officiel (`supabase/supabase`, spécification de la CLI) et dans les types de `@supabase/supabase-js`.
+72. **Migrations par `npm run db:setup`** avec une variable dédiée, `SUPABASE_DB_URL` : la clé `service_role`
+    passe par l'API REST et ne permet pas de créer des tables. La chaîne de connexion n'est lue que par ce
+    script, jamais par l'appli, et ne va pas dans Vercel. Avec `psql`, le mot de passe passe par les variables
+    libpq (`PGPASSWORD`…), jamais en argument de commande ; sans `psql`, la CLI `supabase@3`
+    (`db push --remote=<url> --include-all --yes` : `--db-url` est déprécié en v3). Les migrations sont
+    écrites pour être rejouables, donc relancer la commande ne casse rien.
+73. **Types générés** par `supabase gen types --remote=<ref>` quand `SUPABASE_ACCESS_TOKEN` est là (API de
+    gestion, sans Docker), sinon depuis l'URL de la base. Un échec n'arrête pas la mise en place : les types
+    écrits à la main restent, et le client est volontairement peu typé (les lignes sont converties en types
+    métier dans `lib/db/supabase.ts`).
+74. **Tests d'intégration séparés** des tests unitaires (`vitest.integration.config.ts`,
+    `playwright.integration.config.ts`, lancés par `scripts/test-integration.mjs`). Sans clés, la commande dit
+    lesquelles manquent et ne lance rien (sortie 0) ; `INTEGRATION_REQUIRED=1` la fait échouer, pour une CI.
+    Les tests écrivent dans la vraie base : comptes `itest-<aléa>-…@example.com` (domaine réservé), produits
+    `itest-<aléa>-…`, tout est supprimé à la fin. **Aucun e-mail n'est envoyé** : le lien magique est généré
+    côté admin (`auth.admin.generateLink`) puis validé par `token_hash`, exactement le chemin du modèle
+    d'e-mail du README.
+75. **RLS testée avec de vrais comptes** connectés par la clé anon (comme un navigateur qui contournerait
+    l'appli) : deux utilisateurs et un formateur. On vérifie les lectures croisées, les colonnes interdites
+    (plan, formateur), le catalogue fermé, le compteur d'usage réservé au serveur, et la vue formateur
+    agrégée (e-mail seulement avec consentement).
+76. **Corrections de `SupabaseRepo` trouvées à la relecture** : un détail de score absent s'écrit `{}` (colonne
+    `jsonb not null`) et les ventes estimées sont arrondies avant d'aller dans des colonnes entières (un vrai
+    fournisseur renvoie des décimales). Le reste (jointure `referrals → profiles`, fonctions
+    `increment_usage` et `coach_student_stats`, suppression en cascade) est couvert par les tests.
+77. **`npm run seed` avec un fournisseur réel** fait un vrai rafraîchissement et ne charge jamais les 30 jours
+    fictifs : une base de production ne doit pas contenir de produits inventés. `-- --fictif` force l'ancien
+    comportement pour une base de démonstration.

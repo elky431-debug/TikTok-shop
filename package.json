@@ -13,7 +13,9 @@
     "seed": "tsx scripts/seed.ts",
     "check:sql": "bash scripts/check-sql.sh",
     "stripe:setup": "tsx scripts/stripe-setup.ts",
-    "screenshots": "node scripts/screenshots.mjs"
+    "screenshots": "node scripts/screenshots.mjs",
+    "test:integration": "node scripts/test-integration.mjs",
+    "db:setup": "tsx scripts/db-setup.ts"
   },
   "engines": {
     "node": ">=20.19"

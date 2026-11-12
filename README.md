@@ -57,7 +57,9 @@ Pour tester l’essai formateur : ouvre http://localhost:3000/r/DEMO30 puis insc
 | `npm run lint` | ESLint + vérification TypeScript |
 | `npm test` | tests unitaires (Vitest) : score, limites de plan, webhooks, studio… |
 | `npm run test:e2e` | 3 parcours Playwright (inscription, scripts, paiement) |
-| `npm run seed` | 30 jours d’historique fictif (+ comptes de démo en local) |
+| `npm run seed` | 30 jours d’historique fictif (+ comptes de démo en local) ; vrai rafraîchissement si un fournisseur réel est configuré |
+| `npm run db:setup` | Supabase réel : migrations, types TypeScript, seed |
+| `npm run test:integration` | tests contre le vrai Supabase (repo, RLS, connexion) ; ne lance rien sans clés |
 | `npm run check:sql` | applique les migrations sur un Postgres jetable et teste la RLS (si PostgreSQL est installé) |
 | `npm run stripe:setup` | crée les produits et prix Stripe, affiche les identifiants à copier |
 | `npm run screenshots` | captures d’écran des pages principales (voir l’en-tête de `scripts/screenshots.mjs`) |
@@ -74,12 +76,13 @@ sont présentes ; les autres restent simulées. Le détail de chaque variable es
 ### Supabase (base + connexion)
 
 1. Crée un projet sur https://supabase.com, dans une **région européenne** (Paris ou Francfort).
-2. Applique les migrations du dossier `supabase/migrations/`, dans l’ordre :
-   - soit avec la CLI : `npx supabase link --project-ref <ref>` puis `npx supabase db push` ;
-   - soit en collant chaque fichier dans **SQL Editor** (d’abord `…000100_schema.sql`, puis `…000200_rls_and_functions.sql`).
+2. **Project Settings → API** : copie l’URL, la clé `anon` et la clé `service_role` dans `.env.local`.
+   **Connect → Session pooler** : copie la chaîne de connexion (avec le mot de passe de la base) dans
+   `SUPABASE_DB_URL`. Elle sert seulement aux migrations, jamais à l’appli.
 3. **Authentication → URL Configuration** :
-   - *Site URL* : l’URL du site (ex. `https://pepite.fr`) ;
-   - *Redirect URLs* : ajoute `https://pepite.fr/auth/callback` et `http://localhost:3000/auth/callback`.
+   - *Site URL* : la valeur de `NEXT_PUBLIC_SITE_URL` (ex. `https://pepite.fr`) ;
+   - *Redirect URLs* : ajoute `https://pepite.fr/auth/callback**` et `http://localhost:3000/auth/callback**`
+     (les `**` laissent passer le paramètre `?suite=` qui ramène à la page demandée).
 4. **Authentication → Email Templates → Magic Link** : remplace le contenu par un texte en français, avec ce lien
    (il marche même si l’e-mail est ouvert sur un autre appareil) :
 
@@ -95,11 +98,30 @@ sont présentes ; les autres restent simulées. Le détail de chaque variable es
    (type « Application Web », URI de redirection autorisée : `https://<ref>.supabase.co/auth/v1/callback`).
 6. **Project Settings → Authentication → SMTP** : branche Resend (hôte `smtp.resend.com`, port `465`, utilisateur
    `resend`, mot de passe = ta clé Resend). Sans SMTP, Supabase limite fortement les e-mails de connexion.
-7. **Project Settings → API** : copie l’URL, la clé `anon` et la clé `service_role` dans `.env.local`.
-8. Lance `npm run seed` pour remplir le catalogue (30 jours de données fictives).
+7. Mets la base en place, en une commande :
 
-Les types TypeScript de la base sont dans `lib/db/database.types.ts` ; pour les régénérer :
-`npx supabase gen types typescript --project-id <ref> --schema public > lib/db/database.types.ts`.
+   ```bash
+   npm run db:setup
+   ```
+
+   Elle applique les migrations (avec `psql` s’il est installé, sinon avec la CLI Supabase), régénère les types
+   TypeScript (`lib/db/database.types.ts`, il faut `SUPABASE_ACCESS_TOKEN` pour passer par l’API de Supabase),
+   puis lance `npm run seed`. Les migrations sont rejouables : tu peux relancer la commande après chaque mise à
+   jour. Options : `-- --sans-types`, `-- --sans-seed`.
+8. Vérifie tout contre la vraie base :
+
+   ```bash
+   npm run test:integration
+   ```
+
+   Chaque méthode de `SupabaseRepo`, la RLS avec deux utilisateurs et un formateur, l’authentification (lien
+   magique, lien réutilisé, déconnexion) puis le parcours de connexion dans le navigateur (Playwright, port 3300).
+   Les tests créent des comptes `itest-…@example.com` et les suppriment à la fin ; aucun e-mail n’est envoyé.
+   Ajoute `E2E_GOOGLE=1` une fois Google activé pour vérifier aussi le bouton Google. Sans clés, la commande
+   dit lesquelles manquent et ne lance rien (`INTEGRATION_REQUIRED=1` la fait échouer dans ce cas, pour la CI).
+
+**Avec un fournisseur de données réel** (`DATA_PROVIDER=tiktok` ou `nexscope`), `npm run seed` fait un vrai
+rafraîchissement au lieu de charger 30 jours fictifs : aucun produit fictif n’arrive dans une base de production.
 
 ### Claude (scripts)
 
