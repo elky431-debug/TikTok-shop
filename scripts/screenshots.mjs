@@ -1,8 +1,13 @@
 /**
  * Captures d'écran des pages principales, en mobile et en desktop (mode local uniquement).
  * Prérequis : l'appli tourne (npm run build && npm start, ou npm run dev).
+ *
  * Usage : node scripts/screenshots.mjs [--base http://localhost:3000] [--email moi@test.fr]
- *         [--out screenshots] [--pages /,/app,/app/studio] [--theme dark] [--only mobile]
+ *         [--out screenshots] [--pages /,/app,@dernier-script] [--theme dark] [--only mobile]
+ *         [--format jpeg] [--scale 2] [--pro] [--suffix pro]
+ *
+ * --pro : passe le compte en Pro (paiement simulé) avant les captures.
+ * @dernier-script : ouvre le dernier script écrit (en écrit un si besoin).
  */
 import { mkdirSync } from 'node:fs';
 import { chromium, devices } from 'playwright';
@@ -19,8 +24,11 @@ const EMAIL = args.email ?? 'captures@pepite.local';
 const OUT = args.out ?? 'screenshots';
 const PAGES = (args.pages ?? '/,/prix,/formateurs,/connexion,/app,/app/studio,/app/mes-produits,/app/recap,/app/parrainage,/app/compte').split(',');
 const THEME = args.theme ?? 'light';
+const FORMAT = args.format === 'jpeg' ? 'jpeg' : 'png';
+const SUFFIX = args.suffix ? `-${args.suffix}` : '';
+const SCALE = args.scale ? Number(args.scale) : undefined;
 const VIEWPORTS = [
-  { name: 'mobile', options: { ...devices['iPhone 13'] } },
+  { name: 'mobile', options: { ...devices['iPhone 13'], ...(SCALE ? { deviceScaleFactor: SCALE } : {}) } },
   { name: 'desktop', options: { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 } },
 ].filter((v) => !args.only || v.name === args.only);
 
@@ -48,18 +56,48 @@ async function login(page) {
   }
 }
 
+async function upgrade(page) {
+  await page.goto(`${BASE}/app/compte`);
+  if (await page.isVisible('text=Gérer mon abonnement')) return;
+  await page.goto(`${BASE}/app/paiement-simule?plan=pro&periode=month`);
+  await page.click('button:has-text("Simuler le paiement")');
+  await page.waitForURL(/paiement=ok/);
+}
+
+async function openLastScript(page) {
+  await page.goto(`${BASE}/app/studio`);
+  const last = page.locator('a[href^="/app/studio/"]').first();
+  if (await last.count()) {
+    await last.click();
+  } else {
+    await page.click('button:has-text("Écrire mes scripts")');
+  }
+  await page.waitForURL(/\/app\/studio\/[0-9a-f-]{36}/);
+  await page.waitForSelector('main h1');
+}
+
 const browser = await chromium.launch();
 for (const vp of VIEWPORTS) {
   const context = await browser.newContext({ ...vp.options, colorScheme: THEME === 'dark' ? 'dark' : 'light', locale: 'fr-FR' });
   const page = await context.newPage();
-  const needsLogin = PAGES.some((p) => p.startsWith('/app') || p.startsWith('/formateur') || p.startsWith('/admin'));
+  const needsLogin = PAGES.some((p) => p.startsWith('/app') || p.startsWith('/formateur') || p.startsWith('/admin') || p.startsWith('@'));
   if (needsLogin) await login(page);
+  if (args.pro) await upgrade(page);
   for (const path of PAGES) {
-    await page.goto(`${BASE}${path}`, { waitUntil: 'load' });
+    let name;
+    if (path === '@dernier-script') {
+      await openLastScript(page);
+      name = 'studio-resultat';
+    } else {
+      await page.goto(`${BASE}${path}`, { waitUntil: 'load' });
+      await page.waitForSelector('h1');
+      name = path === '/' ? 'accueil' : path.replace(/^\//, '').replace(/[/?=&]/g, '_');
+    }
+    // En pleine page, les barres fixes apparaîtraient au milieu : on les remet dans le flux.
+    await page.addStyleTag({ content: 'header.sticky, nav.fixed { position: static !important; }' });
     await page.waitForTimeout(path === '/' ? 3500 : 700);
-    const name = path === '/' ? 'accueil' : path.replace(/^\//, '').replace(/[/?=&]/g, '_');
-    const file = `${OUT}/${name}-${vp.name}${THEME === 'dark' ? '-sombre' : ''}.png`;
-    await page.screenshot({ path: file, fullPage: true });
+    const file = `${OUT}/${name}-${vp.name}${THEME === 'dark' ? '-sombre' : ''}${SUFFIX}.${FORMAT === 'jpeg' ? 'jpg' : 'png'}`;
+    await page.screenshot({ path: file, fullPage: true, type: FORMAT, ...(FORMAT === 'jpeg' ? { quality: 72 } : {}) });
     console.log('✓', file);
   }
   await context.close();

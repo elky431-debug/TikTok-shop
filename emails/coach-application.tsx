@@ -1,3 +1,5 @@
+/** @jsxRuntime automatic */
+/** @jsxImportSource react */
 import { Heading, Text } from '@react-email/components';
 import type { CoachApplication } from '@/lib/db/types';
 import { colors, EmailLayout } from './layout';

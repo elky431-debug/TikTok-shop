@@ -118,7 +118,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Record
                   {formatRelative(lastRun.started_at)}
                 </span>
               </div>
-              <pre className="mt-3 max-h-48 overflow-auto rounded-xl bg-surface p-3 text-xs leading-relaxed">
+              <pre className="mt-3 max-h-48 overflow-auto rounded-xl bg-surface p-3 text-xs leading-relaxed" tabIndex={0} aria-label="Détail de la dernière exécution">
                 {JSON.stringify(lastRun.details, null, 2)}
               </pre>
               {runs.length > 1 ? (
@@ -190,7 +190,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Record
           {coaches.length === 0 ? (
             <EmptyState title="Aucun formateur">Passe un compte en formateur depuis la liste ci-dessous.</EmptyState>
           ) : (
-            <div className="overflow-x-auto rounded-2xl border border-line">
+            <div className="overflow-x-auto rounded-2xl border border-line" tabIndex={0} role="region" aria-label="Tableau des formateurs">
               <table className="w-full min-w-[36rem] text-left text-sm">
                 <thead className="bg-surface text-xs text-muted">
                   <tr>

@@ -5,7 +5,7 @@ import { videoStyleLabel } from '@/lib/profile-rules';
 /** Étapes pour demander un échantillon gratuit dans l'appli TikTok (sans automatisation). */
 export const SAMPLE_STEPS = [
   'Dans l’appli TikTok, ouvre ton profil puis l’espace créateur TikTok Shop (rubrique affiliation).',
-  'Cherche le produit par son nom, ouvre sa fiche et appuie sur « Demander un échantillon gratuit ».',
+  'Cherche le produit par son nom, ouvre sa fiche et appuie sur «\u00a0Demander un échantillon gratuit\u00a0».',
   'Choisis ton adresse, colle le message ci-dessous dans le champ prévu pour le vendeur, puis envoie.',
 ];
 

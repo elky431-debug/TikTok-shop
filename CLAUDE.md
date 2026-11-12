@@ -94,4 +94,13 @@ npm run seed       # 30 jours d'historique fictif
 npm run build && npm run lint && npm test
 npm run test:e2e   # Playwright
 npm run check:sql  # applique les migrations sur un Postgres jetable (si dispo)
+npm run stripe:setup  # crée produits et prix Stripe
+npm run screenshots   # captures (voir scripts/screenshots.mjs)
 ```
+
+## Où trouver quoi
+
+- Décisions : `DECISIONS.md` · État et suite : `RAPPORT.md` · Installation : `README.md`
+- Comptes de démo en local (après `npm run seed`) : `admin@pepite.local`, `formateur@pepite.local` (code DEMO30)
+- E-mails : `emails/*.tsx` (pragma `@jsxRuntime automatic` en tête, nécessaire pour tsx et Vitest)
+- Vitest transforme le JSX via `oxc` (Vite 8) : voir `vitest.config.ts`

@@ -25,7 +25,7 @@ function Row({ product, saved }: { product: Product; saved: SavedProduct }) {
   return (
     <li className={cn('rounded-2xl border p-4 sm:p-5', declining ? 'border-warn/40' : 'border-line')}>
       <div className="flex gap-3.5">
-        <Link href={`/app/produit/${product.id}`} className="shrink-0">
+        <Link href={`/app/produit/${product.id}`} className="shrink-0" tabIndex={-1} aria-hidden="true">
           <ProductImage src={product.image_url} alt="" className="w-16" />
         </Link>
         <div className="min-w-0 flex-1">

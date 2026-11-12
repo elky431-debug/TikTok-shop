@@ -1,3 +1,5 @@
+/** @jsxRuntime automatic */
+/** @jsxImportSource react */
 import { Body, Container, Head, Hr, Html, Preview, Section, Text } from '@react-email/components';
 import type { ReactNode } from 'react';
 import { BRAND } from '@/lib/brand';

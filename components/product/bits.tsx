@@ -37,7 +37,7 @@ export function TrendBadge({ trend, growth, className }: { trend: Trend; growth?
     >
       <Icon className="h-3.5 w-3.5" aria-hidden="true" />
       {TREND_LABELS[trend]}
-      {growth !== undefined ? <span className="num font-medium opacity-90">{formatGrowth(growth)}</span> : null}
+      {growth !== undefined ? <span className="num font-medium">{formatGrowth(growth)}</span> : null}
     </span>
   );
 }

@@ -216,3 +216,20 @@ Chaque décision prise sans pouvoir demander au fondateur, avec sa raison. Les p
 64. **Pages légales** avec des champs `[À COMPLÉTER : …]` surlignés (raison sociale, SIREN, TVA,
     médiateur, région Supabase, durées de conservation, versement des commissions). La plateforme
     européenne de règlement en ligne des litiges n'est pas citée (fermée en 2025).
+
+## Jalon 9 — Finitions
+
+65. **Audit d'accessibilité automatisé** (axe-core, WCAG 2.1 AA) sur 19 pages en clair et en sombre :
+    corrigés une opacité qui faisait passer un chiffre sous 4,5:1, un lien image sans nom accessible
+    (doublon retiré de l'ordre de tabulation) et un tableau défilant non focalisable. 0 violation.
+66. **Mode sombre** vérifié page par page ; le bandeau « formateurs » de l'accueil (fond encre) prend la
+    couleur de surface en sombre pour rester visible.
+67. **Playwright** : un projet mobile (Pixel 7, Chromium), base dédiée remise à zéro à chaque run, serveur
+    de production construit pour l'occasion. Le paiement passe par la simulation ; avec `E2E_STRIPE=1` et
+    des clés de test, le même test passe par le vrai Stripe Checkout (carte 4242).
+68. **Captures** : `npm run screenshots` (barres fixes remises dans le flux pour les captures pleine page) ;
+    un jeu en JPEG est versionné dans `docs/captures/` pour le fondateur.
+69. **`npm run stripe:setup`** crée les produits et les 4 prix (idempotent grâce aux `lookup_key`) et affiche
+    les variables à copier, pour éviter les erreurs de saisie.
+70. **Pages 404 et erreur en français**, sans excuses, avec une action ; `robots.txt` exclut l'appli,
+    `sitemap.xml` liste les pages publiques.

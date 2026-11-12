@@ -199,7 +199,7 @@ export default async function HomePage() {
       </section>
 
       {/* Formateurs */}
-      <section className="bg-ink text-white" aria-labelledby="formateurs">
+      <section className="bg-ink text-white dark:border-y dark:border-line dark:bg-surface" aria-labelledby="formateurs">
         <div className="mx-auto grid max-w-6xl gap-8 px-4 py-16 sm:px-6 lg:grid-cols-[1.2fr_1fr] lg:items-center lg:py-20">
           <div>
             <h2 id="formateurs" className="text-3xl">

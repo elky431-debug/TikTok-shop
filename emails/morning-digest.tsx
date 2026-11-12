@@ -1,3 +1,5 @@
+/** @jsxRuntime automatic */
+/** @jsxImportSource react */
 import { Button, Heading, Link, Section, Text } from '@react-email/components';
 import type { DigestContent } from '@/lib/db/types';
 import { nicheShort } from '@/lib/niches';

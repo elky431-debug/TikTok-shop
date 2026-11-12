@@ -1,0 +1,179 @@
+# Pépite
+
+Le radar du matin des affiliés TikTok Shop, en français : chaque matin, les produits qui montent dans tes niches,
+un score d’opportunité expliqué, et des scripts vidéo prêts à tourner. Proposé aussi aux formateurs TikTok Shop
+pour leurs élèves.
+
+> « Pépite » est un nom de travail : il vit dans une seule constante, `lib/brand.ts`.
+
+- `CLAUDE.md` : résumé du projet, de la stack et des règles.
+- `DECISIONS.md` : toutes les décisions techniques et de design, avec leur raison.
+- `RAPPORT.md` : ce qui marche, ce qui est simulé, les clés à renseigner, les prochaines étapes.
+- `docs/captures/` : captures d’écran des pages principales (mobile et desktop).
+
+---
+
+## 1. Lancer en local, sans aucune clé
+
+Il te faut **Node.js 20.19 ou plus récent** (`node -v`).
+
+```bash
+npm install
+```
+
+```bash
+npm run seed
+```
+
+```bash
+npm run dev
+```
+
+Ouvre http://localhost:3000. Sans clé, l’appli tourne en **mode local** :
+
+| Brique | En mode local |
+| --- | --- |
+| Base de données | fichier `.data/local-db.json` (créé et rempli tout seul) |
+| Connexion | lien magique affiché à l’écran, pas d’e-mail |
+| Produits | 200 produits fictifs réalistes, 30 jours d’historique |
+| Scripts | générateur simulé (pas d’appel à Claude) |
+| Paiement | simulé, sans carte (même traitement que Stripe) |
+| E-mails | rangés dans la boîte locale, visible dans `/admin` |
+
+Comptes utiles (créés par `npm run seed`) — connecte-toi avec ces adresses, le lien s’affiche à l’écran :
+
+- `admin@pepite.local` → `/admin` (passer un compte en formateur, lancer la tâche nocturne, voir les e-mails) ;
+- `formateur@pepite.local` → `/formateur` (code `DEMO30`, deux élèves de démonstration) ;
+- n’importe quelle autre adresse → nouveau compte, onboarding puis radar.
+
+Pour tester l’essai formateur : ouvre http://localhost:3000/r/DEMO30 puis inscris-toi avec une nouvelle adresse.
+
+### Commandes
+
+| Commande | Rôle |
+| --- | --- |
+| `npm run dev` | serveur de développement |
+| `npm run build` puis `npm start` | version de production |
+| `npm run lint` | ESLint + vérification TypeScript |
+| `npm test` | tests unitaires (Vitest) : score, limites de plan, webhooks, studio… |
+| `npm run test:e2e` | 3 parcours Playwright (inscription, scripts, paiement) |
+| `npm run seed` | 30 jours d’historique fictif (+ comptes de démo en local) |
+| `npm run check:sql` | applique les migrations sur un Postgres jetable et teste la RLS (si PostgreSQL est installé) |
+| `npm run stripe:setup` | crée les produits et prix Stripe, affiche les identifiants à copier |
+| `npm run screenshots` | captures d’écran des pages principales (voir l’en-tête de `scripts/screenshots.mjs`) |
+
+Pour Playwright, la première fois : `npx playwright install chromium`.
+
+---
+
+## 2. Renseigner les clés
+
+Copie `.env.example` en `.env.local` et remplis ce que tu as. **Chaque brique s’active seule** dès que ses clés
+sont présentes ; les autres restent simulées. Le détail de chaque variable est commenté dans `.env.example`.
+
+### Supabase (base + connexion)
+
+1. Crée un projet sur https://supabase.com, dans une **région européenne** (Paris ou Francfort).
+2. Applique les migrations du dossier `supabase/migrations/`, dans l’ordre :
+   - soit avec la CLI : `npx supabase link --project-ref <ref>` puis `npx supabase db push` ;
+   - soit en collant chaque fichier dans **SQL Editor** (d’abord `…000100_schema.sql`, puis `…000200_rls_and_functions.sql`).
+3. **Authentication → URL Configuration** :
+   - *Site URL* : l’URL du site (ex. `https://pepite.fr`) ;
+   - *Redirect URLs* : ajoute `https://pepite.fr/auth/callback` et `http://localhost:3000/auth/callback`.
+4. **Authentication → Email Templates → Magic Link** : remplace le contenu par un texte en français, avec ce lien
+   (il marche même si l’e-mail est ouvert sur un autre appareil) :
+
+   ```html
+   <h2>Ton lien de connexion</h2>
+   <p>Appuie sur le bouton pour te connecter. Le lien expire dans une heure.</p>
+   <p><a href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=email">Me connecter</a></p>
+   <p>Tu n’as rien demandé ? Ignore cet e-mail.</p>
+   ```
+
+   Sujet conseillé : `Ton lien de connexion`.
+5. **Authentication → Sign In / Providers → Google** : active-le avec un identifiant OAuth créé dans Google Cloud
+   (type « Application Web », URI de redirection autorisée : `https://<ref>.supabase.co/auth/v1/callback`).
+6. **Project Settings → Authentication → SMTP** : branche Resend (hôte `smtp.resend.com`, port `465`, utilisateur
+   `resend`, mot de passe = ta clé Resend). Sans SMTP, Supabase limite fortement les e-mails de connexion.
+7. **Project Settings → API** : copie l’URL, la clé `anon` et la clé `service_role` dans `.env.local`.
+8. Lance `npm run seed` pour remplir le catalogue (30 jours de données fictives).
+
+Les types TypeScript de la base sont dans `lib/db/database.types.ts` ; pour les régénérer :
+`npx supabase gen types typescript --project-id <ref> --schema public > lib/db/database.types.ts`.
+
+### Claude (scripts)
+
+Renseigne `ANTHROPIC_API_KEY` (https://console.anthropic.com). Le modèle est réglé par `ANTHROPIC_MODEL`
+(`claude-sonnet-5-5` par défaut).
+
+### Stripe (abonnements)
+
+1. Mets ta clé `STRIPE_SECRET_KEY` (commence par `sk_test_` en test).
+2. Lance `npm run stripe:setup` : il crée les produits « Pro » et « Pro+ » et leurs 4 prix
+   (19,90 €/mois, 167 €/an, 39,90 €/mois, 335 €/an) et affiche les 4 `STRIPE_PRICE_…` à copier.
+3. **Webhook** : Developers → Webhooks → *Add endpoint* → `https://ton-site/api/stripe/webhook`, avec les
+   événements `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`,
+   `customer.subscription.deleted`, `invoice.paid`. Copie le secret de signature dans `STRIPE_WEBHOOK_SECRET`.
+   En local : `stripe listen --forward-to localhost:3000/api/stripe/webhook` (le secret affiché va dans `.env.local`).
+4. **Portail client** : Settings → Billing → Customer portal → active la résiliation, la mise à jour du moyen de
+   paiement, l’historique des factures et le **changement de plan** entre les 4 prix.
+5. (Facultatif) Stripe Tax si tu factures la TVA.
+
+### Resend (e-mails)
+
+`RESEND_API_KEY` et `EMAIL_FROM` (un expéditeur d’un domaine vérifié dans Resend, ex.
+`Pépite <bonjour@pepite.fr>`). `FOUNDER_EMAIL` reçoit les demandes de partenariat des formateurs.
+
+### Données produits
+
+`DATA_PROVIDER=mock` par défaut. `tiktok` et `nexscope` sont des squelettes prêts à brancher : voir les `TODO`
+dans `lib/data/tiktok.ts` et `lib/data/nexscope.ts`. **Jamais de scraping de TikTok.**
+
+---
+
+## 3. Déployer sur Vercel
+
+1. Pousse le dépôt sur GitHub, puis **Import Project** dans Vercel (framework Next.js détecté tout seul,
+   Node 20 ou plus).
+2. Ajoute toutes les variables de `.env.example` dans *Settings → Environment Variables*, avec
+   `NEXT_PUBLIC_SITE_URL` = l’URL publique et un `CRON_SECRET` long et aléatoire.
+3. Déploie. Les tâches planifiées de `vercel.json` sont créées automatiquement : `/api/cron/refresh` à 2 h et 3 h
+   UTC ; seule celle qui tombe à **4 h, heure de Paris**, travaille. Vercel envoie `CRON_SECRET` tout seul.
+   (Deux tâches quotidiennes : compatible avec le plan gratuit de Vercel.)
+4. Mets à jour l’URL dans Supabase (Site URL, Redirect URLs) et dans le webhook Stripe.
+5. Vérifie dans `/admin` : l’état des services doit passer au vert, et « Lancer le rafraîchissement » doit réussir.
+
+---
+
+## 4. Lancer le bot Discord
+
+Le bot est un service à part, dans `bot/` (il parle à l’appli par HTTP, jamais à la base). Toutes les étapes
+(création du bot, rôle Pro, salons, hébergement) sont dans **`bot/README.md`**. En résumé :
+
+```bash
+cd bot
+cp .env.example .env
+npm install
+npm run dev
+```
+
+Côté appli : `BOT_API_SECRET` (même valeur que dans `bot/.env`) et `NEXT_PUBLIC_DISCORD_INVITE_URL`.
+Héberge-le sur un service qui garde un processus allumé (Railway, Fly.io, Render, VPS) : pas sur Vercel.
+
+---
+
+## 5. Architecture en bref
+
+```
+app/(public)/       accueil, prix, formateurs, pages légales
+app/app/            l'appli : radar, fiche produit, studio, mes produits, récap, parrainage, compte
+app/formateur/      espace formateur        app/admin/   administration
+app/api/            cron, webhook Stripe, routes du bot, visuels produits
+lib/db/             accès aux données (Supabase ou fichier local), une seule interface
+lib/data/           fournisseurs de données produits (mock, TikTok, Nexscope)
+lib/score.ts        score d'opportunité          lib/plans.ts   plans et limites
+lib/ai/             génération des scripts (Claude + simulé), garde-fou
+lib/billing/        paiement (Stripe, simulation), indépendant du reste
+emails/             e-mails React Email          bot/          bot Discord
+supabase/           migrations SQL + tests RLS   tests/        Vitest et Playwright
+```
