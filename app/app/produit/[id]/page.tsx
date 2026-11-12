@@ -53,7 +53,9 @@ export default async function ProductPage({ params }: { params: { id: string } }
     { label: 'Prix', value: formatEuros(view.price_cents) },
     { label: 'Ta commission', value: `${formatEuros(view.commission_cents)}`, sub: `par vente (${Math.round(view.commission_rate * 100)} %)`, gain: true },
     view.sales_30d.length
-      ? { label: knownDays >= 30 ? 'Ventes sur 30 jours' : `Ventes sur ${view.sales_30d.length} jour${view.sales_30d.length > 1 ? 's' : ''}`, value: formatCompact(sales30), sub: 'estimées' }
+      ? view.sales_30d.length === 1
+        ? { label: 'Ventes par jour', value: formatCompact(sales30), sub: 'estimées' }
+        : { label: knownDays >= 30 ? 'Ventes sur 30 jours' : `Ventes sur ${view.sales_30d.length} jours`, value: formatCompact(sales30), sub: 'estimées' }
       : { label: 'Ventes', value: '—', sub: 'mesurées dès la prochaine nuit' },
     ...(view.active_affiliates !== null ? [{ label: 'Affiliés actifs', value: formatInt(view.active_affiliates) }] : []),
   ];
@@ -83,7 +85,8 @@ export default async function ProductPage({ params }: { params: { id: string } }
           <header className="flex gap-4">
             <ProductImage src={view.image_url} fallback={view.image_fallback} alt={`Visuel de ${view.name}`} className="w-24 sm:w-32" />
             <div className="min-w-0">
-              <h1 className="text-2xl leading-tight sm:text-3xl">{view.name}</h1>
+              {/* Les vrais titres TikTok Shop font souvent 150 à 250 caractères : plus petits au-delà de 80. */}
+              <h1 className={cn('leading-tight', view.name.length > 80 ? 'text-lg sm:text-xl' : 'text-2xl sm:text-3xl')}>{view.name}</h1>
               <p className="mt-1 text-sm text-muted">
                 {nicheLabel(view.niche)}
                 {view.shop_name ? ` · vendu par ${view.shop_name}` : ''}
@@ -120,7 +123,7 @@ export default async function ProductPage({ params }: { params: { id: string } }
           <Card>
             <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
               <h2 className="text-lg">Ventes sur 30 jours</h2>
-              <p className="flex items-center gap-3 text-xs text-muted">
+              <p className={cn('flex items-center gap-3 text-xs text-muted', knownDays < 2 && 'hidden')}>
                 <span className="inline-flex items-center gap-1.5">
                   <span className="h-0.5 w-4 rounded bg-cyan-ink" aria-hidden="true" /> Ventes estimées
                 </span>

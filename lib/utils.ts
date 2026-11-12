@@ -39,6 +39,8 @@ export function formatPercent(ratio: number, digits = 0): string {
 
 /** Variation signée : 0.42 → « +42 % », -0.1 → « −10 % ». */
 export function formatGrowth(ratio: number): string {
+  // La croissance est plafonnée à +500 % (lib/score.ts) : au plafond, on ne prétend pas à la précision.
+  if (ratio >= 5) return '+500 % et plus';
   const pct = Math.round(ratio * 100);
   if (pct > 0) return `+${pct} %`;
   if (pct < 0) return `−${Math.abs(pct)} %`;

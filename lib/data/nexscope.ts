@@ -65,6 +65,7 @@ export interface NexscopeDiscoveryProduct {
   totalSale7dCnt?: number;
   totalSale28dCnt?: number;
   totalIflCnt?: number;
+  totalVideoCnt?: number;
   productCommissionRate?: number;
   shopName?: string;
   categoryName?: string;
@@ -107,17 +108,32 @@ export function checkNexscopeResponse(response: RawResponse): unknown {
 export function mapNexscopeProduct(raw: NexscopeDiscoveryProduct, niche: NicheId): MapResult {
   if (!raw.productId || !raw.title) return { ok: false, reason: 'identifiant ou titre absent' };
   if (raw.region && raw.region !== 'FR') return { ok: false, reason: `région ${raw.region}` };
-  // Région FR demandée : une devise absente est l'euro ; une autre devise est écartée.
-  if (raw.currency && raw.currency !== 'EUR') return { ok: false, reason: `devise ${raw.currency}` };
+  // Région FR demandée : une devise absente est l'euro ; la vraie réponse écrit « € » (la doc annonçait un code).
+  const currency = raw.currency?.trim();
+  if (currency && currency !== 'EUR' && currency !== '€') return { ok: false, reason: `devise ${currency}` };
   const priceCents = toCents(raw.price) ?? toCents(raw.minPrice);
   if (!priceCents) return { ok: false, reason: 'prix absent' };
   let rate = toCount(raw.productCommissionRate);
   if (rate === null) return { ok: false, reason: 'commission absente' };
-  // Documenté en décimal (0,10 = 10 %) ; d'autres points d'accès Nexscope l'expriment en pourcentage.
+  // Vraie réponse (12 novembre 2026) : 0 = pas de commission affiliée, donc pas un produit pour le radar.
+  if (rate === 0) return { ok: false, reason: 'pas de commission affiliée' };
+  // Documenté en décimal (0,10 = 10 %) ; d'autres points d'accès Nexscope l'expriment en pourcentage (15 = 15 %).
+  // TikTok borne la commission entre 1 % et 80 % : entre 0,8 et 1 inclus, impossible de savoir (1 = 100 % ou 1 %),
+  // le produit est écarté plutôt que d'afficher une commission inventée.
+  if (rate > 0.8 && rate <= 1) return { ok: false, reason: `commission ambiguë (${rate})` };
   if (rate > 1) rate = rate / 100;
+  if (rate > 0.8) return { ok: false, reason: `commission hors des bornes de TikTok (${rate})` };
+  // Aucun créateur et aucune vidéo : rien ne montre que le produit se vend en affiliation (souvent une fiche
+  // anormale : titre anglais, catégorie incohérente). Avec zéro concurrent, il prendrait tous les points.
+  if (raw.totalIflCnt === 0 && raw.totalVideoCnt === 0) return { ok: false, reason: 'aucun créateur ni aucune vidéo' };
   const last7 = toCount(raw.totalSale7dCnt);
   const last28 = toCount(raw.totalSale28dCnt);
   const { image, rejectedHost } = checkImage(raw.imageUrl);
+  // « Beauty & Personal Care -> Skincare -> Toners\t » dans la vraie réponse.
+  const category = raw.categoryName?.split('->').map((part) => part.trim()).filter(Boolean).join(' › ') ?? '';
+  // Ventes du jour : moyenne des 7 derniers jours. La vraie réponse renvoie totalSale1dCnt = 0 pour des produits
+  // qui vendent des centaines d'unités par jour (donnée de la veille pas encore consolidée) : inutilisable.
+  const daily = last7 !== null ? last7 / 7 : toCount(raw.totalSale1dCnt) || null;
 
   return {
     ok: true,
@@ -125,14 +141,14 @@ export function mapNexscopeProduct(raw: NexscopeDiscoveryProduct, niche: NicheId
       id: `nx-${raw.productId}`,
       name: raw.title.trim().slice(0, 200),
       niche,
-      description: raw.categoryName ? `Catégorie TikTok Shop : ${raw.categoryName}` : '',
+      description: category ? `Catégorie TikTok Shop : ${category}` : '',
       shop_name: raw.shopName?.trim() ?? '',
       price_cents: priceCents,
       commission_rate: Math.min(1, rate),
       free_sample: null,
       active_affiliates: toCount(raw.totalIflCnt),
       image_url: image,
-      estimated_sales: toCount(raw.totalSale1dCnt),
+      estimated_sales: daily === null ? null : Math.round(daily),
       units_sold_total: toCount(raw.totalSaleCnt),
       // 7 derniers jours contre la moyenne hebdomadaire des 3 semaines précédentes (jours 8 à 28).
       sales_windows: last7 !== null && last28 !== null && last28 >= last7 ? { last7, prev7: (last28 - last7) / 3 } : null,

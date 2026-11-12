@@ -32,10 +32,22 @@ export default defineConfig({
     timeout: 300_000,
     stdout: 'ignore',
     stderr: 'pipe',
+    // Toujours en mode local, même si .env.local contient de vraies clés : pas de vraie base, pas d'appel payant.
     env: {
       LOCAL_DB_PATH: '.data/e2e-db.json',
       NEXT_PUBLIC_SITE_URL: BASE_URL,
       NEXT_TELEMETRY_DISABLED: '1',
+      NEXT_PUBLIC_SUPABASE_URL: '',
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: '',
+      SUPABASE_SERVICE_ROLE_KEY: '',
+      AI_PROVIDER: '',
+      OPENAI_API_KEY: '',
+      ANTHROPIC_API_KEY: '',
+      DATA_PROVIDER: 'mock',
+      NEXSCOPE_API_KEY: '',
+      STRIPE_SECRET_KEY: '',
+      RESEND_API_KEY: '',
+      CRON_SECRET: '',
     },
   },
 });

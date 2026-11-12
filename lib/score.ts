@@ -94,7 +94,9 @@ export function computeGrowth(sales: number[]): GrowthStats {
  */
 export function growthFor(input: Pick<ScoreInput, 'sales' | 'windows'>): GrowthStats | null {
   if (input.sales.length >= MIN_DAYS_FOR_GROWTH) return computeGrowth(input.sales);
-  if (input.windows) {
+  // Sans aucune vente avant les 7 derniers jours (produit qui vient d'arriver), pas de base de comparaison :
+  // « +100 % » ne voudrait rien dire. La croissance attend nos propres relevés.
+  if (input.windows && input.windows.prev7 > 0) {
     const { last7, prev7 } = input.windows;
     return { last7, prev7, growth7d: growthFromTotals(last7, prev7), dailyAvg7: last7 / 7 };
   }

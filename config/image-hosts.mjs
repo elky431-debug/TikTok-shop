@@ -4,11 +4,12 @@
  * Seulement des domaines vus dans la documentation officielle des fournisseurs :
  *  - TikTok Shop Partner Center, exemples de `main_image_url` : p16-oec-va.ibyteimg.com,
  *    p16-oec-sg.ibyteimg.com, p19-oec-sg.ibyteimg.com, p16-oec-ttp.tiktokcdn-us.com ;
- *  - Nexscope : ses exemples utilisent example.com, aucun domaine réel n'est documenté.
+ *  - Nexscope : sa doc n'en documente aucun ; la vraie réponse (12 novembre 2026) sert ses images depuis
+ *    agent-files.linkfox.com (LinkFox, prestataire de Nexscope).
  * Un domaine réel absent d'ici est listé dans l'écran admin après la tâche nocturne (« images refusées ») :
  * l'ajouter alors dans IMAGE_HOSTS (séparés par des virgules, « *. » accepté en tête), puis redéployer.
  */
-export const DEFAULT_IMAGE_HOSTS = ['*.ibyteimg.com', '*.tiktokcdn-us.com'];
+export const DEFAULT_IMAGE_HOSTS = ['*.ibyteimg.com', '*.tiktokcdn-us.com', 'agent-files.linkfox.com'];
 
 /** @returns {string[]} */
 export function imageHostPatterns() {

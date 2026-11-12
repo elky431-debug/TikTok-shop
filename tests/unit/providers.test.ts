@@ -183,7 +183,7 @@ describe('Nexscope : correspondance des champs (réponse d’exemple)', () => {
         free_sample: null, // aucun champ chez Nexscope
         active_affiliates: 212, // totalIflCnt
         image_url: products[0].imageUrl,
-        estimated_sales: 420, // totalSale1dCnt
+        estimated_sales: 330, // 2 310 ventes sur 7 jours ÷ 7 (totalSale1dCnt n'est pas fiable, voir la vraie réponse)
         units_sold_total: 18450,
         sales_windows: { last7: 2310, prev7: 1100 }, // (5 610 − 2 310) / 3
       },
@@ -197,7 +197,7 @@ describe('Nexscope : correspondance des champs (réponse d’exemple)', () => {
     expect(result.product).toMatchObject({
       commission_rate: 0.15,
       active_affiliates: null,
-      estimated_sales: null,
+      estimated_sales: 20,
       sales_windows: null,
       image_url: '',
     });
@@ -243,6 +243,45 @@ describe('Nexscope : correspondance des champs (réponse d’exemple)', () => {
     const found = await provider.fetchTrendingProducts({ country: 'FR', date: '2026-11-12', category: 'beaute' });
     expect(bodies).toEqual([{ region: 'FR', category: 'Beauty & Personal Care', orderField: 'day7_units_sold', page: 1, pageSize: 10 }]);
     expect(found.map((p) => p.id)).toEqual(['nx-1731000000000000001', 'nx-1731000000000000002']);
+  });
+});
+
+describe('Nexscope : vraie réponse enregistrée (12 novembre 2026)', () => {
+  const real = fixture('nexscope-tiktok-product-discovery.reel.json');
+
+  it('garde les 3 produits : devise « € », catégorie en chemin, images LinkFox autorisées', () => {
+    const products = findList(real, 'products') as NexscopeDiscoveryProduct[];
+    const results = products.map((p) => mapNexscopeProduct(p, 'beaute'));
+    expect(results.every((r) => r.ok)).toBe(true);
+    const first = results[0].ok ? results[0].product : null;
+    expect(first).toMatchObject({
+      id: `nx-${products[0].productId}`,
+      niche: 'beaute',
+      price_cents: 290,
+      commission_rate: 0.1,
+      active_affiliates: 121,
+      estimated_sales: Math.round(5001 / 7),
+      units_sold_total: products[0].totalSaleCnt,
+      sales_windows: { last7: 5001, prev7: (9982 - 5001) / 3 },
+      free_sample: null,
+    });
+    expect(first?.description).toBe('Catégorie TikTok Shop : Beauty & Personal Care › Perfume › Unisex Perfume');
+    expect(new URL(first!.image_url).hostname).toBe('agent-files.linkfox.com');
+    for (const r of results) if (r.ok) expect(r.rejectedImageHost).toBeUndefined();
+  });
+
+  it('écarte les anomalies vues dans le premier vrai relevé', () => {
+    const base = (findList(real, 'products') as NexscopeDiscoveryProduct[])[0];
+    expect(mapNexscopeProduct({ ...base, productCommissionRate: 0 }, 'beaute')).toEqual({ ok: false, reason: 'pas de commission affiliée' });
+    expect(mapNexscopeProduct({ ...base, productCommissionRate: 1 }, 'beaute')).toEqual({ ok: false, reason: 'commission ambiguë (1)' });
+    expect(mapNexscopeProduct({ ...base, productCommissionRate: 95 }, 'beaute')).toMatchObject({ ok: false });
+    expect(mapNexscopeProduct({ ...base, totalIflCnt: 0, totalVideoCnt: 0 }, 'beaute')).toEqual({ ok: false, reason: 'aucun créateur ni aucune vidéo' });
+    expect(mapNexscopeProduct({ ...base, totalIflCnt: 0, totalVideoCnt: 12 }, 'beaute').ok).toBe(true);
+  });
+
+  it('confirme l’enveloppe réelle : code 0, liste sous data.products', () => {
+    expect(checkNexscopeResponse({ status: 200, json: real, retryAfterMs: null })).toBe(real);
+    expect(real.data.matchedCategoryNamePath).toBe('Beauty & Personal Care');
   });
 });
 
@@ -349,6 +388,13 @@ describe('Catalogue montré : jamais de fictif présenté comme réel', () => {
     const live = selectLiveCatalog(all, new Date('2026-11-12T08:00:00Z'));
     expect(live).toMatchObject({ demo: false, provider: 'tiktok', dataDate: '2026-11-11', stale: false });
     expect(live.products.map((p) => p.id)).toEqual(['tts-9']);
+  });
+
+  it('ne garde que la dernière exécution du jour', () => {
+    const first = real('2026-11-12', '2026-11-12T03:10:00Z');
+    const second = { ...real('2026-11-12', '2026-11-12T09:30:00Z'), id: 'tts-10' };
+    const live = selectLiveCatalog([first, second], new Date('2026-11-12T10:00:00Z'));
+    expect(live.products.map((p) => p.id)).toEqual(['tts-10']);
   });
 
   it('signale des données de plus de 36 heures', () => {

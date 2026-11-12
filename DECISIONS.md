@@ -553,3 +553,35 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      non bloquante (un nouvel essai complet pour une accroche coûterait trop cher ; l'utilisateur la régénère).
 108. **Proxy de cet environnement** : le `fetch` de Node n'y passe par le proxy qu'avec `NODE_USE_ENV_PROXY=1`
      (lancer `npm run ai:sample` ainsi ici). Rien à faire sur Vercel.
+
+## Premières vraies clés (12 novembre 2026, même jour)
+
+109. **Clés gardées dans `.env.local` uniquement** (ignoré par git, droits 600), jamais dans un commit ni dans un
+     journal. Un environnement cloud dédié, « Pépite », n'ouvre que les trois hôtes utiles :
+     `sxulrykxovyfdzgywoah.supabase.co`, `api.nexscope.ai`, `api.openai.com`. Les tests unitaires et les parcours
+     Playwright forcent le mode local (clés vidées dans `vitest.config.ts` et `playwright.config.ts`) : ils ne
+     touchent jamais la vraie base et ne font aucun appel payant.
+110. **Supabase joignable, tables absentes** : les migrations n'ont pas encore été appliquées au projet, et
+     `SUPABASE_DB_URL` (mot de passe de la base) n'a pas été fourni. Rien n'est écrit dans la base en attendant.
+111. **Nexscope, écarts entre la doc et la vraie réponse**, corrigés et couverts par une réponse réelle enregistrée
+     (`tests/fixtures/nexscope-tiktok-product-discovery.reel.json`, noms de boutiques remplacés) : devise « € » et
+     non « EUR » (tous les produits étaient écartés) ; catégorie en chemin (« Beauty & Personal Care -> Skincare ->
+     Toners\t ») ; `totalSale1dCnt` à 0 pour des produits qui vendent des centaines d'unités par jour, donc ventes du
+     jour = moyenne des 7 derniers jours ; images servies par `agent-files.linkfox.com` (prestataire de Nexscope),
+     ajouté aux domaines autorisés ; l'enveloppe `{ code, msg, data: { products } }` et les noms de catégories
+     anglais sont confirmés (`matchedCategoryNamePath`).
+112. **Garde-fous tirés du premier vrai relevé** (70 produits, une page par niche) : commission 0 = pas de commission
+     affiliée, écarté ; commission entre 0,8 et 1 inclus = ambiguë (1 = 100 % est impossible, TikTok plafonne à
+     80 %), écarté plutôt qu'inventé ; aucun créateur **et** aucune vidéo = écarté (fiches anormales : titre anglais,
+     catégorie incohérente, et elles prenaient tous les points de concurrence). Un produit arrivé dans la semaine
+     (aucune vente avant) n'a plus de « +100 % » : sa croissance attend nos relevés. Une croissance au plafond
+     s'affiche « +500 % et plus ». Une relance le même jour ne laisse plus traîner les produits qu'elle a écartés
+     (le radar ne garde que la dernière exécution). Reste : 62 vrais produits sur les 7 niches, scores de 15 à 90
+     (médiane 53).
+113. **Tendances sur ce premier relevé : 56 % « explose »**, parce que la recherche prend les meilleures ventes sur
+     7 jours, à six semaines de Noël (croissance médiane +66 %). Les seuils ne sont pas changés sur un seul relevé
+     aussi orienté : à recalibrer avec `npm run score:distribution` après une à deux semaines de relevés (3 pages par
+     niche).
+114. **Affichage des vrais titres** (souvent 150 à 250 caractères) : image produit toujours carrée (un long titre
+     l'étirait), titre de la carte n°1 limité à 3 lignes, titre de la fiche plus petit au-delà de 80 caractères ;
+     « Ventes par jour » quand il n'y a qu'un relevé, et la légende de la courbe n'apparaît qu'avec la courbe.

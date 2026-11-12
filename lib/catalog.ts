@@ -6,6 +6,7 @@ import type { Product } from '@/lib/db/types';
  *  - S'il existe des produits d'une source réelle, seuls eux sont montrés (leur dernier relevé), même si une
  *    nuit en échec a rempli la base de données fictives en repli.
  *  - Sinon, les produits fictifs sont montrés avec la mention « produits fictifs » (`demo`).
+ *  - Seuls les produits de la dernière exécution comptent (même jour et même heure de rafraîchissement).
  *  - Si le dernier relevé a plus de 36 heures, l'affichage dit « Données du [date] » (`stale`).
  */
 
@@ -31,8 +32,11 @@ export function selectLiveCatalog(all: Product[], now: Date = new Date()): LiveC
   const real = all.filter((p) => !isDemoProduct(p));
   const pool = real.length ? real : all;
   const dataDate = pool.reduce<string | null>((max, p) => (p.snapshot_date && (!max || p.snapshot_date > max) ? p.snapshot_date : max), null);
-  const products = pool.filter((p) => p.snapshot_date === dataDate);
-  const refreshedAt = products.reduce<string | null>((max, p) => (!max || p.updated_at > max ? p.updated_at : max), null);
+  const sameDay = pool.filter((p) => p.snapshot_date === dataDate);
+  const refreshedAt = sameDay.reduce<string | null>((max, p) => (!max || p.updated_at > max ? p.updated_at : max), null);
+  // Tous les produits d'une même exécution partagent la même heure (lib/jobs/refresh.ts) : une relance le même jour
+  // ne laisse pas traîner les produits qu'elle n'a plus retenus.
+  const products = sameDay.filter((p) => p.updated_at === refreshedAt);
   const ageHours = refreshedAt ? (now.getTime() - Date.parse(refreshedAt)) / 3_600_000 : 0;
   return {
     products,

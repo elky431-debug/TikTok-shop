@@ -21,7 +21,8 @@ export function ProductImage({
   className?: string;
 }) {
   const [failed, setFailed] = useState(false);
-  const classes = cn('aspect-square shrink-0 rounded-xl bg-surface object-cover', className);
+  // self-start + h-auto : dans une rangée flex, un long titre ne doit pas étirer l'image en hauteur.
+  const classes = cn('aspect-square h-auto shrink-0 self-start rounded-xl bg-surface object-cover', className);
   const remote = Boolean(src) && !src.startsWith('/') && !failed;
   if (remote) {
     return <Image src={src} alt={alt} width={256} height={256} sizes="128px" className={classes} onError={() => setFailed(true)} />;

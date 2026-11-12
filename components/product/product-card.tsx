@@ -72,7 +72,7 @@ export function FeaturedProductCard({ product }: { product: ProductView }) {
         <ProductImage src={product.image_url} fallback={product.image_fallback} alt="" className="w-24 sm:w-32" />
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium text-muted">{nicheShort(product.niche)}</p>
-          <h2 className="mt-0.5 text-lg font-semibold leading-snug group-hover:underline group-hover:underline-offset-4 sm:text-xl">
+          <h2 className="mt-0.5 line-clamp-3 text-lg font-semibold leading-snug group-hover:underline group-hover:underline-offset-4 sm:text-xl">
             {product.name}
           </h2>
           <Meta product={product} />

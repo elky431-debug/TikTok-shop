@@ -34,6 +34,23 @@ Cinq commits (« Session 3 · étape 1 » à « étape 5 »), décisions 71 à 1
 ni Stripe, Resend ou Claude). Rien n’a donc tourné contre un service réel. Tout est écrit, testé autant que
 possible sans clé, et prêt : poser les clés suffit, dans l’ordre de la liste de vérification du README.
 
+### Mise à jour : premières vraies clés (même jour, décisions 103 à 114)
+
+- **Nexscope : vrai relevé fait.** 12 appels (une page par niche, plus les vidéos de 2 produits), puis 62 vrais
+  produits France sur les 7 niches, sans repli ni image refusée. Le radar les affiche, sans la mention « produits
+  fictifs ». Six écarts entre la doc et la vraie réponse sont corrigés, et une vraie réponse sert de test.
+  Détail : décisions 111 et 112.
+- **OpenAI : 3 vraies générations** avec `gpt-5.5` (`npm run ai:sample`). Le français est naturel, au tutoiement,
+  sans interdit. Deux défauts du premier passage sont corrigés dans la consigne (hashtags anglais, « le lien ») ;
+  il reste une accroche au vouvoiement sur 30. Exemples complets dans `docs/exemples-scripts/`.
+- **Supabase : clés en place, projet joignable, mais tables absentes.** Il faut appliquer les 4 migrations :
+  `npm run db:setup` avec `SUPABASE_DB_URL`, ou en collant les 4 fichiers de `supabase/migrations/` dans le
+  SQL Editor de Supabase, dans l’ordre. Ensuite, `npm run test:integration`.
+- **Ici seulement** : les images de Nexscope (`agent-files.linkfox.com`) ne passent pas le réseau de cet
+  environnement, donc le visuel générique s’affiche à leur place. Sur Vercel, elles chargeront.
+- **Tendances** : 56 % des produits sont « explose » sur ce premier relevé, orienté meilleures ventes avant Noël.
+  À recalibrer après une à deux semaines de relevés (décision 113).
+
 ### Ce qui tourne sur du réel
 
 - **Base de données** : les trois migrations passent sur un vrai Postgres 16, **deux fois de suite** (elles sont
@@ -71,7 +88,8 @@ avant, chaque brique bascule seule dès que ses clés sont là.
 | Pour | Il faut | Où |
 | --- | --- | --- |
 | Supabase réel (étape 1) | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_DB_URL` (mot de passe de la base), et `SUPABASE_ACCESS_TOKEN` pour régénérer les types | Supabase → Project Settings → API, et Connect → Session pooler |
-| Vrais produits (étape 2) | `NEXSCOPE_API_KEY` (crédits Nexscope) | nexscope.ai → API Access |
+| Vrais produits (étape 2) | ✅ `NEXSCOPE_API_KEY` reçue, relevé réel fait | — |
+| Scripts avec OpenAI | ✅ `AI_PROVIDER=openai`, `OPENAI_API_KEY` reçus, 3 générations faites | — |
 | API officielle TikTok | ouverture des API affiliés pour la France par TikTok, puis `TIKTOK_APP_KEY`, `TIKTOK_APP_SECRET`, `TIKTOK_ACCESS_TOKEN` (compte créateur) et `TIKTOK_CATEGORY_MAP` | Partner Center TikTok Shop, responsable de compte |
 | Images réelles | les domaines d’images vus au premier relevé, dans `IMAGE_HOSTS` (l’admin les liste) | Vercel |
 | Mise en ligne (étape 5) | `NEXT_PUBLIC_SITE_URL`, `CRON_SECRET`, `ADMIN_EMAILS` et les clés Stripe, Resend, Claude | Vercel |

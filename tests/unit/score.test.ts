@@ -75,10 +75,21 @@ describe('croissance sur 7 jours', () => {
   it('mesure la croissance avec ce qu’on a : historique, sinon cumuls de la source, sinon rien', () => {
     expect(growthFor({ sales: flat(10, 5) })).toBeNull();
     expect(growthFor({ sales: flat(10, 5), windows: { last7: 700, prev7: 500 } })!.growth7d).toBeCloseTo(0.4);
+    // Produit arrivé cette semaine : aucune vente avant, pas de « +100 % » sans base de comparaison.
+    expect(growthFor({ sales: [], windows: { last7: 257, prev7: 0 } })).toBeNull();
     // 10 jours : 7 derniers comparés à la moyenne des 3 précédents.
     const partial = growthFor({ sales: [...flat(10, 3), ...flat(20, 7)] })!;
     expect(partial.growth7d).toBeCloseTo(1);
     expect(partial.dailyAvg7).toBe(20);
+  });
+});
+
+describe('affichage de la croissance', () => {
+  it('ne prétend pas à la précision au plafond', async () => {
+    const { formatGrowth } = await import('@/lib/utils');
+    expect(formatGrowth(0.42)).toBe('+42 %');
+    expect(formatGrowth(-0.3)).toBe('−30 %');
+    expect(formatGrowth(5)).toBe('+500 % et plus');
   });
 });
 
