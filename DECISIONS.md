@@ -278,3 +278,23 @@ R10. **Boutons** : tous arrondis à 12 px (8 px pour la petite taille de l'en-t�
      Principal rose : monte de 2 px et allume `--glow-pink` au survol, flèche qui glisse de 4 px.
      Secondaire : transparent, bordure `--border-strong`, fond `--bg-subtle` au survol.
 R11. **Cases et champs** : accent cyan (case cochée cyan, bordure cyan au focus) au lieu du noir.
+
+### Étape 3 — Constellation et animations
+
+R12. **Constellation sur `<canvas>`** : EtSmart pose ses formes en `div` fixes ; on garde exactement sa
+     composition (positions en %, tailles) mais dessinée sur un canvas pour pouvoir l'animer sans coût :
+     dérive sinusoïdale de 3 à 8 px sur 20 à 40 s par forme, parallaxe lissée à la souris (pointeur
+     précis et ≥ 1 024 px), pause quand l'onglet est caché **et** quand le héros sort de l'écran
+     (IntersectionObserver), dessin fixe si « réduire les animations ». Formes en blanc à 7–15 %,
+     halos cyan et rose en CSS (flou très large) derrière le titre.
+R13. **Motion** (`motion/react`, successeur de Framer Motion qu'utilise EtSmart). Séquence du héros
+     en 1,4 s : pastille 400 ms, mots décalés de 60 ms, « chaque matin. » qui glisse avec un flou qui se
+     dissipe, sous-titre, boutons, mention. Le titre complet est aussi présent en texte masqué pour
+     les lecteurs d'écran (les mots animés sont `aria-hidden`), pour éviter une lecture hachée.
+R14. **Comptage des chiffres** : rendu serveur avec la valeur finale (lisible sans JavaScript), remis à
+     0 au chargement puis compté en 1,2 s à l'entrée à l'écran, une seule fois.
+R15. **Aperçu du radar qui défile** : 5 produits (le meilleur produit qui monte dans 5 niches, beauté
+     en premier), un toutes les 3 s, effet de décalage du score à chaque changement. Comme le contenu
+     change tout seul et en continu, il se met en pause au survol et au focus, et un bouton
+     « Pause / Lecture » est fourni (critère WCAG 2.2.2). Pas de défilement automatique si « réduire
+     les animations ». Courbe cyan avec remplissage en dégradé cyan → transparent.
