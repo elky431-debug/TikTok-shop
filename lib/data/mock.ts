@@ -11,7 +11,7 @@ import { noise, Rng } from './random';
  * donc l'historique d'hier est cohérent avec « aujourd'hui » vu hier.
  */
 
-const SEED = 'pepite-fr-v1';
+const SEED = 'tiktrend-fr-v1';
 const EPOCH = '2024-01-01'; // un lundi
 
 type Archetype = 'vague' | 'fond';

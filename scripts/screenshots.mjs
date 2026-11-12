@@ -20,7 +20,7 @@ const args = Object.fromEntries(
 );
 
 const BASE = args.base ?? 'http://localhost:3000';
-const EMAIL = args.email ?? 'captures@pepite.local';
+const EMAIL = args.email ?? 'captures@tiktrend.local';
 const OUT = args.out ?? 'screenshots';
 const PAGES = (args.pages ?? '/,/prix,/formateurs,/connexion,/app,/app/studio,/app/mes-produits,/app/recap,/app/parrainage,/app/compte').split(',');
 // Le noir est le thème par défaut ; --theme light pose le cookie du thème clair (option du compte).
@@ -81,7 +81,7 @@ const browser = await chromium.launch();
 for (const vp of VIEWPORTS) {
   const context = await browser.newContext({ ...vp.options, colorScheme: 'dark', locale: 'fr-FR' });
   if (THEME === 'light') {
-    await context.addCookies([{ name: 'pepite_theme', value: 'light', url: BASE }]);
+    await context.addCookies([{ name: 'tiktrend_theme', value: 'light', url: BASE }]);
   }
   const page = await context.newPage();
   const needsLogin = PAGES.some((p) => p.startsWith('/app') || p.startsWith('/formateur') || p.startsWith('/admin') || p.startsWith('@'));

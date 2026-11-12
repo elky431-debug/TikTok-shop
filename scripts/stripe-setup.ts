@@ -24,7 +24,7 @@ async function main() {
   const stripe = new Stripe(key);
   const lines: string[] = [];
   for (const plan of PLANS) {
-    const lookups = [`pepite_${plan.key}_month`, `pepite_${plan.key}_year`];
+    const lookups = [`tiktrend_${plan.key}_month`, `tiktrend_${plan.key}_year`];
     const existing = await stripe.prices.list({ lookup_keys: lookups, active: true, limit: 10 });
     let productId = existing.data[0] ? String(existing.data[0].product) : null;
     if (!productId) {

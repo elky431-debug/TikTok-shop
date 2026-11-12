@@ -189,7 +189,7 @@ Chaque décision prise sans pouvoir demander au fondateur, avec sa raison. Les p
     (même règle que la fonction SQL). Testé.
 55. **Rôle formateur attribué à la main par l'admin**, avec code promo choisi (unicité vérifiée
     contre les codes formateurs **et** les codes de parrainage, qui partagent le lien `/r/CODE`).
-56. **Admin désigné par `ADMIN_EMAILS`** ; en mode local sans valeur, `admin@pepite.local`. L'admin
+56. **Admin désigné par `ADMIN_EMAILS`** ; en mode local sans valeur, `admin@tiktrend.local`. L'admin
     et les formateurs peuvent se connecter directement à leur espace sans passer par l'onboarding.
 57. **État des services visible dans l'admin** (base, données, scripts, paiement, e-mails) pour savoir
     d'un coup d'œil ce qui est encore simulé.
@@ -271,7 +271,7 @@ R8. **En-tête** copié d'EtSmart : fixe, 64 px, noir à 60 % flouté, bordure b
     « FR », chevron), « Se connecter » en texte, bouton « Commencer » rose. Menu mobile identique
     (bouton 36 px bordé, panneau flottant). La pastille de langue ouvre un petit menu « Français »
     (seule langue en V1) plutôt qu'un faux sélecteur inerte.
-R9. **Logo** : la pépite avec le décalage cyan / rose posée sur un halo radial flou, comme le « e »
+R9. **Logo** : le losange avec le décalage cyan / rose posée sur un halo radial flou, comme le « e »
     d'EtSmart, qui grossit et pivote légèrement au survol ; nom en deux tons (« Pé » blanc, « pite » en
     dégradé), coupe définie par `BRAND_SPLIT` dans `lib/brand.ts`.
 R10. **Boutons** : tous arrondis à 12 px (8 px pour la petite taille de l'en-tête, comme EtSmart).
@@ -306,19 +306,19 @@ R16. **Structure du brief** : héros (pastille, titre, sous-titre, deux boutons,
      marche » (01, 02, 03 en grand et en dégradé, reliés par une ligne en dégradé comme EtSmart),
      tarifs, bloc formateurs à halo rose, FAQ en accordéon, pied de page. La section « studio en
      démonstration » de la V1 disparaît (absente du brief).
-R17. **Titre sur trois lignes à 96 px** : le texte de Pépite est plus long que celui d'EtSmart ; le
+R17. **Titre sur trois lignes à 96 px** : le texte de TikTrend est plus long que celui d'EtSmart ; le
      conteneur du héros passe de 896 à 1 024 px pour garder trois lignes comme sur la capture.
      Mesures à 1 440 px : pastille à 100 px du haut (101 sur la référence), boutons à 632 px (637),
      mention à 712 px (712).
 R18. **Interlignes corrigés** : EtSmart est en Tailwind 4, où `leading-tight` l'emporte sur la taille
      responsive ; en Tailwind 3, `md:text-5xl` l'écrasait. On écrit taille et interligne ensemble
      (`md:text-8xl/[1.05]`, `md:text-5xl/tight`) pour retrouver les interlignes de la capture.
-R19. **« Recommandé » et non « Le plus choisi »** sur le plan Pro : Pépite n'a pas encore
+R19. **« Recommandé » et non « Le plus choisi »** sur le plan Pro : TikTrend n'a pas encore
      d'abonnés, l'affirmation serait fausse, et la règle n° 2 de `CLAUDE.md` (aucun faux chiffre ni
      fausse preuve sociale) n'a pas été levée par le brief. À changer en une ligne
      (`components/pricing/pricing-cards.tsx`) quand ce sera vrai.
 R20. **« Un seul outil pour tout automatiser. »** est conservé (texte du brief), avec un sous-titre
-     qui précise ce qui est automatisé (« tout le travail avant de filmer ») : Pépite ne publie jamais
+     qui précise ce qui est automatisé (« tout le travail avant de filmer ») : TikTrend ne publie jamais
      à la place de l'affilié.
 R21. **Repli sans JavaScript** : les éléments qui apparaissent au défilement sont rendus côté serveur
      avec une opacité nulle ; une règle `<noscript>` les rend visibles si JavaScript est désactivé.
@@ -350,9 +350,9 @@ R30. **Captures** : le script défile désormais toute la page avant la capture 
      dans le flux ; le noir est le thème par défaut, `--theme light` pose le cookie du thème clair.
      `docs/captures/` est entièrement régénéré au nouveau design.
 R31. **Comparaison aux références** : deux images côte à côte (capture EtSmart ramenée à l'échelle
-     CSS, Pépite à 1 440 px) pour le haut de page et la section « TOUT-EN-UN ».
+     CSS, TikTrend à 1 440 px) pour le haut de page et la section « TOUT-EN-UN ».
 
-## Session 3 — Brancher Pépite au réel
+## Session 3 — Brancher TikTrend au réel
 
 ### Étape 1 — Supabase pour de vrai
 
@@ -557,7 +557,7 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
 ## Premières vraies clés (12 novembre 2026, même jour)
 
 109. **Clés gardées dans `.env.local` uniquement** (ignoré par git, droits 600), jamais dans un commit ni dans un
-     journal. Un environnement cloud dédié, « Pépite », n'ouvre que les trois hôtes utiles :
+     journal. Un environnement cloud dédié, « TikTrend », n'ouvre que les trois hôtes utiles :
      `sxulrykxovyfdzgywoah.supabase.co`, `api.nexscope.ai`, `api.openai.com`. Les tests unitaires et les parcours
      Playwright forcent le mode local (clés vidées dans `vitest.config.ts` et `playwright.config.ts`) : ils ne
      touchent jamais la vraie base et ne font aucun appel payant.
@@ -657,3 +657,18 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
 121. **Seed réel** (`npm run seed` avec `DATA_PROVIDER=nexscope`, budget réduit à une page par niche et 2 produits
      pour les vidéos, 13 appels) : 62 vrais produits France dans Supabase, aucun produit fictif, tâche « ok » dans
      l'historique. Scores lus dans la base : 15 à 90, médiane 53.
+
+## Session 4 — Tout rendre fonctionnel
+
+### Étape 1 — Nom du produit
+
+122. **TikTrend remplace l'ancien nom partout** : `lib/brand.ts` (`BRAND = 'TikTrend'`), donc site, appli,
+     e-mails et métadonnées ; plus le reste, en dur : bot Discord, pages et textes, `package.json` et les deux
+     `package-lock.json`, README, `CLAUDE.md`, `DECISIONS.md`, `RAPPORT.md`, commentaires des migrations,
+     identifiants techniques (cookies `tiktrend_…`, comptes de démo `@tiktrend.local`, clés de recherche des prix
+     Stripe `tiktrend_…`, graine des données fictives). Aucune occurrence de l'ancien nom ne reste hors de
+     l'historique git. Les migrations déjà appliquées chez Supabase sont repérées par leur nom de fichier, qui ne
+     change pas : seuls leurs commentaires changent. Les cookies renommés déconnectent les sessions locales
+     existantes, sans autre effet.
+123. **Logo en deux tons « Tik » + « Trend »** (`BRAND_SPLIT = ['Tik', 'Trend']`) : « Tik » en blanc, « Trend » en
+     dégradé cyan → rose, comme « Ets » + « mart » chez EtSmart. Le losange ne change pas.

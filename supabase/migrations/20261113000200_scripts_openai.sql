@@ -1,5 +1,5 @@
 -- =====================================================================
--- Pépite — le générateur de scripts peut aussi utiliser OpenAI.
+-- TikTrend — le générateur de scripts peut aussi utiliser OpenAI.
 -- Rejouable : la contrainte est remplacée à chaque passage.
 -- =====================================================================
 alter table public.scripts drop constraint if exists scripts_source_check;

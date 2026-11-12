@@ -152,7 +152,7 @@ export const env = {
       .filter(Boolean);
   },
   get localAuthSecret() {
-    return read('LOCAL_AUTH_SECRET') || 'pepite-mode-local-uniquement-ne-pas-utiliser-en-production';
+    return read('LOCAL_AUTH_SECRET') || 'tiktrend-mode-local-uniquement-ne-pas-utiliser-en-production';
   },
   get localDbPath() {
     return read('LOCAL_DB_PATH') || '.data/local-db.json';
@@ -183,7 +183,7 @@ export function isResendConfigured(): boolean {
 }
 
 /** Adresse admin par défaut en mode local, pour que tout le parcours soit testable sans clé. */
-export const LOCAL_ADMIN_EMAIL = 'admin@pepite.local';
+export const LOCAL_ADMIN_EMAIL = 'admin@tiktrend.local';
 
 export function isAdminEmail(email: string | null | undefined): boolean {
   if (!email) return false;

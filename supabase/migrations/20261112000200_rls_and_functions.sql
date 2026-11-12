@@ -1,5 +1,5 @@
 -- =====================================================================
--- Pépite — Row Level Security, droits par colonne et fonctions
+-- TikTrend — Row Level Security, droits par colonne et fonctions
 -- Règle : chaque utilisateur ne voit que ses données. Le catalogue n'est
 -- lisible que côté serveur (clé service) pour que les limites du plan
 -- gratuit ne soient pas contournables depuis le navigateur.

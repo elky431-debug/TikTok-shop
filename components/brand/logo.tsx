@@ -9,7 +9,7 @@ const SIZES = {
 };
 
 /**
- * Icône du logo : une pépite (losange) avec le décalage cyan / rose façon TikTok,
+ * Icône du logo : un losange avec le décalage cyan / rose façon TikTok,
  * posée sur un halo lumineux comme le logo d'EtSmart. Le décalage est réservé au logo et au score.
  */
 export function LogoMark({ size = 36, className }: { size?: number; className?: string }) {

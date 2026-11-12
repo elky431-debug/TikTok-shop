@@ -14,7 +14,7 @@ import { BillingUnavailableError, type BillingEvent, type BillingProvider, type 
 let stripeClient: Stripe | null = null;
 export function getStripe(): Stripe {
   if (!env.stripeSecretKey) throw new BillingUnavailableError();
-  stripeClient ??= new Stripe(env.stripeSecretKey, { appInfo: { name: 'pepite' } });
+  stripeClient ??= new Stripe(env.stripeSecretKey, { appInfo: { name: 'tiktrend' } });
   return stripeClient;
 }
 

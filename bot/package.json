@@ -1,5 +1,5 @@
 {
-  "name": "pepite-bot",
+  "name": "tiktrend-bot",
   "version": "0.1.0",
   "private": true,
   "description": "Bot Discord du récap du matin (déployable à part de l'appli).",

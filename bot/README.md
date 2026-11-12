@@ -1,4 +1,4 @@
-# Bot Discord de Pépite
+# Bot Discord de TikTrend
 
 Petit service à part, qui parle à l’appli par HTTP (`/api/bot/*`). Il n’a jamais accès à la base.
 

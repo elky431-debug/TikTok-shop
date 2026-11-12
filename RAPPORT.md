@@ -1,4 +1,4 @@
-# Rapport — Pépite
+# Rapport — TikTrend
 
 Date : 12 novembre 2026. Branche : `claude/kind-galileo-ardtih` (V1 en 9 jalons, refonte du design en 6 étapes,
 session 3 « brancher au réel » en 5 étapes). La section « Session 3 » ci-dessous est la plus récente.
@@ -26,7 +26,7 @@ Captures d’écran (mobile et desktop, clair et sombre) : `docs/captures/`.
 
 ---
 
-## Session 3 — Brancher Pépite au réel
+## Session 3 — Brancher TikTrend au réel
 
 Cinq commits (« Session 3 · étape 1 » à « étape 5 »), décisions 71 à 102 dans `DECISIONS.md`.
 
@@ -184,7 +184,7 @@ jour, ou masquer les noms ?
 ## Refonte design (style EtSmart, couleurs TikTok)
 
 Le site et l’appli reprennent le design d’EtSmart (etsmart.app), copié à partir de son code source
-(`elky431-debug/Etsmart`) et des deux captures fournies, avec les couleurs de TikTok et le contenu de Pépite.
+(`elky431-debug/Etsmart`) et des deux captures fournies, avec les couleurs de TikTok et le contenu de TikTrend.
 Six commits (« Refonte 1 » à « Refonte 6 »), décisions détaillées dans `DECISIONS.md` (R1 à R31).
 
 - **Thème** : noir pur par défaut partout ; le clair reste disponible, uniquement en option dans le compte.
@@ -270,7 +270,7 @@ cd bot && npm install && npm run dev             # bot Discord
 8. **Pas de « 10× plus à partir de 20 vidéos »** : les deux montants de l’étude américaine (7,19 $ et 74,07 $ par
    vidéo) sont affichés avec leur source, sans en tirer de multiplicateur ni de promesse.
 9. **Régime de TVA inconnu** : prix affichés « en euros », mention TTC ou franchise à compléter dans les CGV.
-10. **Nom « Pépite »** : nom de travail, à changer dans `lib/brand.ts` (et le texte du README).
+10. **Nom « TikTrend »** : nom de travail, à changer dans `lib/brand.ts` (et le texte du README).
 
 ## Limites connues
 

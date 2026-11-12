@@ -99,7 +99,7 @@ async function applyMigrationsViaApi(ref: string) {
       continue;
     }
     const query = readFileSync(path.join(MIGRATIONS_DIR, file), 'utf8');
-    const key = `pepite-${name}-${createHash('sha256').update(query).digest('hex').slice(0, 16)}`;
+    const key = `tiktrend-${name}-${createHash('sha256').update(query).digest('hex').slice(0, 16)}`;
     await managementApi(`/projects/${ref}/database/migrations`, {
       method: 'POST',
       headers: { 'Idempotency-Key': key },

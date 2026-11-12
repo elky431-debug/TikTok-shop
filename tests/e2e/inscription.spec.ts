@@ -55,10 +55,10 @@ test('inscription avec un lien formateur : 3 mois de Pro offerts, sans carte', a
   await signIn(await coachContext.newPage(), coachEmail);
   await coachContext.close();
 
-  // 2. L'admin (admin@pepite.local en mode local) le passe en formateur.
+  // 2. L'admin (admin@tiktrend.local en mode local) le passe en formateur.
   const adminContext = await browser.newContext();
   const admin = await adminContext.newPage();
-  await signIn(admin, 'admin@pepite.local', '/admin');
+  await signIn(admin, 'admin@tiktrend.local', '/admin');
   await expect(admin).toHaveURL(/\/admin/);
   const row = admin.locator('li', { has: admin.getByText(coachEmail) });
   await row.locator('summary').click();

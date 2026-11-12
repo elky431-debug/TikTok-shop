@@ -8,7 +8,7 @@ import { LOCAL_ADMIN_EMAIL } from '@/lib/env';
  */
 export async function seedDemoAccounts(repo: Repo): Promise<string[]> {
   if (repo.kind !== 'local') return [];
-  const coachUser = { id: '00000000-0000-4000-8000-0000000000c1', email: 'formateur@pepite.local' };
+  const coachUser = { id: '00000000-0000-4000-8000-0000000000c1', email: 'formateur@tiktrend.local' };
   const coachProfile = await repo.ensureProfile(coachUser);
   await repo.updateProfile(coachUser.id, {
     first_name: 'Camille',
@@ -26,8 +26,8 @@ export async function seedDemoAccounts(repo: Repo): Promise<string[]> {
   });
 
   const students = [
-    { id: '00000000-0000-4000-8000-0000000000e1', email: 'eleve1@pepite.local', first_name: 'Inès', range: '500-1500' as const },
-    { id: '00000000-0000-4000-8000-0000000000e2', email: 'eleve2@pepite.local', first_name: 'Yanis', range: '1500-5000' as const },
+    { id: '00000000-0000-4000-8000-0000000000e1', email: 'eleve1@tiktrend.local', first_name: 'Inès', range: '500-1500' as const },
+    { id: '00000000-0000-4000-8000-0000000000e2', email: 'eleve2@tiktrend.local', first_name: 'Yanis', range: '1500-5000' as const },
   ];
   for (const s of students) {
     await repo.ensureProfile(s);

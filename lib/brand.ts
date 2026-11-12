@@ -1,7 +1,7 @@
 /**
  * Nom de travail du produit. Change-le ici, il change partout.
  */
-export const BRAND = 'Pépite';
+export const BRAND = 'TikTrend';
 
 /** Phrase d'accroche courte, réutilisée dans les métadonnées. */
 export const BRAND_TAGLINE = 'Sache chaque matin quoi vendre sur TikTok Shop';
@@ -14,6 +14,6 @@ export const BRAND_SLUG = BRAND.normalize('NFD')
 
 /**
  * Nom en deux tons dans le logo, comme « Ets » + « mart » sur EtSmart :
- * la première partie en blanc, la seconde en dégradé. Ajuste la coupe si le nom change.
+ * « Tik » en blanc, « Trend » en dégradé. Ajuste la coupe si le nom change.
  */
-export const BRAND_SPLIT: [string, string] = [BRAND.slice(0, 2), BRAND.slice(2)];
+export const BRAND_SPLIT: [string, string] = [BRAND.slice(0, 3), BRAND.slice(3)];

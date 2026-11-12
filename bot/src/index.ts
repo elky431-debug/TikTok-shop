@@ -1,5 +1,5 @@
 /**
- * Bot Discord de Pépite (déployable à part : Railway, Fly.io, un petit VPS…).
+ * Bot Discord de TikTrend (déployable à part : Railway, Fly.io, un petit VPS…).
  *
  * - /lier CODE : associe ton compte Discord à ton compte (code à usage unique affiché dans l'appli)
  * - /delier : retire la liaison
@@ -51,7 +51,7 @@ if (missing.length) {
   process.exit(1);
 }
 
-const BRAND = 'Pépite';
+const BRAND = 'TikTrend';
 const ROSE = 0xfe2c55;
 const STATE_FILE = new URL('../.state.json', import.meta.url);
 

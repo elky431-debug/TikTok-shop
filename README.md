@@ -1,10 +1,10 @@
-# Pépite
+# TikTrend
 
 Le radar du matin des affiliés TikTok Shop, en français : chaque matin, les produits qui montent dans tes niches,
 un score d’opportunité expliqué, et des scripts vidéo prêts à tourner. Proposé aussi aux formateurs TikTok Shop
 pour leurs élèves.
 
-> « Pépite » est un nom de travail : il vit dans une seule constante, `lib/brand.ts`.
+> « TikTrend » est un nom de travail : il vit dans une seule constante, `lib/brand.ts`.
 
 - `CLAUDE.md` : résumé du projet, de la stack et des règles.
 - `DECISIONS.md` : toutes les décisions techniques et de design, avec leur raison.
@@ -42,8 +42,8 @@ Ouvre http://localhost:3000. Sans clé, l’appli tourne en **mode local** :
 
 Comptes utiles (créés par `npm run seed`) — connecte-toi avec ces adresses, le lien s’affiche à l’écran :
 
-- `admin@pepite.local` → `/admin` (passer un compte en formateur, lancer la tâche nocturne, voir les e-mails) ;
-- `formateur@pepite.local` → `/formateur` (code `DEMO30`, deux élèves de démonstration) ;
+- `admin@tiktrend.local` → `/admin` (passer un compte en formateur, lancer la tâche nocturne, voir les e-mails) ;
+- `formateur@tiktrend.local` → `/formateur` (code `DEMO30`, deux élèves de démonstration) ;
 - n’importe quelle autre adresse → nouveau compte, onboarding puis radar.
 
 Pour tester l’essai formateur : ouvre http://localhost:3000/r/DEMO30 puis inscris-toi avec une nouvelle adresse.
@@ -86,8 +86,8 @@ sont présentes ; les autres restent simulées. Le détail de chaque variable es
      `SUPABASE_DB_URL`.
    Ni l’un ni l’autre ne sert à l’appli : ne les mets pas sur Vercel.
 3. **Authentication → URL Configuration** :
-   - *Site URL* : la valeur de `NEXT_PUBLIC_SITE_URL` (ex. `https://pepite.fr`) ;
-   - *Redirect URLs* : ajoute `https://pepite.fr/auth/callback**` et `http://localhost:3000/auth/callback**`
+   - *Site URL* : la valeur de `NEXT_PUBLIC_SITE_URL` (ex. `https://tiktrend.fr`) ;
+   - *Redirect URLs* : ajoute `https://tiktrend.fr/auth/callback**` et `http://localhost:3000/auth/callback**`
      (les `**` laissent passer le paramètre `?suite=` qui ramène à la page demandée).
 4. **Authentication → Email Templates → Magic Link** : remplace le contenu par un texte en français, avec ce lien
    (il marche même si l’e-mail est ouvert sur un autre appareil) :
@@ -165,7 +165,7 @@ npm run ai:sample
 ### Resend (e-mails)
 
 `RESEND_API_KEY` et `EMAIL_FROM` (un expéditeur d’un domaine vérifié dans Resend, ex.
-`Pépite <bonjour@pepite.fr>`). `FOUNDER_EMAIL` reçoit les demandes de partenariat des formateurs.
+`TikTrend <bonjour@tiktrend.fr>`). `FOUNDER_EMAIL` reçoit les demandes de partenariat des formateurs.
 
 ### Données produits
 
@@ -231,7 +231,7 @@ Coche chaque ligne dans cet ordre : chacune dépend des précédentes.
          secret copié dans `STRIPE_WEBHOOK_SECRET`, puis redéploiement ;
    - [ ] portail client configuré ; un vrai paiement puis une résiliation testés.
 5. **Resend** : *Domains → Add domain* → ajoute les enregistrements DNS (SPF, DKIM), attends « Verified », puis
-   `EMAIL_FROM` sur ce domaine (ex. `Pépite <bonjour@ton-domaine.fr>`). Envoie-toi un récap depuis `/app/recap`.
+   `EMAIL_FROM` sur ce domaine (ex. `TikTrend <bonjour@ton-domaine.fr>`). Envoie-toi un récap depuis `/app/recap`.
    Branche aussi le SMTP de Resend dans Supabase pour les e-mails de connexion.
 6. **Tâche nocturne testée** :
    - [ ] dans `/admin`, **Lancer le rafraîchissement** : le message doit être vert (pas « repli »), le radar doit
