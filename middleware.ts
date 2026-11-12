@@ -2,9 +2,12 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { LOCAL_SESSION_COOKIE, PROTECTED_PREFIXES } from '@/lib/auth/constants';
 import { updateSupabaseSession } from '@/lib/supabase/middleware';
 
-const supabaseConfigured = Boolean(
-  process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY,
-);
+/**
+ * Le middleware tourne en fonction Edge (Netlify). Il ne lit que les deux variables publiques, recopiées dans le code au
+ * moment du build : il ne dépend pas de la clé secrète, qui peut ne pas être visible côté Edge. Sinon il se croirait en
+ * mode local et renverrait vers /connexion un utilisateur pourtant connecté par Supabase (boucle).
+ */
+const supabaseConfigured = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
 function isProtected(pathname: string): boolean {
   return PROTECTED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
