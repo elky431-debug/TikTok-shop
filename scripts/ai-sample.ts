@@ -35,8 +35,18 @@ function frenchCheck(texts: string[], hooks: string[], hashtags: string[] = []) 
   return issues;
 }
 
+/**
+ * Prix officiels par million de jetons (entrée, sortie), relevés sur developers.openai.com/api/docs/models le
+ * 12 novembre 2026, pour estimer le coût d'une génération. Un modèle absent de la liste : coût non estimé.
+ */
+const OPENAI_PRICES: Record<string, { input: number; output: number }> = {
+  'gpt-6-luna': { input: 0.1, output: 0.5 },
+  'gpt-5.5': { input: 5, output: 30 },
+};
+
 async function main() {
   const { env } = await import('@/lib/env');
+  const { getScriptModel } = await import('@/lib/ai/providers');
   const { generateScripts, ScriptGenerationError } = await import('@/lib/ai/scripts');
   const { findIssues } = await import('@/lib/ai/guard');
   const { MockProvider } = await import('@/lib/data/mock');
@@ -74,17 +84,29 @@ async function main() {
     const started = Date.now();
     process.stdout.write(`→ ${i + 1}/3 ${c.label}… `);
     try {
-      const out = await generateScripts({ product: c.product, format: c.format, style: c.style, examplePhrase: c.examplePhrase, firstName: 'Léa', topVideos: [] });
+      const model = getScriptModel();
+      const usage = model && 'usage' in model ? (model.usage as { inputTokens: number; outputTokens: number; reasoningTokens: number }) : null;
+      const before = usage ? { ...usage } : null;
+      const out = await generateScripts({ product: c.product, format: c.format, style: c.style, examplePhrase: c.examplePhrase, firstName: 'Léa', topVideos: [] }, model);
       const seconds = Math.round((Date.now() - started) / 100) / 10;
+      let cost = '';
+      if (usage && before) {
+        const input = usage.inputTokens - before.inputTokens;
+        const output = usage.outputTokens - before.outputTokens;
+        const reasoning = usage.reasoningTokens - before.reasoningTokens;
+        const price = OPENAI_PRICES[env.openaiModel];
+        const dollars = price ? (input * price.input + output * price.output) / 1_000_000 : null;
+        cost = `${input} jetons en entrée, ${output} en sortie (dont ${reasoning} de raisonnement)${dollars !== null ? `, environ ${dollars.toFixed(4)} $` : ''}`;
+      }
       const texts = [
         ...out.hooks.map((h) => h.text),
         ...out.scripts.flatMap((s) => [s.title, s.angle, s.caption, s.call_to_action, ...s.shots.flatMap((sh) => [sh.voice, sh.on_screen_text, sh.visual])]),
       ];
       const guard = texts.flatMap((t) => findIssues(t).map((x) => `${x.reason} : « ${t} »`));
       const french = frenchCheck(texts, out.hooks.map((h) => h.text), out.scripts.flatMap((s) => s.hashtags));
-      console.log(`${seconds} s, ${out.attempts} appel(s), ${guard.length + french.length} point(s) à relire`);
+      console.log(`${seconds} s, ${out.attempts} appel(s), ${guard.length + french.length} point(s) à relire${cost ? ` · ${cost}` : ''}`);
       lines.push(`## ${i + 1}. ${c.label}`, '', `Produit : ${c.product.name}`, '');
-      lines.push(`- Source : ${out.source} · ${out.attempts} appel(s) · ${seconds} s`);
+      lines.push(`- Source : ${out.source} · ${out.attempts} appel(s) · ${seconds} s${cost ? ` · ${cost}` : ''}`);
       lines.push(`- Problèmes de la 1re réponse : ${out.firstProblems.length ? out.firstProblems.join(' ; ') : 'aucun'}`);
       lines.push(`- Interdits restants : ${guard.length ? guard.join(' ; ') : 'aucun'}`);
       lines.push(`- Relecture automatique du français : ${french.length ? french.join(' ; ') : 'rien à signaler'}`, '');
@@ -105,7 +127,7 @@ async function main() {
 
   const dir = path.join('docs', 'exemples-scripts');
   mkdirSync(dir, { recursive: true });
-  const file = path.join(dir, `${day}-${env.aiProvider}.md`);
+  const file = path.join(dir, `${day}-${env.aiProvider}-${env.aiProvider === 'openai' ? env.openaiModel : env.anthropicModel}.md`);
   writeFileSync(file, `${lines.join('\n')}\n`);
   console.log(`\n✓ Écrit dans ${file}`);
   if (failures) process.exit(1);

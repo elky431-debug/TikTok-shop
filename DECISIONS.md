@@ -537,7 +537,7 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      `type: 'refusal'`) : message clair, sans nouvel essai. `store: false` : la demande (prénom, phrase d'exemple)
      n'est pas gardée dans l'historique d'OpenAI. Pas de paramètre `reasoning` : il n'existe pas sur tous les
      modèles, et `OPENAI_MODEL` peut en désigner n'importe lequel.
-105. **Modèle par défaut `gpt-5.5`** : celui des exemples du SDK officiel. Rien d'autre n'est supposé ; il se
+105. **Modèle par défaut `gpt-5.5`** (remplacé par `gpt-6-luna`, décision 115) : celui des exemples du SDK officiel. Rien d'autre n'est supposé ; il se
      change par `OPENAI_MODEL`, et une erreur « modèle introuvable » ou « paramètre refusé » le dit en français.
 106. **`scripts.source` accepte `openai`** (migration rejouable `20261113000200_scripts_openai.sql`), pour savoir
      quel fournisseur a écrit chaque script.
@@ -585,3 +585,43 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
 114. **Affichage des vrais titres** (souvent 150 à 250 caractères) : image produit toujours carrée (un long titre
      l'étirait), titre de la carte n°1 limité à 3 lignes, titre de la fiche plus petit au-delà de 80 caractères ;
      « Ventes par jour » quand il n'y a qu'un relevé, et la légende de la courbe n'apparaît qu'avec la courbe.
+
+115. **`OPENAI_MODEL` par défaut : `gpt-6-luna`** au lieu de `gpt-5.5` (qui avait été pris dans les exemples du SDK,
+     et non comme le moins cher, ainsi que demandé). Documentation officielle lue sur developers.openai.com le
+     12 novembre 2026 (pages des prix et de chaque modèle) ; prix par million de jetons, entrée puis sortie, des
+     modèles qui gèrent les sorties structurées :
+
+     | Modèle | Entrée | Sortie | Statut |
+     | --- | --- | --- | --- |
+     | `gpt-5-nano` | 0,05 $ | 0,40 $ | déprécié |
+     | `gpt-4.1-nano` | 0,10 $ | 0,40 $ | arrêté (« Shut down ») |
+     | **`gpt-6-luna`** | **0,10 $** | **0,50 $** | **en service, le moins cher** |
+     | `gpt-5.4-nano` | 0,20 $ | 1,25 $ | déprécié |
+     | `gpt-5.6-luna` | 0,20 $ | 1,20 $ | en service |
+     | `gpt-5.5` | 5 $ | 30 $ | en service |
+
+     Un modèle déprécié ou arrêté ne peut pas servir de défaut (il cessera de répondre). `gpt-6-luna` raisonne par
+     défaut à l'effort « medium » : ses jetons de raisonnement sont facturés en sortie et inclus dans la mesure.
+116. **Comparaison du français, `npm run ai:sample`** (mêmes 3 produits, formats et styles) :
+     - **coût mesuré** de `gpt-6-luna` : environ 1 300 jetons en entrée et 3 700 à 3 950 en sortie (dont environ
+       2 000 de raisonnement), soit **0,002 $ par génération** ; `gpt-5.5`, avec des volumes semblables, coûterait
+       environ **0,12 $** (estimation : ses jetons n'avaient pas été mesurés), soit environ 55 fois plus ;
+     - **`gpt-5.5`** (`docs/exemples-scripts/2026-11-12-openai-gpt-5.5.md`) : vraie voix de créateur, accroches
+       percutantes et variées (« Regarde cette texture, elle fond direct. », « Marre de surveiller la poêle ? »),
+       ressentis concrets à faire valider par le créateur ; une accroche au vouvoiement sur 30 ;
+     - **`gpt-6-luna`, même consigne**
+       (`docs/exemples-scripts/2026-11-12-openai-gpt-6-luna-avant-reglage.md`) : français correct, tutoiement,
+       aucun interdit, hashtags en français, mais ton de fiche produit (« La fiche mentionne… », « Il est présenté
+       comme… »), 7 accroches sur 10 en questions, quelques tournures peu naturelles (« Tu regardes l'apparence
+       des ridules ? »), une accroche de 9 mots. Pour le format histoire, il laisse des passages entre crochets à
+       remplir avec du vécu réel au lieu d'en inventer : plus prudent, moins prêt à tourner ;
+     - **consigne précisée** (pour les deux fournisseurs) : le créateur ne cite jamais « la fiche », et au plus
+       3 accroches sur 10 sont des questions. **`gpt-6-luna` après réglage**
+       (`docs/exemples-scripts/2026-11-12-openai-gpt-6-luna.md`) : plus de mention de la fiche, questions limitées,
+       français correct et simple ; reste plus descriptif que `gpt-5.5` (« La composition, en trois noms. ») et une
+       accroche de 9 mots sur 30.
+     **Verdict** : la différence porte sur le punch et la spontanéité, pas sur la qualité du français, et elle ne
+     justifie pas un coût environ 55 fois plus élevé. `gpt-6-luna` devient le défaut ; `gpt-5.5` reste disponible
+     par `OPENAI_MODEL`. Piste à tester si le ton paraît trop sage aux premiers utilisateurs : `gpt-6.1-terra`
+     (1 $ puis 5 $, décrit par OpenAI comme « clear, natural writing »), environ 10 fois le coût de `gpt-6-luna`
+     et 6 fois moins que `gpt-5.5`.

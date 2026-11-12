@@ -43,7 +43,7 @@ leurs élèves (commission de 30 % récurrente, 3 mois de Pro offerts aux élèv
   message clair ; en mode local uniquement, paiement **simulé** qui passe par le même code de webhook.
 - IA des scripts : `lib/ai/scripts.ts` (commun : validation Zod, 1 nouvel essai si invalide, interdits de
   `lib/ai/guard.ts`) + un adaptateur par fournisseur dans `lib/ai/providers/` : `AI_PROVIDER=openai` (SDK `openai`,
-  Responses API, `OPENAI_MODEL`, défaut `gpt-5.5`) ou `anthropic` (SDK `@anthropic-ai/sdk`, `ANTHROPIC_MODEL`,
+  Responses API, `OPENAI_MODEL`, défaut `gpt-6-luna`, le moins cher avec sorties structurées) ou `anthropic` (SDK `@anthropic-ai/sdk`, `ANTHROPIC_MODEL`,
   défaut `claude-sonnet-5-5`). Sans clé : générateur simulé déterministe. `npm run ai:sample` = 3 scripts de test.
 - E-mails : Resend + React Email (`emails/`). Sans clé : journalisés en console + boîte locale.
 - Bot Discord : `bot/` (package séparé, discord.js), parle à l'appli via `/api/bot/*` + `BOT_API_SECRET`.

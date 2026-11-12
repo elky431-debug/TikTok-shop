@@ -17,11 +17,15 @@ import { ModelRefusalError, withCorrection, type ScriptModel } from './types';
  *    `output_parsed` vaut null ;
  *  - un refus arrive comme un contenu `type: 'refusal'` dans le message de sortie.
  * `store: false` : la demande (prénom, phrase d'exemple) n'est pas conservée dans l'historique OpenAI.
+ * Modèle : OPENAI_MODEL, par défaut gpt-6-luna (le moins cher des modèles en service avec sorties structurées).
  */
 export class OpenAIScriptModel implements ScriptModel {
   readonly name = 'openai' as const;
   readonly source = 'openai' as const;
   private client: OpenAI | null = null;
+
+  /** Jetons consommés depuis la création (pour mesurer le coût réel, par exemple dans npm run ai:sample). */
+  readonly usage = { calls: 0, inputTokens: 0, outputTokens: 0, reasoningTokens: 0 };
 
   constructor(private readonly options: { fetch?: typeof fetch } = {}) {}
 
@@ -31,7 +35,9 @@ export class OpenAIScriptModel implements ScriptModel {
   }
 
   /** Appelle l'API ; un JSON illisible ou hors schéma (erreur de Zod ou de JSON.parse) donne null, pas une panne. */
-  private async call<R extends { output: OpenAI.Responses.ResponseOutputItem[] }>(request: () => Promise<R>): Promise<R | null> {
+  private async call<R extends { output: OpenAI.Responses.ResponseOutputItem[]; usage?: OpenAI.Responses.ResponseUsage }>(
+    request: () => Promise<R>,
+  ): Promise<R | null> {
     let response: R;
     try {
       response = await request();
@@ -41,6 +47,10 @@ export class OpenAIScriptModel implements ScriptModel {
       }
       throw error;
     }
+    this.usage.calls++;
+    this.usage.inputTokens += response.usage?.input_tokens ?? 0;
+    this.usage.outputTokens += response.usage?.output_tokens ?? 0;
+    this.usage.reasoningTokens += response.usage?.output_tokens_details?.reasoning_tokens ?? 0;
     const refused = response.output.some(
       (item) => item.type === 'message' && item.content.some((part) => part.type === 'refusal'),
     );

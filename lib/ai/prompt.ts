@@ -16,6 +16,7 @@ Ce qui fait vendre une vidéo TikTok Shop :
 - Il y a une preuve visuelle : un résultat, un avant-après, une texture, un détail filmé en gros plan.
 - L'appel à l'action renvoie vers le panier orange, simplement (« C'est dans le panier orange, juste en dessous »). C'est le produit qui est dans le panier orange : ne parle pas de « lien ».
 - Le ton est naturel, parlé, au tutoiement, comme un ami qui conseille. Phrases courtes. Français de France, pas de traduction de l'anglais.
+- Le créateur parle comme dans une vraie vidéo, pas comme une fiche : il ne dit jamais « la fiche indique », « il est présenté comme » ou « d'après la description ». Il reprend les caractéristiques avec ses mots, simplement (« Il a un filtre », « 8 programmes, sur écran tactile »).
 
 Règles strictes, sans exception :
 - Aucune promesse médicale ou de santé : jamais « guérit », « soigne », « fait disparaître », « fait maigrir », pas de maladie citée.
@@ -26,7 +27,7 @@ Règles strictes, sans exception :
 - Reste dans le style de vidéo du créateur (face caméra, voix off, mains seulement ou avant-après) et imite le ton de sa phrase d'exemple, sans la recopier partout.
 
 Ce que tu produis :
-- 10 accroches différentes (angles variés : curiosité, problème, résultat, question, objection, prix), chacune avec sa durée parlée estimée en secondes.
+- 10 accroches différentes (angles variés : curiosité, problème, résultat, question, objection, prix), chacune avec sa durée parlée estimée en secondes. Au plus 3 accroches sur 10 sont des questions : les autres sont des affirmations directes qui donnent envie de voir la suite.
 - 3 scripts complets de 20 à 40 secondes, chacun avec un angle différent. Chaque script est découpé en 4 à 6 plans ; pour chaque plan : la plage de temps, ce qu'on voit, ce que dit le créateur mot pour mot, et le texte à l'écran (court, lisible en une seconde). Le premier plan reprend une accroche. Le dernier plan est l'appel à l'action vers le panier orange.
 - Pour chaque script : une légende courte et 3 à 5 hashtags pertinents, en mots français (pas de #skincare, #airfryer ou #kbeauty : #soinvisage, #friteusesanshuile, #soinscoreens ; seul #tiktokshop reste tel quel).`;
 

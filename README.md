@@ -128,7 +128,7 @@ rafraîchissement au lieu de charger 30 jours fictifs : aucun produit fictif n�
 ### IA (scripts)
 
 Le studio marche avec **OpenAI ou Claude**, au choix : `AI_PROVIDER=openai` (`OPENAI_API_KEY`, modèle
-`OPENAI_MODEL`, `gpt-5.5` par défaut) ou `AI_PROVIDER=anthropic` (`ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`). Les deux
+`OPENAI_MODEL`, `gpt-6-luna` par défaut, le moins cher qui gère les sorties JSON structurées) ou `AI_PROVIDER=anthropic` (`ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`). Les deux
 passent par la même chaîne : sortie JSON imposée par le schéma Zod, nouvel essai si le JSON est invalide ou enfreint
 les règles, liste des interdits (promesses médicales, superlatifs, gains), ligne #publicité ajoutée par le serveur.
 Sans clé, le générateur simulé prend le relais.

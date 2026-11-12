@@ -73,7 +73,7 @@ afterEach(() => vi.unstubAllEnvs());
 describe('choix du fournisseur', () => {
   it('suit AI_PROVIDER, et retombe sur le simulé si la clé du fournisseur choisi manque', () => {
     expect(env.aiProvider).toBe('openai');
-    expect(env.openaiModel).toBe('gpt-5.5');
+    expect(env.openaiModel).toBe('gpt-6-luna');
     vi.stubEnv('OPENAI_API_KEY', '');
     expect(env.aiProvider).toBeNull();
     expect(isAiConfigured()).toBe(false);
@@ -98,7 +98,7 @@ describe('génération avec OpenAI', () => {
     expect(String(url)).toBe('https://api.openai.com/v1/responses');
     expect(new Headers(init?.headers).get('authorization')).toBe('Bearer sk-test-openai');
     const body = bodyOf(fetchMock);
-    expect(body).toMatchObject({ model: 'gpt-5.5', instructions: SYSTEM_PROMPT, store: false, max_output_tokens: 16000 });
+    expect(body).toMatchObject({ model: 'gpt-6-luna', instructions: SYSTEM_PROMPT, store: false, max_output_tokens: 16000 });
     expect(body.text.format).toMatchObject({ type: 'json_schema', name: 'scripts_video', strict: true });
     expect(Object.keys(body.text.format.schema.properties)).toEqual(['hooks', 'scripts']);
     expect(body.input).toMatch(/Sérum éclat/);

@@ -32,9 +32,12 @@ export const env = {
   get openaiKey() {
     return read('OPENAI_API_KEY');
   },
-  /** Modèle OpenAI des scripts. Défaut : celui des exemples du SDK officiel (paquet openai 7.55.0). */
+  /**
+   * Modèle OpenAI des scripts. Défaut : gpt-6-luna, le moins cher des modèles en service qui gèrent les sorties
+   * JSON structurées (doc officielle, 12 novembre 2026 ; voir DECISIONS.md, décision 115).
+   */
   get openaiModel() {
-    return read('OPENAI_MODEL') || 'gpt-5.5';
+    return read('OPENAI_MODEL') || 'gpt-6-luna';
   },
   /**
    * Fournisseur d'IA des scripts : AI_PROVIDER=openai ou anthropic. Sans AI_PROVIDER : Claude si sa clé est là,
