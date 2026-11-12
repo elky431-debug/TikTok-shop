@@ -1,0 +1,77 @@
+{
+  "_source": "Réponse d'exemple construite à partir de l'exemple officiel de « Search Open Collaboration Products » (Partner Center, version 202405), adaptée à la France. Ce n'est pas une réponse enregistrée en production (aucun accès à l'API pour la France à ce jour). Noms de boutiques et de produits fictifs, aucune donnée personnelle.",
+  "code": 0,
+  "message": "Success",
+  "request_id": "202611120400000101890810281E8C70B7",
+  "data": {
+    "products": [
+      {
+        "shop": { "name": "Boutique Exemple Beauté" },
+        "id": "1729432087292775344",
+        "has_inventory": true,
+        "units_sold": 12123,
+        "title": "Sérum hydratant à l'acide hyaluronique 30 ml",
+        "sale_region": "FR",
+        "main_image_url": "https://p16-oec-va.ibyteimg.com/tos-maliva-i-o3syd03w52-us/fa0387fa5a204dcfa44d5be75877a163~tplv-o3syd03w52-origin-webp.webp?from=3478900499",
+        "detail_link": "https://shop.tiktok.com/view/product/1729432087292775344?region=FR&local=fr",
+        "original_price": { "currency": "EUR", "minimum_amount": "29.90", "maximum_amount": "29.90" },
+        "category_chains": [
+          { "id": "601450", "local_name": "Beauté et soins personnels", "is_leaf": false, "parent_id": "0" },
+          { "id": "848648", "local_name": "Soins du visage", "is_leaf": true, "parent_id": "601450" }
+        ],
+        "commission": { "rate": 1500, "currency": "EUR", "amount": "3.69" },
+        "sales_price": { "currency": "EUR", "minimum_amount": "24.60", "maximum_amount": "24.60" }
+      },
+      {
+        "shop": { "name": "Boutique Exemple Maison" },
+        "id": "1729432087292775345",
+        "has_inventory": true,
+        "title": "Organisateur de tiroir modulable, lot de 6",
+        "sale_region": "FR",
+        "main_image_url": "https://images.example.com/tiroir.webp",
+        "original_price": { "currency": "EUR", "minimum_amount": "18.00", "maximum_amount": "22.00" },
+        "category_chains": [{ "id": "600001", "local_name": "Home Supplies", "is_leaf": false, "parent_id": "0" }],
+        "commission": { "rate": 2000, "currency": "EUR", "amount": "3.60" },
+        "sales_price": { "currency": "EUR", "minimum_amount": "18.00", "maximum_amount": "22.00" }
+      },
+      {
+        "shop": { "name": "Test shop" },
+        "id": "1729432087292775346",
+        "has_inventory": true,
+        "units_sold": 500,
+        "title": "Blue t-shirt",
+        "sale_region": "ID",
+        "original_price": { "currency": "USD", "minimum_amount": "12.21", "maximum_amount": "100.00" },
+        "category_chains": [{ "id": "601152", "local_name": "Womenswear & Underwear", "is_leaf": false, "parent_id": "0" }],
+        "commission": { "rate": 3000, "currency": "USD", "amount": "121.32" },
+        "sales_price": { "currency": "USD", "minimum_amount": "34.3", "maximum_amount": "55.7" }
+      },
+      {
+        "shop": { "name": "Boutique Exemple Jouets" },
+        "id": "1729432087292775347",
+        "has_inventory": true,
+        "units_sold": 80,
+        "title": "Puzzle 1000 pièces",
+        "sale_region": "FR",
+        "original_price": { "currency": "EUR", "minimum_amount": "14.99", "maximum_amount": "14.99" },
+        "category_chains": [{ "id": "604206", "local_name": "Toys & Hobbies", "is_leaf": false, "parent_id": "0" }],
+        "commission": { "rate": 1000, "currency": "EUR", "amount": "1.50" },
+        "sales_price": { "currency": "EUR", "minimum_amount": "14.99", "maximum_amount": "14.99" }
+      },
+      {
+        "shop": { "name": "Boutique Exemple Animaux" },
+        "id": "1729432087292775348",
+        "has_inventory": false,
+        "units_sold": 900,
+        "title": "Brosse autonettoyante pour chien",
+        "sale_region": "FR",
+        "original_price": { "currency": "EUR", "minimum_amount": "16.90", "maximum_amount": "16.90" },
+        "category_chains": [{ "id": "602118", "local_name": "Pet Supplies", "is_leaf": false, "parent_id": "0" }],
+        "commission": { "rate": 1800, "currency": "EUR", "amount": "3.04" },
+        "sales_price": { "currency": "EUR", "minimum_amount": "16.90", "maximum_amount": "16.90" }
+      }
+    ],
+    "next_page_token": "",
+    "total_count": 5
+  }
+}

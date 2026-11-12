@@ -1,5 +1,6 @@
 'use client';
 
+import { ProductImage } from '@/components/product/product-image';
 import { Clapperboard, Gift, Pause, Play, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -9,15 +10,18 @@ export interface ShowcaseProduct {
   name: string;
   niche: string;
   imageUrl: string;
+  /** Visuel SVG de repli. */
+  imageFallback: string;
   price: string;
   commission: string;
   trend: string;
   rising: boolean;
-  affiliates: string;
+  /** null = la source ne le dit pas : la ligne est masquée. */
+  affiliates: string | null;
   score: number;
   sales: number[];
   hook: string;
-  freeSample: boolean;
+  freeSample: boolean | null;
 }
 
 function curve(values: number[], width: number, height: number) {
@@ -111,8 +115,7 @@ export function RadarShowcase({ products, demoData }: { products: ShowcaseProduc
         {/* Produit en cours */}
         <div className="min-w-0 rounded-2xl border border-line bg-bg/40 p-4" aria-live={autoplay ? 'off' : 'polite'}>
           <div className="flex gap-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={active.imageUrl} alt="" className="h-14 w-14 shrink-0 rounded-xl bg-surface sm:h-16 sm:w-16" />
+            <ProductImage key={active.id} src={active.imageUrl} fallback={active.imageFallback} alt="" className="h-14 w-14 sm:h-16 sm:w-16" />
             <div className="min-w-0">
               <p className="text-xs text-muted">
                 N°{index + 1} · {active.niche}
@@ -137,9 +140,11 @@ export function RadarShowcase({ products, demoData }: { products: ShowcaseProduc
               <span className={cn('rounded-full px-2 py-0.5 font-semibold', active.rising ? 'bg-cyan-ink/10 text-cyan-ink' : 'bg-surface text-muted')}>
                 {active.trend}
               </span>
-              <span className="num inline-flex items-center gap-1 text-muted">
-                <Users className="h-3.5 w-3.5" aria-hidden="true" /> {active.affiliates} affiliés
-              </span>
+              {active.affiliates !== null ? (
+                <span className="num inline-flex items-center gap-1 text-muted">
+                  <Users className="h-3.5 w-3.5" aria-hidden="true" /> {active.affiliates} affiliés
+                </span>
+              ) : null}
               {active.freeSample ? (
                 <span className="inline-flex items-center gap-1 font-semibold text-cyan-ink">
                   <Gift className="h-3.5 w-3.5" aria-hidden="true" /> Échantillon gratuit

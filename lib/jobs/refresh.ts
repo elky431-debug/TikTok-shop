@@ -1,8 +1,10 @@
-import { getProvider, type ProductDataProvider, type ProviderProduct } from '@/lib/data';
+import { getProvider, type ProductDataProvider, type ProviderProduct, type ProviderRunStats } from '@/lib/data';
+import type { SalesPoint } from '@/lib/data/provider';
 import { getRepo, type Repo } from '@/lib/db';
 import type { Product, ProductSnapshot, ScoreBreakdown, TopVideo } from '@/lib/db/types';
+import { env } from '@/lib/env';
 import { scoreProducts, trendFor, type ScoreInput } from '@/lib/score';
-import { addDays, dateRange, parisDate } from '@/lib/utils';
+import { addDays, dateRange, daysBetween, parisDate } from '@/lib/utils';
 import { mapWithConcurrency } from './concurrency';
 
 export interface RefreshOptions {
@@ -19,15 +21,49 @@ export interface RefreshResult {
   products: number;
   snapshots: number;
   durationMs: number;
+  /** Compteurs du fournisseur réel (appels, cache, reprises, quota, produits écartés, images refusées). */
+  stats?: ProviderRunStats;
 }
 
 const HISTORY_DAYS = 30;
 const GROWTH_WINDOW = 14;
 
+type Point = SalesPoint & { units_sold_total: number | null };
+
+/**
+ * Série quotidienne d'un produit : l'historique du fournisseur s'il en donne un, sinon nos instantanés des nuits
+ * précédentes plus le relevé du jour. Quand la source ne donne qu'un cumul de ventes, les ventes du jour sont la
+ * différence avec le cumul du dernier relevé (réparties sur les jours écoulés) ; le premier jour, elles restent
+ * inconnues.
+ */
+async function seriesFor(p: ProviderProduct, provider: ProductDataProvider, repo: Repo, date: string, days: number): Promise<Point[]> {
+  const history = await provider.fetchProductHistory(p.id, days, date);
+  if (history.length) return history.map((h) => ({ ...h, units_sold_total: null }));
+  const own = (await repo.getProductSnapshots(p.id, days)).filter((s) => s.date < date);
+  const previous = [...own].reverse().find((s) => s.units_sold_total !== null && s.units_sold_total !== undefined);
+  let today = p.estimated_sales;
+  if (today === null && p.units_sold_total != null && previous?.units_sold_total != null) {
+    const elapsed = Math.max(1, daysBetween(previous.date, date));
+    today = Math.max(0, (p.units_sold_total - previous.units_sold_total) / elapsed);
+  }
+  return [
+    ...own.map((s) => ({
+      date: s.date,
+      estimated_sales: s.estimated_sales,
+      affiliates: s.affiliates,
+      units_sold_total: s.units_sold_total ?? null,
+    })),
+    { date, estimated_sales: today, affiliates: p.active_affiliates, units_sold_total: p.units_sold_total ?? null },
+  ];
+}
+
+const knownSales = (points: Point[]) =>
+  points.filter((pt) => pt.estimated_sales !== null).map((pt) => Math.round(pt.estimated_sales as number));
+
 /**
  * Étapes 1 à 3 de la tâche nocturne : récupère les produits du jour, enregistre l'instantané
  * quotidien et calcule le score d'opportunité. Avec `backfillDays`, recalcule aussi les jours passés
- * (utilisé par le seed pour remplir 30 jours d'historique).
+ * (utilisé par le seed pour remplir 30 jours d'historique fictif).
  */
 export async function refreshCatalog(options: RefreshOptions = {}): Promise<RefreshResult> {
   const started = Date.now();
@@ -37,25 +73,18 @@ export async function refreshCatalog(options: RefreshOptions = {}): Promise<Refr
   const backfillDays = Math.max(1, options.backfillDays ?? 1);
 
   const products = await provider.fetchTrendingProducts({ country: 'FR', date });
+  if (provider.name !== 'mock' && products.length === 0) {
+    throw new Error(`${provider.name} : aucun produit vendu en France n’a été reçu.`);
+  }
   const totalDays = HISTORY_DAYS + GROWTH_WINDOW + backfillDays;
-
-  // Historique complet par produit (fournisseur, ou nos propres instantanés s'il n'en donne pas).
-  const histories = await mapWithConcurrency(products, 8, async (p) => {
-    const history = await provider.fetchProductHistory(p.id, totalDays, date);
-    if (history.length) return history;
-    const own = await repo.getProductSnapshots(p.id, totalDays - 1);
-    return [
-      ...own.map((s) => ({ date: s.date, estimated_sales: s.estimated_sales, affiliates: s.affiliates })),
-      { date, estimated_sales: p.estimated_sales, affiliates: p.active_affiliates },
-    ];
-  });
+  const series = await mapWithConcurrency(products, 8, (p) => seriesFor(p, provider, repo, date, totalDays));
 
   const days = dateRange(date, backfillDays);
   const snapshots: ProductSnapshot[] = [];
   let todayScores = new Map<string, ScoreBreakdown>();
 
   for (const day of days) {
-    const points = histories.map((history) => history.filter((h) => h.date <= day));
+    const points = series.map((history) => history.filter((h) => h.date <= day));
     const inputs: ScoreInput[] = products.map((p, i) => ({
       id: p.id,
       niche: p.niche,
@@ -63,16 +92,19 @@ export async function refreshCatalog(options: RefreshOptions = {}): Promise<Refr
       commission_rate: p.commission_rate,
       free_sample: p.free_sample,
       affiliates: points[i].at(-1)?.affiliates ?? p.active_affiliates,
-      sales: points[i].slice(-GROWTH_WINDOW).map((h) => h.estimated_sales),
+      sales: knownSales(points[i]).slice(-GROWTH_WINDOW),
+      windows: day === date ? (p.sales_windows ?? null) : null,
     }));
     const scores = scoreProducts(inputs);
     inputs.forEach((input, i) => {
       const breakdown = scores.get(input.id)!;
+      const last = points[i].at(-1);
       snapshots.push({
         product_id: input.id,
         date: day,
-        estimated_sales: points[i].at(-1)?.estimated_sales ?? 0,
+        estimated_sales: last?.date === day ? last.estimated_sales : null,
         affiliates: input.affiliates,
+        units_sold_total: last?.date === day ? last.units_sold_total : null,
         score: breakdown.total,
         score_breakdown: breakdown,
         trend: trendFor(breakdown.growth_7d),
@@ -81,9 +113,9 @@ export async function refreshCatalog(options: RefreshOptions = {}): Promise<Refr
     if (day === date) todayScores = scores;
   }
 
-  // Vidéos de référence : tous les produits pour le mock, seulement les mieux notés sinon (coût API).
+  // Vidéos de référence : tous les produits pour le mock ; seulement les mieux notés pour une source payante.
   const ranked = [...products].sort((a, b) => (todayScores.get(b.id)?.total ?? 0) - (todayScores.get(a.id)?.total ?? 0));
-  const videoTargets = new Set((provider.name === 'mock' ? ranked : ranked.slice(0, 60)).map((p) => p.id));
+  const videoTargets = new Set((provider.name === 'mock' ? ranked : ranked.slice(0, env.dataVideoProducts)).map((p) => p.id));
   const existing = new Map((await repo.getProducts(products.map((p) => p.id))).map((p) => [p.id, p]));
   const videos = new Map<string, TopVideo[]>();
   await mapWithConcurrency([...videoTargets], 6, async (id) => {
@@ -97,7 +129,7 @@ export async function refreshCatalog(options: RefreshOptions = {}): Promise<Refr
   const nowIso = new Date().toISOString();
   const rows: Product[] = products.map((p: ProviderProduct, i) => {
     const breakdown = todayScores.get(p.id)!;
-    const salesWindow = histories[i].filter((h) => h.date <= date && h.date > addDays(date, -HISTORY_DAYS));
+    const window = series[i].filter((h) => h.date <= date && h.date > addDays(date, -HISTORY_DAYS));
     return {
       id: p.id,
       provider: provider.name,
@@ -110,13 +142,13 @@ export async function refreshCatalog(options: RefreshOptions = {}): Promise<Refr
       free_sample: p.free_sample,
       active_affiliates: p.active_affiliates,
       image_url: p.image_url,
-      top_videos: videos.get(p.id) ?? existing.get(p.id)?.top_videos ?? [],
+      top_videos: videos.get(p.id)?.length ? videos.get(p.id)! : (existing.get(p.id)?.top_videos ?? []),
       snapshot_date: date,
       latest_score: breakdown.total,
       latest_breakdown: breakdown,
       trend: trendFor(breakdown.growth_7d),
-      growth_7d: breakdown.growth_7d,
-      sales_30d: salesWindow.map((h) => h.estimated_sales),
+      growth_7d: breakdown.growth_7d ?? 0,
+      sales_30d: knownSales(window),
       updated_at: nowIso,
     };
   });
@@ -130,5 +162,6 @@ export async function refreshCatalog(options: RefreshOptions = {}): Promise<Refr
     products: rows.length,
     snapshots: snapshots.length,
     durationMs: Date.now() - started,
+    ...(provider.stats ? { stats: provider.stats() } : {}),
   };
 }

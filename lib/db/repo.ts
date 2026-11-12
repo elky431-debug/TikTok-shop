@@ -111,6 +111,12 @@ export interface Repo {
   listCoachApplications(): Promise<CoachApplication[]>;
   updateCoachApplication(id: string, status: CoachApplication['status']): Promise<void>;
 
+  // Cache des réponses du fournisseur de données (évite de repayer un appel identique le même jour)
+  getProviderCache(key: string): Promise<unknown | null>;
+  setProviderCache(key: string, value: unknown, expiresAt: string): Promise<void>;
+  /** Supprime les entrées expirées ; renvoie le nombre supprimé. */
+  purgeProviderCache(): Promise<number>;
+
   // Tâches planifiées
   startCronRun(job: string, trigger: CronRun['trigger']): Promise<CronRun>;
   finishCronRun(id: string, status: 'ok' | 'error', details: Record<string, unknown>): Promise<void>;

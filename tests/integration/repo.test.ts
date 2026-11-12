@@ -25,8 +25,8 @@ function product(n: number, score: number): Product {
     shop_name: 'Boutique de test',
     price_cents: 1990 + n,
     commission_rate: 0.15,
-    free_sample: n % 2 === 0,
-    active_affiliates: 12 * n,
+    active_affiliates: n === 1 ? null : 12 * n, // inconnu chez certaines sources
+    free_sample: n === 1 ? null : n % 2 === 0,
     image_url: '',
     top_videos: [],
     snapshot_date: '2026-11-12',
@@ -104,7 +104,8 @@ describe.skipIf(!supabaseReady)('SupabaseRepo contre la vraie base', () => {
     await repo.upsertProducts(products);
     const one = await repo.getProduct(products[0].id);
     expect(one?.commission_rate).toBe(0.15);
-    expect(one?.active_affiliates).toBe(12);
+    expect(one?.active_affiliates).toBeNull();
+    expect(one?.free_sample).toBeNull();
     expect(one?.latest_breakdown?.total).toBe(91);
     expect((await repo.getProducts(products.map((p) => p.id))).length).toBe(products.length);
     expect((await repo.listProducts({ niches: ['animaux'] })).some((p) => p.id === products[0].id)).toBe(true);
@@ -113,16 +114,26 @@ describe.skipIf(!supabaseReady)('SupabaseRepo contre la vraie base', () => {
     const snapshots: ProductSnapshot[] = ['2026-11-10', '2026-11-11', day].map((date, i) => ({
       product_id: products[0].id,
       date,
-      estimated_sales: 10 + i,
-      affiliates: 5 + i,
+      affiliates: i === 0 ? null : 5 + i,
+      estimated_sales: i === 0 ? null : 10 + i,
+      units_sold_total: 1000 + i * 10,
       score: 80 + i,
       score_breakdown: breakdown(80 + i),
       trend: 'monte',
     }));
     await repo.upsertSnapshots(snapshots);
     await repo.upsertSnapshots(snapshots); // rejouable
-    const history = await repo.getProductSnapshots(products[0].id, 2);
-    expect(history.map((s) => s.date)).toEqual(['2026-11-11', day]);
+    const history = await repo.getProductSnapshots(products[0].id, 3);
+    expect(history.map((s) => s.date)).toEqual(['2026-11-10', '2026-11-11', day]);
+    expect(history[0]).toMatchObject({ estimated_sales: null, affiliates: null, units_sold_total: 1000 });
+  });
+
+  it('met en cache les réponses du fournisseur, puis purge les entrées expirées', async () => {
+    await repo.setProviderCache(`${RUN}-cle`, { products: [1, 2] }, new Date(Date.now() + 60_000).toISOString());
+    expect(await repo.getProviderCache(`${RUN}-cle`)).toEqual({ products: [1, 2] });
+    await repo.setProviderCache(`${RUN}-vieux`, { a: 1 }, new Date(Date.now() - 1000).toISOString());
+    expect(await repo.getProviderCache(`${RUN}-vieux`)).toBeNull();
+    expect(await repo.purgeProviderCache()).toBeGreaterThanOrEqual(1);
   });
 
   it('applique les limites de plan au radar, côté serveur', async () => {

@@ -81,13 +81,15 @@ interface DigestProduct {
   score: number | null;
   trend: string;
   growth_7d: number;
-  free_sample: boolean;
+  free_sample: boolean | null;
   reason: string;
 }
 interface DigestContent {
   date: string;
   first_name: string | null;
   products: DigestProduct[];
+  /** Produits fictifs (démonstration). */
+  demo?: boolean;
   hook: { product_name: string; text: string } | null;
   script: { title: string; lines: string[] } | null;
 }
@@ -170,6 +172,7 @@ function digestEmbed(content: DigestContent, siteUrl: string) {
     .setTitle(`${content.first_name ? `${content.first_name}, voici` : 'Voici'} tes produits du jour`)
     .setURL(`${siteUrl}/app`)
     .setFooter({ text: `${BRAND} · signale toujours la collaboration commerciale (#publicité)` });
+  if (content.demo) embed.setDescription('Produits fictifs : démonstration en attendant le branchement des vraies données.');
   for (const [i, p] of content.products.entries()) {
     embed.addFields({
       name: `${i + 1}. ${p.name}${p.score !== null ? ` · ${p.score}/100` : ''}`,
@@ -214,15 +217,24 @@ async function postDailyChannels(client: Client) {
   if (hour < config.publicHour || state.lastPublicDay === day) return;
   const data = await api<{
     site_url: string;
+    demo?: boolean;
+    stale?: boolean;
     teaser: Array<{ masked_name: string; niche: string; trend: string; growth_7d: number }>;
     full: Array<{ name: string; niche: string; score: number; price_cents: number; commission_cents: number; trend: string; growth_7d: number; url: string }>;
   }>('/daily');
+  // Données de plus de 36 heures : on ne les publie pas comme « produits du jour ».
+  if (data.stale) {
+    console.warn('Données de plus de 36 heures : salons du jour non publiés.');
+    writeState({ ...state, lastPublicDay: day });
+    return;
+  }
+  const suffix = data.demo ? ' (produits fictifs, démonstration)' : '';
 
   if (config.publicChannelId) {
     const channel = (await client.channels.fetch(config.publicChannelId)) as TextChannel | null;
     const embed = new EmbedBuilder()
       .setColor(ROSE)
-      .setTitle('Les produits du jour')
+      .setTitle(`Les produits du jour${suffix}`)
       .setDescription(
         data.teaser.map((p, i) => `**${i + 1}. ${p.masked_name}** · ${p.niche} · ${p.trend} ${growth(p.growth_7d)}`).join('\n') +
           `\n\nNoms, scores et la suite du classement : réservés aux membres Pro. [Voir les plans](${data.site_url}/prix)`,
@@ -233,7 +245,7 @@ async function postDailyChannels(client: Client) {
     const channel = (await client.channels.fetch(config.proChannelId)) as TextChannel | null;
     const embed = new EmbedBuilder()
       .setColor(0x25f4ee)
-      .setTitle('Radar complet du jour')
+      .setTitle(`Radar complet du jour${suffix}`)
       .setDescription(
         data.full
           .map((p, i) => `**${i + 1}. [${p.name}](${p.url})** · ${p.score}/100\n${p.niche} · ${euros(p.price_cents)} · ${euros(p.commission_cents)} par vente · ${p.trend} ${growth(p.growth_7d)}`)

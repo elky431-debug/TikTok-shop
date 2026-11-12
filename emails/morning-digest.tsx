@@ -33,6 +33,11 @@ export function MorningDigestEmail({ content, siteUrl }: MorningDigestProps) {
       <Heading as="h1" style={{ margin: '4px 0 0', fontSize: 26, lineHeight: '32px', letterSpacing: '-0.02em' }}>
         {content.first_name ? `${content.first_name}, voici` : 'Voici'} tes produits du jour
       </Heading>
+      {content.demo ? (
+        <Text style={{ margin: '8px 0 0', fontSize: 14, color: colors.muted }}>
+          Produits fictifs : démonstration en attendant le branchement des vraies données.
+        </Text>
+      ) : null}
 
       <Section style={{ marginTop: 20 }}>
         {content.products.map((p, i) => (

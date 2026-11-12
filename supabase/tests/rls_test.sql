@@ -62,6 +62,13 @@ end $$;
 -- Alice peut changer son prénom
 update public.profiles set first_name = 'Alice B.' where id = auth.uid();
 
+-- Le cache du fournisseur de données reste côté serveur
+do $$ begin
+  perform 1 from public.provider_cache limit 1;
+  raise exception 'provider_cache lisible par un client';
+exception when insufficient_privilege then null;
+end $$;
+
 -- Alice ne peut pas s'offrir des scripts
 do $$ begin
   perform public.increment_usage(auth.uid(), current_date, -1);

@@ -1,7 +1,11 @@
+import { remotePatterns } from './config/image-hosts.mjs';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Images produits : seulement les domaines des fournisseurs (config/image-hosts.mjs + IMAGE_HOSTS).
+  images: { remotePatterns: remotePatterns() },
   experimental: {
     serverComponentsExternalPackages: ['@react-email/components', '@react-email/render'],
   },

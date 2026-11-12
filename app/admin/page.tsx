@@ -5,10 +5,12 @@ import { SubmitButton } from '@/components/ui/submit-button';
 import { Badge, Callout, Card, EmptyState } from '@/components/ui/surface';
 import { requireAdmin } from '@/lib/auth/session';
 import { billingMode } from '@/lib/billing';
+import { getLiveCatalog } from '@/lib/catalog';
+import type { ProviderRunStats } from '@/lib/data';
 import { getRepo } from '@/lib/db';
 import { env, isAiConfigured, isLocalMode, isResendConfigured } from '@/lib/env';
 import { getPlan, isPaidPlan } from '@/lib/plans';
-import { cn, formatInt, formatRelative } from '@/lib/utils';
+import { cn, formatDayMonth, formatInt, formatRelative } from '@/lib/utils';
 import { makeCoachAction, runRefreshAction, setApplicationStatusAction } from './actions';
 
 export const metadata: Metadata = { title: 'Administration' };
@@ -16,7 +18,8 @@ export const dynamic = 'force-dynamic';
 
 const MESSAGES: Record<string, { tone: 'gain' | 'rose'; text: string }> = {
   'ok=formateur': { tone: 'gain', text: 'Compte passé en formateur.' },
-  'ok=rafraichissement': { tone: 'gain', text: 'Rafraîchissement terminé.' },
+  'ok=rafraichissement': { tone: 'gain', text: 'Rafraîchissement terminé : le radar affiche les produits du jour.' },
+  'ok=repli': { tone: 'rose', text: 'La source réelle a échoué : rafraîchissement fait en repli (voir le détail ci-dessous).' },
   'erreur=formation': { tone: 'rose', text: 'Indique le nom de la formation.' },
   'erreur=code': { tone: 'rose', text: 'Le code promo doit faire 3 à 24 caractères (lettres, chiffres, tirets).' },
   'erreur=code-pris': { tone: 'rose', text: 'Ce code est déjà utilisé (formateur ou parrainage).' },
@@ -40,12 +43,13 @@ function Section({ id, title, children, aside }: { id: string; title: string; ch
 export default async function AdminPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
   await requireAdmin();
   const repo = getRepo();
-  const [profiles, coaches, applications, runs, products] = await Promise.all([
+  const [profiles, coaches, applications, runs, products, catalog] = await Promise.all([
     repo.listProfiles({ limit: 200 }),
     repo.listCoaches(),
     repo.listCoachApplications(),
     repo.listCronRuns(5),
     repo.countProducts(),
+    getLiveCatalog(repo),
   ]);
   const emails = isLocalMode() && repo.listLocalEmails ? await repo.listLocalEmails(10) : [];
   const coachByUser = new Map(coaches.map((c) => [c.user_id, c]));
@@ -56,10 +60,19 @@ export default async function AdminPage({ searchParams }: { searchParams: Record
     .map(([k, v]) => MESSAGES[`${k}=${v}`] ?? (k === 'erreur' && v ? { tone: 'rose' as const, text: v } : undefined))
     .find(Boolean);
   const lastRun = runs[0];
+  const fallbacks = (lastRun?.details.repli as Array<{ provider: string; error: string }> | undefined) ?? [];
+  const stats = lastRun?.details.stats as ProviderRunStats | undefined;
 
   const services = [
     { name: 'Base de données', value: isLocalMode() ? 'Fichier local' : 'Supabase', ok: !isLocalMode() },
     { name: 'Données produits', value: env.dataProvider === 'mock' ? 'Fictives (mock)' : env.dataProvider, ok: env.dataProvider !== 'mock' },
+    {
+      name: 'Radar affiché',
+      value: catalog.demo
+        ? 'produits fictifs'
+        : `${catalog.provider ?? '—'}${catalog.dataDate ? `, relevé du ${formatDayMonth(catalog.dataDate)}` : ''}${catalog.stale ? ' (plus de 36 h)' : ''}`,
+      ok: !catalog.demo && !catalog.stale,
+    },
     { name: 'Scripts', value: isAiConfigured() ? `Claude (${env.anthropicModel})` : 'Simulés', ok: isAiConfigured() },
     { name: 'Paiement', value: billingMode() === 'stripe' ? 'Stripe' : billingMode() === 'simulation' ? 'Simulé' : 'Désactivé', ok: billingMode() === 'stripe' },
     { name: 'E-mails', value: isResendConfigured() ? 'Resend' : 'Boîte locale', ok: isResendConfigured() },
@@ -118,6 +131,32 @@ export default async function AdminPage({ searchParams }: { searchParams: Record
                   {formatRelative(lastRun.started_at)}
                 </span>
               </div>
+              {fallbacks.length ? (
+                <Callout tone="rose" className="mt-3" title={`Repli sur « ${String(lastRun.details.provider)} » : la source réelle a échoué`}>
+                  <ul className="space-y-1">
+                    {fallbacks.map((f) => (
+                      <li key={f.provider}>
+                        <strong>{f.provider}</strong> : {f.error}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-2">
+                    Les utilisateurs voient toujours les derniers vrais relevés (avec leur date au-delà de 36 heures),
+                    jamais les produits fictifs présentés comme réels.
+                  </p>
+                </Callout>
+              ) : null}
+              {stats ? (
+                <p className="mt-3 text-sm text-muted">
+                  Fournisseur : {formatInt(stats.calls)} appel{stats.calls > 1 ? 's' : ''} sur {formatInt(stats.budget)} autorisés
+                  {stats.budgetReached ? ' (quota atteint)' : ''} · {formatInt(stats.cacheHits)} depuis le cache ·{' '}
+                  {formatInt(stats.retries)} reprise{stats.retries > 1 ? 's' : ''} · {formatInt(stats.skipped)} produit
+                  {stats.skipped > 1 ? 's' : ''} écarté{stats.skipped > 1 ? 's' : ''}
+                  {stats.rejectedImageHosts.length
+                    ? ` · images refusées (domaine à ajouter dans IMAGE_HOSTS s’il est légitime) : ${stats.rejectedImageHosts.join(', ')}`
+                    : ''}
+                </p>
+              ) : null}
               <pre className="mt-3 max-h-48 overflow-auto rounded-xl bg-surface p-3 text-xs leading-relaxed" tabIndex={0} aria-label="Détail de la dernière exécution">
                 {JSON.stringify(lastRun.details, null, 2)}
               </pre>
@@ -126,7 +165,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Record
                   Précédentes :{' '}
                   {runs
                     .slice(1)
-                    .map((r) => `${r.status === 'ok' ? '✓' : '✗'} ${formatRelative(r.started_at)}`)
+                    .map((r) => `${r.status === 'ok' ? (r.details.repli ? '⚠' : '✓') : '✗'} ${formatRelative(r.started_at)}`)
                     .join(' · ')}
                 </p>
               ) : null}

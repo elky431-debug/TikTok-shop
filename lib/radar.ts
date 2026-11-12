@@ -1,3 +1,4 @@
+import { getLiveCatalog, isDemoProduct } from '@/lib/catalog';
 import { getRepo } from '@/lib/db';
 import type { PlanId, Product, Profile, ScoreBreakdown, Trend } from '@/lib/db/types';
 import { ensureCatalog } from '@/lib/jobs/nightly';
@@ -5,6 +6,7 @@ import type { NicheId } from '@/lib/niches';
 import { applyFilters, hasFilters, type RadarFilters } from '@/lib/radar-filters';
 import { getPlan, isPaidPlan } from '@/lib/plans';
 import { rankForUser, visibleProductIds } from '@/lib/radar-rules';
+import { fallbackImageUrl } from '@/lib/product-image';
 import { commissionPerSale } from '@/lib/score';
 import { parisDate } from '@/lib/utils';
 
@@ -18,18 +20,34 @@ export interface ProductView {
   shop_name: string;
   description: string;
   image_url: string;
+  /** Visuel SVG de repli si l'image du fournisseur manque ou ne charge pas. */
+  image_fallback: string;
   price_cents: number;
   commission_rate: number;
   commission_cents: number;
-  free_sample: boolean;
-  active_affiliates: number;
+  /** null = la source ne le dit pas. */
+  free_sample: boolean | null;
+  /** null = la source ne le dit pas. */
+  active_affiliates: number | null;
   trend: Trend;
   growth_7d: number;
+  /** false = croissance pas encore mesurable (historique trop court) : l'affichage dit « tendance en mesure ». */
+  growth_known: boolean;
+  /** Produit fictif (démonstration). */
+  demo: boolean;
   sales_7d: number[];
   sales_30d: number[];
   score: number | null;
   breakdown: (Omit<ScoreBreakdown, 'total' | 'parts'> & {
-    parts: Array<{ key: string; label: string; weight: number; points: number | null; sentence: string }>;
+    parts: Array<{
+      key: string;
+      label: string;
+      weight: number;
+      available: boolean;
+      applied_weight: number;
+      points: number | null;
+      sentence: string;
+    }>;
   }) | null;
   top_videos: Product['top_videos'];
   saved: boolean;
@@ -45,6 +63,7 @@ export function toProductView(product: Product, plan: PlanId, saved = false): Pr
     shop_name: product.shop_name,
     description: product.description,
     image_url: product.image_url,
+    image_fallback: fallbackImageUrl(product.id, product.niche),
     price_cents: product.price_cents,
     commission_rate: product.commission_rate,
     commission_cents: commissionPerSale(product.price_cents, product.commission_rate),
@@ -52,6 +71,8 @@ export function toProductView(product: Product, plan: PlanId, saved = false): Pr
     active_affiliates: product.active_affiliates,
     trend: product.trend,
     growth_7d: product.growth_7d,
+    growth_known: breakdown ? breakdown.growth_7d !== null : true,
+    demo: isDemoProduct(product),
     sales_7d: product.sales_30d.slice(-7),
     sales_30d: product.sales_30d,
     score: showScore ? product.latest_score : null,
@@ -64,6 +85,8 @@ export function toProductView(product: Product, plan: PlanId, saved = false): Pr
             key: p.key,
             label: p.label,
             weight: p.weight,
+            available: p.available !== false,
+            applied_weight: p.applied_weight ?? p.weight,
             points: showScore ? p.points : null,
             sentence: p.sentence,
           })),
@@ -80,6 +103,12 @@ export type RadarItem =
 
 export interface Radar {
   date: string | null;
+  /** Produits fictifs (aucune source réelle branchée). */
+  demo: boolean;
+  /** Dernier relevé de plus de 36 heures : afficher « Données du [date] ». */
+  stale: boolean;
+  /** La source dit-elle quels produits ont un échantillon gratuit ? Sinon, le filtre est masqué. */
+  sampleKnown: boolean;
   plan: PlanId;
   niches: NicheId[];
   items: RadarItem[];
@@ -96,7 +125,8 @@ export interface Radar {
 export async function getRadar(profile: Profile, filters: RadarFilters): Promise<Radar> {
   await ensureCatalog();
   const repo = getRepo();
-  const [products, saved] = await Promise.all([repo.listProducts(), repo.listSavedProducts(profile.id)]);
+  const [catalog, saved] = await Promise.all([getLiveCatalog(repo), repo.listSavedProducts(profile.id)]);
+  const products = catalog.products;
   const savedIds = new Set(saved.map((s) => s.product_id));
   const ranked = rankForUser(products, profile.niches);
   const visible = visibleProductIds(ranked, profile.plan);
@@ -109,7 +139,10 @@ export async function getRadar(profile: Profile, filters: RadarFilters): Promise
   );
 
   return {
-    date: products[0]?.snapshot_date ?? null,
+    date: catalog.dataDate,
+    demo: catalog.demo,
+    stale: catalog.stale,
+    sampleKnown: products.some((p) => p.free_sample !== null),
     plan: profile.plan,
     niches: profile.niches,
     items,
@@ -128,7 +161,7 @@ export async function canAccessProduct(profile: Profile, productId: string): Pro
   if (isPaidPlan(profile.plan)) return true;
   const repo = getRepo();
   if (await repo.getSavedProduct(profile.id, productId)) return true;
-  const ranked = rankForUser(await repo.listProducts(), profile.niches);
+  const ranked = rankForUser((await getLiveCatalog(repo)).products, profile.niches);
   return visibleProductIds(ranked, profile.plan).has(productId);
 }
 

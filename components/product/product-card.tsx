@@ -37,11 +37,13 @@ function Meta({ product, compact = false }: { product: ProductView; compact?: bo
 function Signals({ product }: { product: ProductView }) {
   return (
     <div className="mt-2 flex flex-wrap items-center gap-1.5">
-      <TrendBadge trend={product.trend} growth={product.growth_7d} />
-      <span className="num inline-flex items-center gap-1 text-xs text-muted">
-        <Users className="h-3.5 w-3.5" aria-hidden="true" />
-        {formatCompact(product.active_affiliates)} affiliés
-      </span>
+      <TrendBadge trend={product.trend} growth={product.growth_7d} measured={product.growth_known} />
+      {product.active_affiliates !== null ? (
+        <span className="num inline-flex items-center gap-1 text-xs text-muted">
+          <Users className="h-3.5 w-3.5" aria-hidden="true" />
+          {formatCompact(product.active_affiliates)} affiliés
+        </span>
+      ) : null}
       {product.free_sample ? (
         <span className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-ink">
           <Gift className="h-3.5 w-3.5" aria-hidden="true" />
@@ -67,7 +69,7 @@ export function FeaturedProductCard({ product }: { product: ProductView }) {
     >
       <p className="eyebrow">N°1 dans tes niches aujourd’hui</p>
       <div className="mt-3 flex gap-4">
-        <ProductImage src={product.image_url} alt="" className="w-24 sm:w-32" />
+        <ProductImage src={product.image_url} fallback={product.image_fallback} alt="" className="w-24 sm:w-32" />
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium text-muted">{nicheShort(product.niche)}</p>
           <h2 className="mt-0.5 text-lg font-semibold leading-snug group-hover:underline group-hover:underline-offset-4 sm:text-xl">
@@ -99,7 +101,7 @@ export function ProductCard({ product, rank }: { product: ProductView; rank: num
       className="feature-card group flex h-full gap-3 p-3 sm:p-3.5"
     >
       <div className="relative">
-        <ProductImage src={product.image_url} alt="" className="w-[4.5rem]" />
+        <ProductImage src={product.image_url} fallback={product.image_fallback} alt="" className="w-[4.5rem]" />
         <span className="num absolute -left-1.5 -top-1.5 flex h-6 min-w-6 items-center justify-center rounded-full bg-fg px-1.5 text-xs font-bold text-bg">
           {rank}
         </span>

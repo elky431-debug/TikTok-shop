@@ -1,4 +1,5 @@
 import { generateMockScripts, quickHook } from '@/lib/ai/mock-scripts';
+import { getLiveCatalog } from '@/lib/catalog';
 import { getRepo, type Repo } from '@/lib/db';
 import type { Product, Profile } from '@/lib/db/types';
 import { parisDate } from '@/lib/utils';
@@ -33,8 +34,11 @@ export async function prepareDigests(
   day: string = parisDate(),
   repo: Repo = getRepo(),
   extras: DigestExtras = defaultDigestExtras(day),
-): Promise<{ prepared: number }> {
-  const [profiles, products] = await Promise.all([repo.listOnboardedProfiles(), repo.listProducts()]);
+): Promise<{ prepared: number; skipped?: string }> {
+  const [profiles, catalog] = await Promise.all([repo.listOnboardedProfiles(), getLiveCatalog(repo)]);
+  // Pas de récap « du matin » avec des données de plus de 36 heures : mieux vaut rien qu'un récap trompeur.
+  if (catalog.stale) return { prepared: 0, skipped: 'données de plus de 36 heures' };
+  const products = catalog.products;
   let prepared = 0;
   for (const profile of profiles) {
     const content = await buildDigestContent(profile, products, day, extras);

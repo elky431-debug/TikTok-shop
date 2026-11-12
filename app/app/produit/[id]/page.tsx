@@ -46,7 +46,17 @@ export default async function ProductPage({ params }: { params: { id: string } }
   const chart = snapshots.length
     ? snapshots.map((s) => ({ label: formatShortDate(s.date), ventes: s.estimated_sales, affilies: s.affiliates }))
     : view.sales_30d.map((v, i) => ({ label: `J-${view.sales_30d.length - i - 1}`, ventes: v, affilies: view.active_affiliates }));
+  const knownDays = chart.filter((point) => point.ventes !== null).length;
+  const hasAffiliates = chart.some((point) => point.affilies !== null);
   const sales30 = view.sales_30d.reduce((a, b) => a + b, 0);
+  const keyFigures = [
+    { label: 'Prix', value: formatEuros(view.price_cents) },
+    { label: 'Ta commission', value: `${formatEuros(view.commission_cents)}`, sub: `par vente (${Math.round(view.commission_rate * 100)} %)`, gain: true },
+    view.sales_30d.length
+      ? { label: knownDays >= 30 ? 'Ventes sur 30 jours' : `Ventes sur ${view.sales_30d.length} jour${view.sales_30d.length > 1 ? 's' : ''}`, value: formatCompact(sales30), sub: 'estimées' }
+      : { label: 'Ventes', value: '—', sub: 'mesurées dès la prochaine nuit' },
+    ...(view.active_affiliates !== null ? [{ label: 'Affiliés actifs', value: formatInt(view.active_affiliates) }] : []),
+  ];
   const message = sampleRequestMessage(profile, product.name);
   const tier = view.score !== null ? scoreTier(view.score) : null;
 
@@ -60,18 +70,26 @@ export default async function ProductPage({ params }: { params: { id: string } }
         <span>{nicheLabel(view.niche)}</span>
       </nav>
 
+      {view.demo ? (
+        <Callout tone="neutral" className="mb-6" title="Produit fictif">
+          Ce produit sert de démonstration : il n’existe pas sur TikTok Shop. Les vrais produits arrivent dès que la
+          source de données est branchée.
+        </Callout>
+      ) : null}
+
       <div className="grid gap-6 lg:grid-cols-[1fr_20rem] lg:gap-10">
         <div className="min-w-0 space-y-6">
           {/* En-tête produit */}
           <header className="flex gap-4">
-            <ProductImage src={view.image_url} alt={`Visuel de ${view.name}`} className="w-24 sm:w-32" />
+            <ProductImage src={view.image_url} fallback={view.image_fallback} alt={`Visuel de ${view.name}`} className="w-24 sm:w-32" />
             <div className="min-w-0">
               <h1 className="text-2xl leading-tight sm:text-3xl">{view.name}</h1>
               <p className="mt-1 text-sm text-muted">
-                {nicheLabel(view.niche)} · vendu par {view.shop_name}
+                {nicheLabel(view.niche)}
+                {view.shop_name ? ` · vendu par ${view.shop_name}` : ''}
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-2">
-                <TrendBadge trend={view.trend} growth={view.growth_7d} />
+                <TrendBadge trend={view.trend} growth={view.growth_7d} measured={view.growth_known} />
                 {view.free_sample ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-cyan-soft px-2 py-0.5 text-xs font-semibold text-cyan-ink">
                     <Gift className="h-3.5 w-3.5" aria-hidden="true" />
@@ -83,17 +101,17 @@ export default async function ProductPage({ params }: { params: { id: string } }
           </header>
 
           {/* Chiffres clés */}
-          <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-4">
-            {[
-              { label: 'Prix', value: formatEuros(view.price_cents) },
-              { label: 'Ta commission', value: `${formatEuros(view.commission_cents)}`, sub: `par vente (${Math.round(view.commission_rate * 100)} %)`, gain: true },
-              { label: 'Ventes sur 30 jours', value: formatCompact(sales30), sub: 'estimées' },
-              { label: 'Affiliés actifs', value: formatInt(view.active_affiliates) },
-            ].map((item) => (
+          <dl
+            className={cn(
+              'grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line bg-line',
+              keyFigures.length === 4 ? 'sm:grid-cols-4' : 'sm:grid-cols-3',
+            )}
+          >
+            {keyFigures.map((item) => (
               <div key={item.label} className="bg-raised p-3.5">
                 <dt className="text-xs font-medium text-muted">{item.label}</dt>
                 <dd className={cn('num mt-1 text-xl font-semibold', item.gain && 'text-gain')}>{item.value}</dd>
-                {item.sub ? <dd className="text-xs text-muted">{item.sub}</dd> : null}
+                {'sub' in item && item.sub ? <dd className="text-xs text-muted">{item.sub}</dd> : null}
               </div>
             ))}
           </dl>
@@ -106,12 +124,20 @@ export default async function ProductPage({ params }: { params: { id: string } }
                 <span className="inline-flex items-center gap-1.5">
                   <span className="h-0.5 w-4 rounded bg-cyan-ink" aria-hidden="true" /> Ventes estimées
                 </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="h-0 w-4 border-t-2 border-dashed border-subtle" aria-hidden="true" /> Affiliés
-                </span>
+                {hasAffiliates ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="h-0 w-4 border-t-2 border-dashed border-subtle" aria-hidden="true" /> Affiliés
+                  </span>
+                ) : null}
               </p>
             </div>
-            <SalesChart data={chart} />
+            {knownDays >= 2 ? (
+              <SalesChart data={chart} showAffiliates={hasAffiliates} />
+            ) : (
+              <p className="py-10 text-center text-sm text-muted">
+                La courbe se remplit chaque nuit : il faut au moins deux relevés pour la tracer.
+              </p>
+            )}
           </Card>
 
           {/* Pourquoi ce score */}
@@ -225,10 +251,16 @@ export default async function ProductPage({ params }: { params: { id: string } }
                 <CopyButton text={message} label="Copier le message" copiedLabel="Message copié" className="mt-3" />
               </div>
             </Card>
-          ) : (
+          ) : view.free_sample === false ? (
             <Panel className="flex gap-3 text-sm text-muted">
               <Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
               Pas d’échantillon gratuit sur ce produit pour l’instant : il faudra l’acheter pour le filmer.
+            </Panel>
+          ) : (
+            <Panel className="flex gap-3 text-sm text-muted">
+              <Gift className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+              Échantillon gratuit : notre source de données ne le précise pas. Regarde la fiche du produit dans
+              l’onglet Affiliation de l’appli TikTok Shop.
             </Panel>
           )}
         </aside>

@@ -29,11 +29,18 @@ export interface ScoreInput {
   niche: NicheId;
   price_cents: number;
   commission_rate: number;
-  free_sample: boolean;
-  affiliates: number;
-  /** Ventes quotidiennes, du plus ancien au plus récent (14 jours minimum conseillés). */
+  /** null = la source ne le dit pas : critère « échantillon » ignoré. */
+  free_sample: boolean | null;
+  /** null = la source ne le dit pas : critère « concurrence » ignoré. */
+  affiliates: number | null;
+  /** Ventes quotidiennes connues, du plus ancien au plus récent (14 jours conseillés). */
   sales: number[];
+  /** Cumuls par période donnés par la source, utilisés tant que l'historique quotidien est trop court. */
+  windows?: { last7: number; prev7: number } | null;
 }
+
+/** Jours d'historique quotidien nécessaires pour mesurer la croissance sans les cumuls de la source. */
+export const MIN_DAYS_FOR_GROWTH = 10;
 
 export interface GrowthStats {
   last7: number;
@@ -44,19 +51,45 @@ export interface GrowthStats {
 
 const sum = (values: number[]) => values.reduce((acc, v) => acc + v, 0);
 
-/** Croissance des 7 derniers jours par rapport aux 7 précédents. */
+function growthFromTotals(last7: number, prev7: number): number {
+  const growth = prev7 === 0 ? (last7 > 0 ? 1 : 0) : last7 / prev7 - 1;
+  // Évite les valeurs extrêmes sur des volumes minuscules.
+  return clamp(growth, -1, 5);
+}
+
+/**
+ * Croissance des 7 derniers jours par rapport aux jours d'avant (7 au plus), en moyenne par jour :
+ * avec 14 jours, c'est exactement « 7 derniers jours / 7 précédents ».
+ */
 export function computeGrowth(sales: number[]): GrowthStats {
   const last = sales.slice(-7);
   const prev = sales.slice(-14, -7);
   const last7 = sum(last);
-  const prev7 = sum(prev);
   const dailyAvg7 = last.length ? last7 / last.length : 0;
-  let growth7d: number;
-  if (prev.length === 0 || prev7 === 0) growth7d = last7 > 0 ? 1 : 0;
-  else growth7d = last7 / prev7 - 1;
-  // Évite les valeurs extrêmes sur des volumes minuscules.
-  growth7d = clamp(growth7d, -1, 5);
+  const prev7 = prev.length ? (sum(prev) / prev.length) * 7 : 0;
+  const scaledLast7 = last.length ? (last7 / last.length) * 7 : 0;
+  const growth7d = prev.length === 0 ? (last7 > 0 ? 1 : 0) : growthFromTotals(scaledLast7, prev7);
   return { last7, prev7, growth7d, dailyAvg7 };
+}
+
+/**
+ * Croissance d'un produit selon ce qu'on sait : historique quotidien suffisant, sinon cumuls de la source,
+ * sinon null (critère « croissance » indisponible pour l'instant).
+ */
+export function growthFor(input: Pick<ScoreInput, 'sales' | 'windows'>): GrowthStats | null {
+  if (input.sales.length >= MIN_DAYS_FOR_GROWTH) return computeGrowth(input.sales);
+  if (input.windows) {
+    const { last7, prev7 } = input.windows;
+    return { last7, prev7, growth7d: growthFromTotals(last7, prev7), dailyAvg7: last7 / 7 };
+  }
+  return null;
+}
+
+/** Ventes moyennes par jour sur 7 jours, si on les connaît. */
+function dailyAverage(input: Pick<ScoreInput, 'sales' | 'windows'>, growth: GrowthStats | null): number | null {
+  if (growth) return growth.dailyAvg7;
+  const last = input.sales.slice(-7);
+  return last.length ? sum(last) / last.length : null;
 }
 
 /** Rang centile (0..1) de `value` dans `population` (égalités comptées pour moitié). */
@@ -71,7 +104,9 @@ export function percentileRank(population: number[], value: number): number {
   return clamp((below + 0.5 * Math.max(0, equal - 1)) / (population.length - 1));
 }
 
-export function trendFor(growth7d: number): Trend {
+/** Tendance d'après la croissance ; sans mesure (null), « stable » et l'affichage dit « tendance en mesure ». */
+export function trendFor(growth7d: number | null): Trend {
+  if (growth7d === null) return 'stable';
   if (growth7d >= 0.5) return 'explose';
   if (growth7d >= 0.12) return 'monte';
   if (growth7d > -0.15) return 'stable';
@@ -153,6 +188,18 @@ function sampleSentence(freeSample: boolean): string {
     : "Pas d'échantillon gratuit pour l'instant : il faudra acheter le produit pour le filmer.";
 }
 
+/** Phrase affichée quand la source ne fournit pas la donnée d'un critère. */
+const UNAVAILABLE_SENTENCES: Record<ScorePart['key'], string> = {
+  croissance:
+    'Croissance pas encore mesurable : il faut quelques jours de relevés. En attendant, son poids est réparti sur les autres critères.',
+  commission: 'Commission inconnue.',
+  saturation:
+    'Nombre d’affiliés non fourni par la source de données : ce critère est ignoré et son poids réparti sur les autres.',
+  prix: 'Prix inconnu.',
+  echantillon:
+    'La source de données ne dit pas s’il existe un échantillon gratuit : vérifie dans l’appli TikTok Shop. Ce critère est ignoré et son poids réparti sur les autres.',
+};
+
 const PART_LABELS: Record<ScorePart['key'], string> = {
   croissance: 'Croissance',
   commission: 'Commission',
@@ -161,10 +208,10 @@ const PART_LABELS: Record<ScorePart['key'], string> = {
   echantillon: 'Échantillon',
 };
 
-function summarize(parts: ScorePart[]): string {
-  const ratio = (p: ScorePart) => p.points / p.weight;
-  const strong = parts.filter((p) => ratio(p) >= 0.7).sort((a, b) => b.points - a.points);
-  const weak = parts.filter((p) => ratio(p) < 0.35).sort((a, b) => b.weight - a.weight);
+function summarize(allParts: ScorePart[]): string {
+  const parts = allParts.filter((p) => p.available !== false);
+  const strong = parts.filter((p) => p.value >= 0.7).sort((a, b) => b.points - a.points);
+  const weak = parts.filter((p) => p.value < 0.35).sort((a, b) => b.weight - a.weight);
   const list = (items: ScorePart[]) =>
     items
       .slice(0, 2)
@@ -176,57 +223,78 @@ function summarize(parts: ScorePart[]): string {
   return 'Un produit équilibré, sans point fort ni point faible marqué.';
 }
 
-/** Calcule le détail du score pour un produit, connaissant le centile de sa croissance. */
-export function scoreOne(input: ScoreInput, growthPercentile: number, stats = computeGrowth(input.sales)): ScoreBreakdown {
+/** Calcule le détail du score pour un produit, connaissant le centile de sa croissance dans sa niche. */
+export function scoreOne(input: ScoreInput, growthPercentile: number, growth: GrowthStats | null = growthFor(input)): ScoreBreakdown {
+  const daily = dailyAverage(input, growth);
+  const available: Record<ScorePart['key'], boolean> = {
+    croissance: growth !== null,
+    commission: true,
+    saturation: input.affiliates !== null && daily !== null,
+    prix: true,
+    echantillon: input.free_sample !== null,
+  };
   // Un produit en baisse ne peut pas prendre tous les points de croissance, même s'il est le
   // « moins pire » de sa niche.
-  const growthValue = stats.growth7d < 0 ? Math.min(growthPercentile, 0.5) : growthPercentile;
+  const growthValue = growth && growth.growth7d < 0 ? Math.min(growthPercentile, 0.5) : growthPercentile;
   const values: Record<ScorePart['key'], number> = {
-    croissance: growthValue,
+    croissance: growth ? growthValue : 0,
     commission: commissionValue(input.commission_rate),
-    saturation: saturationValue(input.affiliates, stats.dailyAvg7),
+    saturation: available.saturation ? saturationValue(input.affiliates!, daily!) : 0,
     prix: priceValue(input.price_cents),
     echantillon: input.free_sample ? 1 : 0,
   };
   const sentences: Record<ScorePart['key'], string> = {
-    croissance: growthSentence(stats, growthPercentile, input.niche),
+    croissance: growth ? growthSentence(growth, growthPercentile, input.niche) : UNAVAILABLE_SENTENCES.croissance,
     commission: commissionSentence(input.commission_rate, input.price_cents),
-    saturation: saturationSentence(values.saturation, input.affiliates, stats.dailyAvg7),
+    saturation: available.saturation
+      ? saturationSentence(values.saturation, input.affiliates!, daily!)
+      : UNAVAILABLE_SENTENCES.saturation,
     prix: priceSentence(input.price_cents),
-    echantillon: sampleSentence(input.free_sample),
+    echantillon: input.free_sample === null ? UNAVAILABLE_SENTENCES.echantillon : sampleSentence(input.free_sample),
   };
-  const parts: ScorePart[] = (Object.keys(WEIGHTS) as Array<ScorePart['key']>).map((key) => ({
-    key,
-    label: PART_LABELS[key],
-    weight: WEIGHTS[key],
-    value: round1(values[key] * 100) / 100,
-    points: round1(values[key] * WEIGHTS[key]),
-    sentence: sentences[key],
-  }));
-  const total = Math.round(clamp(sum(parts.map((p) => values[p.key] * p.weight)), 0, 100));
+  // Poids des critères indisponibles réparti au prorata sur les autres : le total reste sur 100.
+  const keys = Object.keys(WEIGHTS) as Array<ScorePart['key']>;
+  const availableWeight = sum(keys.filter((k) => available[k]).map((k) => WEIGHTS[k]));
+  const scale = availableWeight > 0 ? 100 / availableWeight : 0;
+  const parts: ScorePart[] = keys.map((key) => {
+    const applied = available[key] ? WEIGHTS[key] * scale : 0;
+    return {
+      key,
+      label: PART_LABELS[key],
+      weight: WEIGHTS[key],
+      available: available[key],
+      applied_weight: round1(applied),
+      value: available[key] ? round1(values[key] * 100) / 100 : 0,
+      points: round1(values[key] * applied),
+      sentence: sentences[key],
+    };
+  });
+  const raw = sum(keys.map((k) => (available[k] ? values[k] * WEIGHTS[k] * scale : 0)));
   return {
-    total,
+    total: Math.round(clamp(raw, 0, 100)),
     parts,
-    growth_7d: Math.round(stats.growth7d * 1000) / 1000,
-    daily_sales_7d: Math.round(stats.dailyAvg7),
+    growth_7d: growth ? Math.round(growth.growth7d * 1000) / 1000 : null,
+    daily_sales_7d: daily === null ? null : Math.round(daily),
     summary: summarize(parts),
   };
 }
 
-/** Calcule les scores d'une liste de produits ; la croissance est classée par niche. */
+/** Calcule les scores d'une liste de produits ; la croissance est classée par niche (produits mesurables seulement). */
 export function scoreProducts(inputs: ScoreInput[]): Map<string, ScoreBreakdown> {
-  const stats = new Map(inputs.map((i) => [i.id, computeGrowth(i.sales)]));
+  const stats = new Map(inputs.map((i) => [i.id, growthFor(i)]));
   const byNiche = new Map<NicheId, number[]>();
   for (const input of inputs) {
+    const growth = stats.get(input.id);
+    if (!growth) continue;
     const list = byNiche.get(input.niche) ?? [];
-    list.push(stats.get(input.id)!.growth7d);
+    list.push(growth.growth7d);
     byNiche.set(input.niche, list);
   }
   const result = new Map<string, ScoreBreakdown>();
   for (const input of inputs) {
-    const s = stats.get(input.id)!;
-    const pct = percentileRank(byNiche.get(input.niche)!, s.growth7d);
-    result.set(input.id, scoreOne(input, pct, s));
+    const growth = stats.get(input.id) ?? null;
+    const pct = growth ? percentileRank(byNiche.get(input.niche) ?? [], growth.growth7d) : 0;
+    result.set(input.id, scoreOne(input, pct, growth));
   }
   return result;
 }

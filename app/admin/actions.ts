@@ -41,11 +41,14 @@ export async function setApplicationStatusAction(formData: FormData) {
 
 export async function runRefreshAction() {
   await requireAdmin();
+  let fallback = false;
   try {
-    await runNightly({ trigger: 'manuel' });
+    const result = await runNightly({ trigger: 'manuel' });
+    fallback = result.fallbacks.length > 0;
   } catch {
     redirect('/admin?erreur=rafraichissement#taches');
   }
   revalidatePath('/admin');
-  redirect('/admin?ok=rafraichissement#taches');
+  revalidatePath('/app');
+  redirect(fallback ? '/admin?ok=repli#taches' : '/admin?ok=rafraichissement#taches');
 }

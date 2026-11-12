@@ -9,7 +9,7 @@ import { NICHES, nicheLabel } from '@/lib/niches';
 import { getPlan, isPaidPlan } from '@/lib/plans';
 import { AFFILIATE_THRESHOLD } from '@/lib/profile-rules';
 import { getRadar, parseFilters } from '@/lib/radar';
-import { formatInt, formatLongDate, plural } from '@/lib/utils';
+import { formatDayMonth, formatInt, formatLongDate, plural } from '@/lib/utils';
 
 export const metadata: Metadata = { title: 'Radar' };
 
@@ -34,16 +34,32 @@ export default async function RadarPage({
   return (
     <div>
       <div className="mb-5">
-        <p className="text-sm font-medium text-muted">{radar.date ? formatLongDate(radar.date) : 'Aujourd’hui'}</p>
+        {radar.stale && radar.date ? (
+          <p className="inline-flex rounded-full bg-warn-soft px-2.5 py-0.5 text-sm font-semibold text-warn">
+            Données du {formatDayMonth(radar.date)}
+          </p>
+        ) : (
+          <p className="text-sm font-medium text-muted">{radar.date ? formatLongDate(radar.date) : 'Aujourd’hui'}</p>
+        )}
         <h1 className="mt-1 text-2xl sm:text-3xl">
           {profile.first_name ? `${profile.first_name}, voici` : 'Voici'} tes produits du jour
         </h1>
         <p className="mt-1.5 text-muted">
-          {formatInt(radar.totalToday)} produits analysés en {nicheNames.join(', ')}, triés par score. Mis à jour cette nuit.
+          {formatInt(radar.totalToday)} produits analysés en {nicheNames.join(', ')}, triés par score.{' '}
+          {radar.stale
+            ? 'La mise à jour de cette nuit n’a pas abouti : ce sont les derniers relevés disponibles.'
+            : 'Mis à jour cette nuit.'}
         </p>
       </div>
 
       <div className="space-y-3">
+        {radar.demo ? (
+          <Callout tone="neutral" title="Produits fictifs : démonstration">
+            Ces produits n’existent pas sur TikTok Shop : ils montrent comment marche le radar en attendant le
+            branchement des vraies données.
+          </Callout>
+        ) : null}
+
         {welcome === 'essai' ? (
           <Callout tone="gain" title="Tes 3 mois de Pro sont activés">
             Merci à ton formateur : radar complet, score, 30 scripts par jour et récap Discord. Aucune carte n’a été demandée.
@@ -63,7 +79,7 @@ export default async function RadarPage({
       </div>
 
       <div className="mt-6">
-        <RadarFilterBar key={JSON.stringify(filters)} filters={filters} niches={radar.niches} />
+        <RadarFilterBar key={JSON.stringify(filters)} filters={filters} niches={radar.niches} showSample={radar.sampleKnown} />
       </div>
 
       <div className="mt-5">

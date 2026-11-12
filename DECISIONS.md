@@ -388,3 +388,74 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
 77. **`npm run seed` avec un fournisseur réel** fait un vrai rafraîchissement et ne charge jamais les 30 jours
     fictifs : une base de production ne doit pas contenir de produits inventés. `-- --fictif` force l'ancien
     comportement pour une base de démonstration.
+
+### Étape 2 — La vraie source de données
+
+78. **API côté créateur de TikTok Shop : pas ouverte en France à ce jour.** La page officielle « Affiliate Creator
+    API overview » (mise à jour le 2026-09-21) dit : « Affiliate APIs are currently not available in the UK and EU
+    markets. » La même note figure sur les pages des API affiliés côté vendeur et partenaire (TAP). Le guide
+    d'autorisation des créateurs ne liste pas la France, l'API est « inactive par défaut » et s'active avec un
+    responsable de compte TikTok. L'adaptateur est quand même écrit selon la doc, prêt si TikTok ouvre l'accès ;
+    pour la France, **Nexscope est la source réaliste aujourd'hui**. Le site du Partner Center n'étant pas
+    joignable d'ici, la doc a été lue dans des copies datées des pages officielles (dépôts GitHub publics) ; la
+    signature a été vérifiée sur l'exemple chiffré officiel (test unitaire).
+79. **TikTok : `POST /affiliate_creator/202405/open_collaborations/products/search`**, 20 produits par page (le
+    maximum), tri `units_sold` décroissant, jeton du créateur dans `x-tts-access-token`. Le filtre `category.id`
+    n'accepte que le premier niveau et aucun point d'accès côté créateur ne liste les catégories : la
+    correspondance niche → catégorie se règle par `TIKTOK_CATEGORY_MAP` ; sans elle, recherche générale puis
+    classement par le nom de catégorie renvoyé (`category_chains`). Correspondance : `title` → nom, plus bas
+    `sales_price.minimum_amount` → prix (euros seulement), `commission.rate` en centièmes de pour cent → taux,
+    `shop.name`, `main_image_url`, catégories → description, `units_sold` (cumul, absent si le créateur n'a pas
+    autorisé le partage précis) → ventes du jour par différence d'une nuit à l'autre. Produits hors France, hors
+    stock, sans prix, sans commission ou hors de nos niches : écartés et comptés.
+80. **Ce que TikTok ne fournit pas reste vide** : nombre d'affiliés, échantillon gratuit (seulement par créateur,
+    via un autre point d'accès qui demande son jeton : prévu plus tard), historique, vidéos qui vendent.
+    L'autorisation OAuth des créateurs et le suivi des commandes affiliées sont seulement préparés
+    (`lib/data/tiktok-creator.ts` : interfaces et adresses officielles, rien de branché).
+81. **Nexscope : `tiktok-product-discovery`** (données FastMoss) plutôt que `tiktok-product-search` : c'est le seul
+    des deux qui documente le nombre de créateurs (`totalIflCnt`), le nom de la boutique et une commission en
+    décimal ; `tiktok-product-search` n'a ni boutique ni nombre de créateurs, et ne dit pas l'unité de sa
+    commission. Une recherche par niche (nom anglais de la catégorie TikTok de premier niveau, que Nexscope
+    convertit), région FR, tri `day7_units_sold`, 10 produits par page. Doc lue dans le dépôt officiel
+    `nexscope-ai/nexscope-ecommerce-api` (copie du 2026-09-10 ; nexscope.ai n'est pas joignable d'ici).
+82. **Lecture prudente de Nexscope**, parce que sa doc prévient que les exemples de réponse ne sont « pas encore
+    réconciliés » avec l'enveloppe actuelle : on cherche `products` sous `data`/`result` comme le fait son propre
+    client ; succès seulement si `code === 0` ; une devise absente vaut l'euro (région FR demandée), une autre est
+    écartée ; une commission supérieure à 1 est lue comme un pourcentage (les unités varient d'un point d'accès
+    Nexscope à l'autre). Pas d'historique jour par jour : croissance = 7 derniers jours contre la moyenne
+    hebdomadaire des jours 8 à 28 (`totalSale28dCnt`), jusqu'à ce que nos propres relevés suffisent (10 jours).
+    Les vidéos (`tiktok-video-search`, 10 meilleurs produits) ne gardent que la description, les vues et les
+    ventes : jamais le pseudo ni l'avatar du créateur.
+83. **Choix du fournisseur** : `DATA_PROVIDER=auto` par défaut (TikTok si ses clés sont là, sinon Nexscope, sinon
+    fictif) ; une valeur explicite l'emporte. La nuit, l'ordre d'essai est : le fournisseur choisi, Nexscope en
+    repli s'il a sa clé, puis les données fictives.
+84. **Limites de requêtes** (`lib/data/http.ts`, commun aux deux) : file d'attente avec débit maximum
+    (`DATA_RATE_PER_SECOND`, 1 par défaut, Nexscope disant de ne pas supposer plus) ; reprise sur 429, 5xx et
+    codes « trop de requêtes » (TikTok 36009002, Nexscope 13012 et 13013) en respectant `Retry-After`, sinon
+    1 s, 2 s, 4 s, 4 essais au plus ; un délai dépassé n'est pas rejoué (issue incertaine, appel peut-être
+    facturé). Quota par nuit `DATA_MAX_CALLS_PER_NIGHT` (60 par défaut) : au-delà, on garde ce qui est lu. Cache
+    des réponses en base (`provider_cache`, 20 h) : relancer la tâche le même jour ne repaie rien. Les clés de
+    cache et les messages d'erreur ne contiennent jamais de secret (testé).
+85. **Champs inconnus = vides, et l'affichage s'adapte** : affiliés, échantillon, ventes du jour et cumul sont
+    nullables en base (migration rejouable `20261113000100_vraies_donnees.sql`). Sans affiliés : la ligne et la
+    courbe pointillée disparaissent. Échantillon inconnu : pas de badge, filtre masqué, et la fiche dit de vérifier
+    dans l'appli TikTok Shop. Croissance pas encore mesurable : badge « Tendance en mesure ». Courbe : tracée à
+    partir de deux relevés. Boutique ou description absentes : rien d'inventé.
+86. **Score avec des critères manquants** : un critère indisponible est ignoré et son poids réparti au prorata
+    sur les autres (le total reste sur 100), avec une phrase qui le dit. Fait dès cette étape parce que les vraies
+    sources en ont besoin pour fonctionner ; la calibration vient à l'étape 3.
+87. **Images** : `next/image` n'accepte que les domaines de `config/image-hosts.mjs`, c'est-à-dire ceux vus dans
+    la doc officielle (`*.ibyteimg.com`, `*.tiktokcdn-us.com` ; Nexscope n'en documente aucun), plus
+    `IMAGE_HOSTS`. Une image d'un autre domaine est retirée dès l'import et son domaine listé dans l'admin ; une
+    image qui ne charge pas est remplacée par le visuel SVG de la niche.
+88. **Repli nocturne et jamais de fictif présenté comme réel** (`lib/catalog.ts`) : si la source réelle échoue,
+    la tâche passe à la suivante, l'écrit dans les journaux (`console.error`, sans secret) et dans l'historique
+    (`repli`, encadré rouge dans l'admin). Le radar montre toujours les derniers vrais relevés s'il en existe,
+    jamais les fictifs écrits en repli ; au-delà de 36 heures il affiche « Données du [date] », les récaps ne sont
+    pas préparés et le bot ne publie pas les salons du jour. Les produits fictifs ne sont montrés qu'en l'absence
+    de tout vrai relevé, avec la mention « produits fictifs » (radar, fiche, récap, Discord, aperçu de l'accueil).
+89. **Réponses d'exemple pour les tests** (`tests/fixtures/`) : construites à partir des exemples officiels
+    (adaptés à la France et à l'euro), faute de clé pour enregistrer une vraie réponse ; chaque fichier le dit dans
+    un champ `_source`. Noms fictifs, aucune donnée personnelle.
+90. **Mode local avec une source réelle** : le premier remplissage fait un vrai relevé (pas 30 jours fictifs), et
+    une seule tentative par jour, pour ne pas rappeler une source en panne à chaque page affichée.

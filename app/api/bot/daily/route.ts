@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { botUnauthorized } from '@/lib/bot-auth';
-import { getRepo } from '@/lib/db';
+import { getLiveCatalog } from '@/lib/catalog';
 import { env } from '@/lib/env';
 import { nicheShort } from '@/lib/niches';
 import { commissionPerSale, TREND_LABELS } from '@/lib/score';
@@ -18,7 +18,8 @@ function mask(name: string): string {
 export async function GET(request: Request) {
   const denied = botUnauthorized(request);
   if (denied) return denied;
-  const products = (await getRepo().listProducts()).slice(0, 10);
+  const catalog = await getLiveCatalog();
+  const products = [...catalog.products].sort((a, b) => b.latest_score - a.latest_score).slice(0, 10);
   const view = products.map((p) => ({
     name: p.name,
     niche: nicheShort(p.niche),
@@ -31,7 +32,9 @@ export async function GET(request: Request) {
     url: `${env.siteUrl}/app/produit/${p.id}`,
   }));
   return NextResponse.json({
-    day: products[0]?.snapshot_date ?? parisDate(),
+    day: catalog.dataDate ?? parisDate(),
+    demo: catalog.demo,
+    stale: catalog.stale,
     site_url: env.siteUrl,
     teaser: view.slice(0, 3).map((p) => ({ masked_name: mask(p.name), niche: p.niche, trend: p.trend, growth_7d: p.growth_7d })),
     full: view,

@@ -3,8 +3,10 @@ import type { NicheId } from '@/lib/niches';
 
 /**
  * Interface unique pour toutes les sources de données produits.
- * Règle absolue : uniquement des API officielles ou un fournisseur payant.
+ * Règle absolue : uniquement des API officielles ou un fournisseur sous contrat.
  * Jamais de scraping de TikTok, jamais de connexion aux comptes des utilisateurs.
+ *
+ * Une source réelle ne fournit pas tout : un champ inconnu vaut `null`, jamais une valeur inventée.
  */
 
 export interface ProviderProduct {
@@ -16,17 +18,24 @@ export interface ProviderProduct {
   price_cents: number;
   /** Taux de commission affilié, entre 0 et 1. */
   commission_rate: number;
-  free_sample: boolean;
-  active_affiliates: number;
+  /** Échantillon gratuit disponible ; null = la source ne le dit pas. */
+  free_sample: boolean | null;
+  /** Créateurs affiliés qui font la promotion du produit ; null = la source ne le dit pas. */
+  active_affiliates: number | null;
+  /** URL https d'une image autorisée (voir config/image-hosts.mjs), ou '' pour le visuel générique. */
   image_url: string;
-  /** Ventes estimées sur la journée demandée. */
-  estimated_sales: number;
+  /** Ventes estimées sur la journée demandée ; null = inconnues. */
+  estimated_sales: number | null;
+  /** Compteur cumulé de ventes (permet de déduire les ventes du jour d'une nuit à l'autre) ; null = inconnu. */
+  units_sold_total?: number | null;
+  /** Ventes des 7 derniers jours et des 7 jours d'avant, quand la source donne des cumuls par période. */
+  sales_windows?: { last7: number; prev7: number } | null;
 }
 
 export interface SalesPoint {
   date: string; // AAAA-MM-JJ
-  estimated_sales: number;
-  affiliates: number;
+  estimated_sales: number | null;
+  affiliates: number | null;
 }
 
 export interface TrendingQuery {
@@ -36,14 +45,29 @@ export interface TrendingQuery {
   date: string;
 }
 
+/** Compteurs d'une exécution, affichés dans l'écran admin. */
+export interface ProviderRunStats {
+  calls: number;
+  cacheHits: number;
+  retries: number;
+  budget: number;
+  budgetReached: boolean;
+  /** Produits écartés (prix absent, autre devise, autre pays, niche inconnue…). */
+  skipped: number;
+  /** Hôtes d'images refusés parce qu'absents de la liste autorisée (à ajouter dans IMAGE_HOSTS si légitimes). */
+  rejectedImageHosts: string[];
+}
+
 export interface ProductDataProvider {
   readonly name: 'mock' | 'tiktok' | 'nexscope';
   /** Produits du jour (ouverts à l'affiliation) pour la France. */
   fetchTrendingProducts(query: TrendingQuery): Promise<ProviderProduct[]>;
-  /** Historique des ventes estimées, du plus ancien au plus récent, terminant à `endDate` (inclus). */
+  /** Historique des ventes estimées, du plus ancien au plus récent, terminant à `endDate` (inclus). [] = pas d'historique. */
   fetchProductHistory(productId: string, days: number, endDate?: string): Promise<SalesPoint[]>;
-  /** Vidéos qui vendent le plus ce produit. */
+  /** Vidéos qui vendent le plus ce produit. [] = la source n'en fournit pas. */
   fetchTopVideos(productId: string): Promise<TopVideo[]>;
+  /** Compteurs de l'exécution en cours (fournisseurs réels seulement). */
+  stats?(): ProviderRunStats;
 }
 
 export class ProviderConfigError extends Error {

@@ -72,6 +72,7 @@ export async function cleanupRun(userIds: string[]): Promise<void> {
   await admin.from('billing_events').delete().like('id', `${RUN}%`);
   await admin.from('coach_applications').delete().like('email', `${RUN}%`);
   await admin.from('cron_runs').delete().eq('job', RUN);
+  await admin.from('provider_cache').delete().like('key', `${RUN}%`);
 }
 
 /** Code Postgres « permission refusée » ou violation de RLS. */

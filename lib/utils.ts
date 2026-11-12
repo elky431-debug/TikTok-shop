@@ -82,6 +82,13 @@ export function daysBetween(a: string, b: string): number {
   return Math.round(ms / 86_400_000);
 }
 
+/** « 12 novembre » */
+export function formatDayMonth(date: string): string {
+  return new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', timeZone: 'UTC' }).format(
+    new Date(`${date}T12:00:00Z`),
+  );
+}
+
 /** « 12 nov. » */
 export function formatShortDate(date: string): string {
   return new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(

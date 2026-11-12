@@ -1,0 +1,14 @@
+{
+  "_source": "Réponse d'exemple construite à partir de la définition officielle de tiktok-video-search (même dépôt). Les champs du créateur (pseudo, avatar) existent dans la réponse réelle mais ne sont jamais lus : ils sont absents ici. Aucune donnée personnelle.",
+  "code": 0,
+  "msg": "success",
+  "data": {
+    "errcode": 200,
+    "errmsg": "success",
+    "total": 2,
+    "data": [
+      { "videoId": "7300000000000000001", "videoDesc": "Je teste le gloss  repulpant pendant 7 jours #gloss", "totalViewsCnt": 182000, "totalVideoSaleCnt": 640 },
+      { "videoId": "7300000000000000002", "videoDesc": "", "totalViewsCnt": 950000, "totalVideoSaleCnt": 1210 }
+    ]
+  }
+}

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Minus, Plus, TrendingDown, Trash2 } from 'lucide-react';
 import Link from 'next/link';
+import { fallbackImageUrl } from '@/lib/product-image';
 import { ProductImage, TrendBadge } from '@/components/product/bits';
 import { LinkButton } from '@/components/ui/button';
 import { Callout, EmptyState, PageHeader, ProgressBar } from '@/components/ui/surface';
@@ -26,7 +27,7 @@ function Row({ product, saved }: { product: Product; saved: SavedProduct }) {
     <li className={cn('rounded-2xl border p-4 sm:p-5', declining ? 'border-warn/40' : 'border-line')}>
       <div className="flex gap-3.5">
         <Link href={`/app/produit/${product.id}`} className="shrink-0" tabIndex={-1} aria-hidden="true">
-          <ProductImage src={product.image_url} alt="" className="w-16" />
+          <ProductImage src={product.image_url} fallback={fallbackImageUrl(product.id, product.niche)} alt="" className="w-16" />
         </Link>
         <div className="min-w-0 flex-1">
           <Link href={`/app/produit/${product.id}`} className="font-semibold leading-snug hover:underline hover:underline-offset-4">
@@ -34,7 +35,7 @@ function Row({ product, saved }: { product: Product; saved: SavedProduct }) {
           </Link>
           <p className="num mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
             <span className="font-semibold text-gain">{formatEuros(commissionPerSale(product.price_cents, product.commission_rate))} / vente</span>
-            <TrendBadge trend={product.trend} growth={product.growth_7d} />
+            <TrendBadge trend={product.trend} growth={product.growth_7d} measured={product.latest_breakdown?.growth_7d !== null} />
           </p>
         </div>
         <form action={removeSavedProductAction}>

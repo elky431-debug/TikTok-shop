@@ -48,17 +48,23 @@ export type ScorePartKey = 'croissance' | 'commission' | 'saturation' | 'prix' |
 export interface ScorePart {
   key: ScorePartKey;
   label: string;
-  weight: number; // points maximum (35, 25, 20, 10, 10)
+  weight: number; // poids nominal (35, 25, 20, 10, 10)
+  /** false = la source ne fournit pas la donnée : critère ignoré, son poids est réparti sur les autres. */
+  available?: boolean;
+  /** Poids réellement appliqué après répartition (égal à `weight` quand tout est disponible). */
+  applied_weight?: number;
   value: number; // 0..1
-  points: number; // value × weight, arrondi à 0,1
+  points: number; // value × poids appliqué, arrondi à 0,1
   sentence: string;
 }
 
 export interface ScoreBreakdown {
   total: number;
   parts: ScorePart[];
-  growth_7d: number;
-  daily_sales_7d: number;
+  /** Croissance sur 7 jours ; null = pas encore mesurable (historique trop court). */
+  growth_7d: number | null;
+  /** Ventes moyennes par jour sur 7 jours ; null = inconnues. */
+  daily_sales_7d: number | null;
   summary: string;
 }
 
@@ -71,8 +77,10 @@ export interface Product {
   shop_name: string;
   price_cents: number;
   commission_rate: number;
-  free_sample: boolean;
-  active_affiliates: number;
+  /** null = la source ne le dit pas. */
+  free_sample: boolean | null;
+  /** null = la source ne le dit pas. */
+  active_affiliates: number | null;
   image_url: string;
   top_videos: TopVideo[];
   snapshot_date: string | null;
@@ -87,8 +95,11 @@ export interface Product {
 export interface ProductSnapshot {
   product_id: string;
   date: string;
-  estimated_sales: number;
-  affiliates: number;
+  /** null = ventes du jour inconnues (premier relevé d'une source qui ne donne qu'un cumul). */
+  estimated_sales: number | null;
+  affiliates: number | null;
+  /** Cumul des ventes renvoyé par la source, pour déduire les ventes du jour suivant. */
+  units_sold_total?: number | null;
   score: number;
   score_breakdown: ScoreBreakdown | null;
   trend: Trend;
@@ -198,7 +209,7 @@ export interface DigestProduct {
   score: number | null;
   trend: Trend;
   growth_7d: number;
-  free_sample: boolean;
+  free_sample: boolean | null;
   reason: string;
 }
 
@@ -210,6 +221,8 @@ export interface DigestContent {
   hook: { product_id: string; product_name: string; text: string } | null;
   script: { product_id: string; product_name: string; title: string; lines: string[] } | null;
   locked_count: number;
+  /** Produits fictifs (démonstration) : le récap le dit clairement. */
+  demo?: boolean;
 }
 
 export interface Digest {

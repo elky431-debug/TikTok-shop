@@ -67,6 +67,7 @@ export interface LocalData {
   billing_events: Array<{ id: string; type: string; processed_at: string }>;
   cron_runs: CronRun[];
   emails: LocalEmail[];
+  provider_cache: Array<{ key: string; value: unknown; expires_at: string }>;
 }
 
 export function emptyLocalData(): LocalData {
@@ -90,6 +91,7 @@ export function emptyLocalData(): LocalData {
     billing_events: [],
     cron_runs: [],
     emails: [],
+    provider_cache: [],
   };
 }
 
@@ -744,6 +746,27 @@ export class LocalRepo implements Repo {
   // ------------------------------------------------------------------
   // Tâches planifiées
   // ------------------------------------------------------------------
+  async getProviderCache(key: string) {
+    const nowIso = now();
+    return this.read((d) => d.provider_cache.find((e) => e.key === key && e.expires_at > nowIso)?.value ?? null);
+  }
+
+  async setProviderCache(key: string, value: unknown, expiresAt: string) {
+    this.write((d) => {
+      d.provider_cache = d.provider_cache.filter((e) => e.key !== key);
+      d.provider_cache.push({ key, value, expires_at: expiresAt });
+    });
+  }
+
+  async purgeProviderCache() {
+    const nowIso = now();
+    return this.write((d) => {
+      const before = d.provider_cache.length;
+      d.provider_cache = d.provider_cache.filter((e) => e.expires_at > nowIso);
+      return before - d.provider_cache.length;
+    });
+  }
+
   async startCronRun(job: string, trigger: CronRun['trigger']) {
     return this.write((d) => {
       const run: CronRun = {

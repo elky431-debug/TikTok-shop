@@ -86,7 +86,7 @@ const productRow = (p: Product) => ({
 });
 const snapshotRow = (s: ProductSnapshot) => ({
   ...s,
-  estimated_sales: Math.round(s.estimated_sales),
+  estimated_sales: s.estimated_sales === null ? null : Math.round(s.estimated_sales),
   score_breakdown: s.score_breakdown ?? {},
 });
 
@@ -628,6 +628,38 @@ export class SupabaseRepo implements Repo {
 
   async updateCoachApplication(id: string, status: CoachApplication['status']) {
     check('demande de partenariat', await this.db.from('coach_applications').update({ status }).eq('id', id));
+  }
+
+  // ------------------------------------------------------------------
+  // Cache du fournisseur de données
+  // ------------------------------------------------------------------
+  async getProviderCache(key: string) {
+    const data = check(
+      'cache fournisseur',
+      await this.db
+        .from('provider_cache')
+        .select('value')
+        .eq('key', key)
+        .gt('expires_at', new Date().toISOString())
+        .maybeSingle(),
+    );
+    return (data?.value as unknown) ?? null;
+  }
+
+  async setProviderCache(key: string, value: unknown, expiresAt: string) {
+    check(
+      'cache fournisseur',
+      await this.db.from('provider_cache').upsert({ key, value, expires_at: expiresAt }, { onConflict: 'key' }),
+    );
+  }
+
+  async purgeProviderCache() {
+    const { count, error } = await this.db
+      .from('provider_cache')
+      .delete({ count: 'exact' })
+      .lt('expires_at', new Date().toISOString());
+    if (error) throw new DbError('cache fournisseur', error.message);
+    return count ?? 0;
   }
 
   // ------------------------------------------------------------------

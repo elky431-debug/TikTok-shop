@@ -42,3 +42,8 @@ export function productImageSvg(productId: string, niche: NicheId): string {
   <g transform="rotate(${rotate} 200 200)" fill="none" stroke="#161823" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">${ICONS[niche]}</g>
 </svg>`;
 }
+
+/** Visuel SVG de repli d'un produit (toujours disponible, aucune image externe). */
+export function fallbackImageUrl(productId: string, niche: NicheId): string {
+  return `/api/produit-image/${encodeURIComponent(productId)}?niche=${niche}`;
+}

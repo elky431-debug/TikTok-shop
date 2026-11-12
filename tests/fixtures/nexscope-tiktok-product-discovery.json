@@ -1,0 +1,62 @@
+{
+  "_source": "Réponse d'exemple construite à partir de la définition officielle de tiktok-product-discovery (dépôt nexscope-ai/nexscope-ecommerce-api, schemas/tiktok-product-discovery.response.json, copie du 2026-09-10), dans l'enveloppe { code, msg, data } décrite par la doc. Ce n'est pas une réponse enregistrée en production (aucune clé). Noms fictifs, aucune donnée personnelle.",
+  "code": 0,
+  "msg": "success",
+  "data": {
+    "total": 4,
+    "products": [
+      {
+        "title": "Gloss repulpant effet miroir",
+        "productId": "1731000000000000001",
+        "region": "FR",
+        "price": 12.9,
+        "minPrice": 12.9,
+        "maxPrice": 12.9,
+        "currency": "EUR",
+        "totalSaleCnt": 18450,
+        "totalSale1dCnt": 420,
+        "totalSale7dCnt": 2310,
+        "totalSale28dCnt": 5610,
+        "totalSale90dCnt": 12100,
+        "totalVideoCnt": 640,
+        "totalIflCnt": 212,
+        "productCommissionRate": 0.18,
+        "shopName": "Boutique Exemple Lèvres",
+        "categoryName": "Beauty & Personal Care",
+        "imageUrl": "https://p16-oec-eu-common.ibyteimg.com/tos-alisg-i-aphluv4xwc-sg/gloss~tplv-aphluv4xwc-origin-jpeg.jpeg",
+        "salesTrendFlagText": "Rising"
+      },
+      {
+        "title": "Patchs anti-cernes à l'or, 30 paires",
+        "productId": "1731000000000000002",
+        "region": "FR",
+        "price": 19.5,
+        "currency": null,
+        "totalSaleCnt": 900,
+        "totalSale7dCnt": 140,
+        "productCommissionRate": 15,
+        "shopName": "Boutique Exemple Regard",
+        "categoryName": "Beauty & Personal Care",
+        "imageUrl": "https://cdn.example.org/patchs.jpg"
+      },
+      {
+        "title": "Crème mains sans commission connue",
+        "productId": "1731000000000000003",
+        "region": "FR",
+        "price": 9.9,
+        "currency": "EUR",
+        "totalSale7dCnt": 40
+      },
+      {
+        "title": "Producto de España",
+        "productId": "1731000000000000004",
+        "region": "ES",
+        "price": 10,
+        "currency": "EUR",
+        "productCommissionRate": 0.1
+      }
+    ],
+    "columns": [],
+    "costToken": 22
+  }
+}

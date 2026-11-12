@@ -8,6 +8,11 @@ function read(name: string): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function positiveInt(value: string, fallback: number): number {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback;
+}
+
 export const env = {
   get supabaseUrl() {
     return read('NEXT_PUBLIC_SUPABASE_URL');
@@ -59,10 +64,40 @@ export const env = {
   get botApiSecret() {
     return read('BOT_API_SECRET');
   },
+  /**
+   * Fournisseur demandé. `auto` (ou vide) : TikTok si ses clés sont là, sinon Nexscope, sinon données fictives.
+   * Une valeur explicite (`tiktok`, `nexscope`, `mock`) l'emporte toujours.
+   */
   get dataProvider(): 'mock' | 'tiktok' | 'nexscope' {
     const value = read('DATA_PROVIDER').toLowerCase();
-    if (value === 'tiktok' || value === 'nexscope') return value;
+    if (value === 'tiktok' || value === 'nexscope' || value === 'mock') return value;
+    if (this.tiktokAppKey && this.tiktokAppSecret) return 'tiktok';
+    if (this.nexscopeApiKey) return 'nexscope';
     return 'mock';
+  },
+  /** Nombre maximum d'appels au fournisseur réel par exécution de la tâche nocturne. */
+  get dataMaxCallsPerNight() {
+    return positiveInt(read('DATA_MAX_CALLS_PER_NIGHT'), 60);
+  },
+  /** Débit maximum vers le fournisseur (requêtes par seconde). */
+  get dataRatePerSecond() {
+    return positiveInt(read('DATA_RATE_PER_SECOND'), 1);
+  },
+  /** Durée de vie du cache des réponses du fournisseur, en heures. */
+  get dataCacheHours() {
+    return positiveInt(read('DATA_CACHE_HOURS'), 20);
+  },
+  /** Pages lues par niche (TikTok : 20 produits par page ; Nexscope : 10). */
+  get dataPagesPerNiche() {
+    return positiveInt(read('DATA_PAGES_PER_NICHE'), 3);
+  },
+  /** Produits les mieux notés dont on demande les vidéos qui vendent (fournisseur réel). */
+  get dataVideoProducts() {
+    return positiveInt(read('DATA_VIDEO_PRODUCTS'), 10);
+  },
+  /** Correspondance niche → catégorie de 1er niveau TikTok Shop, ex. « beaute:601450,maison:600001 ». */
+  get tiktokCategoryMap() {
+    return read('TIKTOK_CATEGORY_MAP');
   },
   get tiktokAppKey() {
     return read('TIKTOK_APP_KEY');

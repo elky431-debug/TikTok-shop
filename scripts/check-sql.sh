@@ -30,5 +30,10 @@ for f in supabase/migrations/*.sql; do
   echo "→ $f"
   "${PSQL[@]}" -f "$f"
 done
+# Deuxième passage : les migrations doivent être rejouables (npm run db:setup les applique à chaque fois).
+for f in supabase/migrations/*.sql; do
+  "${PSQL[@]}" -f "$f"
+done
+echo "→ migrations rejouées sans erreur"
 "${PSQL[@]}" -f supabase/tests/rls_test.sql
 echo "Migrations OK."

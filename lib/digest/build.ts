@@ -1,4 +1,5 @@
 import type { DigestContent, DigestProduct, Product, Profile } from '@/lib/db/types';
+import { isDemoProduct } from '@/lib/catalog';
 import { getPlan } from '@/lib/plans';
 import { rankForUser } from '@/lib/radar-rules';
 import { commissionPerSale, TREND_LABELS } from '@/lib/score';
@@ -10,7 +11,8 @@ export interface DigestExtras {
 }
 
 function reason(product: Product): string {
-  const bits = [`${TREND_LABELS[product.trend]} · ${formatGrowth(product.growth_7d)} en 7 jours`];
+  const measured = product.latest_breakdown ? product.latest_breakdown.growth_7d !== null : true;
+  const bits = [measured ? `${TREND_LABELS[product.trend]} · ${formatGrowth(product.growth_7d)} en 7 jours` : 'Nouveau dans le radar, tendance en mesure'];
   if (product.free_sample) bits.push('échantillon gratuit');
   return bits.join(' · ');
 }
@@ -47,5 +49,6 @@ export async function buildDigestContent(
     hook: top ? { product_id: top.id, product_name: top.name, text: await extras.hookFor(top) } : null,
     script: top ? await extras.scriptFor(top, profile).then((s) => (s ? { product_id: top.id, product_name: top.name, ...s } : null)) : null,
     locked_count: Number.isFinite(plan.visibleProducts) ? Math.max(0, ranked.length - count) : 0,
+    ...(chosen.length && chosen.every(isDemoProduct) ? { demo: true } : {}),
   };
 }

@@ -120,7 +120,7 @@ sont présentes ; les autres restent simulées. Le détail de chaque variable es
    Ajoute `E2E_GOOGLE=1` une fois Google activé pour vérifier aussi le bouton Google. Sans clés, la commande
    dit lesquelles manquent et ne lance rien (`INTEGRATION_REQUIRED=1` la fait échouer dans ce cas, pour la CI).
 
-**Avec un fournisseur de données réel** (`DATA_PROVIDER=tiktok` ou `nexscope`), `npm run seed` fait un vrai
+**Avec un fournisseur de données réel** (clés TikTok ou Nexscope présentes), `npm run seed` fait un vrai
 rafraîchissement au lieu de charger 30 jours fictifs : aucun produit fictif n’arrive dans une base de production.
 
 ### Claude (scripts)
@@ -148,10 +148,24 @@ Renseigne `ANTHROPIC_API_KEY` (https://console.anthropic.com). Le modèle est r�
 
 ### Données produits
 
-`DATA_PROVIDER=mock` par défaut. `tiktok` et `nexscope` sont des squelettes prêts à brancher : voir les `TODO`
-dans `lib/data/tiktok.ts` et `lib/data/nexscope.ts`. **Jamais de scraping de TikTok.**
+**Jamais de scraping de TikTok** : uniquement l’API officielle TikTok Shop ou un fournisseur sous contrat.
+`DATA_PROVIDER=auto` (par défaut) prend TikTok si ses clés sont là, sinon Nexscope, sinon les données fictives.
 
----
+- **Nexscope** (la voie réaliste aujourd’hui pour la France) : crée une clé sur
+  https://www.nexscope.ai/seller/api-access et mets-la dans `NEXSCOPE_API_KEY`. Chaque nuit : 7 niches ×
+  `DATA_PAGES_PER_NICHE` pages de 10 produits, plus les vidéos des `DATA_VIDEO_PRODUCTS` meilleurs produits.
+  Chaque appel coûte des crédits Nexscope : règle `DATA_MAX_CALLS_PER_NIGHT` en conséquence.
+- **API officielle TikTok Shop** (`TIKTOK_APP_KEY`, `TIKTOK_APP_SECRET`, `TIKTOK_ACCESS_TOKEN`) : application
+  créée sur le Partner Center, API « Affiliate Creator » activée par TikTok, et jeton d’un compte créateur qui a
+  autorisé l’appli. **La documentation indique que ces API ne sont pas encore ouvertes dans l’UE** : voir
+  `DECISIONS.md` (décision 78) avant d’engager quoi que ce soit.
+
+Ensuite, depuis `/admin`, clique **Lancer le rafraîchissement** : le radar affiche les vrais produits France.
+L’écran admin dit quelle source a servi, combien d’appels ont été faits, et liste les domaines d’images refusés
+(à ajouter dans `IMAGE_HOSTS` s’ils sont légitimes, puis redéployer). Si la source réelle échoue une nuit, la tâche
+bascule en repli et l’écrit dans l’admin ; les utilisateurs gardent les derniers vrais relevés, datés au-delà de
+36 heures (« Données du … »). Les produits fictifs ne sont montrés que s’il n’existe aucun vrai relevé, toujours avec
+la mention « produits fictifs ».
 
 ## 3. Déployer sur Vercel
 
