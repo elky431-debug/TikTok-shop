@@ -687,3 +687,31 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
        20.19 au lieu d'échouer plus loin ;
      - `@next/env` et `playwright`, importés par des scripts mais seulement arrivés par `next` et
        `@playwright/test`, sont maintenant déclarés ; `@fontsource-variable/tiktok-sans`, inutilisé, est retiré.
+
+### Étape 3 — Mise en ligne sur Netlify
+
+125. **Netlify au lieu de Vercel** : `vercel.json` supprimé ; `netlify.toml` minimal (commande `npm run build`,
+     dossier `.next`, fonctions dans `netlify/functions`). D'après la doc Netlify (lue sur docs.netlify.com) :
+     Next.js 14 est pris en charge par l'adaptateur OpenNext de Netlify, à ne pas épingler (il se met à jour à chaque
+     build) ; le middleware tourne en Edge Function ; Node vient de `.nvmrc` ; les variables écrites dans
+     `netlify.toml` ne sont pas visibles des fonctions, donc toutes se règlent dans l'interface.
+126. **Tâche nocturne en deux fonctions**, à cause de deux limites documentées : une fonction planifiée a
+     **30 secondes**, une fonction d'arrière-plan **15 minutes** (réponse 202 immédiate). La nuit réelle (21 appels
+     Nexscope au débit d'un par seconde, vidéos, récaps) dépasse 30 s : le seed réel a déjà pris 21 s avec une seule
+     page par niche.
+     - `netlify/functions/nightly-refresh.mts` : `config = { schedule: '0 3 * * *' }` (cron en UTC), appelle
+       `/api/cron/refresh` avec `Authorization: Bearer <CRON_SECRET>`, comme demandé ;
+     - la route, quand elle tourne sur Netlify (`SITE_ID` et `URL` fournis à l'exécution, d'après la doc), passe le
+       travail à `netlify/functions/nightly-refresh-background.mts` et répond 202 ; ailleurs (local, tests), elle le
+       fait elle-même ; le bouton de l'admin suit la même règle (« lancé en arrière-plan ») ;
+     - une fonction d'arrière-plan peut être appelée par une URL publique : elle ne fait rien sans le bon
+       `CRON_SECRET`.
+     Le paquet de la fonction d'arrière-plan a été construit avec esbuild (l'outil de Netlify pour les fonctions
+     TypeScript), alias `@/` compris, puis exécuté en local : refus avec un faux secret, tâche complète avec le bon.
+127. **Adresse publique** : `NEXT_PUBLIC_SITE_URL` reste la référence (redirections de connexion Supabase, retours
+     et webhook Stripe, liens des e-mails, bot) ; à défaut, `URL` fourni par Netlify ; à défaut, le local.
+     L'hébergeur des mentions légales devient Netlify (adresse laissée `[À COMPLÉTER]`, à reprendre sur netlify.com).
+128. **Liste de vérification de mise en ligne réécrite pour Netlify**, pas à pas pour un premier déploiement :
+     création du site, variables (portées Builds et Functions, redéploiement après chaque changement), domaine,
+     Supabase, Stripe, Resend, puis test de la tâche planifiée (badge « Scheduled », bouton « Run now », journaux
+     de la fonction d'arrière-plan, `/api/health`).

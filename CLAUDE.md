@@ -28,7 +28,7 @@ leurs élèves (commission de 30 % récurrente, 3 mois de Pro offerts aux élèv
 
 ## Stack
 
-- Next.js 14 App Router, TypeScript strict, Server Actions. Déploiement Vercel.
+- Next.js 14 App Router, TypeScript strict, Server Actions. Déploiement Netlify.
 - Supabase (Postgres, Auth lien magique + Google, RLS partout). Migrations : `supabase/migrations/`.
 - **Mode local sans clés** : si `NEXT_PUBLIC_SUPABASE_URL` est vide, la base est un fichier JSON
   (`.data/local-db.json`) et l'auth est un lien magique simulé (affiché à l'écran). Voir `lib/env.ts`.
@@ -48,7 +48,9 @@ leurs élèves (commission de 30 % récurrente, 3 mois de Pro offerts aux élèv
 - E-mails : Resend + React Email (`emails/`). Sans clé : journalisés en console + boîte locale.
 - Bot Discord : `bot/` (package séparé, discord.js), parle à l'appli via `/api/bot/*` + `BOT_API_SECRET`.
 - Tests : Vitest (`tests/unit`), Playwright (`tests/e2e`, 3 parcours), intégration Supabase (`tests/integration`).
-- Déploiement : `vercel.json` (tâche nocturne 3 h UTC), `/api/health`, liste de vérification dans le README.
+- Déploiement : Netlify (`netlify.toml`, fonction planifiée `netlify/functions/nightly-refresh.mts` à 3 h UTC qui
+  appelle `/api/cron/refresh`, travail dans `nightly-refresh-background`), `/api/health`, liste de vérification
+  dans le README.
 
 ## Schéma (résumé)
 

@@ -1,16 +1,17 @@
 import { NextResponse } from 'next/server';
 import { isCronAuthorized } from '@/lib/cron-auth';
 import { getRepo } from '@/lib/db';
-import { runNightly } from '@/lib/jobs/nightly';
+import { triggerNightly } from '@/lib/jobs/trigger';
 import { parisDate } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
 
 /**
- * Tâche nocturne. vercel.json l'appelle une fois par jour à 3 h UTC (4 h à Paris l'hiver, 5 h l'été), avec
- * « Authorization: Bearer <CRON_SECRET> » envoyé par Vercel. Un second appel le même jour (relance de Vercel,
- * appel à la main) ne refait pas le travail, sauf avec `?force=1` (admin, tests).
+ * Tâche nocturne. La fonction planifiée Netlify (netlify/functions/nightly-refresh.mts) l'appelle une fois par jour
+ * à 3 h UTC (4 h à Paris l'hiver, 5 h l'été), avec « Authorization: Bearer <CRON_SECRET> ». Sur Netlify, le travail
+ * part dans la fonction d'arrière-plan (réponse 202) ; ailleurs, il est fait ici. Un second appel le même jour ne
+ * refait pas le travail, sauf avec `?force=1` (admin, tests).
  */
 export async function GET(request: Request) {
   if (!isCronAuthorized(request)) {
@@ -26,7 +27,9 @@ export async function GET(request: Request) {
   }
 
   try {
-    const result = await runNightly({ trigger: force ? 'manuel' : 'cron' });
+    const outcome = await triggerNightly(force ? 'manuel' : 'cron');
+    if (outcome.queued) return NextResponse.json({ ok: true, queued: true }, { status: 202 });
+    const result = outcome.result;
     return NextResponse.json({
       ok: true,
       date: result.refresh.date,

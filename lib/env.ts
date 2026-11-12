@@ -142,8 +142,9 @@ export const env = {
   get cronSecret() {
     return read('CRON_SECRET');
   },
+  /** Adresse publique : NEXT_PUBLIC_SITE_URL, sinon l'adresse principale fournie par Netlify (URL), sinon le local. */
   get siteUrl() {
-    return (read('NEXT_PUBLIC_SITE_URL') || 'http://localhost:3000').replace(/\/$/, '');
+    return (read('NEXT_PUBLIC_SITE_URL') || read('URL') || 'http://localhost:3000').replace(/\/$/, '');
   },
   get adminEmails(): string[] {
     return read('ADMIN_EMAILS')

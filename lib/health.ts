@@ -45,7 +45,8 @@ const withTimeout = <T>(promise: Promise<T>, ms: number) =>
 export async function healthReport(now: Date = new Date()): Promise<HealthReport> {
   const repo = getRepo();
   const problems: string[] = [];
-  const production = process.env.VERCEL_ENV === 'production' || (process.env.NODE_ENV === 'production' && !isLocalMode());
+  // SITE_ID est fourni par Netlify à l'exécution (doc Netlify) : site déployé.
+  const production = Boolean(process.env.SITE_ID) || (process.env.NODE_ENV === 'production' && !isLocalMode());
 
   let databaseOk = true;
   let lastRun: Awaited<ReturnType<typeof repo.listCronRuns>>[number] | undefined;

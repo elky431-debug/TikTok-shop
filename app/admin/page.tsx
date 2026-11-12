@@ -19,6 +19,7 @@ export const dynamic = 'force-dynamic';
 const MESSAGES: Record<string, { tone: 'gain' | 'rose'; text: string }> = {
   'ok=formateur': { tone: 'gain', text: 'Compte passé en formateur.' },
   'ok=rafraichissement': { tone: 'gain', text: 'Rafraîchissement terminé : le radar affiche les produits du jour.' },
+  'ok=lance': { tone: 'gain', text: 'Rafraîchissement lancé en arrière-plan : le résultat apparaît ici dans quelques minutes.' },
   'ok=repli': { tone: 'rose', text: 'La source réelle a échoué : rafraîchissement fait en repli (voir le détail ci-dessous).' },
   'erreur=formation': { tone: 'rose', text: 'Indique le nom de la formation.' },
   'erreur=code': { tone: 'rose', text: 'Le code promo doit faire 3 à 24 caractères (lettres, chiffres, tirets).' },

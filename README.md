@@ -86,7 +86,7 @@ sont présentes ; les autres restent simulées. Le détail de chaque variable es
      l’API de gestion de Supabase en HTTPS, même là où le port 5432 de Postgres est fermé ;
    - ou **Connect → Session pooler** : la chaîne de connexion (avec le mot de passe de la base) dans
      `SUPABASE_DB_URL`.
-   Ni l’un ni l’autre ne sert à l’appli : ne les mets pas sur Vercel.
+   Ni l’un ni l’autre ne sert à l’appli : ne les mets pas sur Netlify.
 3. **Authentication → URL Configuration** :
    - *Site URL* : la valeur de `NEXT_PUBLIC_SITE_URL` (ex. `https://tiktrend.fr`) ;
    - *Redirect URLs* : ajoute `https://tiktrend.fr/auth/callback**` et `http://localhost:3000/auth/callback**`
@@ -190,62 +190,80 @@ bascule en repli et l’écrit dans l’admin ; les utilisateurs gardent les der
 36 heures (« Données du … »). Les produits fictifs ne sont montrés que s’il n’existe aucun vrai relevé, toujours avec
 la mention « produits fictifs ».
 
-## 3. Déployer sur Vercel
+## 3. Mettre en ligne sur Netlify
 
-1. Pousse le dépôt sur GitHub, puis **Import Project** dans Vercel (framework Next.js détecté tout seul,
-   Node 20 ou plus).
-2. Suis la liste de vérification ci-dessous, **dans l’ordre**.
-3. La tâche nocturne est déclarée dans `vercel.json` : `/api/cron/refresh` une fois par jour à **3 h UTC**
-   (4 h à Paris l’hiver, 5 h l’été). Vercel envoie tout seul `Authorization: Bearer <CRON_SECRET>` ; un second
-   appel le même jour ne refait pas le travail. La fonction peut durer jusqu’à 300 s (`maxDuration`).
-4. Surveillance : `GET /api/health` répond `ok`, `degraded` (avec la liste des problèmes) ou `down` (HTTP 503 :
-   base injoignable ou relevé de plus de 36 heures). Aucun secret dans la réponse ; branche-la sur un outil
-   de surveillance (UptimeRobot, Better Stack…).
+TikTrend tourne sur Netlify sans configuration spéciale : Netlify reconnaît Next.js 14 tout seul (son adaptateur
+OpenNext), lit `netlify.toml` (commande de build, dossier des fonctions) et `.nvmrc` (Node 22).
+
+**La tâche nocturne.** Netlify lance `netlify/functions/nightly-refresh.mts` chaque jour à **3 h UTC**, soit 4 h à
+Paris l’hiver et 5 h l’été. Cette fonction appelle `/api/cron/refresh` avec `CRON_SECRET`. Une fonction planifiée ne
+dispose que de 30 secondes : la route passe donc le travail à `nightly-refresh-background`, une fonction
+d’arrière-plan qui a 15 minutes, puis répond tout de suite. Les deux refusent tout appel sans le bon `CRON_SECRET`.
+
+**Surveillance.** `GET /api/health` répond `ok`, `degraded` (avec la liste des problèmes) ou `down` (HTTP 503 : base
+injoignable ou relevé de plus de 36 heures), sans aucun secret. Branche-la sur un outil de surveillance gratuit
+(UptimeRobot, Better Stack…).
 
 ### Liste de vérification de mise en ligne
 
-Coche chaque ligne dans cet ordre : chacune dépend des précédentes.
+Suis les étapes dans l’ordre : chacune dépend des précédentes. Compte une heure la première fois.
 
-1. **Variables Vercel** (*Settings → Environment Variables*, environnement *Production*) :
-   - [ ] `NEXT_PUBLIC_SITE_URL` = l’adresse définitive, en `https://`, sans `/` final (elle sert aux redirections
-         de connexion, aux retours de paiement Stripe et à tous les liens des e-mails) ;
-   - [ ] `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` ;
-   - [ ] `CRON_SECRET` (long et aléatoire, par exemple `openssl rand -hex 32`) et `ADMIN_EMAILS` ;
-   - [ ] `AI_PROVIDER` et la clé correspondante : `OPENAI_API_KEY` (+ `OPENAI_MODEL`) ou `ANTHROPIC_API_KEY`
-         (+ `ANTHROPIC_MODEL`) ;
-   - [ ] `STRIPE_SECRET_KEY` (`sk_live_…`), les 4 `STRIPE_PRICE_…` du mode production, `STRIPE_WEBHOOK_SECRET`
-         (rempli à l’étape 4) ;
-   - [ ] `RESEND_API_KEY`, `EMAIL_FROM`, `FOUNDER_EMAIL` ;
-   - [ ] source de données : `NEXSCOPE_API_KEY` (ou les clés TikTok), et si besoin `DATA_MAX_CALLS_PER_NIGHT`,
-         `IMAGE_HOSTS` ;
-   - [ ] `BOT_API_SECRET`, `NEXT_PUBLIC_DISCORD_INVITE_URL` si le bot Discord est lancé ;
-   - [ ] **pas** de `SUPABASE_DB_URL` ni de `LOCAL_…` sur Vercel : ils ne servent qu’en local.
-2. **Domaine** : *Settings → Domains* → ajoute le domaine, règle les DNS demandés, attends le certificat, puis
-   vérifie que `NEXT_PUBLIC_SITE_URL` est exactement ce domaine et **redéploie** (la valeur est figée au build).
-3. **Supabase** (*Authentication → URL Configuration*) :
-   - [ ] *Site URL* = `NEXT_PUBLIC_SITE_URL` ;
-   - [ ] *Redirect URLs* : `<NEXT_PUBLIC_SITE_URL>/auth/callback**` ;
-   - [ ] modèle d’e-mail « Magic Link » en français (section 2) et Google réglé si utilisé ;
-   - [ ] `npm run db:setup` lancé sur le projet de production, puis `npm run test:integration` au vert.
-4. **Stripe en production** :
-   - [ ] `npm run stripe:setup` avec la clé `sk_live_…` (prix de production) ;
-   - [ ] webhook *Add endpoint* → `<NEXT_PUBLIC_SITE_URL>/api/stripe/webhook` avec les 7 événements de la section 2,
-         secret copié dans `STRIPE_WEBHOOK_SECRET`, puis redéploiement ;
-   - [ ] portail client configuré ; un vrai paiement puis une résiliation testés.
-5. **Resend** : *Domains → Add domain* → ajoute les enregistrements DNS (SPF, DKIM), attends « Verified », puis
-   `EMAIL_FROM` sur ce domaine (ex. `TikTrend <bonjour@ton-domaine.fr>`). Envoie-toi un récap depuis `/app/recap`.
-   Branche aussi le SMTP de Resend dans Supabase pour les e-mails de connexion.
-6. **Tâche nocturne testée** :
-   - [ ] dans `/admin`, **Lancer le rafraîchissement** : le message doit être vert (pas « repli »), le radar doit
-         montrer les vrais produits France (pas la mention « produits fictifs ») ;
-   - [ ] l’appel planifié lui-même :
+**1. Créer le site sur Netlify**
+1. Crée un compte sur https://app.netlify.com (connexion avec GitHub, c’est le plus simple).
+2. **Add new project → Import an existing project → GitHub**, autorise Netlify, choisis le dépôt.
+3. Sur l’écran de configuration, ne change rien : la commande (`npm run build`) et le dossier (`.next`) viennent de
+   `netlify.toml`. **N’appuie pas encore sur Deploy** si l’écran le permet : ajoute d’abord les variables (étape 2).
+   Si le premier déploiement part quand même, il échouera ou tournera en mode local : ce n’est pas grave.
 
-     ```bash
-     curl -sS -H "Authorization: Bearer $CRON_SECRET" "$NEXT_PUBLIC_SITE_URL/api/cron/refresh?force=1"
-     ```
+**2. Ajouter les variables** (*Project configuration → Environment variables → Add a variable*). Pour chacune,
+laisse les portées (*scopes*) par défaut : elles doivent inclure **Builds** et **Functions**. Ne mets rien dans
+`netlify.toml` : les fonctions ne voient pas les variables écrites dans ce fichier.
 
-   - [ ] `curl -sS "$NEXT_PUBLIC_SITE_URL/api/health"` répond `"status":"ok"` ;
-   - [ ] le lendemain, *Vercel → Cron Jobs* montre une exécution réussie à 3 h UTC et `/admin` la tâche « Planifiée ».
+| Variable | Valeur |
+| --- | --- |
+| `NEXT_PUBLIC_SITE_URL` | l’adresse définitive, en `https://`, sans `/` final : celle du domaine de l’étape 3, ou `https://<nom>.netlify.app` en attendant |
+| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API |
+| `CRON_SECRET` | une longue suite aléatoire (`openssl rand -hex 32`) |
+| `ADMIN_EMAILS` | ton adresse (plusieurs : séparées par des virgules) |
+| `AI_PROVIDER` + `OPENAI_API_KEY` (ou `ANTHROPIC_API_KEY`) | ta clé du fournisseur d’IA |
+| `NEXSCOPE_API_KEY` | ta clé Nexscope (sinon, produits fictifs signalés comme tels) |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, 4 × `STRIPE_PRICE_…` | étape 5 |
+| `RESEND_API_KEY`, `EMAIL_FROM`, `FOUNDER_EMAIL` | étape 6 |
+| `DISCORD_…` | section 4 (Discord) |
+
+Ne mets **jamais** `SUPABASE_DB_URL` ni `SUPABASE_ACCESS_TOKEN` sur Netlify : ils ne servent qu’à `npm run db:setup`,
+depuis ton poste. Après chaque changement de variable, il faut **redéployer** (*Deploys → Trigger deploy → Deploy
+project*) : chaque déploiement garde les valeurs du moment où il a été construit.
+
+**3. Le domaine** (*Domain management → Add a domain*) : saisis ton domaine et suis les instructions DNS de Netlify
+(chez ton registraire). Attends que le certificat HTTPS soit actif (quelques minutes à quelques heures). Vérifie que
+`NEXT_PUBLIC_SITE_URL` est exactement cette adresse, puis redéploie.
+
+**4. Supabase** (*Authentication → URL Configuration*)
+- *Site URL* = `NEXT_PUBLIC_SITE_URL` ;
+- *Redirect URLs* : ajoute `<NEXT_PUBLIC_SITE_URL>/auth/callback**` ;
+- depuis ton poste : `npm run db:setup` (migrations, une seule fois par mise à jour), puis `npm run test:integration`.
+
+**5. Stripe en production**
+- `npm run stripe:setup` avec ta clé `sk_live_…` : copie les 4 identifiants de prix dans les variables Netlify ;
+- *Developers → Webhooks → Add endpoint* : `<NEXT_PUBLIC_SITE_URL>/api/stripe/webhook` (l’adresse exacte est
+  affichée par `npm run stripe:setup`), avec les événements listés à la section 2 ; copie le secret `whsec_…`
+  dans `STRIPE_WEBHOOK_SECRET`, puis redéploie ;
+- règle le portail client, puis teste un vrai paiement et une résiliation.
+
+**6. Resend**
+- *Domains → Add domain* sur resend.com, ajoute les enregistrements DNS demandés (SPF, DKIM), attends « Verified » ;
+- `EMAIL_FROM` = une adresse de ce domaine (ex. `TikTrend <bonjour@ton-domaine.fr>`), puis redéploie ;
+- branche aussi Resend comme SMTP de Supabase pour les e-mails de connexion (section 2, « E-mails »).
+
+**7. Tester la tâche nocturne**
+1. *Logs & metrics → Functions* : `nightly-refresh` doit porter le badge **Scheduled** et afficher sa prochaine
+   exécution. Clique dessus, puis **Run now**.
+2. Ouvre `nightly-refresh-background` dans la même liste : ses journaux doivent finir par « tâche nocturne
+   terminée ». Dans `/admin`, la dernière tâche doit être verte, sans encadré « Repli ».
+3. Le radar doit montrer les vrais produits France, sans la mention « produits fictifs ».
+4. `curl -sS "<NEXT_PUBLIC_SITE_URL>/api/health"` doit répondre `"status":"ok"`.
+5. Le lendemain matin, `/admin` doit montrer une tâche « Planifiée » réussie.
 
 ## 4. Lancer le bot Discord
 

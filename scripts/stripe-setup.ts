@@ -46,7 +46,7 @@ async function main() {
       lines.push(`${plan.env[i]}=${price.id}`);
     }
   }
-  console.log(`\nMode : ${key.startsWith('sk_live') ? 'PRODUCTION' : 'test'}. Copie ces lignes dans .env.local (et sur Vercel) :\n`);
+  console.log(`\nMode : ${key.startsWith('sk_live') ? 'PRODUCTION' : 'test'}. Copie ces lignes dans .env.local (et dans les variables Netlify) :\n`);
   console.log(lines.join('\n'));
   // Le point de terminaison du webhook suit NEXT_PUBLIC_SITE_URL, comme les adresses de retour de Checkout.
   const site = (process.env.NEXT_PUBLIC_SITE_URL ?? '').trim().replace(/\/$/, '');

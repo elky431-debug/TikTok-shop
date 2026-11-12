@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MockProvider } from '@/lib/data/mock';
 import { setRepoForTests } from '@/lib/db';
@@ -19,13 +19,60 @@ beforeEach(() => {
 afterEach(() => {
   setRepoForTests(null);
   vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
   vi.useRealTimers();
 });
 
-describe('vercel.json', () => {
-  it('lance la tâche nocturne une fois par jour à 3 h UTC', () => {
-    const config = JSON.parse(readFileSync('vercel.json', 'utf8'));
-    expect(config.crons).toEqual([{ path: '/api/cron/refresh', schedule: '0 3 * * *' }]);
+describe('Netlify', () => {
+  it('déclare la construction Next.js et le dossier des fonctions', () => {
+    const toml = readFileSync('netlify.toml', 'utf8');
+    expect(toml).toMatch(/command = "npm run build"/);
+    expect(toml).toMatch(/directory = "netlify\/functions"/);
+    expect(existsSync('vercel.json')).toBe(false);
+  });
+
+  it('planifie la tâche nocturne à 3 h UTC', async () => {
+    const scheduled = await import('@/netlify/functions/nightly-refresh.mts');
+    expect(scheduled.config).toEqual({ schedule: '0 3 * * *' });
+  });
+
+  it('la fonction planifiée appelle /api/cron/refresh avec CRON_SECRET', async () => {
+    vi.stubEnv('URL', 'https://tiktrend.example');
+    vi.stubEnv('CRON_SECRET', 'secret-cron-test');
+    const fetchMock = vi.fn(async () => new Response(null, { status: 202 }));
+    vi.stubGlobal('fetch', fetchMock);
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const scheduled = await import('@/netlify/functions/nightly-refresh.mts');
+    await scheduled.default(new Request('https://tiktrend.example', { method: 'POST', body: JSON.stringify({ next_run: 'demain' }) }));
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe('https://tiktrend.example/api/cron/refresh');
+    expect((init.headers as Record<string, string>).authorization).toBe('Bearer secret-cron-test');
+    vi.unstubAllGlobals();
+  });
+
+  it('sur Netlify, la route lance la tâche en arrière-plan et répond 202', async () => {
+    vi.stubEnv('SITE_ID', 'site-test');
+    vi.stubEnv('URL', 'https://tiktrend.example');
+    vi.stubEnv('CRON_SECRET', 'secret-cron-test');
+    const fetchMock = vi.fn(async () => new Response(null, { status: 202 }));
+    vi.stubGlobal('fetch', fetchMock);
+    const response = await cronGET(new Request('https://tiktrend.example/api/cron/refresh', { headers: { authorization: 'Bearer secret-cron-test' } }));
+    expect(response.status).toBe(202);
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe('https://tiktrend.example/.netlify/functions/nightly-refresh-background');
+    expect(init.method).toBe('POST');
+    expect((init.headers as Record<string, string>).authorization).toBe('Bearer secret-cron-test');
+    vi.unstubAllGlobals();
+  });
+
+  it('la fonction d’arrière-plan refuse un appel sans le bon secret', async () => {
+    vi.stubEnv('CRON_SECRET', 'secret-cron-test');
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const background = await import('@/netlify/functions/nightly-refresh-background.mts');
+    await background.default(new Request('https://tiktrend.example', { method: 'POST', headers: { authorization: 'Bearer faux' } }));
+    expect(errors).toHaveBeenCalledWith(expect.stringContaining('appel refusé'));
+    expect(await repo.listCronRuns(1)).toEqual([]);
   });
 });
 
@@ -36,7 +83,7 @@ describe('/api/cron/refresh', () => {
     expect(denied.status).toBe(401);
   });
 
-  it('travaille à l’appel de Vercel, puis ne refait pas le travail le même jour', async () => {
+  it('hors Netlify, travaille directement, puis ne refait pas le travail le même jour', async () => {
     vi.stubEnv('CRON_SECRET', 'secret-cron-test');
     vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const call = () => cronGET(new Request('http://localhost/api/cron/refresh', { headers: { authorization: 'Bearer secret-cron-test' } }));
@@ -78,7 +125,7 @@ describe('/api/health', () => {
   });
 
   it('signale en production des produits fictifs et une URL du site restée sur localhost', async () => {
-    vi.stubEnv('VERCEL_ENV', 'production');
+    vi.stubEnv('SITE_ID', 'site-test');
     vi.stubEnv('NEXT_PUBLIC_SITE_URL', 'http://localhost:3000');
     await refreshCatalog({ repo, provider: new MockProvider() });
     const report = await healthReport();

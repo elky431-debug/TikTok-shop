@@ -1,0 +1,12 @@
+# Netlify. Next.js 14 est pris en charge automatiquement par l'adaptateur OpenNext de Netlify, qu'on n'épingle pas
+# (recommandation de la doc Netlify : il se met à jour à chaque build). Node : version de .nvmrc (22).
+# Les variables d'environnement se règlent dans l'interface de Netlify, pas ici : celles déclarées dans ce fichier ne
+# sont pas visibles des fonctions à l'exécution.
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[functions]
+  # Fonctions maison : la tâche nocturne planifiée (3 h UTC) et son exécution en arrière-plan (jusqu'à 15 min).
+  directory = "netlify/functions"

@@ -24,7 +24,7 @@ export default function MentionsLegalesPage() {
       <section>
         <h2>Hébergement</h2>
         <p>
-          Le site est hébergé par Vercel Inc., 440 N Barranca Avenue #4133, Covina, CA 91723, États-Unis (vercel.com). Les données
+          Le site est hébergé par Netlify, Inc. (netlify.com), [À COMPLÉTER : adresse postale et téléphone de l’hébergeur, à reprendre sur netlify.com]. Les données
           des comptes sont hébergées par Supabase (supabase.com), dans la région <Todo>région du projet Supabase, idéalement dans l’Union européenne</Todo>.
           Coordonnées à vérifier au moment de la mise en ligne.
         </p>

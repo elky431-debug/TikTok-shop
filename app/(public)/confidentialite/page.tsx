@@ -59,7 +59,7 @@ export default function ConfidentialitePage() {
         <h2>Nos sous-traitants</h2>
         <ul>
           <li>Supabase : base de données et connexion (région <Todo>région du projet</Todo>).</li>
-          <li>Vercel : hébergement du site.</li>
+          <li>Netlify : hébergement du site.</li>
           <li>Stripe : paiement des abonnements.</li>
           <li>Resend : envoi des e-mails.</li>
           <li>

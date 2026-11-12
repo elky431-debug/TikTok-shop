@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
 import { requireAdmin } from '@/lib/auth/session';
 import { getRepo } from '@/lib/db';
 import type { CoachApplication } from '@/lib/db/types';
-import { runNightly } from '@/lib/jobs/nightly';
+import { triggerNightly } from '@/lib/jobs/trigger';
 import { REFERRAL_COMMISSION_RATE } from '@/lib/plans';
 import { normalizeCode } from '@/lib/referral';
 
@@ -41,14 +41,15 @@ export async function setApplicationStatusAction(formData: FormData) {
 
 export async function runRefreshAction() {
   await requireAdmin();
-  let fallback = false;
+  let outcome: 'ok' | 'repli' | 'lance' = 'ok';
   try {
-    const result = await runNightly({ trigger: 'manuel' });
-    fallback = result.fallbacks.length > 0;
+    const result = await triggerNightly('manuel');
+    if (result.queued) outcome = 'lance';
+    else if (result.result.fallbacks.length > 0) outcome = 'repli';
   } catch {
     redirect('/admin?erreur=rafraichissement#taches');
   }
   revalidatePath('/admin');
   revalidatePath('/app');
-  redirect(fallback ? '/admin?ok=repli#taches' : '/admin?ok=rafraichissement#taches');
+  redirect(outcome === 'lance' ? '/admin?ok=lance#taches' : outcome === 'repli' ? '/admin?ok=repli#taches' : '/admin?ok=rafraichissement#taches');
 }
