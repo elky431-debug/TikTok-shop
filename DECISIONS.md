@@ -672,3 +672,18 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      existantes, sans autre effet.
 123. **Logo en deux tons « Tik » + « Trend »** (`BRAND_SPLIT = ['Tik', 'Trend']`) : « Tik » en blanc, « Trend » en
      dégradé cyan → rose, comme « Ets » + « mart » chez EtSmart. Le losange ne change pas.
+
+### Étape 2 — Dépendances et build propre
+
+124. **Installation neuve vérifiée** : clone vierge, `npm ci` (544 paquets, 23 s) puis `npm run build` sans aucune
+     variable, avec Node 22.23 et npm 10.9 : tout passe, `lucide-react` 1.72.0 compris (déclaré et verrouillé
+     depuis le début). L'échec « Can't resolve 'lucide-react' » ne se reproduit pas ici ; les causes les plus
+     probables d'un côté poste local sont une installation interrompue, une commande lancée hors de la racine ou un
+     Node trop ancien. D'où trois garde-fous :
+     - `scripts/check-deps.mjs`, lancé tout seul avant chaque build (`prebuild`, aussi `npm run check:deps`) :
+       chaque paquet importé par le code doit être déclaré dans `package.json` et présent dans `node_modules`,
+       sinon un message dit lequel et quoi lancer (`npm ci`) ;
+     - `.nvmrc` (22) et `.npmrc` avec `engine-strict=true` : npm refuse d'installer avec un Node plus ancien que
+       20.19 au lieu d'échouer plus loin ;
+     - `@next/env` et `playwright`, importés par des scripts mais seulement arrivés par `next` et
+       `@playwright/test`, sont maintenant déclarés ; `@fontsource-variable/tiktok-sans`, inutilisé, est retiré.

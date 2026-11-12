@@ -15,10 +15,12 @@ pour leurs élèves.
 
 ## 1. Lancer en local, sans aucune clé
 
-Il te faut **Node.js 20.19 ou plus récent** (`node -v`).
+Il te faut **Node.js 20.19 ou plus récent** (`node -v` ; le fichier `.nvmrc` indique 22). Installe toujours depuis
+la racine du projet, avec `npm ci` (il suit exactement `package-lock.json`). Avant chaque build, une vérification
+dit quel paquet manque et quoi lancer, au lieu de l'erreur « Module not found » de Next.
 
 ```bash
-npm install
+npm ci
 ```
 
 ```bash
