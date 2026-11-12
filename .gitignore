@@ -1,0 +1,16 @@
+node_modules/
+.next/
+out/
+.data/
+*.tsbuildinfo
+.env
+.env.local
+.env.*.local
+coverage/
+playwright-report/
+test-results/
+screenshots/tmp/
+.vercel
+bot/node_modules/
+bot/dist/
+.DS_Store

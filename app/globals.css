@@ -1,0 +1,153 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Tokens de design. Valeurs en triplets RGB pour garder l'opacité Tailwind (bg-rose/10…).
+ * Contrastes vérifiés (WCAG AA) — voir DECISIONS.md :
+ *  - texte secondaire clair  #5F6068 : 6,2:1 sur blanc, 5,5:1 sur #F1F1F2
+ *  - rose texte clair         #C8103F : 5,8:1 sur blanc
+ *  - bouton rose              #E0144A + texte blanc : 4,8:1
+ *  - cyan texte clair         #00777A : 5,4:1 sur blanc (le cyan #25F4EE reste décoratif en clair)
+ *  - gains clair              #0E7A43 : 5,4:1 ; gains sombre #4ADE80 : 10:1 sur #161823
+ */
+@layer base {
+  :root {
+    color-scheme: light;
+    --bg: 255 255 255;
+    --fg: 22 24 35;
+    --surface: 241 241 242;
+    --raised: 255 255 255;
+    --line: 225 225 229;
+    --muted: 95 96 104;
+    --subtle: 138 139 145;
+    --rose: 254 44 85;
+    --rose-ink: 200 16 63;
+    --rose-fill: 224 20 74;
+    --rose-soft: 255 235 239;
+    --cyan: 37 244 238;
+    --cyan-ink: 0 119 122;
+    --cyan-soft: 222 251 250;
+    --gain: 14 122 67;
+    --gain-soft: 228 246 236;
+    --warn: 180 83 9;
+    --warn-soft: 254 243 199;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      color-scheme: dark;
+      --bg: 22 24 35;
+      --fg: 244 244 245;
+      --surface: 31 33 46;
+      --raised: 37 39 54;
+      --line: 52 54 70;
+      --muted: 162 163 170;
+      --subtle: 138 139 145;
+      --rose: 254 44 85;
+      --rose-ink: 255 77 109;
+      --rose-fill: 224 20 74;
+      --rose-soft: 64 24 38;
+      --cyan: 37 244 238;
+      --cyan-ink: 37 244 238;
+      --cyan-soft: 18 56 62;
+      --gain: 74 222 128;
+      --gain-soft: 20 52 36;
+      --warn: 251 191 36;
+      --warn-soft: 66 48 14;
+    }
+  }
+
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+    --bg: 22 24 35;
+    --fg: 244 244 245;
+    --surface: 31 33 46;
+    --raised: 37 39 54;
+    --line: 52 54 70;
+    --muted: 162 163 170;
+    --subtle: 138 139 145;
+    --rose: 254 44 85;
+    --rose-ink: 255 77 109;
+    --rose-fill: 224 20 74;
+    --rose-soft: 64 24 38;
+    --cyan: 37 244 238;
+    --cyan-ink: 37 244 238;
+    --cyan-soft: 18 56 62;
+    --gain: 74 222 128;
+    --gain-soft: 20 52 36;
+    --warn: 251 191 36;
+    --warn-soft: 66 48 14;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-bg text-fg antialiased;
+    font-feature-settings: 'ss01' on;
+  }
+
+  /* Focus clavier toujours visible, jamais sur le clic souris */
+  :focus-visible {
+    outline: 2px solid rgb(var(--rose));
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  ::selection {
+    background: rgb(var(--cyan) / 0.35);
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-semibold tracking-tight;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+}
+
+@layer utilities {
+  /* Chiffres tabulaires pour toutes les données */
+  .num {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' on;
+  }
+
+  /*
+   * Signature visuelle : décalage cyan / rose, réservé au score d'opportunité et au logo.
+   */
+  .split-glow {
+    text-shadow:
+      -0.045em -0.03em 0 rgb(37 244 238 / 0.95),
+      0.045em 0.03em 0 rgb(254 44 85 / 0.95);
+  }
+
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

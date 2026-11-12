@@ -1,0 +1,7 @@
+{
+  "extends": ["next/core-web-vitals"],
+  "ignorePatterns": ["bot/**", ".data/**", "playwright-report/**", "test-results/**"],
+  "rules": {
+    "react/no-unescaped-entities": "off"
+  }
+}

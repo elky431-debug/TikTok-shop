@@ -1,0 +1,130 @@
+/**
+ * Lecture centralisée des variables d'environnement.
+ * Toute fonctionnalité dont la clé manque bascule sur un mode simulé, jamais sur un plantage.
+ */
+
+function read(name: string): string {
+  const value = process.env[name];
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+export const env = {
+  get supabaseUrl() {
+    return read('NEXT_PUBLIC_SUPABASE_URL');
+  },
+  get supabaseAnonKey() {
+    return read('NEXT_PUBLIC_SUPABASE_ANON_KEY');
+  },
+  get supabaseServiceKey() {
+    return read('SUPABASE_SERVICE_ROLE_KEY');
+  },
+  get anthropicKey() {
+    return read('ANTHROPIC_API_KEY');
+  },
+  get anthropicModel() {
+    return read('ANTHROPIC_MODEL') || 'claude-sonnet-5-5';
+  },
+  get stripeSecretKey() {
+    return read('STRIPE_SECRET_KEY');
+  },
+  get stripeWebhookSecret() {
+    return read('STRIPE_WEBHOOK_SECRET');
+  },
+  get stripePrices() {
+    return {
+      pro_month: read('STRIPE_PRICE_PRO_MONTHLY'),
+      pro_year: read('STRIPE_PRICE_PRO_YEARLY'),
+      proplus_month: read('STRIPE_PRICE_PROPLUS_MONTHLY'),
+      proplus_year: read('STRIPE_PRICE_PROPLUS_YEARLY'),
+    };
+  },
+  get resendKey() {
+    return read('RESEND_API_KEY');
+  },
+  get emailFrom() {
+    return read('EMAIL_FROM');
+  },
+  get founderEmail() {
+    return read('FOUNDER_EMAIL');
+  },
+  get discordBotToken() {
+    return read('DISCORD_BOT_TOKEN');
+  },
+  get discordGuildId() {
+    return read('DISCORD_GUILD_ID');
+  },
+  get discordInviteUrl() {
+    return read('NEXT_PUBLIC_DISCORD_INVITE_URL');
+  },
+  get botApiSecret() {
+    return read('BOT_API_SECRET');
+  },
+  get dataProvider(): 'mock' | 'tiktok' | 'nexscope' {
+    const value = read('DATA_PROVIDER').toLowerCase();
+    if (value === 'tiktok' || value === 'nexscope') return value;
+    return 'mock';
+  },
+  get tiktokAppKey() {
+    return read('TIKTOK_APP_KEY');
+  },
+  get tiktokAppSecret() {
+    return read('TIKTOK_APP_SECRET');
+  },
+  get tiktokAccessToken() {
+    return read('TIKTOK_ACCESS_TOKEN');
+  },
+  get nexscopeApiKey() {
+    return read('NEXSCOPE_API_KEY');
+  },
+  get cronSecret() {
+    return read('CRON_SECRET');
+  },
+  get siteUrl() {
+    return (read('NEXT_PUBLIC_SITE_URL') || 'http://localhost:3000').replace(/\/$/, '');
+  },
+  get adminEmails(): string[] {
+    return read('ADMIN_EMAILS')
+      .split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean);
+  },
+  get localAuthSecret() {
+    return read('LOCAL_AUTH_SECRET') || 'pepite-mode-local-uniquement-ne-pas-utiliser-en-production';
+  },
+  get localDbPath() {
+    return read('LOCAL_DB_PATH') || '.data/local-db.json';
+  },
+};
+
+/** Supabase est utilisé seulement si les trois clés sont présentes. */
+export function isSupabaseConfigured(): boolean {
+  return Boolean(env.supabaseUrl && env.supabaseAnonKey && env.supabaseServiceKey);
+}
+
+/** Mode local : aucune clé Supabase, base JSON + lien magique simulé. */
+export function isLocalMode(): boolean {
+  return !isSupabaseConfigured();
+}
+
+export function isStripeConfigured(): boolean {
+  return Boolean(env.stripeSecretKey);
+}
+
+export function isAiConfigured(): boolean {
+  return Boolean(env.anthropicKey);
+}
+
+export function isResendConfigured(): boolean {
+  return Boolean(env.resendKey && env.emailFrom);
+}
+
+/** Adresse admin par défaut en mode local, pour que tout le parcours soit testable sans clé. */
+export const LOCAL_ADMIN_EMAIL = 'admin@pepite.local';
+
+export function isAdminEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  const normalized = email.trim().toLowerCase();
+  const admins = env.adminEmails;
+  if (admins.length === 0 && isLocalMode()) return normalized === LOCAL_ADMIN_EMAIL;
+  return admins.includes(normalized);
+}
