@@ -3,7 +3,7 @@ import type { SalesPoint } from '@/lib/data/provider';
 import { getRepo, type Repo } from '@/lib/db';
 import type { Product, ProductSnapshot, ScoreBreakdown, TopVideo } from '@/lib/db/types';
 import { env } from '@/lib/env';
-import { scoreProducts, trendFor, type ScoreInput } from '@/lib/score';
+import { scoreProducts, trendOf, type ScoreInput } from '@/lib/score';
 import { addDays, dateRange, daysBetween, parisDate } from '@/lib/utils';
 import { mapWithConcurrency } from './concurrency';
 
@@ -107,7 +107,7 @@ export async function refreshCatalog(options: RefreshOptions = {}): Promise<Refr
         units_sold_total: last?.date === day ? last.units_sold_total : null,
         score: breakdown.total,
         score_breakdown: breakdown,
-        trend: trendFor(breakdown.growth_7d),
+        trend: trendOf(breakdown),
       });
     });
     if (day === date) todayScores = scores;
@@ -146,7 +146,7 @@ export async function refreshCatalog(options: RefreshOptions = {}): Promise<Refr
       snapshot_date: date,
       latest_score: breakdown.total,
       latest_breakdown: breakdown,
-      trend: trendFor(breakdown.growth_7d),
+      trend: trendOf(breakdown),
       growth_7d: breakdown.growth_7d ?? 0,
       sales_30d: knownSales(window),
       updated_at: nowIso,

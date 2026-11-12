@@ -38,7 +38,9 @@ export interface ProductView {
   sales_7d: number[];
   sales_30d: number[];
   score: number | null;
-  breakdown: (Omit<ScoreBreakdown, 'total' | 'parts'> & {
+  breakdown: (Omit<ScoreBreakdown, 'total' | 'raw' | 'parts'> & {
+    /** Total des points avant mise à l'échelle (null si le plan masque le score). */
+    raw: number | null;
     parts: Array<{
       key: string;
       label: string;
@@ -81,6 +83,7 @@ export function toProductView(product: Product, plan: PlanId, saved = false): Pr
           growth_7d: breakdown.growth_7d,
           daily_sales_7d: breakdown.daily_sales_7d,
           summary: breakdown.summary,
+          raw: showScore ? (breakdown.raw ?? null) : null,
           parts: breakdown.parts.map((p) => ({
             key: p.key,
             label: p.label,

@@ -155,7 +155,7 @@ export default async function ProductPage({ params }: { params: { id: string } }
               </div>
               <Panel>
                 <p className="mb-4 font-medium">{view.breakdown.summary}</p>
-                <ScoreBreakdownList breakdown={view.breakdown} />
+                <ScoreBreakdownList breakdown={view.breakdown} score={view.score} />
               </Panel>
             </section>
           ) : null}

@@ -59,7 +59,10 @@ export interface ScorePart {
 }
 
 export interface ScoreBreakdown {
+  /** Score affiché (15 à 90 : points placés sur l'échelle du jour). */
   total: number;
+  /** Total des points des critères (0 à 100), avant mise à l'échelle. */
+  raw?: number;
   parts: ScorePart[];
   /** Croissance sur 7 jours ; null = pas encore mesurable (historique trop court). */
   growth_7d: number | null;

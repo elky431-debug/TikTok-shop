@@ -459,3 +459,27 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
     un champ `_source`. Noms fictifs, aucune donnée personnelle.
 90. **Mode local avec une source réelle** : le premier remplissage fait un vrai relevé (pas 30 jours fictifs), et
     une seule tentative par jour, pour ne pas rappeler une source en panne à chaque page affichée.
+
+### Étape 3 — Recalibrer le score
+
+91. **Pas de données réelles ici** : la distribution a été mesurée sur 7 jours × 200 produits fictifs, et sur trois
+    scénarios qui imitent les vraies sources : Nexscope (sans échantillon), TikTok le premier jour (prix et
+    commission seulement), TikTok après dix jours (sans affiliés ni échantillon). **Avant** : scores de 15 à 95,
+    médiane 52 et moitié centrale tassée entre 41 et 64 ; jusqu'à 100 quand des critères manquent ; tendances
+    « explose » 9 %, « monte » 14 %, « stable » 41 %, « baisse » 36 %. `npm run score:distribution` refait la mesure
+    sur la vraie base (7 jours par défaut) : à relancer après deux semaines de vraies données.
+92. **Échelle du jour, de 15 à 90** : chaque nuit, les points (0 à 100) sont étalés entre le 2e et le 98e centile
+    du catalogue, de 15 à 90 ; sur moins de 20 produits ou des points trop resserrés (moins de 10 d'écart), échelle
+    fixe 15 + 0,75 × points. Une échelle relative au jour ne dépend ni de la source ni des critères disponibles,
+    et garde l'ordre des produits. **Après** : 100 % des scores entre 15 et 90 dans les quatre scénarios, médiane de
+    48 à 57, 5e centile de 19 à 21, 95e de 84 à 87. Les points de chaque critère ne changent pas : la fiche montre
+    le total des points à côté du score et explique l'échelle.
+93. **Seuils de tendance** : « explose » à partir de +40 % sur 7 jours **et** au moins 5 ventes par jour (sinon
+    « monte » : deux ventes qui passent à cinq ne sont pas une explosion), « monte » à partir de +10 %, « stable »
+    au-dessus de −20 %, « baisse » en dessous. Sur les fictifs, 10 % des fenêtres dépassent +42 %. Résultat :
+    « explose » 9,5 %, « monte » 14 %, « stable » 46 %, « baisse » 30 %.
+94. **Critères manquants expliqués dans la fiche** : encadré « Calculé sans l’échantillon gratuit et le nombre
+    d’affiliés, faute de donnée pour l’instant », mention « non fourni » sur la ligne, phrase qui dit quoi vérifier,
+    et le poids réellement appliqué (par exemple commission sur 35,7 au lieu de 25).
+95. **Paliers d'étiquette gardés** (« Très forte opportunité » à partir de 75, etc.) : sur la nouvelle échelle,
+    environ 14 % des produits sont « très forte », ce qui garde l'étiquette rare.

@@ -20,6 +20,22 @@ export const WEIGHTS = {
   echantillon: 10,
 } as const;
 
+/**
+ * Échelle affichée : chaque jour, les points (0 à 100) sont étalés entre 15 et 90, du produit le moins
+ * intéressant au plus intéressant du catalogue (2e et 98e centiles), pour que le score reste lisible quelle que
+ * soit la source de données ou les critères disponibles. Voir DECISIONS.md (étape 3 de la session 3).
+ */
+export const SCALE = { min: 15, max: 90 } as const;
+export const SCALE_QUANTILES = { low: 0.02, high: 0.98 } as const;
+/** En dessous, ou si les points du jour sont trop resserrés, échelle fixe : 15 + 0,75 × points. */
+export const MIN_PRODUCTS_FOR_SCALING = 20;
+export const MIN_SPREAD_FOR_SCALING = 10;
+
+/** Seuils de tendance sur la croissance des ventes à 7 jours. */
+export const TREND_THRESHOLDS = { explose: 0.4, monte: 0.1, stable: -0.2 } as const;
+/** « Explose » demande aussi un vrai volume : 5 ventes par jour au moins (sinon « monte »). */
+export const EXPLOSE_MIN_DAILY_SALES = 5;
+
 export const COMMISSION_FLOOR = 0.05;
 export const COMMISSION_CEIL = 0.3;
 export const PRICE_ZONE = { min: 15, max: 60 } as const;
@@ -104,13 +120,46 @@ export function percentileRank(population: number[], value: number): number {
   return clamp((below + 0.5 * Math.max(0, equal - 1)) / (population.length - 1));
 }
 
-/** Tendance d'après la croissance ; sans mesure (null), « stable » et l'affichage dit « tendance en mesure ». */
-export function trendFor(growth7d: number | null): Trend {
+/**
+ * Tendance d'après la croissance (et le volume pour « explose ») ; sans mesure (null), « stable », et
+ * l'affichage dit « tendance en mesure ».
+ */
+export function trendFor(growth7d: number | null, dailySales: number | null = null): Trend {
   if (growth7d === null) return 'stable';
-  if (growth7d >= 0.5) return 'explose';
-  if (growth7d >= 0.12) return 'monte';
-  if (growth7d > -0.15) return 'stable';
+  if (growth7d >= TREND_THRESHOLDS.explose) {
+    return dailySales !== null && dailySales < EXPLOSE_MIN_DAILY_SALES ? 'monte' : 'explose';
+  }
+  if (growth7d >= TREND_THRESHOLDS.monte) return 'monte';
+  if (growth7d > TREND_THRESHOLDS.stable) return 'stable';
   return 'baisse';
+}
+
+/** Tendance d'un détail de score déjà calculé. */
+export function trendOf(breakdown: Pick<ScoreBreakdown, 'growth_7d' | 'daily_sales_7d'>): Trend {
+  return trendFor(breakdown.growth_7d, breakdown.daily_sales_7d);
+}
+
+/** Valeur au quantile q (0..1) d'une liste triée, avec interpolation. */
+export function quantile(sorted: number[], q: number): number {
+  if (!sorted.length) return NaN;
+  const pos = (sorted.length - 1) * q;
+  const lo = Math.floor(pos);
+  const hi = Math.ceil(pos);
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (pos - lo);
+}
+
+/** Fonction qui place les points du jour (0 à 100) sur l'échelle affichée (15 à 90). */
+export function dailyScale(points: number[]): (value: number) => number {
+  const span = SCALE.max - SCALE.min;
+  const sorted = [...points].sort((a, b) => a - b);
+  if (sorted.length >= MIN_PRODUCTS_FOR_SCALING) {
+    const low = quantile(sorted, SCALE_QUANTILES.low);
+    const high = quantile(sorted, SCALE_QUANTILES.high);
+    if (high - low >= MIN_SPREAD_FOR_SCALING) {
+      return (value) => Math.round(SCALE.min + span * clamp((value - low) / (high - low)));
+    }
+  }
+  return (value) => Math.round(SCALE.min + span * clamp(value / 100));
 }
 
 export const TREND_LABELS: Record<Trend, string> = {
@@ -194,10 +243,10 @@ const UNAVAILABLE_SENTENCES: Record<ScorePart['key'], string> = {
     'Croissance pas encore mesurable : il faut quelques jours de relevés. En attendant, son poids est réparti sur les autres critères.',
   commission: 'Commission inconnue.',
   saturation:
-    'Nombre d’affiliés non fourni par la source de données : ce critère est ignoré et son poids réparti sur les autres.',
+    'Nombre d’affiliés non fourni par la source de données : ce critère est ignoré et son poids est réparti sur les autres critères.',
   prix: 'Prix inconnu.',
   echantillon:
-    'La source de données ne dit pas s’il existe un échantillon gratuit : vérifie dans l’appli TikTok Shop. Ce critère est ignoré et son poids réparti sur les autres.',
+    'La source de données ne dit pas s’il existe un échantillon gratuit : vérifie dans l’appli TikTok Shop. Ce critère est ignoré et son poids est réparti sur les autres critères.',
 };
 
 const PART_LABELS: Record<ScorePart['key'], string> = {
@@ -269,9 +318,11 @@ export function scoreOne(input: ScoreInput, growthPercentile: number, growth: Gr
       sentence: sentences[key],
     };
   });
-  const raw = sum(keys.map((k) => (available[k] ? values[k] * WEIGHTS[k] * scale : 0)));
+  const raw = Math.round(clamp(sum(keys.map((k) => (available[k] ? values[k] * WEIGHTS[k] * scale : 0))), 0, 100));
   return {
-    total: Math.round(clamp(raw, 0, 100)),
+    // Total des points ; scoreProducts le remplace par le score sur l'échelle du jour (15 à 90).
+    total: raw,
+    raw,
     parts,
     growth_7d: growth ? Math.round(growth.growth7d * 1000) / 1000 : null,
     daily_sales_7d: daily === null ? null : Math.round(daily),
@@ -296,5 +347,7 @@ export function scoreProducts(inputs: ScoreInput[]): Map<string, ScoreBreakdown>
     const pct = growth ? percentileRank(byNiche.get(input.niche) ?? [], growth.growth7d) : 0;
     result.set(input.id, scoreOne(input, pct, growth));
   }
+  const scale = dailyScale([...result.values()].map((b) => b.raw ?? b.total));
+  for (const breakdown of result.values()) breakdown.total = scale(breakdown.raw ?? breakdown.total);
   return result;
 }

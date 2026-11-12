@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  EXPLOSE_MIN_DAILY_SALES,
+  SCALE,
   commissionPerSale,
   commissionValue,
   computeGrowth,
+  dailyScale,
+  growthFor,
   percentileRank,
   priceValue,
   saturationValue,
@@ -51,11 +55,30 @@ describe('croissance sur 7 jours', () => {
     expect(computeGrowth(flat(0)).growth7d).toBe(0);
   });
 
-  it('classe la tendance', () => {
+  it('classe la tendance (seuils recalibrés : +40 %, +10 %, −20 %)', () => {
     expect(trendFor(0.8)).toBe('explose');
-    expect(trendFor(0.2)).toBe('monte');
-    expect(trendFor(0)).toBe('stable');
+    expect(trendFor(0.4)).toBe('explose');
+    expect(trendFor(0.39)).toBe('monte');
+    expect(trendFor(0.1)).toBe('monte');
+    expect(trendFor(0.09)).toBe('stable');
+    expect(trendFor(-0.19)).toBe('stable');
+    expect(trendFor(-0.2)).toBe('baisse');
     expect(trendFor(-0.3)).toBe('baisse');
+  });
+
+  it('« explose » demande un vrai volume, et une croissance inconnue reste neutre', () => {
+    expect(trendFor(1.5, EXPLOSE_MIN_DAILY_SALES - 1)).toBe('monte');
+    expect(trendFor(1.5, EXPLOSE_MIN_DAILY_SALES)).toBe('explose');
+    expect(trendFor(null)).toBe('stable');
+  });
+
+  it('mesure la croissance avec ce qu’on a : historique, sinon cumuls de la source, sinon rien', () => {
+    expect(growthFor({ sales: flat(10, 5) })).toBeNull();
+    expect(growthFor({ sales: flat(10, 5), windows: { last7: 700, prev7: 500 } })!.growth7d).toBeCloseTo(0.4);
+    // 10 jours : 7 derniers comparés à la moyenne des 3 précédents.
+    const partial = growthFor({ sales: [...flat(10, 3), ...flat(20, 7)] })!;
+    expect(partial.growth7d).toBeCloseTo(1);
+    expect(partial.dailyAvg7).toBe(20);
   });
 });
 
@@ -125,10 +148,11 @@ describe('score complet', () => {
     expect(b.summary.length).toBeGreaterThan(10);
   });
 
-  it('la somme des points correspond au total', () => {
+  it('la somme des points correspond au total des points', () => {
     const b = scoreOne(product(), 0.6);
     const sum = b.parts.reduce((acc, p) => acc + p.points, 0);
-    expect(Math.abs(sum - b.total)).toBeLessThanOrEqual(1);
+    expect(Math.abs(sum - b.raw!)).toBeLessThanOrEqual(1);
+    expect(b.total).toBe(b.raw);
   });
 
   it('classe la croissance par niche', () => {
@@ -159,5 +183,62 @@ describe('score complet', () => {
       expect(b.total).toBeGreaterThanOrEqual(0);
       expect(b.total).toBeLessThanOrEqual(100);
     }
+  });
+});
+
+describe('critères non fournis par la source', () => {
+  it('ignore le critère et répartit son poids au prorata', () => {
+    const b = scoreOne(product({ affiliates: null, free_sample: null }), 0.8);
+    const unavailable = b.parts.filter((p) => p.available === false).map((p) => p.key);
+    expect(unavailable.sort()).toEqual(['echantillon', 'saturation']);
+    const applied = Object.fromEntries(b.parts.map((p) => [p.key, p.applied_weight]));
+    // 35 + 25 + 10 = 70 points disponibles, ramenés à 100.
+    expect(applied).toEqual({ croissance: 50, commission: 35.7, saturation: 0, prix: 14.3, echantillon: 0 });
+    for (const part of b.parts.filter((p) => p.available === false)) {
+      expect(part.points).toBe(0);
+      expect(part.sentence).toMatch(/réparti sur les autres critères/);
+    }
+    const sum = b.parts.reduce((acc, p) => acc + p.points, 0);
+    expect(Math.abs(sum - b.raw!)).toBeLessThanOrEqual(1);
+  });
+
+  it('sans historique ni cumuls : la croissance attend, le reste compte', () => {
+    const b = scoreOne(product({ sales: [], affiliates: null, free_sample: null }), 0);
+    expect(b.growth_7d).toBeNull();
+    expect(b.daily_sales_7d).toBeNull();
+    expect(b.parts.find((p) => p.key === 'croissance')!.sentence).toMatch(/pas encore mesurable/);
+    expect(b.parts.filter((p) => p.available).map((p) => p.key)).toEqual(['commission', 'prix']);
+  });
+});
+
+describe('échelle du jour (15 à 90)', () => {
+  const randomInputs = (n: number) =>
+    Array.from({ length: n }, (_, i) =>
+      product({
+        id: `p${i}`,
+        niche: i % 2 ? 'beaute' : 'maison',
+        commission_rate: 0.05 + ((i * 7) % 26) / 100,
+        affiliates: (i * 37) % 900,
+        price_cents: 600 + ((i * 1234) % 9000),
+        sales: Array.from({ length: 14 }, (_, d) => 20 + ((i * 13 + d * (i % 5)) % 200)),
+        free_sample: i % 3 === 0,
+      }),
+    );
+
+  it('étale les scores du jour entre 15 et 90, sans changer l’ordre', () => {
+    const scores = [...scoreProducts(randomInputs(120)).values()];
+    const totals = scores.map((b) => b.total);
+    expect(Math.min(...totals)).toBe(SCALE.min);
+    expect(Math.max(...totals)).toBe(SCALE.max);
+    const byRaw = [...scores].sort((a, b) => a.raw! - b.raw!);
+    for (let i = 1; i < byRaw.length; i++) expect(byRaw[i].total).toBeGreaterThanOrEqual(byRaw[i - 1].total);
+  });
+
+  it('garde une échelle fixe sur un petit catalogue ou des points trop resserrés', () => {
+    expect(dailyScale([10, 50, 90])(100)).toBe(90);
+    expect(dailyScale([10, 50, 90])(0)).toBe(15);
+    expect(dailyScale([10, 50, 90])(50)).toBe(53);
+    const tight = Array.from({ length: 30 }, (_, i) => 50 + (i % 5));
+    expect(dailyScale(tight)(52)).toBe(Math.round(15 + 0.75 * 52));
   });
 });

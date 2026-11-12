@@ -15,7 +15,8 @@
     "stripe:setup": "tsx scripts/stripe-setup.ts",
     "screenshots": "node scripts/screenshots.mjs",
     "test:integration": "node scripts/test-integration.mjs",
-    "db:setup": "tsx scripts/db-setup.ts"
+    "db:setup": "tsx scripts/db-setup.ts",
+    "score:distribution": "tsx scripts/score-distribution.ts"
   },
   "engines": {
     "node": ">=20.19"
