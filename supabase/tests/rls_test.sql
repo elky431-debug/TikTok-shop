@@ -96,6 +96,30 @@ do $$ begin
   if (select email from public.coach_students() limit 1) <> 'alice@test.fr' then raise exception 'consentement ignoré'; end if;
 end $$;
 
+-- Session 5 : fiches écrites par le serveur seul (versements, codes, quotas Discord…), lisibles par leur propriétaire.
+reset role;
+insert into public.user_records (user_id, kind, data) values
+  ('00000000-0000-0000-0000-00000000000a', 'versement', '{"amount_cents": 5000}'),
+  ('00000000-0000-0000-0000-00000000000a', 'gain', '{"amount_cents": 100}');
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000a', true) \g /dev/null
+do $$ begin
+  if (select count(*) from public.user_records where kind = 'versement') <> 1 then raise exception 'versement illisible par son bénéficiaire'; end if;
+  delete from public.user_records where kind = 'versement';
+  update public.user_records set data = '{"amount_cents": 1}' where kind = 'versement';
+  if (select (data ->> 'amount_cents')::int from public.user_records where kind = 'versement') <> 5000 then
+    raise exception 'versement modifié ou supprimé depuis le navigateur';
+  end if;
+  begin
+    insert into public.user_records (user_id, kind, data) values (auth.uid(), 'commande_discord', '{}');
+    raise exception 'quota Discord inscriptible depuis le navigateur';
+  exception when insufficient_privilege then null;
+  end;
+  insert into public.user_records (user_id, kind, data) values (auth.uid(), 'consentement_formateur', '{"detail": true}');
+  delete from public.user_records where kind = 'gain';
+  if exists (select 1 from public.user_records where kind = 'gain') then raise exception 'fiche ordinaire non supprimable'; end if;
+end $$;
+
 reset role;
 rollback;
 \echo 'RLS : toutes les vérifications passent.'
