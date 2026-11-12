@@ -1,9 +1,11 @@
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
 import type { ReactNode } from 'react';
+import { ServiceWorkerRegistration } from '@/components/pwa/service-worker';
 import { THEME_COOKIE } from '@/lib/auth/constants';
 import { BRAND, BRAND_TAGLINE } from '@/lib/brand';
 import { env } from '@/lib/env';
+import { appleWebApp } from '@/lib/pwa';
 import './globals.css';
 
 // Sora, la police d'EtSmart (Google Fonts, licence OFL), auto-hébergée : aucun appel à Google.
@@ -22,6 +24,8 @@ export const metadata: Metadata = {
     "Chaque matin, les produits TikTok Shop à vendre dans tes niches, avec un score expliqué et des scripts vidéo prêts à tourner. En français.",
   applicationName: BRAND,
   openGraph: { locale: 'fr_FR', siteName: BRAND, type: 'website' },
+  // Appli installable (manifeste : app/manifest.ts) : réglages iOS de l'écran d'accueil.
+  appleWebApp,
 };
 
 export const viewport: Viewport = {
@@ -53,6 +57,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           Aller au contenu
         </a>
         {children}
+        <ServiceWorkerRegistration />
       </body>
     </html>
   );
