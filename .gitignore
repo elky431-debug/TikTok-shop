@@ -14,3 +14,6 @@ screenshots/tmp/
 bot/node_modules/
 bot/dist/
 .DS_Store
+
+# Copies de travail des agents (git worktree), jamais commitées
+.claude/worktrees/
