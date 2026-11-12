@@ -6,7 +6,7 @@ import type { ScriptFormat } from '@/lib/db/types';
 /**
  * Contrat « brouillon pour le studio » (fiche `brouillon_studio`).
  *
- * Une page qui veut envoyer un texte au studio (analyse de vidéo, plan de contenu du mode préparation…) enregistre une
+ * Une page qui veut envoyer un texte au studio (aujourd'hui l'analyse de vidéo) enregistre une
  * fiche `brouillon_studio` et ouvre `/app/studio?produit=<id du produit>&brouillon=<id de la fiche>`. Le texte ne passe
  * jamais dans l'adresse : seulement l'identifiant de la fiche, que le studio relit côté serveur avec `readStudioDraft`
  * (fiche de l'utilisateur connecté seulement, type vérifié, contenu revalidé par le schéma). Le studio peut :
@@ -25,8 +25,8 @@ export const StudioDraftSchema = z.object({
   version: z.literal(STUDIO_DRAFT_VERSION),
   /** Produit visé (identifiant du catalogue), null si l'utilisateur le choisira dans le studio. */
   product_id: z.string().max(200).nullable(),
-  /** D'où vient le texte. */
-  source: z.enum(['analyse', 'preparation']),
+  /** D'où vient le texte : un mot en minuscules (« analyse » aujourd'hui). */
+  source: z.string().regex(/^[a-z_]{2,40}$/),
   /** Identifiant de la fiche d'origine (analyse…), pour un lien retour. */
   source_id: z.string().max(100).nullable(),
   title: z.string().min(1).max(160),
