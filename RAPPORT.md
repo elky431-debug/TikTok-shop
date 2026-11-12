@@ -53,13 +53,43 @@ Captures d’écran (mobile et desktop, clair et sombre) : `docs/captures/`.
   commission du mois, tableau des élèves agrégé (e-mail seulement avec consentement).
 - **Admin** : état des services, dernière tâche nocturne et lancement manuel, demandes de partenariat, formateurs,
   passage d’un compte en formateur, boîte de réception locale.
-- **Site public** : accueil avec aperçu animé du radar dès le premier écran (mobile compris), séquence en 3 étapes,
-  studio en démonstration, prix, section formateurs, FAQ, pages Prix et Formateurs (formulaire → base + e-mail).
+- **Site public** : accueil au style EtSmart (voir « Refonte design »), avec aperçu du radar dès le premier écran
+  (mobile compris), chiffres, fonctionnalités, étapes, prix, formateurs, FAQ ; pages Prix et Formateurs
+  (formulaire → base + e-mail).
 - **RGPD** : mentions légales, CGV, confidentialité (champs `[À COMPLÉTER]` surlignés), suppression de compte en
   libre-service (résiliation puis effacement), aucun cookie non essentiel donc pas de bannière.
-- **Design** : TikTok Sans auto-hébergée, tokens clair/sombre avec contrastes AA mesurés, signature cyan/rose
-  réservée au score et au logo, mobile d’abord avec barre du bas, focus visible, `prefers-reduced-motion`,
-  squelettes de chargement, états vides utiles, erreurs précises.
+- **Design** : style EtSmart en couleurs TikTok, noir par défaut, police Sora auto-hébergée, contrastes AA
+  vérifiés, signature cyan/rose réservée au score et au logo, mobile d’abord avec barre du bas, focus visible,
+  `prefers-reduced-motion`, squelettes de chargement, états vides utiles, erreurs précises.
+
+## Refonte design (style EtSmart, couleurs TikTok)
+
+Le site et l’appli reprennent le design d’EtSmart (etsmart.app), copié à partir de son code source
+(`elky431-debug/Etsmart`) et des deux captures fournies, avec les couleurs de TikTok et le contenu de Pépite.
+Six commits (« Refonte 1 » à « Refonte 6 »), décisions détaillées dans `DECISIONS.md` (R1 à R31).
+
+- **Thème** : noir pur par défaut partout ; le clair reste disponible, uniquement en option dans le compte.
+- **Couleurs** : dégradé cyan → rose à la place du dégradé bleu-turquoise d’EtSmart, cyan pour les étiquettes,
+  icônes et liens, boutons d’action roses.
+- **Police** : Sora, celle d’EtSmart, auto-hébergée (aucun appel à Google).
+- **Accueil** : en-tête fixe flouté, pastille d’annonce, titre « Sache quoi vendre sur TikTok Shop » avec
+  « chaque matin. » en italique et en dégradé vivant, constellation animée sur canvas (dérive, parallaxe,
+  pause hors écran), aperçu du radar qui fait défiler 5 produits, chiffres vrais comptés à l’écran, sections
+  TOUT-EN-UN / Comment ça marche / Tarifs / Formateurs / FAQ qui apparaissent au défilement.
+- **Fidélité** : à 1 440 px, la pastille, les boutons et la mention tombent à moins de 5 px des positions de la
+  capture EtSmart ; comparaisons côte à côte dans `docs/captures/refonte-comparaison-haut.jpg` et
+  `docs/captures/refonte-comparaison-tout-en-un.jpg`. En mobile 390 px, le titre ne déborde pas et le premier
+  écran montre le titre, les boutons et le début de l’aperçu du radar.
+- **Écarts volontaires avec le brief** (détails dans `DECISIONS.md`) :
+  - quand une mesure du brief différait du code EtSmart (taille du titre, padding des cartes…), la mesure
+    d’EtSmart a été retenue, puisque le brief demande une copie au pixel près ;
+  - deux couleurs du brief échouaient à l’audit d’accessibilité qu’il exige : texte discret #7E7F85 au lieu de
+    #5C5D63, fond des boutons roses #E3174D au lieu de #FE2C55 (le rose reste #FE2C55 partout ailleurs) ;
+  - le plan Pro porte « Recommandé » et non « Le plus choisi » : sans abonnés, ce serait une fausse affirmation
+    (règle n° 2 du projet). C’est une ligne à changer dans `components/pricing/pricing-cards.tsx`.
+- **Vérifications** : audit axe sans erreur (thème noir et clair, mobile et desktop, site, appli, onboarding,
+  espaces formateur et admin), build, lint, 60 tests unitaires et les 3 parcours Playwright au vert.
+- **Poids** : Motion ajoute environ 60 ko à l’accueil ; à alléger plus tard avec `LazyMotion` si besoin.
 
 ## Ce qui est simulé (et comment le rendre réel)
 

@@ -28,11 +28,11 @@ export function LanguageToggle() {
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        aria-label="Langue : français"
         className="flex items-center gap-1.5 rounded-lg border border-line-strong bg-fg/5 px-2.5 py-1.5 text-xs text-fg/70 transition-all hover:border-cyan-ink/30 hover:bg-fg/10 hover:text-fg"
       >
         <Globe size={14} className="text-cyan-ink" aria-hidden="true" />
         <span className="font-semibold">FR</span>
+        <span className="sr-only"> (langue : français)</span>
         <ChevronDown size={12} className={cn('transition-transform', open && 'rotate-180')} aria-hidden="true" />
       </button>
       {open ? (

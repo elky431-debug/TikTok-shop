@@ -157,6 +157,11 @@
     color: rgb(var(--cyan-ink) / 0.7);
   }
 
+  /* En thème clair, l'opacité réduite ferait passer le texte sous 4,5:1. */
+  :root[data-theme='light'] .eyebrow-category {
+    color: var(--cyan-hex);
+  }
+
   /*
    * Carte de fonctionnalité : la bordure passe au dégradé cyan → rose au survol
    * (pseudo-élément masqué), avec une légère montée et un halo cyan très faible.

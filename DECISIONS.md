@@ -338,3 +338,16 @@ R27. **Recharts** : ventes en cyan avec remplissage dégradé cyan → transpare
      Barres de progression (objectif 20 vidéos, onboarding) en dégradé cyan → rose.
 R28. **Pages Prix et Formateurs** : en-têtes EtSmart (étiquette + titre sur deux lignes en dégradé),
      cartes de fonctionnalités pour les avantages formateur, halo rose.
+
+### Étape 6 — Vérifications
+
+R29. **Audit axe** (WCAG 2.1 AA) sur le site, l'appli, l'onboarding, les espaces formateur et admin,
+     en mobile et desktop, en thème noir et en thème clair, après défilement complet (pour que les
+     éléments animés soient visibles). Deux corrections : le sélecteur de langue avait un nom
+     accessible qui ne contenait pas « FR » ; en thème clair, l'étiquette de catégorie à 70 % d'opacité
+     tombait à 3,05:1 (pleine opacité dans ce thème). 0 erreur ensuite.
+R30. **Captures** : le script défile désormais toute la page avant la capture et remet les barres fixes
+     dans le flux ; le noir est le thème par défaut, `--theme light` pose le cookie du thème clair.
+     `docs/captures/` est entièrement régénéré au nouveau design.
+R31. **Comparaison aux références** : deux images côte à côte (capture EtSmart ramenée à l'échelle
+     CSS, Pépite à 1 440 px) pour le haut de page et la section « TOUT-EN-UN ».

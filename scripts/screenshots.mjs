@@ -3,7 +3,7 @@
  * Prérequis : l'appli tourne (npm run build && npm start, ou npm run dev).
  *
  * Usage : node scripts/screenshots.mjs [--base http://localhost:3000] [--email moi@test.fr]
- *         [--out screenshots] [--pages /,/app,@dernier-script] [--theme dark] [--only mobile]
+ *         [--out screenshots] [--pages /,/app,@dernier-script] [--theme light] [--only mobile]
  *         [--format jpeg] [--scale 2] [--pro] [--suffix pro]
  *
  * --pro : passe le compte en Pro (paiement simulé) avant les captures.
@@ -23,7 +23,8 @@ const BASE = args.base ?? 'http://localhost:3000';
 const EMAIL = args.email ?? 'captures@pepite.local';
 const OUT = args.out ?? 'screenshots';
 const PAGES = (args.pages ?? '/,/prix,/formateurs,/connexion,/app,/app/studio,/app/mes-produits,/app/recap,/app/parrainage,/app/compte').split(',');
-const THEME = args.theme ?? 'light';
+// Le noir est le thème par défaut ; --theme light pose le cookie du thème clair (option du compte).
+const THEME = args.theme === 'light' ? 'light' : 'dark';
 const FORMAT = args.format === 'jpeg' ? 'jpeg' : 'png';
 const SUFFIX = args.suffix ? `-${args.suffix}` : '';
 const SCALE = args.scale ? Number(args.scale) : undefined;
@@ -78,7 +79,10 @@ async function openLastScript(page) {
 
 const browser = await chromium.launch();
 for (const vp of VIEWPORTS) {
-  const context = await browser.newContext({ ...vp.options, colorScheme: THEME === 'dark' ? 'dark' : 'light', locale: 'fr-FR' });
+  const context = await browser.newContext({ ...vp.options, colorScheme: 'dark', locale: 'fr-FR' });
+  if (THEME === 'light') {
+    await context.addCookies([{ name: 'pepite_theme', value: 'light', url: BASE }]);
+  }
   const page = await context.newPage();
   const needsLogin = PAGES.some((p) => p.startsWith('/app') || p.startsWith('/formateur') || p.startsWith('/admin') || p.startsWith('@'));
   if (needsLogin) await login(page);
@@ -104,7 +108,7 @@ for (const vp of VIEWPORTS) {
     // En pleine page, les barres fixes apparaîtraient au milieu : on les remet dans le flux.
     await page.addStyleTag({ content: 'header.sticky, header.fixed, nav.fixed { position: static !important; }' });
     await page.waitForTimeout(path === '/' ? 3500 : 700);
-    const file = `${OUT}/${name}-${vp.name}${THEME === 'dark' ? '-sombre' : ''}${SUFFIX}.${FORMAT === 'jpeg' ? 'jpg' : 'png'}`;
+    const file = `${OUT}/${name}-${vp.name}${THEME === 'light' ? '-clair' : ''}${SUFFIX}.${FORMAT === 'jpeg' ? 'jpg' : 'png'}`;
     await page.screenshot({ path: file, fullPage: true, type: FORMAT, ...(FORMAT === 'jpeg' ? { quality: 72 } : {}) });
     console.log('✓', file);
   }
