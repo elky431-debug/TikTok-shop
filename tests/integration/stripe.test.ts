@@ -18,7 +18,8 @@ const key = env.stripeSecretKey;
 const ready = key.startsWith('sk_test_') && Object.values(env.stripePrices).every(Boolean);
 
 describe.skipIf(!ready)('Stripe (mode test réel)', () => {
-  const stripe = new Stripe(key);
+  // Le corps d'un describe ignoré est quand même lu par Vitest : pas de client sans clé.
+  const stripe = ready ? new Stripe(key) : (null as unknown as Stripe);
   const repo = new LocalRepo(null);
   const customers: string[] = [];
   const started = Math.floor(Date.now() / 1000) - 5;
