@@ -163,6 +163,19 @@ export class SupabaseRepo implements Repo {
     return all;
   }
 
+  async listDiscordLinkedProfiles() {
+    const all: Profile[] = [];
+    for (let from = 0; ; from += 1000) {
+      const data = check(
+        'comptes Discord',
+        await this.db.from('profiles').select('*').not('discord_user_id', 'is', null).order('created_at').range(from, from + 999),
+      );
+      all.push(...data.map(toProfile));
+      if (data.length < 1000) break;
+    }
+    return all;
+  }
+
   async deleteUser(userId: string) {
     // Supprime l'utilisateur d'auth : les tables liées sont nettoyées en cascade.
     const { error } = await this.db.auth.admin.deleteUser(userId);

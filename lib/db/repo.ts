@@ -34,6 +34,7 @@ export interface Repo {
   getProfileByDiscordId(discordUserId: string): Promise<Profile | null>;
   listProfiles(opts?: { limit?: number }): Promise<Profile[]>;
   listOnboardedProfiles(): Promise<Profile[]>;
+  listDiscordLinkedProfiles(): Promise<Profile[]>;
   deleteUser(userId: string): Promise<void>;
 
   // Catalogue

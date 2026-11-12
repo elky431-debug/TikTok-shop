@@ -155,3 +155,27 @@ Chaque décision prise sans pouvoir demander au fondateur, avec sa raison. Les p
     compte n'est pas supprimé (sinon on continuerait à prélever un compte effacé).
 45. **Pas de badge « le plus choisi »** (affirmation invérifiable) : « Recommandé ». Pas de
     mention « TTC » tant que le régime de TVA n'est pas connu (champ `[À COMPLÉTER]` des CGV).
+
+## Jalon 6 — Mes produits, récap, Discord, parrainage
+
+46. **Récap e-mail programmé par Resend (`scheduledAt`)** à l'heure choisie (heure de Paris, été
+    comme hiver), pendant la tâche nocturne de 4 h. Aucun cron horaire n'est nécessaire, donc
+    compatible avec le plan gratuit de Vercel. Rejouer la tâche ne renvoie pas un e-mail déjà
+    programmé (statut par récap).
+47. **Récap e-mail aussi pour le plan Gratuit** (avec ses 3 produits, sans score) : la consigne ne
+    retire que Discord au Gratuit, et l'e-mail est le meilleur canal pour faire revenir chaque matin.
+    En-tête `List-Unsubscribe` et lien vers les réglages dans chaque e-mail.
+48. **Bot Discord découplé** : il n'a pas d'accès à la base, seulement aux routes `/api/bot/*`
+    protégées par `BOT_API_SECRET`. Il interroge l'appli toutes les 5 minutes (récaps dus) et
+    synchronise le rôle Pro toutes les 10 minutes. Seule l'intention `Guilds` est demandée
+    (pas d'intention privilégiée) : les membres sont lus un par un par l'API.
+49. **« 3 produits flous » dans le salon public** : une balise spoiler Discord se dévoile d'un clic,
+    elle ne protège rien. Le salon public reçoit donc des noms **masqués côté serveur**
+    (« Sérum ██████ », catégorie et tendance seulement) ; la liste complète va dans un salon
+    réservé au rôle Pro.
+50. **Code de liaison Discord** : 6 caractères, 15 minutes, usage unique, consommé de façon atomique ;
+    un même compte Discord ne peut être lié qu'à un seul compte de l'appli.
+51. **« Commence à baisser »** = tendance « baisse » ou −15 % sur 7 jours ; signalé sur la carte du
+    produit suivi et en tête de « Mes produits ».
+52. **Versement des commissions** : calculées automatiquement, versées par virement mensuel dès
+    50 € cumulés (hypothèse business notée dans RAPPORT.md, à confirmer).

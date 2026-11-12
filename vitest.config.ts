@@ -2,6 +2,8 @@ import path from 'node:path';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+  // Le tsconfig garde le JSX « preserve » pour Next ; Vitest doit, lui, le transformer.
+  oxc: { jsx: { runtime: 'automatic' } },
   resolve: {
     alias: { '@': path.resolve(__dirname) },
   },

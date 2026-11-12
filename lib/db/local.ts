@@ -294,6 +294,10 @@ export class LocalRepo implements Repo {
     return this.read((d) => d.profiles.filter((p) => p.onboarded_at));
   }
 
+  async listDiscordLinkedProfiles() {
+    return this.read((d) => d.profiles.filter((p) => p.discord_user_id));
+  }
+
   async deleteUser(userId: string) {
     this.write((d) => {
       d.users = d.users.filter((u) => u.id !== userId);

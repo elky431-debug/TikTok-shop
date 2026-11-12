@@ -144,3 +144,20 @@ export function plural(count: number, singular: string, pluralForm?: string): st
 export function quote(text: string): string {
   return `« ${text} »`;
 }
+
+/** Décalage de Paris par rapport à UTC, en minutes, à un instant donné (60 l'hiver, 120 l'été). */
+export function parisOffsetMinutes(at: Date): number {
+  const part = new Intl.DateTimeFormat('en-US', { timeZone: PARIS, timeZoneName: 'shortOffset' })
+    .formatToParts(at)
+    .find((p) => p.type === 'timeZoneName')?.value;
+  const match = /GMT([+-])(\d{1,2})(?::(\d{2}))?/.exec(part ?? '');
+  if (!match) return 0;
+  const minutes = Number(match[2]) * 60 + Number(match[3] ?? 0);
+  return match[1] === '-' ? -minutes : minutes;
+}
+
+/** Instant UTC correspondant à « jour à hh:00, heure de Paris ». */
+export function parisTimeToUtc(day: string, hour: number): Date {
+  const guess = new Date(`${day}T${String(hour).padStart(2, '0')}:00:00Z`);
+  return new Date(guess.getTime() - parisOffsetMinutes(guess) * 60_000);
+}
