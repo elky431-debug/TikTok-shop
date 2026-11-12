@@ -92,7 +92,13 @@ export interface Repo {
   updateReferral(id: string, patch: Partial<Pick<Referral, 'status' | 'commission_due_cents' | 'commission_paid_cents'>>): Promise<void>;
   listReferralsByReferrer(referrerId: string): Promise<Array<Referral & { referred_first_name: string | null; referred_plan: Profile['plan'] }>>;
   /** Insère la commission si la facture n'a pas encore été comptée. */
-  addCommission(input: Omit<Commission, 'id' | 'created_at' | 'status'>): Promise<boolean>;
+  addCommission(input: Omit<Commission, 'id' | 'created_at' | 'status' | 'canceled_cents'>): Promise<boolean>;
+  /**
+   * Remboursement d'une facture : la part `refundedShare` (0 à 1, cumulée) de la commission est annulée. Rejouable :
+   * seule la différence avec ce qui était déjà annulé est retirée du dû du parrainage. Null si la facture n'a pas de
+   * commission.
+   */
+  refundCommission(invoiceId: string, refundedShare: number): Promise<{ canceledCents: number; remainingCents: number } | null>;
   listCommissions(referrerId: string): Promise<Commission[]>;
 
   // Récap du matin

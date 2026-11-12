@@ -154,18 +154,31 @@ npm run ai:sample
 
 ### Stripe (abonnements)
 
-1. Mets ta clé `STRIPE_SECRET_KEY` (commence par `sk_test_` en test).
-2. Lance `npm run stripe:setup` : il crée les produits « Pro » et « Pro+ » et leurs 4 prix
-   (19,90 €/mois, 167 €/an, 39,90 €/mois, 335 €/an) et affiche les 4 `STRIPE_PRICE_…` à copier.
-3. **Webhook** : Developers → Webhooks → *Add endpoint* → `<NEXT_PUBLIC_SITE_URL>/api/stripe/webhook` (l’adresse
-   exacte est affichée par `npm run stripe:setup`), avec les événements `checkout.session.completed`,
-   `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`,
-   `customer.subscription.paused`, `customer.subscription.resumed`, `invoice.paid`. Copie le secret de signature
-   dans `STRIPE_WEBHOOK_SECRET`.
+1. Mets ta clé `STRIPE_SECRET_KEY` (commence par `sk_test_` en test : tout ce qui suit se fait d’abord en test).
+2. Lance `npm run stripe:setup`. Il crée, sans doublon si tu le relances :
+   - les produits « Pro » et « Pro+ » et leurs 4 prix (19,90 €/mois, 167 €/an, 39,90 €/mois, 335 €/an) ;
+   - la **configuration du portail client** : changement de plan et de période (prorata), résiliation en fin de
+     période avec un motif, changement de carte, factures.
+   Il affiche les 4 `STRIPE_PRICE_…` et `STRIPE_PORTAL_CONFIGURATION` à copier dans `.env.local` et sur Netlify.
+3. **Webhook**, une fois le site en ligne : `npm run stripe:setup -- --webhook` (avec `NEXT_PUBLIC_SITE_URL` = l’adresse
+   publique) crée le point de terminaison `<NEXT_PUBLIC_SITE_URL>/api/stripe/webhook` avec ses 9 événements et écrit
+   son secret dans `.env.local` (`STRIPE_WEBHOOK_SECRET`, jamais affiché) : copie-le sur Netlify. À la main, c’est
+   *Developers → Webhooks → Add endpoint* avec `checkout.session.completed`, `customer.subscription.created`,
+   `customer.subscription.updated`, `customer.subscription.deleted`, `customer.subscription.paused`,
+   `customer.subscription.resumed`, `invoice.paid`, `invoice.payment_failed`, `charge.refunded`.
    En local : `stripe listen --forward-to localhost:3000/api/stripe/webhook` (le secret affiché va dans `.env.local`).
-4. **Portail client** : Settings → Billing → Customer portal → active la résiliation, la mise à jour du moyen de
-   paiement, l’historique des factures et le **changement de plan** entre les 4 prix.
-5. (Facultatif) Stripe Tax si tu factures la TVA.
+4. **Relances de paiement** (*Settings → Billing → Subscriptions and emails*) : garde les nouveaux essais
+   automatiques (« Smart Retries ») et choisis d’annuler l’abonnement si tous échouent. Pendant les essais, l’abonné
+   garde son accès (statut « past_due »), reçoit notre e-mail « Ton paiement n’est pas passé » et voit un bandeau avec
+   le bouton « Mettre à jour ma carte » dans son compte.
+5. Vérifie tout en mode test : `npm run test:integration` (avec `STRIPE_SECRET_KEY` en `sk_test_` et les 4 prix) crée
+   de vrais abonnements de test (Pro mensuel, passage à Pro+ annuel, remboursement, résiliation, carte refusée, essai
+   formateur de 3 mois), vérifie le plan et les commissions, puis supprime ses clients de test.
+6. (Facultatif) Stripe Tax si tu factures la TVA.
+
+Ce que font les webhooks : le plan suit l’abonnement (le meilleur des abonnements actifs), chaque facture payée par
+un filleul crée la commission du parrain ou du formateur (30 %, une seule fois par facture), un remboursement annule
+cette commission au prorata du montant remboursé, et une résiliation repasse le compte en Gratuit.
 
 ### Resend (e-mails)
 
@@ -240,7 +253,7 @@ laisse les portées (*scopes*) par défaut : elles doivent inclure **Builds** et
 | `ADMIN_EMAILS` | ton adresse (plusieurs : séparées par des virgules) |
 | `AI_PROVIDER` + `OPENAI_API_KEY` (ou `ANTHROPIC_API_KEY`) | ta clé du fournisseur d’IA |
 | `NEXSCOPE_API_KEY` | ta clé Nexscope (sinon, produits fictifs signalés comme tels) |
-| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, 4 × `STRIPE_PRICE_…` | étape 5 |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, 4 × `STRIPE_PRICE_…`, `STRIPE_PORTAL_CONFIGURATION` | étape 5 |
 | `RESEND_API_KEY`, `EMAIL_FROM`, `FOUNDER_EMAIL` | étape 6 |
 | `DISCORD_…` | section 4 (Discord) |
 
@@ -258,11 +271,12 @@ project*) : chaque déploiement garde les valeurs du moment où il a été const
 - depuis ton poste : `npm run db:setup` (migrations, une seule fois par mise à jour), puis `npm run test:integration`.
 
 **5. Stripe en production**
-- `npm run stripe:setup` avec ta clé `sk_live_…` : copie les 4 identifiants de prix dans les variables Netlify ;
-- *Developers → Webhooks → Add endpoint* : `<NEXT_PUBLIC_SITE_URL>/api/stripe/webhook` (l’adresse exacte est
-  affichée par `npm run stripe:setup`), avec les événements listés à la section 2 ; copie le secret `whsec_…`
-  dans `STRIPE_WEBHOOK_SECRET`, puis redéploie ;
-- règle le portail client, puis teste un vrai paiement et une résiliation.
+- en local, mets ta clé `sk_live_…` et `NEXT_PUBLIC_SITE_URL` = l’adresse publique, puis
+  `npm run stripe:setup -- --webhook` : produits, prix, portail client et webhook sont créés ;
+- copie dans les variables Netlify les 4 `STRIPE_PRICE_…`, `STRIPE_PORTAL_CONFIGURATION` (affichés) et
+  `STRIPE_WEBHOOK_SECRET` (écrit dans `.env.local`), puis redéploie ;
+- règle les relances de paiement (section 2, Stripe, point 4), puis fais un vrai paiement, un remboursement depuis
+  le tableau de bord Stripe et une résiliation, et vérifie le plan dans `/app/compte`.
 
 **6. Resend**
 - *Domains → Add domain* sur resend.com, ajoute les enregistrements DNS demandés (SPF, DKIM), attends « Verified » ;

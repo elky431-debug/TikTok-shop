@@ -12,10 +12,17 @@ import { BillingUnavailableError, type BillingEvent, type BillingProvider, type 
  */
 
 let stripeClient: Stripe | null = null;
+let testClient: Stripe | null = null;
 export function getStripe(): Stripe {
+  if (testClient) return testClient;
   if (!env.stripeSecretKey) throw new BillingUnavailableError();
   stripeClient ??= new Stripe(env.stripeSecretKey, { appInfo: { name: 'tiktrend' } });
   return stripeClient;
+}
+
+/** Tests : un client Stripe qui parle à un faux serveur local (même SDK, mêmes requêtes HTTP). */
+export function setStripeForTests(client: Stripe | null) {
+  testClient = client;
 }
 
 // Lecture défensive : les champs ont changé de place selon les versions de l'API Stripe.
@@ -48,6 +55,13 @@ export function normalizeStripeSubscription(sub: Loose, eventId: string): Subscr
   };
 }
 
+/** Abonnement et métadonnées d'une facture (format actuel : invoice.parent.subscription_details). */
+function invoiceParent(object: Loose): { details: Loose; metadata: Record<string, string> } {
+  const parent = (object.parent as Loose | undefined) ?? {};
+  const details = (parent.subscription_details as Loose | undefined) ?? {};
+  return { details, metadata: (details.metadata as Record<string, string> | undefined) ?? {} };
+}
+
 /** Convertit un événement Stripe en événement normalisé. Pur : testable sans réseau. */
 export function normalizeStripeEvent(event: { id: string; type: string; data: { object: unknown } }): BillingEvent {
   const object = event.data.object as Loose;
@@ -60,9 +74,7 @@ export function normalizeStripeEvent(event: { id: string; type: string; data: { 
       return normalizeStripeSubscription(object, event.id);
 
     case 'invoice.paid': {
-      const parent = (object.parent as Loose | undefined) ?? {};
-      const details = (parent.subscription_details as Loose | undefined) ?? {};
-      const metadata = ((details.metadata as Record<string, string> | undefined) ?? {}) as Record<string, string>;
+      const { metadata, details } = invoiceParent(object);
       const taxes = ((object.total_taxes as Array<{ amount?: number }> | undefined) ?? []).reduce((s, t) => s + (t.amount ?? 0), 0);
       const legacyTax = typeof object.tax === 'number' ? object.tax : 0;
       const amountPaid = Number(object.amount_paid ?? 0);
@@ -79,6 +91,36 @@ export function normalizeStripeEvent(event: { id: string; type: string; data: { 
         paidAt: iso(paidAt) ?? new Date().toISOString(),
       };
     }
+
+    case 'invoice.payment_failed': {
+      const { metadata, details } = invoiceParent(object);
+      return {
+        kind: 'payment_failed',
+        eventId: event.id,
+        provider: 'stripe',
+        invoiceId: String(object.id),
+        customerId: str(object.customer),
+        subscriptionId: str(details.subscription) ?? str(object.subscription),
+        userId: metadata.user_id ?? null,
+        amountDueCents: Number(object.amount_due ?? 0),
+        attemptCount: Number(object.attempt_count ?? 1),
+        nextAttemptAt: iso(object.next_payment_attempt),
+      };
+    }
+
+    // Le remboursement porte sur un paiement (charge) ; depuis 2025 la charge ne mentionne plus sa facture, retrouvée
+    // ensuite par l'API des paiements de facture (enrichStripeEvent).
+    case 'charge.refunded':
+      return {
+        kind: 'refund',
+        eventId: event.id,
+        provider: 'stripe',
+        invoiceId: str(object.invoice),
+        paymentIntentId: str(object.payment_intent),
+        customerId: str(object.customer),
+        amountCents: Number(object.amount ?? 0),
+        refundedCents: Number(object.amount_refunded ?? 0),
+      };
 
     case 'checkout.session.completed':
       return {
@@ -104,17 +146,38 @@ export function parseStripeWebhook(rawBody: string, signature: string | null): B
 }
 
 /**
- * Pour un événement d'abonnement, relit l'état actuel chez Stripe : les webhooks peuvent arriver
- * dans le désordre, l'état le plus récent fait foi.
+ * Complète un événement avec l'état actuel chez Stripe :
+ * - abonnement : relu, car les webhooks peuvent arriver dans le désordre et l'état le plus récent fait foi ;
+ * - remboursement : la facture du paiement, via GET /v1/invoice_payments?payment[type]=payment_intent.
+ * Une erreur réseau sur un remboursement est levée (le webhook répond 500 et Stripe réessaie) : sans la facture, la
+ * commission ne pourrait pas être annulée.
  */
-export async function refreshSubscriptionEvent(event: BillingEvent): Promise<BillingEvent> {
+export async function enrichStripeEvent(event: BillingEvent): Promise<BillingEvent> {
+  if (event.kind === 'refund' && event.provider === 'stripe' && !event.invoiceId && event.paymentIntentId) {
+    const payments = await getStripe().invoicePayments.list({
+      payment: { type: 'payment_intent', payment_intent: event.paymentIntentId },
+      limit: 1,
+    });
+    return { ...event, invoiceId: str(payments.data[0]?.invoice) };
+  }
   if (event.kind !== 'subscription' || event.provider !== 'stripe') return event;
   try {
     const sub = await getStripe().subscriptions.retrieve(event.subscriptionId);
-    return { ...normalizeStripeSubscription(sub as unknown as Loose, event.eventId), userId: event.userId ?? null };
+    const fresh = normalizeStripeSubscription(sub as unknown as Loose, event.eventId);
+    return { ...fresh, userId: event.userId ?? fresh.userId };
   } catch {
     return event;
   }
+}
+
+/** Portail client : configuration créée par « npm run stripe:setup » (changement de plan, résiliation…) si fournie. */
+function portalBase(customer: string) {
+  return {
+    customer,
+    locale: 'fr' as const,
+    return_url: `${env.siteUrl}/app/compte`,
+    ...(env.stripePortalConfiguration ? { configuration: env.stripePortalConfiguration } : {}),
+  };
 }
 
 async function ensureCustomer(profile: Profile): Promise<string> {
@@ -137,9 +200,10 @@ export class StripeBilling implements BillingProvider {
     if (!price) {
       throw new BillingUnavailableError(`Prix Stripe manquant pour ce plan (${missingPriceIds().join(', ')}).`);
     }
-    // Déjà abonné (y compris pendant l'essai formateur) : on passe par le portail pour changer de plan.
+    // Déjà abonné (y compris pendant l'essai formateur) : changement de plan dans le portail, directement sur l'écran
+    // de confirmation du nouveau prix (prorata calculé et affiché par Stripe), pas de second abonnement.
     const active = await getRepo().getActiveSubscription(profile.id);
-    if (active?.provider === 'stripe') return this.createPortal({ profile });
+    if (active?.provider === 'stripe') return this.changePlan({ profile, subscriptionId: active.id, price });
 
     const customer = await ensureCustomer(profile);
     const session = await getStripe().checkout.sessions.create({
@@ -157,12 +221,27 @@ export class StripeBilling implements BillingProvider {
     return session.url;
   }
 
-  async createPortal({ profile }: { profile: Profile }) {
+  async createPortal({ profile, flow }: { profile: Profile; flow?: 'payment_method_update' }) {
     const customer = await ensureCustomer(profile);
     const session = await getStripe().billingPortal.sessions.create({
-      customer,
-      locale: 'fr',
-      return_url: `${env.siteUrl}/app/compte`,
+      ...portalBase(customer),
+      ...(flow ? { flow_data: { type: flow } } : {}),
+    });
+    return session.url;
+  }
+
+  private async changePlan({ profile, subscriptionId, price }: { profile: Profile; subscriptionId: string; price: string }) {
+    const sub = await getStripe().subscriptions.retrieve(subscriptionId);
+    const item = sub.items.data[0];
+    if (!item || item.price.id === price) return this.createPortal({ profile });
+    const customer = await ensureCustomer(profile);
+    const session = await getStripe().billingPortal.sessions.create({
+      ...portalBase(customer),
+      flow_data: {
+        type: 'subscription_update_confirm',
+        subscription_update_confirm: { subscription: subscriptionId, items: [{ id: item.id, price, quantity: 1 }] },
+        after_completion: { type: 'redirect', redirect: { return_url: `${env.siteUrl}/app/compte?paiement=ok` } },
+      },
     });
     return session.url;
   }

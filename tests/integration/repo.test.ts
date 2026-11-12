@@ -291,6 +291,15 @@ describe.skipIf(!supabaseReady)('SupabaseRepo contre la vraie base', () => {
     expect(await repo.addCommission(commission)).toBe(false);
     expect((await repo.getReferralByReferred(student.id))?.commission_due_cents).toBe(498);
     expect((await repo.listCommissions(coachUser.id)).map((c) => c.invoice_id)).toEqual([`in_${RUN}`]);
+
+    // Remboursement de la moitié, puis du tout ; rejoué : rien ne bouge deux fois.
+    expect(await repo.refundCommission(`in_${RUN}`, 0.5)).toEqual({ canceledCents: 249, remainingCents: 249 });
+    expect((await repo.getReferralByReferred(student.id))?.commission_due_cents).toBe(249);
+    expect(await repo.refundCommission(`in_${RUN}`, 1)).toEqual({ canceledCents: 498, remainingCents: 0 });
+    expect(await repo.refundCommission(`in_${RUN}`, 1)).toEqual({ canceledCents: 498, remainingCents: 0 });
+    expect((await repo.getReferralByReferred(student.id))?.commission_due_cents).toBe(0);
+    expect((await repo.listCommissions(coachUser.id))[0]).toMatchObject({ status: 'annulee', amount_cents: 0, canceled_cents: 498 });
+    expect(await repo.refundCommission('in_inconnue', 1)).toBeNull();
   });
 
   it('prépare et met à jour le récap du matin', async () => {

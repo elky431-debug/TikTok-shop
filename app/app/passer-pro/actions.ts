@@ -23,11 +23,12 @@ export async function startCheckoutAction(formData: FormData) {
   redirect(url);
 }
 
-export async function openPortalAction() {
+export async function openPortalAction(formData?: FormData) {
   const { profile } = await requireOnboardedViewer('/app/compte');
+  const flow = formData?.get('etape') === 'carte' ? ('payment_method_update' as const) : undefined;
   let url: string;
   try {
-    url = await getBilling().createPortal({ profile });
+    url = await getBilling().createPortal({ profile, flow });
   } catch (error) {
     if (error instanceof BillingUnavailableError) redirect('/app/compte?erreur=paiement-indisponible');
     console.error('[paiement] portail', error);

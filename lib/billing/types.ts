@@ -12,8 +12,11 @@ export interface BillingProvider {
   readonly name: ProviderName;
   /** URL où envoyer l'utilisateur pour payer. */
   createCheckout(input: { profile: Profile; plan: Exclude<PlanId, 'free'>; interval: BillingInterval }): Promise<string>;
-  /** URL du portail client (moyen de paiement, factures, résiliation). */
-  createPortal(input: { profile: Profile }): Promise<string>;
+  /**
+   * URL du portail client (moyen de paiement, factures, résiliation). `flow` ouvre directement une étape :
+   * changer de moyen de paiement (après un échec de paiement).
+   */
+  createPortal(input: { profile: Profile; flow?: 'payment_method_update' }): Promise<string>;
   /** Démarre l'essai Pro offert aux élèves d'un formateur. */
   startTrial(input: { profile: Profile; days: number }): Promise<void>;
   /** Résilie immédiatement tout abonnement (suppression du compte). */
@@ -66,13 +69,41 @@ export interface CheckoutCompleted {
   subscriptionId: string | null;
 }
 
+/** Remboursement (total ou partiel) d'un paiement : la commission de la facture est annulée au prorata. */
+export interface PaymentRefunded {
+  kind: 'refund';
+  eventId: string;
+  provider: 'stripe' | 'simulation';
+  /** Facture remboursée ; chez Stripe, retrouvée à partir du paiement (voir enrichStripeEvent). */
+  invoiceId: string | null;
+  paymentIntentId: string | null;
+  customerId: string | null;
+  /** Montant payé et montant remboursé (cumulé), en centimes. */
+  amountCents: number;
+  refundedCents: number;
+}
+
+/** Échec d'un prélèvement : l'abonné est prévenu par e-mail ; Stripe réessaie selon ses réglages. */
+export interface PaymentFailed {
+  kind: 'payment_failed';
+  eventId: string;
+  provider: 'stripe' | 'simulation';
+  invoiceId: string;
+  customerId: string | null;
+  subscriptionId: string | null;
+  userId: string | null;
+  amountDueCents: number;
+  attemptCount: number;
+  nextAttemptAt: string | null;
+}
+
 export interface IgnoredEvent {
   kind: 'ignored';
   eventId: string;
   type: string;
 }
 
-export type BillingEvent = SubscriptionChanged | InvoicePaid | CheckoutCompleted | IgnoredEvent;
+export type BillingEvent = SubscriptionChanged | InvoicePaid | CheckoutCompleted | PaymentRefunded | PaymentFailed | IgnoredEvent;
 
 /** Statuts qui donnent accès au plan payant. */
 export const ACTIVE_STATUSES = ['active', 'trialing', 'past_due'];

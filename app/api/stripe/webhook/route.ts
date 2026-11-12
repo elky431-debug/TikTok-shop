@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { handleBillingEvent } from '@/lib/billing/events';
-import { parseStripeWebhook, refreshSubscriptionEvent } from '@/lib/billing/stripe';
+import { enrichStripeEvent, parseStripeWebhook } from '@/lib/billing/stripe';
 import { BillingUnavailableError } from '@/lib/billing/types';
 
 export const dynamic = 'force-dynamic';
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await handleBillingEvent(await refreshSubscriptionEvent(event));
+    const result = await handleBillingEvent(await enrichStripeEvent(event));
     return NextResponse.json({ received: true, ...result });
   } catch (error) {
     console.error('[webhook stripe]', error);

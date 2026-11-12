@@ -87,6 +87,22 @@ export default async function ComptePage({ searchParams }: { searchParams: Recor
               )}
             </div>
           </div>
+          {subscription?.status === 'past_due' ? (
+            <Callout
+              tone="warn"
+              className="mt-4"
+              title="Ton dernier paiement n’est pas passé"
+              action={
+                <form action={openPortalAction}>
+                  <input type="hidden" name="etape" value="carte" />
+                  <SubmitButton pendingLabel="Ouverture…">Mettre à jour ma carte</SubmitButton>
+                </form>
+              }
+            >
+              Ton accès reste ouvert pendant les nouveaux essais de prélèvement. Mets à jour ta carte pour garder ton plan ;
+              sans paiement, tu repasseras en Gratuit.
+            </Callout>
+          ) : null}
           {subscription ? (
             <p className="mt-3 text-xs text-muted">
               {mode === 'stripe'

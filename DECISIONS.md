@@ -744,3 +744,36 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
 134. **E-mail de test réel** : `tests/integration/email.test.ts` envoie `emails/test-email.tsx` au premier de
      `ADMIN_EMAILS` quand `RESEND_API_KEY`, `EMAIL_FROM` et `ADMIN_EMAILS` sont là. `npm run test:integration` lance
      désormais les tests de chaque service dont les clés sont présentes, et dit lesquels il ignore.
+
+### Étape 5 — Stripe en mode test
+
+135. **Source des noms de l'API Stripe** : docs.stripe.com n'est pas joignable depuis cette session ; les routes,
+     paramètres et champs viennent des types officiels du SDK `stripe` 23.1 (générés depuis la spécification OpenAPI
+     de Stripe, version d'API `2026-10-28.endive`). `STRIPE_WEBHOOK_EVENTS` est vérifié contre ces types à la
+     compilation (`satisfies … EnabledEvent`).
+136. **Remboursement → commission annulée au prorata** (`charge.refunded`). Depuis l'API 2025 (« basil »), une charge
+     ne porte plus sa facture : elle est retrouvée par `GET /v1/invoice_payments?payment[type]=payment_intent&
+     payment[payment_intent]=…`. Part annulée = montant remboursé cumulé ÷ montant payé, appliquée à la commission
+     d'origine : rejouer l'événement ou recevoir un second remboursement partiel ne retire que la différence. Nouvelle
+     colonne `commissions.canceled_cents`, statut `annulee` quand tout est remboursé ; `amount_cents` reste « ce qui
+     est dû ». Une commission déjà versée puis remboursée fait baisser le dû du parrainage (il peut passer sous zéro :
+     à retenir sur le versement suivant). Erreur réseau pendant cette recherche : 500, Stripe réessaie.
+137. **Échec de paiement** (`invoice.payment_failed`) : l'accès reste ouvert pendant les nouveaux essais de Stripe
+     (statut `past_due`, déjà compté comme actif), l'abonné reçoit un e-mail en français (une fois par tentative :
+     l'événement est marqué avant l'envoi, et clé d'idempotence Resend), et son compte affiche un bandeau avec
+     « Mettre à jour ma carte », qui ouvre le portail directement sur l'étape `payment_method_update`. Après le
+     dernier essai, Stripe annule (réglage conseillé) ou passe en `unpaid` : dans les deux cas, retour en Gratuit.
+138. **Changement de plan sans second abonnement** : un abonné (même en essai formateur) qui choisit un autre plan
+     ou une autre période arrive sur l'écran de confirmation du portail (`flow_data.type =
+     subscription_update_confirm`, l'article de l'abonnement et le nouveau prix), avec le prorata calculé par Stripe.
+     La configuration du portail est créée ou mise à jour par `npm run stripe:setup` (marquée `metadata.app`), et
+     passée aux sessions par `STRIPE_PORTAL_CONFIGURATION` ; sans elle, la configuration par défaut du compte.
+139. **Webhook créé par le script** (`--webhook`), seulement vers une adresse https publique ; son secret, donné une
+     seule fois par Stripe, est écrit dans `.env.local` sans être affiché.
+140. **Tests sans clé, au plus près du réel** : de vrais webhooks signés (`generateTestHeaderString`) passent par la
+     vraie route, et le SDK officiel parle à un faux serveur Stripe local (`setStripeForTests`, options `host`/`port`
+     du SDK) qui enregistre les requêtes HTTP réelles : on vérifie ce qui partirait chez Stripe (paramètres de
+     Checkout, du portail, de l'essai, recherche de facture). Le parcours a révélé un défaut corrigé : l'identifiant
+     utilisateur relu chez Stripe était écrasé par celui, vide, de l'événement. `tests/integration/stripe.test.ts`
+     refait les mêmes parcours contre le vrai mode test dès qu'une clé `sk_test_` et les prix sont là (les
+     événements sont relus par `GET /v1/events`, faute d'adresse publique pour le webhook).

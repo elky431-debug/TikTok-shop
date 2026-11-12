@@ -20,6 +20,7 @@ import type {
 import type { NicheId } from '@/lib/niches';
 import { env } from '@/lib/env';
 import { randomCode } from '@/lib/utils';
+import { commissionRefund } from './commission';
 
 /**
  * Implémentation Supabase. Utilise la clé service côté serveur uniquement ;
@@ -517,7 +518,7 @@ export class SupabaseRepo implements Repo {
     });
   }
 
-  async addCommission(input: Omit<Commission, 'id' | 'created_at' | 'status'>) {
+  async addCommission(input: Omit<Commission, 'id' | 'created_at' | 'status' | 'canceled_cents'>) {
     const { error } = await this.db.from('commissions').insert(input);
     if (error) {
       if (error.code === '23505') return false;
@@ -533,6 +534,28 @@ export class SupabaseRepo implements Repo {
       });
     }
     return true;
+  }
+
+  async refundCommission(invoiceId: string, refundedShare: number) {
+    const commission = check(
+      'commission',
+      await this.db.from('commissions').select('*').eq('invoice_id', invoiceId).maybeSingle(),
+    ) as Commission | null;
+    if (!commission) return null;
+    const change = commissionRefund(commission, refundedShare);
+    if (change.deltaCents !== 0) {
+      check('commission', await this.db.from('commissions').update(change.patch).eq('id', commission.id).select('id'));
+      const referral = check(
+        'parrainage',
+        await this.db.from('referrals').select('commission_due_cents').eq('id', commission.referral_id).maybeSingle(),
+      );
+      if (referral) {
+        await this.updateReferral(commission.referral_id, {
+          commission_due_cents: Number(referral.commission_due_cents) - change.deltaCents,
+        });
+      }
+    }
+    return { canceledCents: change.patch.canceled_cents, remainingCents: change.patch.amount_cents };
   }
 
   async listCommissions(referrerId: string) {

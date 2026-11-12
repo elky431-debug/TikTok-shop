@@ -103,7 +103,7 @@ describe('normalisation des événements Stripe', () => {
   });
 
   it('ignore les événements non gérés', () => {
-    expect(normalizeStripeEvent({ id: 'e', type: 'charge.refunded', data: { object: {} } })).toMatchObject({ kind: 'ignored' });
+    expect(normalizeStripeEvent({ id: 'e', type: 'payment_intent.created', data: { object: {} } })).toMatchObject({ kind: 'ignored' });
   });
 });
 

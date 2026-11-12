@@ -21,6 +21,7 @@ import type {
 import type { NicheId } from '@/lib/niches';
 import { eligibilityFor } from '@/lib/profile-rules';
 import { randomCode, randomId } from '@/lib/utils';
+import { commissionRefund } from './commission';
 
 /**
  * Base de données locale (fichier JSON) utilisée quand Supabase n'est pas configuré.
@@ -651,13 +652,25 @@ export class LocalRepo implements Repo {
     );
   }
 
-  async addCommission(input: Omit<Commission, 'id' | 'created_at' | 'status'>) {
+  async addCommission(input: Omit<Commission, 'id' | 'created_at' | 'status' | 'canceled_cents'>) {
     return this.write((d) => {
       if (d.commissions.some((c) => c.invoice_id === input.invoice_id)) return false;
-      d.commissions.push({ ...input, id: randomId(), status: 'due', created_at: now() });
+      d.commissions.push({ ...input, canceled_cents: 0, id: randomId(), status: 'due', created_at: now() });
       const referral = d.referrals.find((r) => r.id === input.referral_id);
       if (referral) referral.commission_due_cents += input.amount_cents;
       return true;
+    });
+  }
+
+  async refundCommission(invoiceId: string, refundedShare: number) {
+    return this.write((d) => {
+      const commission = d.commissions.find((c) => c.invoice_id === invoiceId);
+      if (!commission) return null;
+      const change = commissionRefund(commission, refundedShare);
+      Object.assign(commission, change.patch);
+      const referral = d.referrals.find((r) => r.id === commission.referral_id);
+      if (referral) referral.commission_due_cents -= change.deltaCents;
+      return { canceledCents: commission.canceled_cents, remainingCents: commission.amount_cents };
     });
   }
 

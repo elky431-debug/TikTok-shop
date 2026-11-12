@@ -197,9 +197,12 @@ export interface Commission {
   referral_id: string;
   referrer_id: string;
   invoice_id: string;
+  /** Commission restante (montant d'origine moins la part annulée par des remboursements). */
   amount_cents: number;
+  /** Part annulée par des remboursements, cumulée. */
+  canceled_cents: number;
   month: string;
-  status: 'due' | 'paid';
+  status: 'due' | 'paid' | 'annulee';
   created_at: string;
 }
 

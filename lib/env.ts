@@ -71,6 +71,10 @@ export const env = {
       proplus_year: read('STRIPE_PRICE_PROPLUS_YEARLY'),
     };
   },
+  /** Configuration du portail client créée par « npm run stripe:setup » (facultative : sinon celle par défaut). */
+  get stripePortalConfiguration() {
+    return read('STRIPE_PORTAL_CONFIGURATION');
+  },
   get resendKey() {
     return read('RESEND_API_KEY');
   },

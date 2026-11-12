@@ -98,6 +98,7 @@ export type Database = {
       commissions: {
         Row: {
           amount_cents: number
+          canceled_cents: number
           created_at: string
           id: string
           invoice_id: string
@@ -108,6 +109,7 @@ export type Database = {
         }
         Insert: {
           amount_cents: number
+          canceled_cents?: number
           created_at?: string
           id?: string
           invoice_id: string
@@ -118,6 +120,7 @@ export type Database = {
         }
         Update: {
           amount_cents?: number
+          canceled_cents?: number
           created_at?: string
           id?: string
           invoice_id?: string

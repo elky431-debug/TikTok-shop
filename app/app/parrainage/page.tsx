@@ -27,6 +27,7 @@ export default async function ParrainagePage() {
   const thisMonth = commissions.filter((c) => c.month === month).reduce((s, c) => s + c.amount_cents, 0);
   const due = commissions.filter((c) => c.status === 'due').reduce((s, c) => s + c.amount_cents, 0);
   const paid = commissions.filter((c) => c.status === 'paid').reduce((s, c) => s + c.amount_cents, 0);
+  const canceled = commissions.reduce((s, c) => s + (c.canceled_cents ?? 0), 0);
   const subscribed = referrals.filter((r) => r.status === 'abonne' || r.status === 'essai').length;
   const shareText = `Je repère mes produits TikTok Shop avec cet outil, en français. Voici mon lien : ${link}`;
   const rate = Math.round(REFERRAL_COMMISSION_RATE * 100);
@@ -63,6 +64,11 @@ export default async function ParrainagePage() {
           </div>
         ))}
       </dl>
+      {canceled > 0 ? (
+        <p className="mt-2 text-xs text-muted">
+          {formatEuros(canceled)} de commissions annulées : des paiements de tes filleuls ont été remboursés.
+        </p>
+      ) : null}
       {paid > 0 ? <p className="mt-2 text-sm text-muted">Déjà versé : {formatEuros(paid)}.</p> : null}
 
       <section className="mt-8" aria-labelledby="filleuls">

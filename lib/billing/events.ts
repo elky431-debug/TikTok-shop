@@ -1,7 +1,19 @@
+import { createElement } from 'react';
+import { PaymentFailedEmail } from '@/emails/payment-failed';
 import { getRepo, type Repo } from '@/lib/db';
 import type { PlanId, Profile, ReferralStatus, Subscription } from '@/lib/db/types';
-import { REFERRAL_COMMISSION_RATE } from '@/lib/plans';
-import { ACTIVE_STATUSES, type BillingEvent, type InvoicePaid, type SubscriptionChanged } from './types';
+import { sendEmail } from '@/lib/email/send';
+import { env } from '@/lib/env';
+import { getPlan, REFERRAL_COMMISSION_RATE } from '@/lib/plans';
+import { formatEuros } from '@/lib/utils';
+import {
+  ACTIVE_STATUSES,
+  type BillingEvent,
+  type InvoicePaid,
+  type PaymentFailed,
+  type PaymentRefunded,
+  type SubscriptionChanged,
+} from './types';
 
 /**
  * Traitement des événements de paiement normalisés, quel que soit le prestataire.
@@ -15,6 +27,11 @@ export interface HandleResult {
   userId?: string | null;
   plan?: PlanId;
   commissionCents?: number;
+  /** Remboursement : part de commission annulée (cumulée) et commission restante. */
+  canceledCents?: number;
+  remainingCents?: number;
+  /** Échec de paiement : l'abonné a-t-il été prévenu par e-mail ? */
+  notified?: boolean;
 }
 
 async function resolveProfile(repo: Repo, userId: string | null, customerId: string | null): Promise<Profile | null> {
@@ -101,6 +118,42 @@ async function onInvoicePaid(repo: Repo, event: InvoicePaid): Promise<HandleResu
   return { status: 'ok', userId: profile.id, commissionCents: added ? amount : 0 };
 }
 
+/** Remboursement : la commission de la facture est annulée au prorata du montant remboursé (cumulé). */
+async function onRefund(repo: Repo, event: PaymentRefunded): Promise<HandleResult> {
+  if (!event.invoiceId || event.amountCents <= 0) return { status: 'ok', canceledCents: 0 };
+  const result = await repo.refundCommission(event.invoiceId, event.refundedCents / event.amountCents);
+  return { status: 'ok', canceledCents: result?.canceledCents ?? 0, remainingCents: result?.remainingCents };
+}
+
+/**
+ * Échec de prélèvement : l'accès reste ouvert tant que Stripe réessaie (statut « past_due »), et l'abonné reçoit un
+ * e-mail avec le lien pour changer de carte. Une seule fois par tentative (clé d'idempotence). L'e-mail n'est qu'une
+ * notification : son échec n'empêche pas de traiter l'événement.
+ */
+async function onPaymentFailed(repo: Repo, event: PaymentFailed): Promise<HandleResult> {
+  const profile = await resolveProfile(repo, event.userId, event.customerId);
+  if (!profile) return { status: 'unknown_user', userId: event.userId };
+  const subscription = event.subscriptionId ? await repo.getSubscription(event.subscriptionId) : null;
+  const planName = getPlan(subscription?.plan ?? profile.plan).name;
+  try {
+    await sendEmail({
+      to: profile.email,
+      subject: `Ton paiement de ${formatEuros(event.amountDueCents)} n’est pas passé`,
+      react: createElement(PaymentFailedEmail, {
+        planName,
+        amountCents: event.amountDueCents,
+        nextAttemptAt: event.nextAttemptAt,
+        siteUrl: env.siteUrl,
+      }),
+      idempotencyKey: `paiement-echoue-${event.invoiceId}-${event.attemptCount}`,
+    });
+    return { status: 'ok', userId: profile.id, notified: true };
+  } catch (error) {
+    console.error('[paiement échoué] e-mail', profile.id, error);
+    return { status: 'ok', userId: profile.id, notified: false };
+  }
+}
+
 export async function handleBillingEvent(event: BillingEvent, repo: Repo = getRepo()): Promise<HandleResult> {
   if (event.kind === 'ignored') return { status: 'ignored' };
 
@@ -112,6 +165,15 @@ export async function handleBillingEvent(event: BillingEvent, repo: Repo = getRe
     case 'invoice_paid':
       result = await onInvoicePaid(repo, event);
       break;
+    case 'refund':
+      result = await onRefund(repo, event);
+      break;
+    case 'payment_failed': {
+      // Le seul effet est un e-mail : l'événement est marqué d'abord, pour qu'un webhook rejoué (Stripe réessaie
+      // pendant plusieurs jours) ne prévienne jamais deux fois.
+      if (!(await repo.markBillingEvent(event.eventId, event.kind))) return { status: 'duplicate' };
+      return onPaymentFailed(repo, event);
+    }
     case 'checkout_completed': {
       const profile = await resolveProfile(repo, event.userId, event.customerId);
       if (profile && event.customerId && event.provider === 'stripe' && !profile.stripe_customer_id) {
