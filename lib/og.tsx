@@ -1,3 +1,5 @@
+/** @jsxRuntime automatic */
+/** @jsxImportSource react */
 import { BRAND_SPLIT } from '@/lib/brand';
 
 /**
@@ -38,7 +40,13 @@ export function ShareVisual({
   const { width, height } = SHARE_FORMATS[format];
   const scale = width / 1200;
   const tall = height > width;
-  const pad = Math.round(72 * scale);
+  // Bannière (1200 × 630) : moins de hauteur, tailles resserrées pour que tout tienne.
+  const wide = width / height > 1.5;
+  const pad = Math.round((wide ? 56 : 72) * scale);
+  const titleSize = Math.round((tall ? 92 : wide ? 58 : 68) * scale);
+  const subtitleSize = Math.round((tall ? 40 : wide ? 25 : 30) * scale);
+  const badgeSize = Math.round((tall ? 52 : wide ? 32 : 40) * scale);
+  const gap = Math.round((wide ? 16 : 22) * scale);
   return (
     <div
       style={{
@@ -70,17 +78,17 @@ export function ShareVisual({
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: Math.round(22 * scale) }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap }}>
         {eyebrow ? (
-          <div style={{ display: 'flex', fontSize: Math.round(24 * scale), letterSpacing: 4, textTransform: 'uppercase', color: CYAN }}>{eyebrow}</div>
+          <div style={{ display: 'flex', fontSize: Math.round((wide ? 20 : 24) * scale), letterSpacing: 4, textTransform: 'uppercase', color: CYAN }}>{eyebrow}</div>
         ) : null}
-        <div style={{ display: 'flex', flexDirection: 'column', fontSize: Math.round((tall ? 92 : 68) * scale), lineHeight: 1.08, letterSpacing: -2 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', fontSize: titleSize, lineHeight: 1.08, letterSpacing: -2 }}>
           <span>{title}</span>
           {accent ? <span style={{ color: CYAN }}>{accent}</span> : null}
         </div>
         <div style={{ display: 'flex', width: Math.round(220 * scale), height: Math.round(8 * scale), borderRadius: 8, backgroundImage: GRADIENT }} />
         {subtitle ? (
-          <div style={{ display: 'flex', fontSize: Math.round((tall ? 40 : 30) * scale), lineHeight: 1.35, color: '#B6B7BD', maxWidth: Math.round(980 * scale) }}>
+          <div style={{ display: 'flex', fontSize: subtitleSize, lineHeight: 1.35, color: '#B6B7BD', maxWidth: Math.round(980 * scale) }}>
             {subtitle}
           </div>
         ) : null}
@@ -92,7 +100,7 @@ export function ShareVisual({
                 padding: `${Math.round(14 * scale)}px ${Math.round(26 * scale)}px`,
                 borderRadius: Math.round(16 * scale),
                 border: `${Math.max(2, Math.round(3 * scale))}px solid ${PINK}`,
-                fontSize: Math.round((tall ? 52 : 40) * scale),
+                fontSize: badgeSize,
                 letterSpacing: 2,
               }}
             >
