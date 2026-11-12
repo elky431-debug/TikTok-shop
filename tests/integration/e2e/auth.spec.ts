@@ -25,6 +25,40 @@ function callbackUrl(tokenHash: string, suite: string): string {
   return `/auth/callback?token_hash=${encodeURIComponent(tokenHash)}&type=email&suite=${encodeURIComponent(suite)}`;
 }
 
+test('inscription par mot de passe : accueil → Commencer → compte → onboarding → radar, sans aucun e-mail', async ({ page }) => {
+  // Supabase refuse les adresses en example.com à l'inscription publique : domaine du produit, aucun e-mail n'est envoyé
+  // (confirmation désactivée tant que Resend n'est pas branché).
+  const email = testEmail('motdepasse').replace('@example.com', '@tracktout.com');
+  await page.goto('/');
+  await page.getByRole('button', { name: /ouvrir le menu/i }).click();
+  await page.getByRole('link', { name: 'Commencer' }).last().click();
+  await expect(page).toHaveURL(/\/connexion/);
+  await page.getByLabel('Ton adresse e-mail').fill(email);
+  await page.getByLabel('Ton mot de passe').fill('motdepasse-solide-42');
+  await page.getByRole('button', { name: 'Créer mon compte' }).last().click();
+  await expect(page).toHaveURL(/\/bienvenue/);
+  created.push(await profileId(email));
+
+  await page.getByLabel('Ton prénom').fill('Inès');
+  await page.getByRole('button', { name: 'Continuer' }).click();
+  await page.getByText('Moins de 500', { exact: true }).click();
+  await page.getByRole('button', { name: 'Continuer' }).click();
+  await page.getByText('Beauté et soins', { exact: true }).click();
+  await page.getByRole('button', { name: 'Continuer' }).click();
+  await page.getByText('Voix off', { exact: true }).click();
+  await page.getByRole('button', { name: 'Voir mes produits du jour' }).click();
+  await expect(page).toHaveURL(/\/app\?bienvenue=/);
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Inès, voici tes produits du jour');
+
+  // Reconnexion par mot de passe dans un navigateur neuf
+  await page.context().clearCookies();
+  await page.goto('/connexion?mode=connexion');
+  await page.getByLabel('Ton adresse e-mail').fill(email);
+  await page.getByLabel('Ton mot de passe').fill('motdepasse-solide-42');
+  await page.getByRole('button', { name: 'Me connecter' }).last().click();
+  await expect(page).toHaveURL(/\/app$/);
+});
+
 test('lien magique : onboarding d’abord, puis la page demandée, puis déconnexion', async ({ page, baseURL }) => {
   await page.goto('/app/scripts');
   await expect(page).toHaveURL(/\/connexion\?suite=%2Fapp%2Fscripts$/);

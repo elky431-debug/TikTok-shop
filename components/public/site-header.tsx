@@ -33,7 +33,7 @@ export function SiteHeader() {
 
           <div className="hidden items-center gap-3 md:flex">
             <LanguageToggle />
-            <Link href="/connexion" className="px-3 py-2 text-sm text-fg/70 transition-colors hover:text-fg">
+            <Link href="/connexion?mode=connexion" className="px-3 py-2 text-sm text-fg/70 transition-colors hover:text-fg">
               Se connecter
             </Link>
             <LinkButton href="/connexion" size="sm">
@@ -69,7 +69,7 @@ export function SiteHeader() {
               <LanguageToggle />
             </div>
             <div className="space-y-2 border-t border-line pt-3">
-              <LinkButton href="/connexion" variant="outline" className="w-full" onClick={() => setOpen(false)}>
+              <LinkButton href="/connexion?mode=connexion" variant="outline" className="w-full" onClick={() => setOpen(false)}>
                 Se connecter
               </LinkButton>
               <LinkButton href="/connexion" className="w-full" onClick={() => setOpen(false)}>

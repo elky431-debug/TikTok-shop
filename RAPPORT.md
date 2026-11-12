@@ -353,3 +353,31 @@ Branche `claude/kind-galileo-ardtih`, un commit par étape. Tests : 162 tests un
 
 **Échantillon gratuit** : retiré du score (poids réparti au prorata), du filtre, de la fiche, des cartes, des récaps,
 de l'accueil et de la base. Aucune route TikTok de Nexscope n'a ce champ ; `freeShipping` est la livraison offerte.
+
+### Correctif prioritaire : inscription (avant la fin de la session 5)
+
+**Cause.** L'inscription ne passait que par le lien magique. Sans SMTP configuré (Resend absent), Supabase utilise son
+service d'e-mail intégré, limité à 2 e-mails par heure et réservé aux adresses de l'équipe du projet : les nouveaux
+comptes ne recevaient jamais leur lien. De plus, la « Site URL » et la seule adresse de retour autorisée étaient
+`http://localhost:3000` : depuis le site en ligne, un lien de connexion retombait sur une adresse non autorisée, donc
+sur la page d'accueil, sans ouvrir de session.
+
+**Correctifs.**
+- Inscription et connexion par **e-mail et mot de passe** (Supabase Auth `signUp` / `signInWithPassword`), en plus du
+  lien magique (gardé en option, et pour le mot de passe oublié une fois Resend branché). En mode local, mots de passe
+  hachés en scrypt.
+- Liens de retour calculés depuis l'adresse réellement utilisée (local, Netlify, domaine), parmi les adresses connues
+  seulement ; un lien qui retombe quand même sur l'accueil (`?code=` ou `?token_hash=`) est renvoyé à `/auth/callback`.
+- Supabase réglé par l'API de gestion (`npm run auth:setup`) : Site URL `https://tracktout.com`, retours autorisés
+  `https://tracktout.com/auth/callback**`, `https://www.tracktout.com/auth/callback**`,
+  `http://localhost:3000/auth/callback**` (+ l'adresse Netlify dès qu'elle est connue : `AUTH_REDIRECT_ORIGINS`).
+- Vérifié dans le navigateur contre le vrai Supabase (version de production) : accueil → « Commencer » → « Créer mon
+  compte » → onboarding → radar « Inès, voici tes produits du jour », puis reconnexion par mot de passe
+  (`tests/integration/e2e/auth.spec.ts`, comptes de test supprimés).
+
+> ⚠ **À réactiver quand Resend sera branché : la confirmation d'e-mail est désactivée** (`mailer_autoconfirm = true`,
+> réglé le 12 novembre 2026 par l'API de gestion de Supabase). Pour la remettre, une fois `RESEND_API_KEY` et
+> `EMAIL_FROM` en place :
+> `AUTH_SITE_URL=https://tracktout.com AUTH_REDIRECT_ORIGINS=<adresse Netlify>,https://www.tracktout.com AUTH_EMAIL_CONFIRMATION=on npm run auth:setup`
+> (la même commande branche aussi le SMTP de Resend). Les modèles d'e-mail de confirmation et de lien magique sont
+> déjà en français et ramènent à l'adresse d'où vient la demande.

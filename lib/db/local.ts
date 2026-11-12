@@ -35,6 +35,8 @@ interface LocalUser {
   id: string;
   email: string;
   created_at: string;
+  /** Mot de passe haché (scrypt), si le compte a été créé avec un mot de passe. */
+  password_hash?: string;
 }
 
 interface MagicToken {
@@ -246,6 +248,21 @@ export class LocalRepo implements Repo {
       }
       return user;
     });
+  }
+
+  /** Inscription par mot de passe (mode local). Une adresse déjà inscrite n'est jamais écrasée. */
+  async createPasswordUser(email: string, passwordHash: string): Promise<LocalUser | null> {
+    return this.write((d) => {
+      const address = email.toLowerCase();
+      if (d.users.some((u) => u.email === address)) return null;
+      const user: LocalUser = { id: randomId(), email: address, created_at: now(), password_hash: passwordHash };
+      d.users.push(user);
+      return clone(user);
+    });
+  }
+
+  async findLocalUserByEmail(email: string): Promise<LocalUser | null> {
+    return this.read((d) => d.users.find((u) => u.email === email.toLowerCase()) ?? null);
   }
 
   async getLocalUser(id: string): Promise<LocalUser | null> {

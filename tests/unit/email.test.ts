@@ -181,8 +181,9 @@ describe('réglage de l’auth Supabase (npm run auth:setup)', () => {
     const patch = authConfigPatch({ brand: 'Tracktout', siteUrl: 'https://tracktout.com/' });
     expect(patch.site_url).toBe('https://tracktout.com');
     expect(patch.uri_allow_list).toBe('https://tracktout.com/auth/callback**,http://localhost:3000/auth/callback**');
+    expect(patch).not.toHaveProperty('mailer_autoconfirm');
     expect(patch.mailer_subjects_magic_link).toBe('Ton lien de connexion Tracktout');
-    expect(magicLinkTemplate('Tracktout')).toContain('{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=email');
+    expect(magicLinkTemplate('Tracktout')).toContain('{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email');
     expect(patch).not.toHaveProperty('smtp_host');
     expect(patch).not.toHaveProperty('external_google_enabled');
   });

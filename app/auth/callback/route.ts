@@ -2,7 +2,7 @@ import type { EmailOtpType } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { NextResponse, type NextRequest } from 'next/server';
 import { finishLogin } from '@/lib/auth/after-login';
-import { LOCAL_SESSION_COOKIE } from '@/lib/auth/constants';
+import { LOCAL_SESSION_COOKIE, NEXT_PATH_COOKIE } from '@/lib/auth/constants';
 import { createLocalSessionToken } from '@/lib/auth/local-session';
 import { getLocalRepo } from '@/lib/db';
 import { isLocalLoginAllowed, isLocalMode } from '@/lib/env';
@@ -16,7 +16,9 @@ function fail(request: NextRequest, reason: string) {
 
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
-  const next = params.get('suite');
+  // Page demandée : dans l'adresse (mot de passe, Google), sinon dans le cookie posé à la demande du lien magique.
+  const next = params.get('suite') ?? cookies().get(NEXT_PATH_COOKIE)?.value ?? null;
+  cookies().delete(NEXT_PATH_COOKIE);
 
   if (isLocalMode()) {
     if (!isLocalLoginAllowed()) return fail(request, 'session');

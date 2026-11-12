@@ -17,8 +17,23 @@ function redirectToLogin(request: NextRequest) {
   return NextResponse.redirect(url);
 }
 
+/**
+ * Un lien de connexion qui retombe sur l'accueil (adresse de retour refusée par Supabase, qui renvoie alors vers sa
+ * « Site URL ») porte `?code=` ou `?token_hash=&type=` : on l'envoie à la route de retour au lieu de montrer l'accueil.
+ */
+function strandedAuthRedirect(request: NextRequest) {
+  const params = request.nextUrl.searchParams;
+  if (request.nextUrl.pathname !== '/') return null;
+  if (!params.get('code') && !(params.get('token_hash') && params.get('type'))) return null;
+  const url = request.nextUrl.clone();
+  url.pathname = '/auth/callback';
+  return NextResponse.redirect(url);
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const stranded = strandedAuthRedirect(request);
+  if (stranded) return stranded;
 
   if (!supabaseConfigured) {
     // Mode local : la signature du cookie est vérifiée côté serveur (lib/auth/session.ts).

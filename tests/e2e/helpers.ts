@@ -7,10 +7,18 @@ export function uniqueEmail(prefix: string): string {
 /** Connexion par lien magique (mode local : le lien s'affiche à l'écran). */
 export async function signIn(page: Page, email: string, next?: string) {
   await page.goto(next ? `/connexion?suite=${encodeURIComponent(next)}` : '/connexion');
+  await page.getByRole('button', { name: /Reçois un lien de connexion/ }).click();
   await page.getByLabel('Ton adresse e-mail').fill(email);
   await page.getByRole('button', { name: 'Recevoir mon lien magique' }).click();
   await expect(page.getByText('Lien magique envoyé')).toBeVisible();
   await page.getByTestId('lien-magique-local').click();
+}
+
+/** Inscription par e-mail et mot de passe, depuis la page de connexion déjà ouverte. */
+export async function signUpWithPassword(page: Page, email: string, password = 'motdepasse-solide-42') {
+  await page.getByLabel('Ton adresse e-mail').fill(email);
+  await page.getByLabel('Ton mot de passe').fill(password);
+  await page.getByRole('button', { name: 'Créer mon compte' }).last().click();
 }
 
 /** Onboarding complet en 4 écrans. */

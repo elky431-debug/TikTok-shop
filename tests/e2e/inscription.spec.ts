@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { completeOnboarding, signIn, uniqueEmail } from './helpers';
+import { completeOnboarding, signIn, signUpWithPassword, uniqueEmail } from './helpers';
 
 test('inscription : de l’accueil au radar, en mode préparation', async ({ page }) => {
   await page.goto('/');
@@ -7,7 +7,8 @@ test('inscription : de l’accueil au radar, en mode préparation', async ({ pag
   await page.getByRole('link', { name: 'Démarrer gratuitement' }).first().click();
   await expect(page).toHaveURL(/\/connexion/);
 
-  await signIn(page, uniqueEmail('inscription'));
+  // Inscription par e-mail et mot de passe : aucun e-mail n'est nécessaire.
+  await signUpWithPassword(page, uniqueEmail('inscription'));
   await expect(page).toHaveURL(/\/bienvenue/);
 
   // Écran 1 : prénom et pseudo

@@ -875,3 +875,17 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      seulement (jamais de fictif hors de France) ; chaque pays a son propre relevé dans le catalogue. Le récap suit le
      pays choisi s'il a un relevé frais, sinon la France. Mots-clés des niches traduits (DE, IT, ES) dans
      `lib/regions.ts`. L'interface reste en français.
+
+### Correctif : inscription
+
+161. **Mot de passe en plus du lien magique** : sans SMTP, le service d'e-mail intégré de Supabase n'envoie qu'aux
+     membres de l'équipe et à 2 e-mails par heure ; le lien magique seul rendait l'inscription impossible. Onglets
+     « Créer mon compte » (par défaut) / « Me connecter », lien magique en option. Messages d'erreur tirés des codes
+     documentés de `AuthApiError.code` (SDK `@supabase/auth-js`). Une adresse déjà inscrite n'est jamais révélée par
+     Supabase (utilisateur sans identité) : on le détecte et on propose de se connecter.
+162. **Adresse de retour = adresse de la demande** (`lib/auth/origin.ts`), parmi les adresses connues seulement
+     (`NEXT_PUBLIC_SITE_URL`, `URL` et `DEPLOY_PRIME_URL` de Netlify, `AUTH_REDIRECT_ORIGINS`, localhost) : un en-tête
+     Host trafiqué ne peut pas détourner le lien. Les modèles d'e-mail utilisent `{{ .RedirectTo }}` ; la page demandée
+     voyage dans un cookie. Filet de sécurité dans le middleware pour les liens qui retombent sur l'accueil.
+163. **Confirmation d'e-mail coupée temporairement** (`mailer_autoconfirm`), à la demande, tant que Resend n'est pas
+     branché ; procédure de réactivation dans RAPPORT.md.

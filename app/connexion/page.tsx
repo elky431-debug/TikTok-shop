@@ -17,7 +17,7 @@ export const metadata: Metadata = { title: 'Connexion' };
 export const dynamic = 'force-dynamic';
 
 const ERRORS: Record<string, string> = {
-  lien: 'Ce lien de connexion est incomplet. Redemande un lien ci-dessous.',
+  lien: 'Ce lien de connexion est incomplet. Connecte-toi avec ton mot de passe, ou redemande un lien.',
   'lien-expire': 'Ce lien a expiré ou a déjà servi. Redemande un lien ci-dessous.',
   session: "La connexion n'a pas abouti. Redemande un lien ci-dessous.",
   google: "La connexion avec Google n'a pas abouti. Réessaie ou utilise ton e-mail.",
@@ -27,7 +27,7 @@ const ERRORS: Record<string, string> = {
 export default async function ConnexionPage({
   searchParams,
 }: {
-  searchParams: { suite?: string; erreur?: string; code?: string };
+  searchParams: { suite?: string; erreur?: string; code?: string; mode?: string };
 }) {
   const suite = safeNextPath(searchParams.suite);
   const user = await getSessionUser();
@@ -48,7 +48,7 @@ export default async function ConnexionPage({
           <h1 className="text-3xl font-bold">
             Connecte-<span className="text-gradient">toi</span>
           </h1>
-          <p className="mt-2 text-muted">Ou crée ton compte : c'est le même lien. Gratuit, sans carte bancaire.</p>
+          <p className="mt-2 text-muted">Ou crée ton compte en 10 secondes. Gratuit, sans carte bancaire.</p>
 
           <div className="mt-6 space-y-4">
             {error ? (
@@ -67,7 +67,7 @@ export default async function ConnexionPage({
               </Callout>
             ) : null}
 
-            <LoginForm suite={suite} localMode={localMode} />
+            <LoginForm suite={suite} localMode={localMode} initialMode={searchParams.mode === 'connexion' ? 'connexion' : 'inscription'} />
 
             <div className="flex items-center gap-3 text-sm text-muted" aria-hidden="true">
               <span className="h-px flex-1 bg-line" />
