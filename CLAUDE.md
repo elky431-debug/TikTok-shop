@@ -33,8 +33,8 @@ leurs élèves (commission de 30 % récurrente, 3 mois de Pro offerts aux élèv
 - **Mode local sans clés** : si `NEXT_PUBLIC_SUPABASE_URL` est vide, la base est un fichier JSON
   (`.data/local-db.json`) et l'auth est un lien magique simulé (affiché à l'écran). Voir `lib/env.ts`.
 - Accès aux données uniquement via `lib/db` (`getRepo()`), qui choisit Supabase ou local.
-- Tailwind + composants maison (`components/ui`). Recharts pour les graphiques détaillés,
-  sparklines en SVG maison.
+- Tailwind + composants maison (`components/ui`), Motion (`motion/react`) pour les animations.
+  Recharts pour les graphiques détaillés, sparklines en SVG maison.
 - Stripe isolé dans `lib/billing/` (interface `BillingProvider`). Sans clé : paiement désactivé avec
   message clair ; en mode local uniquement, paiement **simulé** qui passe par le même code de webhook.
 - Claude : `lib/ai/scripts.ts`, SDK `@anthropic-ai/sdk`, modèle `ANTHROPIC_MODEL`
@@ -66,17 +66,42 @@ consentement).
 | pro | 19,90 €/mois · 167 €/an | radar complet, 30 scripts/jour, récap Discord + e-mail |
 | proplus | 39,90 €/mois · 335 €/an | illimité, export, priorité nouveautés |
 
-## Design
+## Design (refonte : style EtSmart, couleurs TikTok)
 
-- Tokens CSS sur `:root` (clair) et sombre via `prefers-color-scheme` ou `data-theme`.
-- Encre `#161823`, papier `#FFFFFF`, rose `#FE2C55` (actions), cyan `#25F4EE` (données ;
-  texte en variante foncée sur clair), gris `#F1F1F2` / `#8A8B91`, vert gains lisible sur les deux fonds.
-- Police : TikTok Sans (auto-hébergée via fontsource). Chiffres tabulaires pour les données.
-- Signature : **seul** le score (et le logo) a le décalage cyan/rose.
-- Interdits : cartes toutes identiques, étiquettes en capitales espacées, flèches sur chaque bouton,
-  dégradés décoratifs, animations d'entrée partout (une seule orchestrée sur l'accueil).
-- Mobile d'abord, barre du bas dans `/app`, focus visible, `prefers-reduced-motion`, états vides
-  utiles, erreurs précises, squelettes. Boutons = verbe exact, réutilisé dans la confirmation.
+Référence : le design d'EtSmart (etsmart.app, même fondateur), reproduit fidèlement — structure,
+espacements, typographie, effets — avec les couleurs TikTok et le contenu de Pépite. Quand une mesure
+du brief diverge du code EtSmart, la mesure d'EtSmart l'emporte (voir `DECISIONS.md`, refonte).
+
+- **Thème** : noir par défaut partout (site et appli). Le clair n'existe qu'en option dans le compte
+  (`data-theme="light"`), jamais selon le système.
+- **Tokens** (`app/globals.css`) : `--bg-page` #000, `--bg-elevated` #0A0A0B (cartes), `--bg-subtle`
+  #111114 (champs, pastilles), `--border` blanc 8 %, `--border-strong` blanc 14 %, `--text` #FFF,
+  `--text-muted` #8A8B91, `--text-faint` #7E7F85, `--cyan-hex` #25F4EE, `--pink-hex` #FE2C55,
+  `--gradient` cyan → rose, `--glow-cyan`, `--glow-pink`. Boutons roses : fond `#E3174D` (AA avec
+  texte blanc). Classes Tailwind : `bg-bg`, `bg-raised`, `bg-surface`, `border-line`, `text-muted`,
+  `text-subtle`, `rose-*`, `cyan-*`, `gain-*`, `warn-*`.
+- **Correspondance EtSmart** : son dégradé bleu-cyan → turquoise devient `--gradient` (cyan → rose) ;
+  son cyan seul (étiquettes, icônes, liens) devient `--cyan-hex` ; le bouton principal est rose.
+- **Police** : Sora (celle d'EtSmart), auto-hébergée (`app/fonts`). Chiffres tabulaires partout.
+- **Typo** : grand titre de l'accueil en gras serré (`tracking-tight`), centré, partie finale en
+  italique et en dégradé (`.text-gradient-live`) ; titres de section sur deux lignes, la seconde en
+  dégradé ; étiquettes en majuscules espacées (`.eyebrow`, `.eyebrow-category`) — voulues.
+- **Composants** : en-tête fixe noir flouté, logo à halo + nom en deux tons (« Pé » blanc, « pite »
+  en dégradé) ; bouton principal rose arrondi 12 px avec flèche → (monte de 2 px, halo rose, flèche
+  qui glisse au survol) ; bouton secondaire bordé ; pastille d'annonce avec point cyan qui pulse ;
+  bandeau de chiffres en dégradé (faits vrais uniquement) ; cartes `.feature-card` (bordure dégradée au
+  survol) avec `.icon-chip`.
+- **Héros** : constellation animée sur canvas (lignes, points, losanges, cercles, « + », halos cyan et
+  rose), dérive lente, parallaxe à la souris, pause hors onglet, arrêt si `prefers-reduced-motion`.
+- **Animations** (Motion, `motion/react`) : chargement du héros en séquence, dégradé vivant, comptage
+  des chiffres, apparitions au défilement (une fois), aperçu du radar qui fait défiler les produits.
+  Toujours une version sans mouvement si `prefers-reduced-motion`.
+- **Signature** : le décalage cyan / rose façon logo TikTok reste réservé au logo et au score.
+- **Appli** : mêmes tokens, pas de constellation, seulement un halo très léger en haut ; cartes du
+  radar au style des cartes de fonctionnalités ; barre du bas noire floutée, icône active cyan ;
+  courbes Recharts cyan avec remplissage dégradé.
+- **Qualité** : mobile d'abord, focus visible, contraste AA vérifié à l'audit axe, états vides utiles,
+  erreurs précises, squelettes. Boutons = verbe exact, réutilisé dans la confirmation.
 
 ## Façon de travailler
 
@@ -103,4 +128,5 @@ npm run screenshots   # captures (voir scripts/screenshots.mjs)
 - Décisions : `DECISIONS.md` · État et suite : `RAPPORT.md` · Installation : `README.md`
 - Comptes de démo en local (après `npm run seed`) : `admin@pepite.local`, `formateur@pepite.local` (code DEMO30)
 - E-mails : `emails/*.tsx` (pragma `@jsxRuntime automatic` en tête, nécessaire pour tsx et Vitest)
+- Code de référence du design : dépôt `elky431-debug/Etsmart` (`src/app/page.tsx`, `src/components/ui/Logo.tsx`)
 - Vitest transforme le JSX via `oxc` (Vite 8) : voir `vitest.config.ts`

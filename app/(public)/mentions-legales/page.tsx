@@ -41,7 +41,7 @@ export default function MentionsLegalesPage() {
         <h2>Propriété intellectuelle</h2>
         <p>
           Les textes, visuels et logiciels du site sont protégés. Les scripts générés pour un utilisateur lui appartiennent : il peut
-          les utiliser librement pour ses vidéos. La police TikTok Sans est utilisée sous licence SIL Open Font License 1.1.
+          les utiliser librement pour ses vidéos. La police Sora est utilisée sous licence SIL Open Font License 1.1.
         </p>
       </section>
       <section>

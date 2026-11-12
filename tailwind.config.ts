@@ -4,7 +4,8 @@ const token = (name: string) => `rgb(var(--${name}) / <alpha-value>)`;
 
 const config: Config = {
   content: ['./app/**/*.{ts,tsx}', './components/**/*.{ts,tsx}', './lib/**/*.{ts,tsx}'],
-  darkMode: ['variant', ['@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) & }', ':root[data-theme="dark"] &']],
+  // Le noir est le thème par défaut : « dark: » s'applique partout sauf en thème clair choisi dans le compte.
+  darkMode: ['variant', ':root:not([data-theme="light"]) &'],
   theme: {
     screens: {
       sm: '640px',
@@ -18,7 +19,8 @@ const config: Config = {
         fg: token('fg'),
         surface: token('surface'),
         raised: token('raised'),
-        line: token('line'),
+        line: 'var(--border)',
+        'line-strong': 'var(--border-strong)',
         muted: token('muted'),
         subtle: token('subtle'),
         rose: {
@@ -45,24 +47,8 @@ const config: Config = {
       fontFamily: {
         sans: ['var(--font-sans)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
-      fontSize: {
-        // Échelle typographique (ratio ~1.25), interlignage serré pour les titres
-        xs: ['0.75rem', { lineHeight: '1rem' }],
-        sm: ['0.875rem', { lineHeight: '1.3rem' }],
-        base: ['1rem', { lineHeight: '1.55rem' }],
-        lg: ['1.125rem', { lineHeight: '1.65rem' }],
-        xl: ['1.375rem', { lineHeight: '1.8rem' }],
-        '2xl': ['1.75rem', { lineHeight: '2.1rem', letterSpacing: '-0.01em' }],
-        '3xl': ['2.25rem', { lineHeight: '2.5rem', letterSpacing: '-0.02em' }],
-        '4xl': ['2.875rem', { lineHeight: '3rem', letterSpacing: '-0.025em' }],
-        '5xl': ['3.75rem', { lineHeight: '3.8rem', letterSpacing: '-0.03em' }],
-      },
       maxWidth: {
         prose: '68ch',
-      },
-      borderRadius: {
-        xl: '0.875rem',
-        '2xl': '1.25rem',
       },
       keyframes: {
         'fade-up': {

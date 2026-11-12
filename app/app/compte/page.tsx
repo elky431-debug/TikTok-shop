@@ -150,10 +150,9 @@ export default async function ComptePage({ searchParams }: { searchParams: Recor
           <form action={updatePreferencesAction} className="mt-4 space-y-5">
             <div>
               <Label htmlFor="theme">Apparence</Label>
-              <Select id="theme" name="theme" defaultValue={profile.theme} className="sm:max-w-xs">
-                <option value="system">Comme mon téléphone</option>
-                <option value="light">Toujours clair</option>
-                <option value="dark">Toujours sombre</option>
+              <Select id="theme" name="theme" defaultValue={profile.theme === 'light' ? 'light' : 'dark'} className="sm:max-w-xs">
+                <option value="dark">Sombre (par défaut)</option>
+                <option value="light">Clair</option>
               </Select>
             </div>
             {coach ? (

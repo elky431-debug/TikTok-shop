@@ -233,3 +233,33 @@ Chaque décision prise sans pouvoir demander au fondateur, avec sa raison. Les p
     les variables à copier, pour éviter les erreurs de saisie.
 70. **Pages 404 et erreur en français**, sans excuses, avec une action ; `robots.txt` exclut l'appli,
     `sitemap.xml` liste les pages publiques.
+
+## Refonte design — style EtSmart, couleurs TikTok
+
+### Étape 1 — Tokens et typographie
+
+R1. **Référence = le code d'EtSmart**, pas seulement les captures : le dépôt `elky431-debug/Etsmart` a
+    été lu (`src/app/page.tsx`, `Logo.tsx`, `LanguageToggle.tsx`, `layout.tsx`). Les captures
+    jointes ont été prises à environ 1 470 px de large (échelle 1,354 vérifiée sur l'en-tête de 64 px
+    et le conteneur de 1 280 px) : on peut donc comparer au pixel près.
+R2. **Quand une mesure du brief diverge du code EtSmart, la mesure d'EtSmart l'emporte**, parce que le
+    brief demande une copie « au pixel près » et une comparaison visuelle aux captures. Écarts assumés :
+    grand titre à 96 px en desktop (le brief disait jusqu'à 120 px, la capture mesure 96 px) ;
+    graisse 700 (Sora s'arrête à 800, et EtSmart utilise 700) ; étiquettes en 12 px, interlettrage
+    0,1 em ; cartes arrondies à 16 px, padding 20 px, carré d'icône de 40 px ; chiffres en 36 px.
+R3. **Police Sora**, celle d'EtSmart (chargée chez eux par Google Fonts), **auto-hébergée** depuis le
+    paquet fontsource (variable 100–800, sous-ensemble latin) : aucun appel à Google, rien à
+    déclarer au RGPD. Sora n'a pas d'italique : comme sur EtSmart, l'italique de « chaque matin. »
+    est synthétisé par le navigateur.
+R4. **Noir par défaut partout**. Le thème clair existait et fonctionnait : il reste, en option dans le
+    compte (« Sombre (par défaut) » / « Clair »), et ne suit plus le réglage du système.
+R5. **Deux couleurs ajustées pour l'accessibilité**, que le brief exige aussi (« axe sans erreur ») :
+    `--text-faint` passe de #5C5D63 (3,2:1 sur noir) à #7E7F85 (5,3:1) ; le fond des boutons roses est
+    #E3174D (4,7:1 avec du blanc) au lieu de #FE2C55 (3,7:1). Visuellement, le rose reste le même ;
+    #FE2C55 sert toujours aux accents, au dégradé et au halo.
+R6. **Tokens du brief tels quels** (`--bg-elevated`, `--text-muted`, `--gradient`…) **plus des triplets
+    RGB** pour Tailwind (`bg-raised`, `text-muted`…), afin que toute l'appli bascule sans réécrire
+    chaque page. Les bordures (`border-line`, `border-line-strong`) utilisent directement
+    `--border` / `--border-strong` (blanc à 8 % / 14 %).
+R7. **Échelle typographique et arrondis Tailwind par défaut**, comme EtSmart (text-sm 14 px,
+    text-8xl 96 px, rounded-xl 12 px…), au lieu de l'échelle maison précédente.

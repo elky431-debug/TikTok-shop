@@ -6,10 +6,11 @@ import { BRAND, BRAND_TAGLINE } from '@/lib/brand';
 import { env } from '@/lib/env';
 import './globals.css';
 
+// Sora, la police d'EtSmart (Google Fonts, licence OFL), auto-hébergée : aucun appel à Google.
 const sans = localFont({
-  src: './fonts/TikTokSans-latin-wght.woff2',
+  src: './fonts/Sora-latin-wght.woff2',
   variable: '--font-sans',
-  weight: '300 900',
+  weight: '100 800',
   display: 'swap',
   fallback: ['ui-sans-serif', 'system-ui', 'Segoe UI', 'Roboto', 'Arial'],
 });
@@ -27,14 +28,12 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
-    { media: '(prefers-color-scheme: dark)', color: '#161823' },
-  ],
+  themeColor: '#000000',
 };
 
-// Applique le thème forcé (clair/sombre) avant l'affichage, sans rendre les pages dynamiques.
-const themeScript = `try{var m=document.cookie.match(/(?:^|; )${THEME_COOKIE}=(light|dark)/);if(m)document.documentElement.setAttribute('data-theme',m[1])}catch(e){}`;
+// Le noir est le thème par défaut. Le clair n'est appliqué que s'il a été choisi dans le compte,
+// avant l'affichage et sans rendre les pages dynamiques.
+const themeScript = `try{if(/(?:^|; )${THEME_COOKIE}=light/.test(document.cookie))document.documentElement.setAttribute('data-theme','light')}catch(e){}`;
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

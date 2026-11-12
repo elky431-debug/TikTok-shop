@@ -3,24 +3,84 @@
 @tailwind utilities;
 
 /*
- * Tokens de design. Valeurs en triplets RGB pour garder l'opacité Tailwind (bg-rose/10…).
- * Contrastes vérifiés (WCAG AA) — voir DECISIONS.md :
- *  - texte secondaire clair  #5F6068 : 6,2:1 sur blanc, 5,5:1 sur #F1F1F2
- *  - rose texte clair         #C8103F : 5,8:1 sur blanc
- *  - bouton rose              #E0144A + texte blanc : 4,8:1
- *  - cyan texte clair         #00777A : 5,4:1 sur blanc (le cyan #25F4EE reste décoratif en clair)
- *  - gains clair              #0E7A43 : 5,4:1 ; gains sombre #4ADE80 : 10:1 sur #161823
+ * Tokens de design : style EtSmart, couleurs TikTok. Le noir est le thème par défaut partout ;
+ * le clair n'existe qu'en option dans le compte (data-theme="light"), jamais selon le système.
+ *
+ * Deux familles de variables :
+ *  - les tokens du brief (--bg-elevated, --text-muted, --gradient…), utilisés tels quels ;
+ *  - des triplets RGB (--fg, --raised, --surface…) pour garder l'opacité Tailwind (bg-rose/10).
+ *
+ * Contrastes (WCAG AA, mesurés) :
+ *  - --text-muted #8A8B91 : 6,2:1 sur noir, 5,8:1 sur les cartes ;
+ *  - --text-faint #7E7F85 : 5,3:1 sur noir, 4,7:1 sur --bg-subtle (le #5C5D63 du brief faisait 3,2:1) ;
+ *  - boutons roses : fond #E3174D + texte blanc = 4,7:1 (le #FE2C55 pur ne fait que 3,7:1) ;
+ *  - rose texte #FE2C55 : 5,7:1 sur noir ; cyan #25F4EE : 15:1 sur noir.
  */
 @layer base {
   :root {
+    color-scheme: dark;
+
+    /* Tokens du brief */
+    --bg-page: #000000;
+    --bg-elevated: #0a0a0b;
+    --bg-subtle: #111114;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.14);
+    --text: #ffffff;
+    --text-muted: #8a8b91;
+    --text-faint: #7e7f85;
+    --cyan-hex: #25f4ee;
+    --pink-hex: #fe2c55;
+    --pink-fill: #e3174d;
+    --gradient: linear-gradient(90deg, #25f4ee 0%, #fe2c55 100%);
+    --gradient-diag: linear-gradient(135deg, #25f4ee 0%, #fe2c55 100%);
+    --glow-cyan: 0 0 40px rgba(37, 244, 238, 0.25);
+    --glow-pink: 0 0 40px rgba(254, 44, 85, 0.3);
+
+    /* Triplets RGB pour Tailwind */
+    --bg: 0 0 0;
+    --fg: 255 255 255;
+    --surface: 17 17 20;
+    --raised: 10 10 11;
+    --muted: 138 139 145;
+    --subtle: 126 127 133;
+    --rose: 254 44 85;
+    --rose-ink: 254 44 85;
+    --rose-fill: 227 23 77;
+    --rose-soft: 42 9 16;
+    --cyan: 37 244 238;
+    --cyan-ink: 37 244 238;
+    --cyan-soft: 6 36 35;
+    --gain: 74 222 128;
+    --gain-soft: 10 38 22;
+    --warn: 251 191 36;
+    --warn-soft: 45 33 8;
+  }
+
+  /* Thème clair : uniquement sur demande, depuis le compte. */
+  :root[data-theme='light'] {
     color-scheme: light;
+    --bg-page: #ffffff;
+    --bg-elevated: #ffffff;
+    --bg-subtle: #f1f1f2;
+    --border: rgba(22, 24, 35, 0.12);
+    --border-strong: rgba(22, 24, 35, 0.2);
+    --text: #161823;
+    --text-muted: #5f6068;
+    --text-faint: #5f6068;
+    --cyan-hex: #00777a;
+    --pink-hex: #c8103f;
+    --gradient: linear-gradient(90deg, #00777a 0%, #c8103f 100%);
+    --gradient-diag: linear-gradient(135deg, #00777a 0%, #c8103f 100%);
+    --glow-cyan: 0 0 40px rgba(0, 119, 122, 0.15);
+    --glow-pink: 0 0 40px rgba(200, 16, 63, 0.18);
+
     --bg: 255 255 255;
     --fg: 22 24 35;
     --surface: 241 241 242;
     --raised: 255 255 255;
-    --line: 225 225 229;
     --muted: 95 96 104;
-    --subtle: 138 139 145;
+    --subtle: 95 96 104;
     --rose: 254 44 85;
     --rose-ink: 200 16 63;
     --rose-fill: 224 20 74;
@@ -34,77 +94,40 @@
     --warn-soft: 254 243 199;
   }
 
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme='light']) {
-      color-scheme: dark;
-      --bg: 22 24 35;
-      --fg: 244 244 245;
-      --surface: 31 33 46;
-      --raised: 37 39 54;
-      --line: 52 54 70;
-      --muted: 162 163 170;
-      --subtle: 138 139 145;
-      --rose: 254 44 85;
-      --rose-ink: 255 77 109;
-      --rose-fill: 224 20 74;
-      --rose-soft: 64 24 38;
-      --cyan: 37 244 238;
-      --cyan-ink: 37 244 238;
-      --cyan-soft: 18 56 62;
-      --gain: 74 222 128;
-      --gain-soft: 20 52 36;
-      --warn: 251 191 36;
-      --warn-soft: 66 48 14;
-    }
-  }
-
-  :root[data-theme='dark'] {
-    color-scheme: dark;
-    --bg: 22 24 35;
-    --fg: 244 244 245;
-    --surface: 31 33 46;
-    --raised: 37 39 54;
-    --line: 52 54 70;
-    --muted: 162 163 170;
-    --subtle: 138 139 145;
-    --rose: 254 44 85;
-    --rose-ink: 255 77 109;
-    --rose-fill: 224 20 74;
-    --rose-soft: 64 24 38;
-    --cyan: 37 244 238;
-    --cyan-ink: 37 244 238;
-    --cyan-soft: 18 56 62;
-    --gain: 74 222 128;
-    --gain-soft: 20 52 36;
-    --warn: 251 191 36;
-    --warn-soft: 66 48 14;
-  }
-
   html {
     -webkit-text-size-adjust: 100%;
     text-rendering: optimizeLegibility;
+    scroll-padding-top: 5rem;
   }
 
   body {
     @apply bg-bg text-fg antialiased;
-    font-feature-settings: 'ss01' on;
   }
 
-  /* Focus clavier toujours visible, jamais sur le clic souris */
+  /* Chiffres tabulaires partout */
+  body,
+  input,
+  button,
+  select,
+  textarea {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Focus clavier toujours visible, jamais au clic souris */
   :focus-visible {
-    outline: 2px solid rgb(var(--rose));
+    outline: 2px solid var(--cyan-hex);
     outline-offset: 2px;
     border-radius: 6px;
   }
 
   ::selection {
-    background: rgb(var(--cyan) / 0.35);
+    background: rgb(var(--rose) / 0.35);
   }
 
   h1,
   h2,
   h3 {
-    @apply font-semibold tracking-tight;
+    @apply font-bold tracking-tight;
     text-wrap: balance;
   }
 
@@ -113,15 +136,129 @@
   }
 }
 
+@layer components {
+  /* Étiquette au-dessus d'un titre de section (« TOUT-EN-UN ») */
+  .eyebrow {
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--cyan-hex);
+  }
+
+  /* Étiquette de catégorie (« TROUVER ») */
+  .eyebrow-category {
+    font-size: 11px;
+    line-height: 1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: rgb(var(--cyan-ink) / 0.7);
+  }
+
+  /*
+   * Carte de fonctionnalité : la bordure passe au dégradé cyan → rose au survol
+   * (pseudo-élément masqué), avec une légère montée et un halo cyan très faible.
+   */
+  .feature-card {
+    position: relative;
+    border-radius: 1rem;
+    border: 1px solid var(--border);
+    background: var(--bg-elevated);
+    transition:
+      transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 200ms ease,
+      border-color 200ms ease;
+  }
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: var(--gradient-diag);
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 200ms ease;
+    pointer-events: none;
+  }
+  .feature-card:hover,
+  .feature-card:focus-within {
+    transform: translateY(-2px);
+    box-shadow: 0 0 32px rgba(37, 244, 238, 0.06);
+    border-color: transparent;
+  }
+  .feature-card:hover::before,
+  .feature-card:focus-within::before {
+    opacity: 1;
+  }
+
+  /* Bordure en dégradé permanente (plan mis en avant, aperçu du radar) */
+  .gradient-border {
+    position: relative;
+    border: 1px solid transparent;
+  }
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: var(--gradient-diag);
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* Pastille d'icône (cyan à 8 %, bordure cyan à 20 %) */
+  .icon-chip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.75rem;
+    background: rgb(var(--cyan-ink) / 0.08);
+    border: 1px solid rgb(var(--cyan-ink) / 0.2);
+    color: var(--cyan-hex);
+  }
+}
+
 @layer utilities {
-  /* Chiffres tabulaires pour toutes les données */
   .num {
     font-variant-numeric: tabular-nums;
     font-feature-settings: 'tnum' on;
   }
 
+  /* Texte en dégradé cyan → rose */
+  .text-gradient {
+    background-image: var(--gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Dégradé vivant : glisse très lentement en boucle (6 s) */
+  .text-gradient-live {
+    background-image: linear-gradient(90deg, var(--cyan-hex), var(--pink-hex), var(--cyan-hex));
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    animation: gradient-shift 6s linear infinite;
+  }
+
   /*
-   * Signature visuelle : décalage cyan / rose, réservé au score d'opportunité et au logo.
+   * Signature visuelle : décalage cyan / rose façon logo TikTok.
+   * Réservée au score d'opportunité et au logo.
    */
   .split-glow {
     text-shadow:
@@ -141,6 +278,54 @@
   }
 }
 
+@keyframes gradient-shift {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 200% 50%;
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.8);
+  }
+}
+
+/* Effet « glitch » du score à chaque changement (aperçu du radar) */
+@keyframes score-glitch {
+  0% {
+    text-shadow:
+      -0.12em -0.05em 0 rgb(37 244 238 / 0.95),
+      0.12em 0.05em 0 rgb(254 44 85 / 0.95);
+  }
+  60% {
+    text-shadow:
+      0.06em 0.02em 0 rgb(37 244 238 / 0.95),
+      -0.06em -0.02em 0 rgb(254 44 85 / 0.95);
+  }
+  100% {
+    text-shadow:
+      -0.045em -0.03em 0 rgb(37 244 238 / 0.95),
+      0.045em 0.03em 0 rgb(254 44 85 / 0.95);
+  }
+}
+
+.animate-score-glitch {
+  animation: score-glitch 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -149,5 +334,11 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+  .text-gradient-live {
+    animation: none;
+  }
+  .feature-card:hover {
+    transform: none;
   }
 }
