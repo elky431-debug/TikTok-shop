@@ -135,6 +135,25 @@ sont présentes ; les autres restent simulées. Le détail de chaque variable es
 **Avec un fournisseur de données réel** (clés TikTok ou Nexscope présentes), `npm run seed` fait un vrai
 rafraîchissement au lieu de charger 30 jours fictifs : aucun produit fictif n’arrive dans une base de production.
 
+### Connexion Google
+
+1. https://console.cloud.google.com → crée un projet (ou choisis-en un) → **APIs & Services → OAuth consent screen**
+   (« Google Auth Platform » → *Branding*) : type **External**, nom de l’appli, e-mail d’assistance, logo facultatif,
+   domaine autorisé = ton domaine (ex. `tiktrend.fr`) et `supabase.co`, liens vers `/confidentialite` et `/cgv`.
+   Champs d’accès (*Data access*) : `openid`, `.../auth/userinfo.email`, `.../auth/userinfo.profile`, rien d’autre.
+2. **Clients → Create client** : type **Web application**.
+   - *Authorized JavaScript origins* : `https://tiktrend.fr` (ton `NEXT_PUBLIC_SITE_URL`) et `http://localhost:3000` ;
+   - *Authorized redirect URIs* : **`https://<ref>.supabase.co/auth/v1/callback`** (`<ref>` = la référence de ton projet,
+     visible dans `NEXT_PUBLIC_SUPABASE_URL`). C’est Supabase qui reçoit le retour de Google, puis renvoie vers
+     `/auth/callback` du site (déjà autorisé par `npm run auth:setup`).
+3. Copie l’identifiant dans `GOOGLE_CLIENT_ID` et le secret dans `GOOGLE_CLIENT_SECRET` (`.env.local` seulement : ces
+   deux clés ne servent pas au site, inutile de les mettre sur Netlify).
+4. `npm run auth:setup` : active le fournisseur Google dans Supabase avec ces clés (API de gestion).
+5. Publie l’écran de consentement (*Audience → Publish app*) ; tant qu’il est en test, seuls les comptes de test ajoutés
+   peuvent se connecter.
+6. Vérifie : `E2E_GOOGLE=1 npm run test:integration` (le bouton « Continuer avec Google » doit mener à
+   `accounts.google.com` avec la bonne adresse de retour).
+
 ### IA (scripts)
 
 Le studio marche avec **OpenAI ou Claude**, au choix : `AI_PROVIDER=openai` (`OPENAI_API_KEY`, modèle

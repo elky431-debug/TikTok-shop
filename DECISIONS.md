@@ -838,3 +838,12 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      chiffres (ventes, vues, durée) ; une vidéo sans description n'est citée que par ses chiffres.
 152. **`npm run data:enrich`** complète les produits réels déjà en base (ventes par période, vidéos des N meilleurs)
      sans refaire le relevé du jour : utilisé ici pour vérifier les deux routes en réel (20 produits, 3 × 5 vidéos).
+
+### Étape 8 — Connexion Google
+
+153. Clés Google absentes : le fournisseur n'est pas activé, la procédure Google Cloud exacte est dans le README
+     (client « Web application », adresse de retour `https://<ref>.supabase.co/auth/v1/callback`, champs d'accès
+     `openid`, e-mail, profil). Dès que `GOOGLE_CLIENT_ID` et `GOOGLE_CLIENT_SECRET` sont dans `.env.local`,
+     `npm run auth:setup` l'active par l'API de gestion (`external_google_enabled`, `external_google_client_id`,
+     `external_google_secret`, champs de la spécification officielle), et `E2E_GOOGLE=1 npm run test:integration`
+     vérifie le bouton. Les deux clés ne vont pas sur Netlify : seul Supabase s'en sert.
