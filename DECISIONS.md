@@ -483,3 +483,18 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
     et le poids réellement appliqué (par exemple commission sur 35,7 au lieu de 25).
 95. **Paliers d'étiquette gardés** (« Très forte opportunité » à partir de 75, etc.) : sur la nouvelle échelle,
     environ 14 % des produits sont « très forte », ce qui garde l'étiquette rare.
+
+### Étape 4 — Les chiffres de marché, sourcés
+
+96. **Trois chiffres, rien d'autre** (`lib/market.ts`, section « Le marché » de l'accueil, juste après le bandeau) :
+    132,8 M€ de ventes en France sur 90 jours au 9 juillet 2026 et 69,9 % de ventes affiliées (France, Allemagne,
+    Espagne et Italie réunies), source Lengow ; 7,19 $ puis 74,07 $ de ventes moyennes par vidéo, étude américaine
+    de Flywheel et Reacher sur 1,5 million d'échantillons, source Digiday. Chaque carte porte le périmètre, le lien
+    et la date. Aucune phrase de gain autour, et pas de « 10 fois plus » calculé à partir des deux montants.
+97. **Vérification des sources** : lengow.com et digiday.com ne sont pas joignables d'ici. Par la recherche web,
+    Lengow confirme les deux chiffres (estimations Kalodata, 90 jours jusqu'au 9 juillet 2026, 69,9 % pour les
+    quatre pays réunis). Les montants de Digiday et la date de l'article (14 octobre 2026) sont confirmés par un
+    article qui le cite (Parasocial Magazine), pas par la page de Digiday elle-même : à relire avant la mise en
+    ligne.
+98. **Titre « TikTok Shop, en trois chiffres. »** et non « en France » : deux chiffres sur trois portent sur
+    l'Europe ou les États-Unis. Liens externes dans un nouvel onglet, annoncé aux lecteurs d'écran.

@@ -23,6 +23,7 @@ import { FeatureCard } from '@/components/ui/feature-card';
 import { BRAND, BRAND_TAGLINE } from '@/lib/brand';
 import { COACH_TRIAL_DAYS, getPlan, REFERRAL_COMMISSION_RATE } from '@/lib/plans';
 import { pricingCards } from '@/lib/pricing';
+import { MARKET_FIGURES } from '@/lib/market';
 import { getShowcase } from '@/lib/public-demo';
 import { formatEuros } from '@/lib/utils';
 
@@ -159,6 +160,39 @@ export default async function HomePage() {
               </Reveal>
             ))}
           </dl>
+        </div>
+      </section>
+
+      {/* Le marché : trois chiffres publics, chacun avec sa source et sa date */}
+      <section id="marche" className="scroll-mt-16 pt-20 sm:pt-28" aria-labelledby="marche-titre">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <SectionHeading id="marche-titre" eyebrow="Le marché" title="TikTok Shop," accent="en trois chiffres." className="mb-12" />
+          <ul className="grid gap-3 md:grid-cols-3">
+            {MARKET_FIGURES.map((figure, i) => (
+              <Reveal as="li" key={figure.value} delay={i * 0.08} className="h-full">
+                <figure className="feature-card flex h-full flex-col p-6">
+                  <p className="num text-gradient text-3xl font-bold sm:text-4xl">{figure.value}</p>
+                  <figcaption className="mt-2 flex flex-1 flex-col">
+                    <span className="text-sm font-semibold text-fg">{figure.label}</span>
+                    <span className="mt-1 text-sm text-muted">{figure.scope}</span>
+                    <span className="mt-4 text-xs text-muted">
+                      Source :{' '}
+                      <a
+                        href={figure.source.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold text-fg underline decoration-fg/30 underline-offset-2 hover:decoration-fg"
+                      >
+                        {figure.source.name}
+                        <span className="sr-only"> (nouvel onglet)</span>
+                      </a>
+                      , {figure.source.date}
+                    </span>
+                  </figcaption>
+                </figure>
+              </Reveal>
+            ))}
+          </ul>
         </div>
       </section>
 
