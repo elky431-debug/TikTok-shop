@@ -453,6 +453,13 @@ export class LocalRepo implements Repo {
     });
   }
 
+  async decrementUsage(userId: string, day: string) {
+    this.write((d) => {
+      const row = d.usage.find((u) => u.user_id === userId && u.day === day);
+      if (row) row.scripts_generated = Math.max(0, row.scripts_generated - 1);
+    });
+  }
+
   // ------------------------------------------------------------------
   // Mes produits
   // ------------------------------------------------------------------

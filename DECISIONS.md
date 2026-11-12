@@ -82,3 +82,43 @@ Chaque décision prise sans pouvoir demander au fondateur, avec sa raison. Les p
     des champs, identifiants de catégories). L'API affiliés TikTok ne donne ni historique par
     produit ni vidéos : la croissance retombe alors sur nos propres instantanés quotidiens.
 23. **Visuels produits** : SVG générés par niche (pictogramme + fond doux), aucune image externe.
+
+## Jalon 3 — Radar et fiche produit
+
+24. **Les 3 produits du plan gratuit sont fixés pour la journée** (les 3 meilleurs scores de ses
+    niches). Les filtres agissent sur ces 3 produits et ne débloquent rien d'autre. Les cartes
+    verrouillées ne contiennent ni nom, ni identifiant, ni chiffre (vérifié par un test).
+25. **Score masqué en gratuit, explication conservée** : la consigne demande à la fois de masquer
+    le score et de toujours expliquer « pourquoi ce score ». Le gratuit voit les phrases, pas les
+    nombres ni les points.
+26. **Mini-courbes en SVG rendu côté serveur** ; Recharts uniquement pour la courbe 30 jours de la
+    fiche (une seule instance par page). La couleur de la mini-courbe suit la tendance sur 7 jours
+    (et non la pente du dernier point) pour ne jamais contredire le badge « Monte / Explose ».
+27. **Pas de chiffre non sourcé** : la statistique « 10× plus à partir de 20 vidéos » n'est pas
+    affichée (pas de source publique). L'appli pousse l'objectif de 20 vidéos sans promettre de
+    multiplicateur.
+28. **Message de demande d'échantillon** sans promesse de ventes : il s'engage sur un nombre de
+    vidéos (3 en 10 jours), ce que l'affilié contrôle.
+
+## Jalon 4 — Studio de scripts
+
+29. **Sortie structurée** via `client.messages.parse` + `zodOutputFormat` (SDK officiel) :
+    le schéma ne porte pas de contraintes numériques (toutes ne sont pas garanties par l'API) ;
+    les règles métier (10 accroches, 3 scripts, 20–40 s, interdits) sont vérifiées ensuite et
+    déclenchent **un seul** nouvel essai, avec la liste des problèmes dans le message. Après ce
+    nouvel essai, les phrases encore fautives sont retirées et les manques complétés.
+30. **Modèle** : `ANTHROPIC_MODEL`, `claude-sonnet-5-5` par défaut (consigne du fondateur),
+    effort `medium` pour les scripts et `low` pour une accroche seule. Pas de bascule automatique
+    vers un autre modèle en cas de refus : les catégories que ce mécanisme rattrape (cyber, IA)
+    ne concernent pas des scripts marketing ; un refus renvoie un message clair.
+31. **Le crédit est pris avant l'appel à Claude, de façon atomique** (fonction SQL
+    `increment_usage`) et **rendu si la génération échoue**. Deux onglets ne peuvent donc pas
+    dépasser la limite.
+32. **Régénérer une accroche ne consomme pas de crédit**, mais c'est limité à 5 par script.
+33. **Chaque génération est enregistrée** (c'est l'historique et le compteur visible par le
+    formateur) ; « Garder ce script » la marque comme favorite. L'export texte est réservé au
+    plan Pro+ et vérifié côté serveur.
+34. **Garde-fou commun** (`lib/ai/guard.ts`) : promesses médicales, superlatifs non prouvés,
+    gains et commissions. Le générateur simulé est testé contre ce garde-fou sur les 200 produits
+    et les 5 formats. La ligne « #publicité » est ajoutée par le serveur, jamais laissée au modèle.
+35. **« Déballage »** plutôt qu'« unboxing » dans l'interface (règle : mot français si possible).

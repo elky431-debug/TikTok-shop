@@ -287,6 +287,20 @@ export class SupabaseRepo implements Repo {
     return Number(data);
   }
 
+  async decrementUsage(userId: string, day: string) {
+    const current = await this.getUsage(userId, day);
+    if (current <= 0) return;
+    check(
+      'usage',
+      await this.db
+        .from('usage')
+        .update({ scripts_generated: current - 1 })
+        .eq('user_id', userId)
+        .eq('day', day)
+        .eq('scripts_generated', current),
+    );
+  }
+
   // ------------------------------------------------------------------
   // Mes produits
   // ------------------------------------------------------------------

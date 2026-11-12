@@ -179,13 +179,15 @@ function buildShots(input: ScriptInput, angleIndex: number, rng: Rng, hook: stri
     on_screen_text: `${price} · lien dans le panier`,
   };
 
-  const personal = input.examplePhrase?.trim();
+  const ctaLines = [
+    'Si tu veux le tester, c’est dans le panier orange, juste en dessous.',
+    'C’est dans le panier orange, juste en dessous. Fais-toi ton avis.',
+    'Le lien est dans le panier orange. Dis-moi en commentaire ce que t’en penses.',
+  ];
   const cta: Shot = {
     time: '27–32 s',
     visual: 'Tu pointes vers le bas de l’écran, vers le panier orange.',
-    voice: personal
-      ? `${personal.replace(/[.!?…]+$/, '')}. C’est dans le panier orange, juste en dessous.`
-      : 'C’est dans le panier orange, juste en dessous. Fais-toi ton avis.',
+    voice: ctaLines[angleIndex % ctaLines.length],
     on_screen_text: 'Panier orange ⬇',
   };
 
@@ -225,8 +227,8 @@ export function generateMockScripts(input: ScriptInput, variant = 0): ScriptOutp
 }
 
 /** Une nouvelle accroche, différente de celles déjà proposées. */
-export function regenerateMockHook(input: ScriptInput, existing: string[], attempt: number): Hook {
-  const rng = new Rng(`${input.product.id}|${input.format}|regen|${attempt}`);
+export function regenerateMockHook(input: ScriptInput, existing: string[], attempt: number, salt = ''): Hook {
+  const rng = new Rng(`${input.product.id}|${input.format}|regen|${attempt}|${salt}`);
   const pool = rng.shuffle([...GENERIC_HOOKS, ...Object.values(FORMAT_HOOKS).flat()]);
   const text = pool.find((h) => !existing.includes(h)) ?? `${pool[0]} (${attempt + 1})`;
   return { text, seconds: hookSeconds(text) };

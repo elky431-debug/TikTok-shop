@@ -57,6 +57,8 @@ export interface Repo {
   getUsage(userId: string, day: string): Promise<number>;
   /** Incrémente si la limite n'est pas atteinte. Renvoie le nouveau total ou -1. limit < 0 = illimité. */
   incrementUsage(userId: string, day: string, limit: number): Promise<number>;
+  /** Rend un crédit (génération échouée). */
+  decrementUsage(userId: string, day: string): Promise<void>;
 
   // Mes produits
   listSavedProducts(userId: string): Promise<SavedProduct[]>;
