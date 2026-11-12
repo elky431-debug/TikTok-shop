@@ -11,7 +11,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
   const viewer = await getViewer();
   if (!viewer?.profile || !getPlan(viewer.profile.plan).planning) return new Response('Non autorisé', { status: 401 });
   const record = await getRepo().getRecord<PublicationPlan>(viewer.profile.id, params.id);
-  if (!record) return new Response('Plan introuvable', { status: 404 });
+  if (!record || record.kind !== 'publication' || !Array.isArray(record.data.items)) return new Response('Plan introuvable', { status: 404 });
   return new Response(planToIcs(record.data, record.id, env.siteUrl), {
     headers: {
       'content-type': 'text/calendar; charset=utf-8',
