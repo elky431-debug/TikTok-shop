@@ -498,3 +498,25 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
     ligne.
 98. **Titre « TikTok Shop, en trois chiffres. »** et non « en France » : deux chiffres sur trois portent sur
     l'Europe ou les États-Unis. Liens externes dans un nouvel onglet, annoncé aux lecteurs d'écran.
+
+### Étape 5 — Prêt pour Vercel
+
+99. **Une seule tâche planifiée, à 3 h UTC** (`vercel.json`) : 4 h à Paris l'hiver, 5 h l'été. La route ne vérifie
+    plus l'heure de Paris (elle aurait sauté l'été) ; elle ne refait pas le travail si une tâche a déjà réussi le
+    jour même, sauf avec `?force=1`. Vercel envoie `Authorization: Bearer <CRON_SECRET>` tout seul. Les textes
+    « à 4 h » de l'interface deviennent « chaque nuit » ou « ce matin », vrais en toute saison. La réponse de la
+    route ne renvoie plus le détail brut d'une erreur (il reste dans l'historique de `/admin`).
+100. **`NEXT_PUBLIC_SITE_URL` partout où une adresse sort de l'appli**, vérifié : redirection du lien magique et
+     de Google vers Supabase (`emailRedirectTo`, `redirectTo`), retours de Stripe Checkout et du portail, adresse du
+     webhook (affichée par `npm run stripe:setup`), liens des e-mails (récap, désinscription, candidature
+     formateur), liens envoyés au bot Discord, plan du site, métadonnées. Seule exception volontaire : après la
+     connexion, `/auth/callback` redirige sur l'hôte de la requête, parce que les cookies de session viennent d'y
+     être posés (rediriger vers un autre domaine les perdrait).
+101. **`/api/health`** : base (requête réelle, 8 s au plus), fournisseur choisi et présence de ses clés (sans dire
+     lesquelles), dernière tâche, date du relevé affiché. « down » (503) si la base ne répond pas ou si le relevé a
+     plus de 36 heures ; « degraded » (200) pour un repli, une tâche en erreur, des produits fictifs en production
+     ou une adresse du site restée sur localhost. Ni secret, ni message d'erreur brut (testé avec de fausses clés et
+     une erreur de connexion qui contient un nom d'hôte).
+102. **Liste de vérification de mise en ligne** dans le README, dans l'ordre demandé : variables Vercel, domaine,
+     Supabase, Stripe, Resend, tâche nocturne testée. `SUPABASE_DB_URL` ne va jamais sur Vercel : elle ne sert
+     qu'aux migrations, depuis un poste.

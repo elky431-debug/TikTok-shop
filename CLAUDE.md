@@ -32,6 +32,10 @@ leurs élèves (commission de 30 % récurrente, 3 mois de Pro offerts aux élèv
 - Supabase (Postgres, Auth lien magique + Google, RLS partout). Migrations : `supabase/migrations/`.
 - **Mode local sans clés** : si `NEXT_PUBLIC_SUPABASE_URL` est vide, la base est un fichier JSON
   (`.data/local-db.json`) et l'auth est un lien magique simulé (affiché à l'écran). Voir `lib/env.ts`.
+- **Données produits** (`lib/data/`) : `DATA_PROVIDER=auto` → API officielle TikTok Shop (pas encore ouverte
+  dans l'UE), sinon Nexscope, sinon fictif. Client commun `lib/data/http.ts` (débit, reprises, quota, cache).
+  Champ inconnu = `null`, jamais inventé. Ce que voient les utilisateurs passe par `lib/catalog.ts` : jamais de
+  fictif présenté comme réel, « Données du [date] » au-delà de 36 h.
 - Accès aux données uniquement via `lib/db` (`getRepo()`), qui choisit Supabase ou local.
 - Tailwind + composants maison (`components/ui`), Motion (`motion/react`) pour les animations.
   Recharts pour les graphiques détaillés, sparklines en SVG maison.
@@ -42,13 +46,14 @@ leurs élèves (commission de 30 % récurrente, 3 mois de Pro offerts aux élèv
   générateur simulé déterministe.
 - E-mails : Resend + React Email (`emails/`). Sans clé : journalisés en console + boîte locale.
 - Bot Discord : `bot/` (package séparé, discord.js), parle à l'appli via `/api/bot/*` + `BOT_API_SECRET`.
-- Tests : Vitest (`tests/unit`), Playwright (`tests/e2e`, 3 parcours).
+- Tests : Vitest (`tests/unit`), Playwright (`tests/e2e`, 3 parcours), intégration Supabase (`tests/integration`).
+- Déploiement : `vercel.json` (tâche nocturne 3 h UTC), `/api/health`, liste de vérification dans le README.
 
 ## Schéma (résumé)
 
 `profiles`, `products`, `product_snapshots`, `scripts`, `saved_products`, `subscriptions`, `usage`,
 `coaches`, `referrals`, `commissions`, `digests`, `coach_applications`, `discord_link_codes`,
-`billing_events`, `cron_runs`. Catalogue (`products`, `product_snapshots`) lisible seulement côté
+`billing_events`, `cron_runs`, `provider_cache`. Catalogue (`products`, `product_snapshots`) lisible seulement côté
 serveur (service role) pour que les limites de plan ne soient pas contournables. Un formateur ne voit
 ses élèves qu'à travers la fonction `coach_students()` (données agrégées, jamais l'e-mail sans
 consentement).
@@ -56,7 +61,9 @@ consentement).
 ## Score d'opportunité (`lib/score.ts`)
 
 35 % croissance 7 j (percentile dans la niche) · 25 % commission · 20 % faible saturation ·
-10 % prix dans 15–60 € · 10 % échantillon gratuit. Toujours expliqué en phrases.
+10 % prix dans 15–60 € · 10 % échantillon gratuit. Toujours expliqué en phrases. Critère non fourni par la
+source : ignoré, poids réparti au prorata. Score affiché = points étalés chaque jour entre 15 et 90.
+Tendances : explose ≥ +40 % (et ≥ 5 ventes/j), monte ≥ +10 %, baisse ≤ −20 %.
 
 ## Plans (`lib/plans.ts`)
 
@@ -118,7 +125,10 @@ npm run dev        # appli en local (mode local sans clés)
 npm run seed       # 30 jours d'historique fictif
 npm run build && npm run lint && npm test
 npm run test:e2e   # Playwright
-npm run check:sql  # applique les migrations sur un Postgres jetable (si dispo)
+npm run check:sql  # applique les migrations sur un Postgres jetable (si dispo), deux fois
+npm run db:setup   # Supabase réel : migrations, types, seed (SUPABASE_DB_URL)
+npm run test:integration  # tests contre le vrai Supabase (rien sans clés)
+npm run score:distribution  # distribution des scores sur la base actuelle
 npm run stripe:setup  # crée produits et prix Stripe
 npm run screenshots   # captures (voir scripts/screenshots.mjs)
 ```

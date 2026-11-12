@@ -48,6 +48,14 @@ async function main() {
   }
   console.log(`\nMode : ${key.startsWith('sk_live') ? 'PRODUCTION' : 'test'}. Copie ces lignes dans .env.local (et sur Vercel) :\n`);
   console.log(lines.join('\n'));
+  // Le point de terminaison du webhook suit NEXT_PUBLIC_SITE_URL, comme les adresses de retour de Checkout.
+  const site = (process.env.NEXT_PUBLIC_SITE_URL ?? '').trim().replace(/\/$/, '');
+  console.log(
+    `\nWebhook à créer dans Stripe (Developers → Webhooks) : ${site || '<NEXT_PUBLIC_SITE_URL manquant>'}/api/stripe/webhook\n` +
+      'Événements : checkout.session.completed, customer.subscription.created, customer.subscription.updated,\n' +
+      'customer.subscription.deleted, customer.subscription.paused, customer.subscription.resumed, invoice.paid.\n' +
+      'Copie son secret (whsec_…) dans STRIPE_WEBHOOK_SECRET.',
+  );
 }
 
 main().catch((error) => {

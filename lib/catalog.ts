@@ -44,6 +44,6 @@ export function selectLiveCatalog(all: Product[], now: Date = new Date()): LiveC
   };
 }
 
-export async function getLiveCatalog(repo: Repo = getRepo()): Promise<LiveCatalog> {
-  return selectLiveCatalog(await repo.listProducts());
+export async function getLiveCatalog(repo: Repo = getRepo(), now: Date = new Date()): Promise<LiveCatalog> {
+  return selectLiveCatalog(await repo.listProducts(), now);
 }

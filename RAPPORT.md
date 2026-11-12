@@ -1,6 +1,7 @@
-# Rapport de fin de V1 — Pépite
+# Rapport — Pépite
 
-Date : 12 novembre 2026. Branche : `claude/kind-galileo-ardtih` (un commit par jalon, 9 jalons).
+Date : 12 novembre 2026. Branche : `claude/kind-galileo-ardtih` (V1 en 9 jalons, refonte du design en 6 étapes,
+session 3 « brancher au réel » en 5 étapes). La section « Session 3 » ci-dessous est la plus récente.
 
 ## En bref
 
@@ -25,6 +26,99 @@ Captures d’écran (mobile et desktop, clair et sombre) : `docs/captures/`.
 
 ---
 
+## Session 3 — Brancher Pépite au réel
+
+Cinq commits (« Session 3 · étape 1 » à « étape 5 »), décisions 71 à 102 dans `DECISIONS.md`.
+
+**À savoir d’abord : aucune clé n’était disponible dans cet environnement** (ni Supabase, ni TikTok, ni Nexscope,
+ni Stripe, Resend ou Claude). Rien n’a donc tourné contre un service réel. Tout est écrit, testé autant que
+possible sans clé, et prêt : poser les clés suffit, dans l’ordre de la liste de vérification du README.
+
+### Ce qui tourne sur du réel
+
+- **Base de données** : les trois migrations passent sur un vrai Postgres 16, **deux fois de suite** (elles sont
+  rejouables), avec les tests RLS en SQL (`npm run check:sql`), dont la nouvelle table `provider_cache`.
+- **Signature de l’API TikTok Shop** : vérifiée sur l’exemple chiffré de la documentation officielle.
+- **Chiffres de marché** : section « Le marché » sur l’accueil, trois chiffres avec lien et date (Lengow au
+  9 juillet 2026, Digiday au 14 octobre 2026), contrôlés par recherche web (voir plus bas).
+- **Déploiement** : `vercel.json` (tâche à 3 h UTC), `/api/health`, liste de vérification ; testés en local.
+
+### Ce qui est prêt mais n’a pas encore tourné (faute de clé)
+
+- **Supabase** : `npm run db:setup` (migrations, types, seed) et `npm run test:integration` : chaque méthode de
+  `SupabaseRepo`, la RLS avec deux utilisateurs et un formateur, le lien magique, le lien réutilisé, la
+  déconnexion, et le parcours de connexion complet dans le navigateur (Google avec `E2E_GOOGLE=1`). Deux défauts
+  trouvés à la relecture sont corrigés (détail de score vide, ventes décimales).
+- **Nexscope** (`tiktok-product-discovery`, France) : la source réaliste aujourd’hui. Nombre de créateurs,
+  boutique, commission, ventes à 1, 7 et 28 jours ; vidéos des 10 meilleurs produits.
+- **API officielle TikTok Shop** (recherche des produits ouverts à l’affiliation) : écrite selon la doc, mais
+  **la doc dit que les API affiliés ne sont pas encore ouvertes dans l’UE** (décision 78). L’OAuth des
+  créateurs et le suivi des commandes affiliées sont seulement préparés (interfaces).
+- **Garde-fous** : file d’attente, reprises avec attente progressive, quota par nuit, cache en base ; repli
+  automatique si la source échoue (écrit dans l’admin) ; images limitées aux domaines des fournisseurs avec repli
+  sur le visuel SVG ; champs inconnus laissés vides et affichage adapté.
+- **Score recalibré** : échelle du jour de 15 à 90, nouveaux seuils de tendance, critères manquants expliqués.
+  Mesuré sur les données fictives et trois scénarios qui imitent les vraies sources, faute de vraies données.
+
+### Ce qui reste simulé
+
+Les produits (fictifs, toujours signalés « produits fictifs » dans le radar, la fiche, le récap, Discord et
+l’aperçu de l’accueil), la base et la connexion (fichier local), les scripts, le paiement et les e-mails : comme
+avant, chaque brique bascule seule dès que ses clés sont là.
+
+### Ce qui manque, précisément
+
+| Pour | Il faut | Où |
+| --- | --- | --- |
+| Supabase réel (étape 1) | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_DB_URL` (mot de passe de la base), et `SUPABASE_ACCESS_TOKEN` pour régénérer les types | Supabase → Project Settings → API, et Connect → Session pooler |
+| Vrais produits (étape 2) | `NEXSCOPE_API_KEY` (crédits Nexscope) | nexscope.ai → API Access |
+| API officielle TikTok | ouverture des API affiliés pour la France par TikTok, puis `TIKTOK_APP_KEY`, `TIKTOK_APP_SECRET`, `TIKTOK_ACCESS_TOKEN` (compte créateur) et `TIKTOK_CATEGORY_MAP` | Partner Center TikTok Shop, responsable de compte |
+| Images réelles | les domaines d’images vus au premier relevé, dans `IMAGE_HOSTS` (l’admin les liste) | Vercel |
+| Mise en ligne (étape 5) | `NEXT_PUBLIC_SITE_URL`, `CRON_SECRET`, `ADMIN_EMAILS` et les clés Stripe, Resend, Claude | Vercel |
+
+**À vérifier au premier appel réel** (marqué `TODO(nexscope)` / `TODO(tiktok)` dans le code) :
+- la forme exacte de l’enveloppe des réponses Nexscope : sa doc prévient que les exemples sont anciens ;
+- les noms de catégories reconnus pour la France, et l’endroit où se trouve la liste des vidéos ;
+- l’unité de la commission ;
+- les domaines d’images.
+
+**Sites non joignables d’ici** :
+- les documentations (supabase.com, partner.tiktokshop.com, nexscope.ai) ont été lues dans leurs dépôts officiels
+  ou des copies datées sur GitHub ;
+- lengow.com et digiday.com n’ont pas pu être ouverts. Les chiffres Lengow sont confirmés par recherche web. Ceux
+  de Digiday et sa date le sont par un article qui le cite : à relire sur la page de Digiday avant la mise en ligne.
+
+**À trancher** : avec de vraies données, l’aperçu animé de l’accueil montre publiquement 5 vrais produits du jour
+avec leur score. C’est un bon argument, mais c’est plus que le plan gratuit (3 produits) : garder, décaler d’un
+jour, ou masquer les noms ?
+
+### Vérifications
+
+| Vérification | Résultat |
+| --- | --- |
+| `npm run build` | ✅ passe |
+| `npm run lint` (ESLint + TypeScript strict) | ✅ 0 erreur, 0 avertissement |
+| `npm test` (Vitest) | ✅ 96 tests (dont 23 pour les fournisseurs et le repli, 21 pour le score, 7 pour le déploiement) |
+| `npm run test:e2e` (Playwright) | ✅ 3 parcours (4 tests) |
+| `npm run check:sql` | ✅ migrations appliquées deux fois sur Postgres 16 + tests RLS |
+| `npm run test:integration` | ⏸ non lancé : clés Supabase absentes (la commande le dit et ne lance rien) |
+| Audit axe de la section « Le marché » | ✅ 0 violation, mobile et desktop |
+
+### Les 5 prochaines étapes
+
+1. **Créer le projet Supabase** (région UE), poser les clés, lancer `npm run db:setup` puis `npm run test:integration`
+   jusqu’au vert ; corriger ce qui casse contre la vraie base.
+2. **Brancher Nexscope** : clé, puis « Lancer le rafraîchissement » dans `/admin`. Vérifier les points ci-dessus,
+   ajouter les domaines d’images, et comparer 20 produits du radar à ce qu’on voit dans l’appli TikTok Shop.
+3. **Après 7 à 14 nuits de vraies données** : `npm run score:distribution`, puis ajuster l’échelle et les seuils de
+   tendance si les scores se tassent ou si « explose » devient trop fréquent.
+4. **Mettre en ligne sur Vercel** en suivant la liste de vérification du README (domaine, Supabase, Stripe en
+   production, Resend vérifié, tâche nocturne testée), et brancher `/api/health` sur un outil de surveillance.
+5. **Demander à TikTok l’ouverture des API affiliés pour la France** (Partner Center, responsable de compte). Ensuite :
+   OAuth des créateurs et suivi des commandes affiliées (interfaces prêtes), échantillons gratuits par créateur.
+
+---
+
 ## Ce qui marche
 
 - **Connexion** : lien magique et Google via Supabase ; en local, lien magique affiché à l’écran. Codes formateur
@@ -45,7 +139,7 @@ Captures d’écran (mobile et desktop, clair et sombre) : `docs/captures/`.
 - **Paiement** : Stripe Checkout, portail client, webhooks signés et idempotents, essai Pro de 3 mois sans carte
   pour les élèves d’un formateur, commissions de 30 % hors taxes à chaque facture. Code isolé dans `lib/billing/`.
 - **Mes produits** : objectif 20 vidéos, compteur manuel, barre de progression, alerte quand un produit baisse.
-- **Récap du matin** : préparé à 4 h, e-mail React Email programmé à l’heure choisie (Resend), aperçu dans
+- **Récap du matin** : préparé chaque nuit, e-mail React Email programmé à l’heure choisie (Resend), aperçu dans
   l’appli, réglages. **Bot Discord** : `/lier`, `/delier`, message privé quotidien, salon public masqué,
   salon Pro, rôle Pro synchronisé.
 - **Parrainage** : lien personnel, filleuls, gains du mois et à verser.
@@ -95,8 +189,8 @@ Six commits (« Refonte 1 » à « Refonte 6 »), décisions détaillées dans `
 
 | Élément | Aujourd’hui | Pour le rendre réel |
 | --- | --- | --- |
-| Données produits | 200 produits fictifs déterministes (`DATA_PROVIDER=mock`) | Brancher `lib/data/tiktok.ts` (API affiliés officielle) et/ou `lib/data/nexscope.ts` : les `TODO` disent quoi vérifier |
-| Base et connexion | fichier local `.data/` | Clés Supabase + migrations (README §2) |
+| Données produits | 200 produits fictifs déterministes, signalés « produits fictifs » | `NEXSCOPE_API_KEY` (adaptateur prêt) ; API TikTok quand elle sera ouverte en France (voir « Session 3 ») |
+| Base et connexion | fichier local `.data/` | Clés Supabase, `npm run db:setup`, `npm run test:integration` (README §2) |
 | Scripts | générateur simulé | `ANTHROPIC_API_KEY` |
 | Paiement | simulé en local, désactivé sinon | Clés Stripe + `npm run stripe:setup` + webhook |
 | E-mails | boîte locale (`/admin`) | `RESEND_API_KEY` + `EMAIL_FROM` |
@@ -104,24 +198,24 @@ Six commits (« Refonte 1 » à « Refonte 6 »), décisions détaillées dans `
 | Vidéos qui vendent | fictives | Fournisseur de données payant (pas d’API officielle publique) |
 | Vidéos postées | saisies à la main | Prévu ainsi en V1 |
 
-**Non testé contre un vrai Supabase** : l’implémentation `lib/db/supabase.ts` n’a pas pu tourner contre une API
-Supabase (pas de projet ni de Docker ici ; le téléchargement de PostgREST pour la tester a été refusé par
-l’environnement). Le SQL, la RLS et les fonctions sont, eux, validés sur Postgres 16. À vérifier en premier
-après branchement : inscription, onboarding, génération de script (fonction `increment_usage`), page parrainage
-(jointure `referrals → profiles`), espace formateur (fonction `coach_student_stats`), suppression de compte.
+**Pas encore testé contre un vrai Supabase** : `lib/db/supabase.ts` n’a pas pu tourner contre une API Supabase
+(aucune clé ici). Les tests d’intégration qui couvrent chaque méthode, la RLS et la connexion sont prêts
+(`npm run test:integration`, session 3). Le SQL, la RLS et les fonctions sont validés sur Postgres 16.
 
 ## Clés à renseigner
 
 | Variable | Où la trouver | Indispensable pour |
 | --- | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API | Production |
+| `SUPABASE_DB_URL` (+ `SUPABASE_ACCESS_TOKEN`) | Supabase → Connect → Session pooler (jeton : Account → Access Tokens) | `npm run db:setup` uniquement, jamais sur Vercel |
 | `ANTHROPIC_API_KEY` (`ANTHROPIC_MODEL`) | console.anthropic.com | Vrais scripts |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_*` (×4) | Stripe Dashboard + `npm run stripe:setup` | Paiement |
 | `RESEND_API_KEY`, `EMAIL_FROM`, `FOUNDER_EMAIL` | resend.com | E-mails |
 | `CRON_SECRET` | à générer (long, aléatoire) | Tâche nocturne en production |
 | `NEXT_PUBLIC_SITE_URL`, `ADMIN_EMAILS` | ton domaine, ton e-mail | Production |
 | `BOT_API_SECRET`, `NEXT_PUBLIC_DISCORD_INVITE_URL` (+ `bot/.env`) | à générer / Discord | Bot Discord |
-| `DATA_PROVIDER`, `TIKTOK_APP_KEY`, `TIKTOK_APP_SECRET`, `TIKTOK_ACCESS_TOKEN`, `NEXSCOPE_API_KEY` | Partner Center TikTok Shop / fournisseur | Vraies données |
+| `NEXSCOPE_API_KEY` (ou `TIKTOK_APP_KEY`, `TIKTOK_APP_SECRET`, `TIKTOK_ACCESS_TOKEN`, `TIKTOK_CATEGORY_MAP`) | nexscope.ai / Partner Center TikTok Shop | Vraies données |
+| `DATA_PROVIDER`, `DATA_MAX_CALLS_PER_NIGHT`, `DATA_RATE_PER_SECOND`, `DATA_CACHE_HOURS`, `DATA_PAGES_PER_NICHE`, `DATA_VIDEO_PRODUCTS`, `IMAGE_HOSTS` | réglages (valeurs par défaut dans `.env.example`) | Coût et débit des appels, images |
 
 ## Commandes
 
@@ -129,7 +223,10 @@ après branchement : inscription, onboarding, génération de script (fonction `
 npm install && npm run seed && npm run dev      # tout en local, sans clé
 npm run build && npm run lint && npm test        # vérifications
 npm run test:e2e                                 # 3 parcours Playwright
-npm run check:sql                                # migrations + RLS sur un Postgres jetable
+npm run check:sql                                # migrations (deux fois) + RLS sur un Postgres jetable
+npm run db:setup                                 # Supabase réel : migrations, types, seed
+npm run test:integration                         # tests contre le vrai Supabase (rien sans clés)
+npm run score:distribution                       # distribution des scores sur la base actuelle
 npm run stripe:setup                             # produits et prix Stripe
 cd bot && npm install && npm run dev             # bot Discord
 ```
@@ -143,10 +240,10 @@ cd bot && npm install && npm run dev             # bot Discord
 4. **Pro+ « illimité »** dans le cadre d’un usage personnel raisonnable (mentionné dans les CGV).
 5. **Gratuit = les 3 meilleurs produits du jour** de ses niches (pas 3 au hasard) : c’est l’argument pour revenir.
 6. **Heures du récap** proposées de 6 h à 12 h.
-7. **Aucun chiffre de marché affiché** (133 M€/trimestre, 70 % via les affiliés) faute de source citable ;
-   à ajouter sur l’accueil avec leur source si tu en as une.
-8. **Pas de statistique « 10× plus à partir de 20 vidéos »** affichée (non sourcée) : l’objectif de 20 vidéos est
-   conservé sans promesse de multiplicateur.
+7. **Chiffres de marché affichés depuis la session 3**, avec leur source et leur date (section « Le marché ») :
+   uniquement les trois chiffres fournis, rien d’autre.
+8. **Pas de « 10× plus à partir de 20 vidéos »** : les deux montants de l’étude américaine (7,19 $ et 74,07 $ par
+   vidéo) sont affichés avec leur source, sans en tirer de multiplicateur ni de promesse.
 9. **Régime de TVA inconnu** : prix affichés « en euros », mention TTC ou franchise à compléter dans les CGV.
 10. **Nom « Pépite »** : nom de travail, à changer dans `lib/brand.ts` (et le texte du README).
 
@@ -161,6 +258,8 @@ cd bot && npm install && npm run dev             # bot Discord
 - Les e-mails de connexion Supabase utilisent le modèle du tableau de bord (texte français fourni dans le README).
 
 ## Les 10 prochaines choses à faire
+
+(Liste de fin de V1. Pour la suite immédiate, voir « Les 5 prochaines étapes » de la section « Session 3 ».)
 
 1. **Créer le projet Supabase**, appliquer les migrations, configurer Auth (modèle d’e-mail FR, Google, SMTP
    Resend) et faire tourner les vérifications listées plus haut sur `lib/db/supabase.ts`.

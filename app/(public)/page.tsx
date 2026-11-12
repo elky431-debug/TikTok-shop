@@ -42,7 +42,7 @@ const FEATURES = [
   {
     category: 'Trouver',
     items: [
-      { icon: Radar, title: 'Radar', desc: 'Les produits qui montent dans tes niches, triés par score chaque matin à 4 h.' },
+      { icon: Radar, title: 'Radar', desc: 'Les produits qui montent dans tes niches, triés par score chaque matin.' },
       {
         icon: Gauge,
         title: 'Score expliqué',
@@ -82,7 +82,7 @@ const FEATURES = [
 const STEPS = [
   {
     title: 'Chaque nuit, on analyse',
-    desc: 'À 4 h, on passe en revue les produits ouverts à l’affiliation en France : ventes estimées, commission, affiliés, échantillons.',
+    desc: 'Chaque nuit, on passe en revue les produits ouverts à l’affiliation en France : ventes estimées, commission, affiliés, échantillons.',
   },
   {
     title: 'Le matin, tu sais quoi vendre',

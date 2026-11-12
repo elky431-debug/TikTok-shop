@@ -39,7 +39,7 @@ async function refreshWithFallback(date: string, repo: Repo, backfillDays?: numb
 }
 
 /**
- * Tâche nocturne complète (4 h, heure de Paris) :
+ * Tâche nocturne complète (3 h UTC : 4 h à Paris l'hiver, 5 h l'été) :
  * 1. produits du jour via le fournisseur actif ; 2. instantané quotidien ; 3. score ;
  * 4. récap du matin de chaque utilisateur (puis planification des envois).
  */

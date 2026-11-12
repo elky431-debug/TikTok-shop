@@ -100,7 +100,7 @@ export default async function RadarPage({
           >
             {radar.filtered
               ? 'Élargis la fourchette de prix ou baisse la commission minimum.'
-              : 'Le radar se remplit chaque nuit à 4 h. Reviens dans quelques heures.'}
+              : 'Le radar se remplit chaque nuit. Reviens dans quelques heures.'}
           </EmptyState>
         ) : (
           <>

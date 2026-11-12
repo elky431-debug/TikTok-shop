@@ -133,9 +133,11 @@ Renseigne `ANTHROPIC_API_KEY` (https://console.anthropic.com). Le modèle est r�
 1. Mets ta clé `STRIPE_SECRET_KEY` (commence par `sk_test_` en test).
 2. Lance `npm run stripe:setup` : il crée les produits « Pro » et « Pro+ » et leurs 4 prix
    (19,90 €/mois, 167 €/an, 39,90 €/mois, 335 €/an) et affiche les 4 `STRIPE_PRICE_…` à copier.
-3. **Webhook** : Developers → Webhooks → *Add endpoint* → `https://ton-site/api/stripe/webhook`, avec les
-   événements `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`,
-   `customer.subscription.deleted`, `invoice.paid`. Copie le secret de signature dans `STRIPE_WEBHOOK_SECRET`.
+3. **Webhook** : Developers → Webhooks → *Add endpoint* → `<NEXT_PUBLIC_SITE_URL>/api/stripe/webhook` (l’adresse
+   exacte est affichée par `npm run stripe:setup`), avec les événements `checkout.session.completed`,
+   `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`,
+   `customer.subscription.paused`, `customer.subscription.resumed`, `invoice.paid`. Copie le secret de signature
+   dans `STRIPE_WEBHOOK_SECRET`.
    En local : `stripe listen --forward-to localhost:3000/api/stripe/webhook` (le secret affiché va dans `.env.local`).
 4. **Portail client** : Settings → Billing → Customer portal → active la résiliation, la mise à jour du moyen de
    paiement, l’historique des factures et le **changement de plan** entre les 4 prix.
@@ -171,15 +173,57 @@ la mention « produits fictifs ».
 
 1. Pousse le dépôt sur GitHub, puis **Import Project** dans Vercel (framework Next.js détecté tout seul,
    Node 20 ou plus).
-2. Ajoute toutes les variables de `.env.example` dans *Settings → Environment Variables*, avec
-   `NEXT_PUBLIC_SITE_URL` = l’URL publique et un `CRON_SECRET` long et aléatoire.
-3. Déploie. Les tâches planifiées de `vercel.json` sont créées automatiquement : `/api/cron/refresh` à 2 h et 3 h
-   UTC ; seule celle qui tombe à **4 h, heure de Paris**, travaille. Vercel envoie `CRON_SECRET` tout seul.
-   (Deux tâches quotidiennes : compatible avec le plan gratuit de Vercel.)
-4. Mets à jour l’URL dans Supabase (Site URL, Redirect URLs) et dans le webhook Stripe.
-5. Vérifie dans `/admin` : l’état des services doit passer au vert, et « Lancer le rafraîchissement » doit réussir.
+2. Suis la liste de vérification ci-dessous, **dans l’ordre**.
+3. La tâche nocturne est déclarée dans `vercel.json` : `/api/cron/refresh` une fois par jour à **3 h UTC**
+   (4 h à Paris l’hiver, 5 h l’été). Vercel envoie tout seul `Authorization: Bearer <CRON_SECRET>` ; un second
+   appel le même jour ne refait pas le travail. La fonction peut durer jusqu’à 300 s (`maxDuration`).
+4. Surveillance : `GET /api/health` répond `ok`, `degraded` (avec la liste des problèmes) ou `down` (HTTP 503 :
+   base injoignable ou relevé de plus de 36 heures). Aucun secret dans la réponse ; branche-la sur un outil
+   de surveillance (UptimeRobot, Better Stack…).
 
----
+### Liste de vérification de mise en ligne
+
+Coche chaque ligne dans cet ordre : chacune dépend des précédentes.
+
+1. **Variables Vercel** (*Settings → Environment Variables*, environnement *Production*) :
+   - [ ] `NEXT_PUBLIC_SITE_URL` = l’adresse définitive, en `https://`, sans `/` final (elle sert aux redirections
+         de connexion, aux retours de paiement Stripe et à tous les liens des e-mails) ;
+   - [ ] `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` ;
+   - [ ] `CRON_SECRET` (long et aléatoire, par exemple `openssl rand -hex 32`) et `ADMIN_EMAILS` ;
+   - [ ] `ANTHROPIC_API_KEY` (et `ANTHROPIC_MODEL` si besoin) ;
+   - [ ] `STRIPE_SECRET_KEY` (`sk_live_…`), les 4 `STRIPE_PRICE_…` du mode production, `STRIPE_WEBHOOK_SECRET`
+         (rempli à l’étape 4) ;
+   - [ ] `RESEND_API_KEY`, `EMAIL_FROM`, `FOUNDER_EMAIL` ;
+   - [ ] source de données : `NEXSCOPE_API_KEY` (ou les clés TikTok), et si besoin `DATA_MAX_CALLS_PER_NIGHT`,
+         `IMAGE_HOSTS` ;
+   - [ ] `BOT_API_SECRET`, `NEXT_PUBLIC_DISCORD_INVITE_URL` si le bot Discord est lancé ;
+   - [ ] **pas** de `SUPABASE_DB_URL` ni de `LOCAL_…` sur Vercel : ils ne servent qu’en local.
+2. **Domaine** : *Settings → Domains* → ajoute le domaine, règle les DNS demandés, attends le certificat, puis
+   vérifie que `NEXT_PUBLIC_SITE_URL` est exactement ce domaine et **redéploie** (la valeur est figée au build).
+3. **Supabase** (*Authentication → URL Configuration*) :
+   - [ ] *Site URL* = `NEXT_PUBLIC_SITE_URL` ;
+   - [ ] *Redirect URLs* : `<NEXT_PUBLIC_SITE_URL>/auth/callback**` ;
+   - [ ] modèle d’e-mail « Magic Link » en français (section 2) et Google réglé si utilisé ;
+   - [ ] `npm run db:setup` lancé sur le projet de production, puis `npm run test:integration` au vert.
+4. **Stripe en production** :
+   - [ ] `npm run stripe:setup` avec la clé `sk_live_…` (prix de production) ;
+   - [ ] webhook *Add endpoint* → `<NEXT_PUBLIC_SITE_URL>/api/stripe/webhook` avec les 7 événements de la section 2,
+         secret copié dans `STRIPE_WEBHOOK_SECRET`, puis redéploiement ;
+   - [ ] portail client configuré ; un vrai paiement puis une résiliation testés.
+5. **Resend** : *Domains → Add domain* → ajoute les enregistrements DNS (SPF, DKIM), attends « Verified », puis
+   `EMAIL_FROM` sur ce domaine (ex. `Pépite <bonjour@ton-domaine.fr>`). Envoie-toi un récap depuis `/app/recap`.
+   Branche aussi le SMTP de Resend dans Supabase pour les e-mails de connexion.
+6. **Tâche nocturne testée** :
+   - [ ] dans `/admin`, **Lancer le rafraîchissement** : le message doit être vert (pas « repli »), le radar doit
+         montrer les vrais produits France (pas la mention « produits fictifs ») ;
+   - [ ] l’appel planifié lui-même :
+
+     ```bash
+     curl -sS -H "Authorization: Bearer $CRON_SECRET" "$NEXT_PUBLIC_SITE_URL/api/cron/refresh?force=1"
+     ```
+
+   - [ ] `curl -sS "$NEXT_PUBLIC_SITE_URL/api/health"` répond `"status":"ok"` ;
+   - [ ] le lendemain, *Vercel → Cron Jobs* montre une exécution réussie à 3 h UTC et `/admin` la tâche « Planifiée ».
 
 ## 4. Lancer le bot Discord
 

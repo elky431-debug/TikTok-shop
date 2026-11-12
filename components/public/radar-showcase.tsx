@@ -74,7 +74,7 @@ export function RadarShowcase({ products, demoData }: { products: ShowcaseProduc
     >
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs font-semibold text-muted">
-          Radar · ce matin 4 h 00{demoData ? <span className="font-normal text-subtle"> · produits fictifs</span> : null}
+          Radar · ce matin{demoData ? <span className="font-normal text-subtle"> · produits fictifs</span> : null}
         </p>
         <button
           type="button"
