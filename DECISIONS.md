@@ -193,3 +193,26 @@ Chaque décision prise sans pouvoir demander au fondateur, avec sa raison. Les p
     et les formateurs peuvent se connecter directement à leur espace sans passer par l'onboarding.
 57. **État des services visible dans l'admin** (base, données, scripts, paiement, e-mails) pour savoir
     d'un coup d'œil ce qui est encore simulé.
+
+## Jalon 8 — Site public
+
+58. **Premier écran = le produit** : un aperçu du radar avec le vrai produit n°1 du jour (beauté qui
+    monte, la catégorie n°1 en France), son score, sa courbe 14 jours et une accroche. Sur mobile,
+    l'aperçu passe juste après le titre pour être visible sans défiler ; le bouton suit.
+    C'est la seule animation d'entrée du site (courbe qui se trace, score qui monte, accroche qui
+    s'écrit) ; avec « réduire les animations », tout s'affiche directement.
+59. **Accueil régénéré toutes les heures (ISR)** : rapide et statique, il reprend le produit du jour
+    du catalogue, ou calcule l'exemple à partir des données fictives si la base est vide. Mention
+    « Produit fictif, données de démonstration » tant que `DATA_PROVIDER=mock`.
+60. **Aucun chiffre de marché affiché** : les chiffres du brief (133 M€ par trimestre, 70 % via les
+    affiliés) n'ont pas de source publique à citer ici. Règle appliquée : sourcé ou absent.
+    À ajouter avec leur source si le fondateur en a une (voir RAPPORT).
+61. **Pas de témoignages, pas de compteur d'utilisateurs, pas de logos clients**. La FAQ répond
+    honnêtement à « Est-ce que je vais gagner de l'argent ? » : on ne promet rien.
+62. **Mention d'indépendance vis-à-vis de TikTok** dans le pied de page et les mentions légales.
+63. **Formulaire formateur** : validation Zod, champ piège anti-robot, enregistrement en base puis
+    e-mail au fondateur (`FOUNDER_EMAIL`, sinon le premier `ADMIN_EMAILS`). Si l'e-mail échoue,
+    la demande reste enregistrée et visible dans l'admin.
+64. **Pages légales** avec des champs `[À COMPLÉTER : …]` surlignés (raison sociale, SIREN, TVA,
+    médiateur, région Supabase, durées de conservation, versement des commissions). La plateforme
+    européenne de règlement en ligne des litiges n'est pas citée (fermée en 2025).

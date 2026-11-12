@@ -70,5 +70,5 @@ export async function deleteAccountAction(formData: FormData) {
   if (isLocalMode()) cookies().delete(LOCAL_SESSION_COOKIE);
   else await createSupabaseServerClient().auth.signOut();
   cookies().delete(THEME_COOKIE);
-  redirect('/?compte=supprime');
+  redirect('/compte-supprime');
 }

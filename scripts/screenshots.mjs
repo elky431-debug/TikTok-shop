@@ -56,7 +56,7 @@ for (const vp of VIEWPORTS) {
   if (needsLogin) await login(page);
   for (const path of PAGES) {
     await page.goto(`${BASE}${path}`, { waitUntil: 'load' });
-    await page.waitForTimeout(700);
+    await page.waitForTimeout(path === '/' ? 3500 : 700);
     const name = path === '/' ? 'accueil' : path.replace(/^\//, '').replace(/[/?=&]/g, '_');
     const file = `${OUT}/${name}-${vp.name}${THEME === 'dark' ? '-sombre' : ''}.png`;
     await page.screenshot({ path: file, fullPage: true });
