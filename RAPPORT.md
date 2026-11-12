@@ -43,9 +43,15 @@ possible sans clé, et prêt : poser les clés suffit, dans l’ordre de la list
 - **OpenAI : 3 vraies générations** avec `gpt-5.5` (`npm run ai:sample`). Le français est naturel, au tutoiement,
   sans interdit. Deux défauts du premier passage sont corrigés dans la consigne (hashtags anglais, « le lien ») ;
   il reste une accroche au vouvoiement sur 30. Exemples complets dans `docs/exemples-scripts/`.
-- **Supabase : clés en place, projet joignable, mais tables absentes.** Il faut appliquer les 4 migrations :
-  `npm run db:setup` avec `SUPABASE_DB_URL`, ou en collant les 4 fichiers de `supabase/migrations/` dans le
-  SQL Editor de Supabase, dans l’ordre. Ensuite, `npm run test:integration`.
+- **Supabase : en service pour de vrai** (décisions 117 à 121) :
+  - les 4 migrations sont appliquées par l’API de gestion, en HTTPS : le port 5432 n’est pas joignable d’ici ;
+  - les types TypeScript sont générés depuis la vraie base ;
+  - **31 tests d’intégration et 3 parcours de connexion passent contre la vraie base**. Seul Google reste à tester
+    (`E2E_GOOGLE=1`) ;
+  - le seed a mis 62 vrais produits Nexscope dans Supabase, sans aucun produit fictif ;
+  - un défaut est corrigé au passage : une boucle de redirections quand Supabase est injoignable.
+- **Modèle OpenAI** : `gpt-6-luna` par défaut (environ 0,002 $ la génération), après comparaison avec `gpt-5.5`
+  (décisions 115 et 116).
 - **Ici seulement** : les images de Nexscope (`agent-files.linkfox.com`) ne passent pas le réseau de cet
   environnement, donc le visuel générique s’affiche à leur place. Sur Vercel, elles chargeront.
 - **Tendances** : 56 % des produits sont « explose » sur ce premier relevé, orienté meilleures ventes avant Noël.
@@ -87,7 +93,8 @@ avant, chaque brique bascule seule dès que ses clés sont là.
 
 | Pour | Il faut | Où |
 | --- | --- | --- |
-| Supabase réel (étape 1) | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_DB_URL` (mot de passe de la base), et `SUPABASE_ACCESS_TOKEN` pour régénérer les types | Supabase → Project Settings → API, et Connect → Session pooler |
+| Supabase réel (étape 1) | ✅ clés reçues, migrations appliquées, tests d’intégration au vert | — |
+| Connexion Google | activer Google dans Supabase, puis `E2E_GOOGLE=1 npm run test:integration` | Supabase → Authentication → Providers |
 | Vrais produits (étape 2) | ✅ `NEXSCOPE_API_KEY` reçue, relevé réel fait | — |
 | Scripts avec OpenAI | ✅ `AI_PROVIDER=openai`, `OPENAI_API_KEY` reçus, 3 générations faites | — |
 | API officielle TikTok | ouverture des API affiliés pour la France par TikTok, puis `TIKTOK_APP_KEY`, `TIKTOK_APP_SECRET`, `TIKTOK_ACCESS_TOKEN` (compte créateur) et `TIKTOK_CATEGORY_MAP` | Partner Center TikTok Shop, responsable de compte |
@@ -119,7 +126,7 @@ jour, ou masquer les noms ?
 | `npm test` (Vitest) | ✅ 96 tests (dont 23 pour les fournisseurs et le repli, 21 pour le score, 7 pour le déploiement) |
 | `npm run test:e2e` (Playwright) | ✅ 3 parcours (4 tests) |
 | `npm run check:sql` | ✅ migrations appliquées deux fois sur Postgres 16 + tests RLS |
-| `npm run test:integration` | ⏸ non lancé : clés Supabase absentes (la commande le dit et ne lance rien) |
+| `npm run test:integration` | ✅ 31 tests + 3 parcours de connexion contre la vraie base (Google ignoré, non configuré) |
 | Audit axe de la section « Le marché » | ✅ 0 violation, mobile et desktop |
 
 ### Les 5 prochaines étapes

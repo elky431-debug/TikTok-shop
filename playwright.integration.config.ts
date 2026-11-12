@@ -1,11 +1,13 @@
-import { loadEnvConfig } from '@next/env';
 import { defineConfig, devices } from '@playwright/test';
+import { integrationEnv } from './tests/integration/load-env';
 
 /**
  * Parcours de connexion contre le vrai Supabase (tests/integration/e2e). Lancé par « npm run test:integration »
  * seulement quand les clés Supabase sont présentes. Le serveur hérite des variables de l'environnement.
  */
-loadEnvConfig(process.cwd());
+// .env.local chargé pour les tests (clés Supabase) et pour le serveur lancé ci-dessous.
+const loadedEnv = integrationEnv();
+Object.assign(process.env, loadedEnv);
 
 const PORT = Number(process.env.E2E_PORT ?? 3300);
 const BASE_URL = `http://localhost:${PORT}`;
@@ -26,6 +28,6 @@ export default defineConfig({
     stdout: 'ignore',
     stderr: 'pipe',
     // L'URL du site doit correspondre au serveur de test pour les redirections de connexion.
-    env: { NEXT_PUBLIC_SITE_URL: BASE_URL, NEXT_TELEMETRY_DISABLED: '1' },
+    env: { ...loadedEnv, NEXT_PUBLIC_SITE_URL: BASE_URL, NEXT_TELEMETRY_DISABLED: '1' },
   },
 });

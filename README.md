@@ -78,9 +78,13 @@ sont présentes ; les autres restent simulées. Le détail de chaque variable es
 ### Supabase (base + connexion)
 
 1. Crée un projet sur https://supabase.com, dans une **région européenne** (Paris ou Francfort).
-2. **Project Settings → API** : copie l’URL, la clé `anon` et la clé `service_role` dans `.env.local`.
-   **Connect → Session pooler** : copie la chaîne de connexion (avec le mot de passe de la base) dans
-   `SUPABASE_DB_URL`. Elle sert seulement aux migrations, jamais à l’appli.
+2. **Project Settings → API** : copie l’URL, la clé `anon` (ou « publishable ») et la clé `service_role` (ou
+   « secret ») dans `.env.local`. Pour les migrations, au choix :
+   - **conseillé** : un jeton personnel (**Account → Access Tokens**) dans `SUPABASE_ACCESS_TOKEN`. Tout passe par
+     l’API de gestion de Supabase en HTTPS, même là où le port 5432 de Postgres est fermé ;
+   - ou **Connect → Session pooler** : la chaîne de connexion (avec le mot de passe de la base) dans
+     `SUPABASE_DB_URL`.
+   Ni l’un ni l’autre ne sert à l’appli : ne les mets pas sur Vercel.
 3. **Authentication → URL Configuration** :
    - *Site URL* : la valeur de `NEXT_PUBLIC_SITE_URL` (ex. `https://pepite.fr`) ;
    - *Redirect URLs* : ajoute `https://pepite.fr/auth/callback**` et `http://localhost:3000/auth/callback**`
@@ -106,10 +110,10 @@ sont présentes ; les autres restent simulées. Le détail de chaque variable es
    npm run db:setup
    ```
 
-   Elle applique les migrations (avec `psql` s’il est installé, sinon avec la CLI Supabase), régénère les types
-   TypeScript (`lib/db/database.types.ts`, il faut `SUPABASE_ACCESS_TOKEN` pour passer par l’API de Supabase),
-   puis lance `npm run seed`. Les migrations sont rejouables : tu peux relancer la commande après chaque mise à
-   jour. Options : `-- --sans-types`, `-- --sans-seed`.
+   Elle applique les migrations, régénère les types TypeScript (`lib/db/database.types.ts`), puis lance
+   `npm run seed`. Avec `SUPABASE_ACCESS_TOKEN`, chaque migration est enregistrée sous son nom de fichier chez
+   Supabase : une relance n’applique que les nouvelles. Avec `SUPABASE_DB_URL` : `psql` s’il est installé, sinon
+   la CLI Supabase (les migrations sont rejouables). Options : `-- --sans-types`, `-- --sans-seed`.
 8. Vérifie tout contre la vraie base :
 
    ```bash

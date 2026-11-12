@@ -26,8 +26,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const { response, user } = await updateSupabaseSession(request);
-  if (isProtected(pathname) && !user) return redirectToLogin(request);
+  const { response, user, unreachable } = await updateSupabaseSession(request);
+  if (isProtected(pathname) && !user && !unreachable) return redirectToLogin(request);
   return response;
 }
 

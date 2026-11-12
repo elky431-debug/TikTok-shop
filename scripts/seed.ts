@@ -32,7 +32,7 @@ async function main() {
     ? await runNightly({ trigger: 'seed', repo })
     : await runNightly({ trigger: 'seed', repo, backfillDays: 30, provider: new MockProvider() });
   console.log(
-    `✓ ${result.refresh.products} produits, ${result.refresh.snapshots} instantanés sur 30 jours, ` +
+    `✓ ${result.refresh.products} produits, ${result.refresh.snapshots} instantanés${real ? '' : ' sur 30 jours'}, ` +
       `${result.digests.prepared} récaps préparés (${Date.now() - started} ms)`,
   );
 }

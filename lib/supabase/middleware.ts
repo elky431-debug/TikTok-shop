@@ -1,7 +1,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-/** Rafraîchit la session Supabase et renvoie l'utilisateur (ou null). */
+/** Rafraîchit la session Supabase et renvoie l'utilisateur (ou null), et si Supabase était injoignable. */
 export async function updateSupabaseSession(request: NextRequest) {
   let response = NextResponse.next({ request });
   const supabase = createServerClient(
@@ -22,6 +22,11 @@ export async function updateSupabaseSession(request: NextRequest) {
   );
   const {
     data: { user },
+    error,
   } = await supabase.auth.getUser();
-  return { response, user };
+  // Supabase injoignable (panne, réseau) : on ne conclut pas à « déconnecté ». Sinon, un utilisateur connecté
+  // tournerait en rond entre /connexion (qui, côté serveur, le voit connecté) et la page demandée. Chaque page
+  // protégée revérifie la session côté serveur (requireViewer), qui reste la vraie barrière.
+  const unreachable = error?.name === 'AuthRetryableFetchError';
+  return { response, user, unreachable };
 }

@@ -625,3 +625,35 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      par `OPENAI_MODEL`. Piste à tester si le ton paraît trop sage aux premiers utilisateurs : `gpt-6.1-terra`
      (1 $ puis 5 $, décrit par OpenAI comme « clear, natural writing »), environ 10 fois le coût de `gpt-6-luna`
      et 6 fois moins que `gpt-5.5`.
+
+## Supabase réel (12 novembre 2026, même jour)
+
+117. **Migrations par l'API de gestion de Supabase, en HTTPS** : depuis cet environnement, le serveur Postgres
+     (`aws-1-eu-west-1.pooler.supabase.com:5432`) n'est pas joignable (seul le HTTPS sort ; le nom ne se résout même
+     pas), donc ni `psql` ni la CLI. `npm run db:setup` utilise désormais, dès que `SUPABASE_ACCESS_TOKEN` est là,
+     les routes documentées dans la spécification officielle (`supabase/supabase`,
+     `apps/docs/spec/api_v1_openapi.json`) : `GET`/`POST /v1/projects/{ref}/database/migrations` (chaque fichier
+     appliqué sous son nom, une relance n'applique que les nouveaux, clé d'idempotence = nom + empreinte du SQL) et
+     `GET /v1/projects/{ref}/types/typescript`. Le jeton est enregistré comme secret de l'environnement et injecté
+     par le proxy ; il n'apparaît ni dans le code, ni dans `.env.local`, ni dans les journaux. Résultat : les
+     4 migrations appliquées, une relance les voit « déjà appliquées », et `lib/db/database.types.ts` est
+     maintenant généré depuis la vraie base.
+118. **Tests d'intégration au vert contre la vraie base** : 31 tests Vitest (chaque méthode de `SupabaseRepo`,
+     RLS avec deux utilisateurs et un formateur, lien magique, lien réutilisé, déconnexion) et 3 parcours Playwright
+     (lien magique → onboarding → page demandée → déconnexion ; lien forgé ; redirection vers un autre site refusée).
+     Google reste à vérifier (`E2E_GOOGLE=1`) une fois le fournisseur activé dans Supabase. Les données de test sont
+     bien supprimées à la fin (aucun produit ni compte `itest-` restant).
+119. **`.env.local` pour les tests d'intégration** : `@next/env` ne charge jamais `.env.local` quand `NODE_ENV=test`
+     (cas de Vitest), et les processus de test n'héritent pas des variables chargées par la configuration.
+     `tests/integration/load-env.ts` lit le fichier avec `util.parseEnv` de Node et le passe par `test.env` ; une
+     variable déjà définie dans l'environnement l'emporte.
+120. **Défaut corrigé : boucle de redirections si Supabase est injoignable.** Le middleware (runtime Edge) prenait
+     une erreur réseau (`AuthRetryableFetchError`) pour « pas de session » et renvoyait vers `/connexion`, qui, côté
+     serveur, voyait l'utilisateur connecté et le renvoyait vers la page demandée : boucle sans fin. Trouvé par le
+     parcours Playwright (ici, le `fetch` du runtime Edge ne passe pas par le proxy ; en production, la même boucle
+     arriverait pendant une panne de Supabase). Désormais, une erreur réseau ne déclenche pas de redirection :
+     chaque page protégée revérifie la session côté serveur (`requireViewer`, `requireAdmin`…), qui reste la vraie
+     barrière (vérifié : toutes les pages des zones protégées l'appellent).
+121. **Seed réel** (`npm run seed` avec `DATA_PROVIDER=nexscope`, budget réduit à une page par niche et 2 produits
+     pour les vidéos, 13 appels) : 62 vrais produits France dans Supabase, aucun produit fictif, tâche « ok » dans
+     l'historique. Scores lus dans la base : 15 à 90, médiane 53.
