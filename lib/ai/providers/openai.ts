@@ -97,10 +97,24 @@ export class OpenAIScriptModel implements ScriptModel {
       const apiMessage = String((error.error as { message?: string } | undefined)?.message ?? error.message ?? '')
         .replace(/sk-[A-Za-z0-9_-]+/g, 'sk-…')
         .slice(0, 160);
+      // Indices sans secret : hôte appelé, identifiant de requête OpenAI (absent = réponse d'un intermédiaire), format
+      // de la clé (préfixe, longueur, caractères inattendus).
+      const key = env.openaiKey;
+      const host = (() => {
+        try {
+          return new URL(this.client?.baseURL ?? 'https://api.openai.com/v1').host;
+        } catch {
+          return 'inconnu';
+        }
+      })();
+      const keyShape = `${key.slice(0, 8).replace(/[A-Za-z0-9]{4}$/, '…')} ${key.length} car.${/[^A-Za-z0-9_-]/.test(key) ? ', caractères inattendus' : ''}`;
       const detail = [
         error.param ? `paramètre « ${error.param} »` : null,
         error.code ? `code ${error.code}` : null,
         !error.param && !error.code && apiMessage ? `« ${apiMessage} »` : null,
+        `hôte ${host}`,
+        error.requestID ? `requête ${error.requestID}` : 'sans identifiant OpenAI',
+        `clé ${keyShape}`,
       ]
         .filter(Boolean)
         .join(', ');
