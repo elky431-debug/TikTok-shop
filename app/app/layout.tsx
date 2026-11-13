@@ -26,6 +26,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     { href: '/app/studio', label: 'Studio', icon: 'studio', mobile: true },
     { href: '/app/mes-produits', label: 'Mes produits', icon: 'produits', mobile: true },
     { href: '/app/recap', label: 'Récap', icon: 'recap', mobile: true },
+    ...(profile.eligibility === 'preparation' ? [{ href: '/app/preparation', label: 'Préparation', icon: 'preparation' } as NavItem] : []),
     { href: '/app/plan', label: 'Plan de publication', icon: 'plan' },
     { href: '/app/gains', label: 'Mes gains', icon: 'gains' },
     { href: '/app/offres', label: 'Propositions de marques', icon: 'offres' },
