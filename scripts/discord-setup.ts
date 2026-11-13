@@ -1,6 +1,7 @@
 /**
  * Prépare le bot Discord, sans rien à héberger (interactions HTTP + API REST, doc officielle discord/discord-api-docs) :
- *  1. enregistre /lier et /delier sur ton serveur : PUT /applications/{application.id}/guilds/{guild.id}/commands ;
+ *  1. enregistre les commandes sur ton serveur (/lier, /delier, /produits, /score, /script, /alerte, /classement) :
+ *     PUT /applications/{application.id}/guilds/{guild.id}/commands (remplace toute la liste, prise en compte immédiate) ;
  *  2. si NEXT_PUBLIC_SITE_URL est une adresse publique https : règle l'adresse des interactions de l'application
  *     (PATCH /applications/@me, champ interactions_endpoint_url). Discord vérifie l'adresse en y envoyant un PING
  *     signé : le site doit déjà être en ligne avec DISCORD_PUBLIC_KEY.
@@ -18,7 +19,7 @@ function fail(message: string): never {
 async function main() {
   const { env } = await import('@/lib/env');
   const { discordApi } = await import('@/lib/discord/rest');
-  const { DISCORD_COMMANDS } = await import('@/lib/discord/interactions');
+  const { DISCORD_COMMANDS } = await import('@/lib/discord/commands');
   const { discordStatus } = await import('@/lib/discord/config');
   const missing = [
     ['DISCORD_BOT_TOKEN', env.discordBotToken],
@@ -50,6 +51,13 @@ async function main() {
   const status = discordStatus();
   console.log(status.channels ? '✓ Salons du jour configurés' : '· Salons du jour : DISCORD_PUBLIC_CHANNEL_ID ou DISCORD_PRO_CHANNEL_ID absent');
   console.log(status.roles ? '✓ Rôle Pro configuré' : '· Rôle Pro : DISCORD_PRO_ROLE_ID absent');
+  console.log(
+    status.leaderboard ? '✓ Classement des séries configuré (le lundi)' : '· Classement des séries : DISCORD_LEADERBOARD_CHANNEL_ID absent',
+  );
+  console.log(
+    '· Salon Pro : réserve-le au rôle Pro dans les permissions du salon (Discord ne le fait pas pour toi) ;\n' +
+      '  /script répond en différé : sur Netlify, CRON_SECRET doit être réglé (fonction discord-interaction-background).',
+  );
   console.log(env.discordPublicKey ? '✓ Clé publique présente' : '· DISCORD_PUBLIC_KEY absente : /lier ne marchera pas');
 }
 

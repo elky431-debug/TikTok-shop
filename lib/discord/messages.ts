@@ -1,12 +1,15 @@
 import { BRAND } from '@/lib/brand';
-import type { DigestContent, Product } from '@/lib/db/types';
-import { nicheShort } from '@/lib/niches';
+import type { DigestContent, PlanId, Product } from '@/lib/db/types';
+import { nicheLabel, nicheShort, type NicheId } from '@/lib/niches';
+import { getPlan } from '@/lib/plans';
 import { commissionPerSale, TREND_LABELS } from '@/lib/score';
-import { formatEuros, formatGrowth } from '@/lib/utils';
+import type { TrendEntry } from '@/lib/tendances';
+import { formatDayMonth, formatEuros, formatGrowth } from '@/lib/utils';
+import type { QuickHook } from './hook';
 
 /**
  * Messages envoyés par le bot (objets « embed » et boutons de la doc Discord : resources/message, components/reference).
- * Limites respectées : titre 256, description 4096, valeur de champ 1024 caractères.
+ * Limites respectées : titre 256, description 4096, nom de champ 256, valeur de champ 1024 caractères, 25 champs.
  */
 const ROSE = 0xfe2c55;
 const CYAN = 0x25f4ee;
@@ -17,11 +20,20 @@ export interface DiscordMessage {
   embeds?: Array<Record<string, unknown>>;
   components?: Array<Record<string, unknown>>;
   flags?: number;
+  /** Mentions autorisées : `{ parse: [] }` affiche les pseudos sans notifier personne. */
+  allowed_mentions?: { parse: string[] };
 }
 
 /** Rangée avec un bouton lien (composant 1 « Action Row » contenant un bouton 2, style 5 « Link »). */
 export function linkButton(label: string, url: string) {
   return { type: 1, components: [{ type: 2, style: 5, label, url }] };
+}
+
+/** Mentions des données : produits fictifs, ou relevé de plus de 36 heures (« Données du [date] »). */
+function dataNote(input: { demo: boolean; stale: boolean; dataDate: string | null }): string | null {
+  if (input.demo) return 'Produits fictifs : démonstration en attendant le branchement des vraies données.';
+  if (input.stale && input.dataDate) return `Données du ${formatDayMonth(input.dataDate)}.`;
+  return null;
 }
 
 export function digestMessage(content: DigestContent, siteUrl: string): DiscordMessage {
@@ -55,33 +67,53 @@ export function digestMessage(content: DigestContent, siteUrl: string): DiscordM
   };
 }
 
-/** Masque un nom : « Sérum ██████ ». Aucune information exploitable pour les non-abonnés. */
+/** Masque un nom : « Sérum ██████ ». */
 export function maskName(name: string): string {
   const [first, ...rest] = name.split(' ');
   return `${first} ${rest.map((w) => '█'.repeat(Math.min(6, w.length))).join(' ')}`.trim();
 }
 
-/** Salon public : 3 produits masqués. Salon Pro : les 10 premiers, en clair. */
-export function channelMessages(input: { products: Product[]; demo: boolean; siteUrl: string }) {
-  const top = [...input.products].sort((a, b) => b.latest_score - a.latest_score).slice(0, 10);
+/**
+ * Salon public : les produits d'hier (relevé de la veille), en clair mais sans score, avec le lien des pages
+ * publiques. Le classement du jour reste réservé aux membres Pro (salon Pro).
+ */
+export function veilleMessage(input: { entries: TrendEntry[]; date: string; demo: boolean; siteUrl: string }): DiscordMessage {
   const suffix = input.demo ? ' (produits fictifs, démonstration)' : '';
-  const teaser: DiscordMessage = {
+  const lines = input.entries
+    .slice(0, 5)
+    .map(
+      (p, i) =>
+        `**${i + 1}. ${cut(p.name, 120)}** · ${nicheShort(p.niche)} · ${formatEuros(p.price_cents)} · ${TREND_LABELS[p.trend]}${p.growth_known ? ` ${formatGrowth(p.growth_7d)}` : ''}`,
+    );
+  return {
     embeds: [
       {
-        title: `Les produits du jour${suffix}`,
+        title: `Les produits d’hier${suffix}`,
         color: ROSE,
         description: cut(
-          top
-            .slice(0, 3)
-            .map((p, i) => `**${i + 1}. ${maskName(p.name)}** · ${nicheShort(p.niche)} · ${TREND_LABELS[p.trend]} ${formatGrowth(p.growth_7d)}`)
-            .join('\n') + '\n\nNoms, scores et la suite du classement : réservés aux membres Pro.',
+          `${lines.join('\n')}\n\nRelevé du ${formatDayMonth(input.date)}. Ceux d’aujourd’hui, avec leur score et le classement complet, ` +
+            'sont dans le salon Pro.',
           4096,
         ),
       },
     ],
-    components: [linkButton('Voir les plans', `${input.siteUrl}/prix`)],
+    components: [
+      {
+        type: 1,
+        components: [
+          { type: 2, style: 5, label: 'Voir les tendances', url: `${input.siteUrl}/tendances` },
+          { type: 2, style: 5, label: 'Voir les plans', url: `${input.siteUrl}/prix` },
+        ],
+      },
+    ],
   };
-  const full: DiscordMessage = {
+}
+
+/** Salon Pro : les 10 premiers du jour, en clair, avec leur score. */
+export function proChannelMessage(input: { products: Product[]; demo: boolean; siteUrl: string }): DiscordMessage {
+  const top = [...input.products].sort((a, b) => b.latest_score - a.latest_score).slice(0, 10);
+  const suffix = input.demo ? ' (produits fictifs, démonstration)' : '';
+  return {
     embeds: [
       {
         title: `Radar complet du jour${suffix}`,
@@ -90,7 +122,7 @@ export function channelMessages(input: { products: Product[]; demo: boolean; sit
           top
             .map(
               (p, i) =>
-                `**${i + 1}. [${p.name}](${input.siteUrl}/app/produit/${p.id})** · ${p.latest_score}/100\n` +
+                `**${i + 1}. [${cut(p.name, 120)}](${input.siteUrl}/app/produit/${p.id})** · ${p.latest_score}/100\n` +
                 `${nicheShort(p.niche)} · ${formatEuros(p.price_cents)} · ${formatEuros(commissionPerSale(p.price_cents, p.commission_rate))} par vente · ${TREND_LABELS[p.trend]} ${formatGrowth(p.growth_7d)}`,
             )
             .join('\n'),
@@ -99,5 +131,116 @@ export function channelMessages(input: { products: Product[]; demo: boolean; sit
       },
     ],
   };
-  return { teaser, full };
+}
+
+/** /produits : le top du jour d'une niche, avec ou sans score selon le plan. */
+export function produitsMessage(input: {
+  niche: NicheId;
+  products: Product[];
+  plan: PlanId;
+  lockedCount: number;
+  demo: boolean;
+  stale: boolean;
+  dataDate: string | null;
+  siteUrl: string;
+}): DiscordMessage {
+  const plan = getPlan(input.plan);
+  const lines = input.products.slice(0, 10).map(
+    (p, i) =>
+      `**${i + 1}. [${cut(p.name, 120)}](${input.siteUrl}/app/produit/${p.id})**${plan.showScore ? ` · ${p.latest_score}/100` : ''}\n` +
+      `${formatEuros(p.price_cents)} · ${formatEuros(commissionPerSale(p.price_cents, p.commission_rate))} par vente · ${TREND_LABELS[p.trend]} ${formatGrowth(p.growth_7d)}`,
+  );
+  const notes = [
+    dataNote(input),
+    input.lockedCount > 0
+      ? `${input.lockedCount} autre${input.lockedCount > 1 ? 's' : ''} produit${input.lockedCount > 1 ? 's' : ''} de cette niche ${input.lockedCount > 1 ? 'sont réservés' : 'est réservé'} au plan Pro, avec les scores.`
+      : null,
+  ].filter(Boolean);
+  return {
+    embeds: [
+      {
+        title: cut(`${nicheLabel(input.niche)} : ${plan.showScore ? 'le top du jour' : 'tes produits du jour'}`, 256),
+        color: plan.showScore ? CYAN : ROSE,
+        description: cut([lines.join('\n'), ...notes].filter(Boolean).join('\n\n'), 4096),
+      },
+    ],
+    components: [linkButton(plan.showScore ? 'Ouvrir le radar' : 'Voir les plans', `${input.siteUrl}${plan.showScore ? '/app' : '/prix'}`)],
+  };
+}
+
+/** /score : le score d'un produit expliqué en phrases (masqué en Gratuit, comme dans l'appli). */
+export function scoreMessage(input: { product: Product; plan: PlanId; demo: boolean; stale: boolean; dataDate: string | null; siteUrl: string }): DiscordMessage {
+  const { product } = input;
+  const plan = getPlan(input.plan);
+  const breakdown = product.latest_breakdown;
+  const reasons = (breakdown?.parts ?? [])
+    .filter((p) => p.available !== false)
+    .map((p) => `• ${p.label}${plan.showScore ? ` (${String(p.points).replace('.', ',')} pts)` : ''} : ${p.sentence}`)
+    .join('\n');
+  const growthKnown = breakdown ? breakdown.growth_7d !== null : true;
+  const fields = [
+    { name: 'Score', value: plan.showScore ? `**${product.latest_score}/100**` : 'Masqué en Gratuit (Pro le montre)', inline: true },
+    { name: 'Prix', value: formatEuros(product.price_cents), inline: true },
+    { name: 'Par vente', value: formatEuros(commissionPerSale(product.price_cents, product.commission_rate)), inline: true },
+    {
+      name: 'Tendance sur 7 jours',
+      value: growthKnown ? `${TREND_LABELS[product.trend]} ${formatGrowth(product.growth_7d)}` : 'En mesure (historique trop court)',
+      inline: true,
+    },
+    { name: 'Niche', value: nicheLabel(product.niche), inline: true },
+  ];
+  if (reasons) fields.push({ name: 'Pourquoi', value: cut(reasons, 1024), inline: false });
+  const note = dataNote(input);
+  return {
+    embeds: [
+      {
+        title: cut(product.name, 256),
+        url: `${input.siteUrl}/app/produit/${product.id}`,
+        color: CYAN,
+        description: cut([breakdown?.summary, note].filter(Boolean).join('\n\n'), 4096) || undefined,
+        fields,
+      },
+    ],
+    components: [linkButton('Voir la fiche', `${input.siteUrl}/app/produit/${product.id}`)],
+  };
+}
+
+/** /script : l'accroche rapide, avec le lien du studio pour le script complet. */
+export function hookMessage(product: Pick<Product, 'id' | 'name'>, hook: QuickHook & { simulated: boolean }, siteUrl: string): DiscordMessage {
+  return {
+    content: '',
+    embeds: [
+      {
+        title: cut(`Accroche pour ${product.name}`, 256),
+        color: ROSE,
+        description: cut(
+          `**« ${hook.accroche} »**\n\n${hook.idee}${hook.simulated ? '\n\n_Accroche d’exemple : le service d’écriture n’est pas branché._' : ''}`,
+          4096,
+        ),
+        footer: { text: 'Signale toujours la collaboration commerciale (#publicité).' },
+      },
+    ],
+    components: [linkButton('Écrire le script complet', `${siteUrl}/app/studio?produit=${encodeURIComponent(product.id)}`)],
+  };
+}
+
+/** Classement hebdomadaire des séries (membres inscrits seulement), sans notifier personne. */
+export function leaderboardMessage(entries: Array<{ discordUserId: string; days: number }>, siteUrl: string): DiscordMessage {
+  const medals = ['🥇', '🥈', '🥉'];
+  return {
+    embeds: [
+      {
+        title: 'Classement des séries de la semaine',
+        color: CYAN,
+        description: cut(
+          entries.map((e, i) => `${medals[i] ?? `**${i + 1}.**`} <@${e.discordUserId}> · ${e.days} jour${e.days > 1 ? 's' : ''} d’affilée`).join('\n') +
+            '\n\nUn jour compte dès que tu écris un script, utilises /score ou /script, ou marques une vidéo postée. ' +
+            'Seuls les membres inscrits avec /classement apparaissent ici.',
+          4096,
+        ),
+      },
+    ],
+    components: [linkButton('Ouvrir mon radar', `${siteUrl}/app`)],
+    allowed_mentions: { parse: [] },
+  };
 }

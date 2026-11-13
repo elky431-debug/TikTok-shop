@@ -27,19 +27,24 @@ export class DiscordApiError extends Error {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/**
+ * `auth: false` : routes des webhooks d'interaction (PATCH /webhooks/{application.id}/{interaction.token}/messages/@original),
+ * authentifiées par le jeton de l'interaction présent dans l'adresse, sans le jeton du bot.
+ */
 export async function discordApi<T = unknown>(
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   path: string,
   body?: unknown,
-  opts: { timeoutMs?: number } = {},
+  opts: { timeoutMs?: number; auth?: boolean } = {},
 ): Promise<T> {
-  if (!env.discordBotToken) throw new DiscordApiError(0, null, 'DISCORD_BOT_TOKEN manquant.');
+  const withBot = opts.auth !== false;
+  if (withBot && !env.discordBotToken) throw new DiscordApiError(0, null, 'DISCORD_BOT_TOKEN manquant.');
   const doFetch = fetchForTests ?? fetch;
   for (let attempt = 0; attempt < 3; attempt++) {
     const response = await doFetch(`${API}${path}`, {
       method,
       headers: {
-        authorization: `Bot ${env.discordBotToken}`,
+        ...(withBot ? { authorization: `Bot ${env.discordBotToken}` } : {}),
         'user-agent': `DiscordBot (${env.siteUrl}, 1.0)`,
         ...(body === undefined ? {} : { 'content-type': 'application/json' }),
       },
@@ -63,7 +68,9 @@ export async function discordApi<T = unknown>(
       } catch {
         // corps non JSON
       }
-      throw new DiscordApiError(response.status, code, `Discord ${method} ${path.replace(/\d{15,}/g, '…')} : HTTP ${response.status} ${message}`);
+      // Ni identifiant ni jeton d'interaction dans les journaux.
+      const shown = path.replace(/^\/webhooks\/[^/]+\/[^/]+/, '/webhooks/…/…').replace(/\d{15,}/g, '…');
+      throw new DiscordApiError(response.status, code, `Discord ${method} ${shown} : HTTP ${response.status} ${message}`);
     }
     return (text ? JSON.parse(text) : null) as T;
   }

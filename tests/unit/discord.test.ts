@@ -128,15 +128,30 @@ describe('interactions HTTP (/api/discord/interactions)', () => {
     expect(calls).toContainEqual(expect.objectContaining({ method: 'DELETE', path: rolePath('987654321098765432') }));
   });
 
-  it('déclare /lier avec une option texte obligatoire', () => {
-    expect(DISCORD_COMMANDS.map((c) => c.name)).toEqual(['lier', 'delier']);
+  it('déclare les commandes avec des noms et options conformes à la doc (32 caractères, 25 choix, obligatoires d’abord)', () => {
+    expect(DISCORD_COMMANDS.map((c) => c.name)).toEqual(['lier', 'delier', 'produits', 'score', 'script', 'alerte', 'classement']);
     expect(DISCORD_COMMANDS[0].options).toEqual([expect.objectContaining({ type: 3, name: 'code', required: true })]);
+    for (const c of DISCORD_COMMANDS) {
+      expect(c.name).toMatch(/^[a-z_-]{1,32}$/);
+      expect(c.description.length).toBeLessThanOrEqual(100);
+      const options = ('options' in c ? c.options : []) as ReadonlyArray<{ name: string; description: string; required?: boolean; choices?: unknown[]; autocomplete?: boolean }>;
+      const firstOptional = options.findIndex((o) => !o.required);
+      if (firstOptional >= 0) expect(options.slice(firstOptional).every((o) => !o.required)).toBe(true);
+      for (const o of options) {
+        expect(o.name).toMatch(/^[a-z0-9_-]{1,32}$/);
+        expect(o.description.length).toBeLessThanOrEqual(100);
+        expect((o.choices ?? []).length).toBeLessThanOrEqual(25);
+        expect(Boolean(o.autocomplete && o.choices)).toBe(false);
+      }
+    }
+    expect(JSON.stringify(DISCORD_COMMANDS).length).toBeLessThan(8000);
   });
 });
 
 describe('tâche horaire Discord', () => {
   beforeEach(async () => {
-    await refreshCatalog({ repo, provider: new MockProvider(), date: DAY });
+    // Deux jours de relevés : le salon public montre ceux de la veille.
+    await refreshCatalog({ repo, provider: new MockProvider(), date: DAY, backfillDays: 2 });
     for (const [id, plan, hour, discord] of [
       ['pro9', 'pro', 9, '100000000000000001'],
       ['pro7', 'pro', 7, '100000000000000002'],
@@ -174,15 +189,19 @@ describe('tâche horaire Discord', () => {
     expect((await runDiscordHourly({ repo, now: new Date(`${DAY}T09:00:00Z`) })).dms).toEqual({ sent: 0, failed: 0 });
   });
 
-  it('publie les salons du jour une fois, noms masqués dans le salon public', async () => {
+  it('publie les salons une fois par jour : la veille sans score en public, le jour complet en Pro', async () => {
     const first = await runDiscordHourly({ repo, now: new Date(`${DAY}T07:00:00Z`) });
     expect(first.channels).toBe('publies');
     const publicPost = calls.find((c) => c.path === '/channels/444444444444444444/messages')!;
     const proPost = calls.find((c) => c.path === '/channels/555555555555555555/messages')!;
-    const teaser = String((publicPost.body!.embeds as Array<{ description: string }>)[0].description);
-    expect(teaser).toContain('█');
-    expect(teaser).not.toContain('/app/produit/');
-    expect(String((proPost.body!.embeds as Array<{ description: string }>)[0].description)).toContain('https://tracktout.com/app/produit/');
+    const embed = (publicPost.body!.embeds as Array<{ title: string; description: string }>)[0];
+    expect(embed.title).toBe('Les produits d’hier (produits fictifs, démonstration)');
+    expect(embed.description).toContain('Relevé du 11 novembre');
+    expect(embed.description).not.toContain('/100');
+    expect(embed.description).not.toContain('/app/produit/');
+    const proText = String((proPost.body!.embeds as Array<{ description: string }>)[0].description);
+    expect(proText).toContain('https://tracktout.com/app/produit/');
+    expect(proText).toContain('/100');
     calls = [];
     expect((await runDiscordHourly({ repo, now: new Date(`${DAY}T10:00:00Z`) })).channels).toBe('deja');
     expect(calls.some((c) => c.path.startsWith('/channels/4'))).toBe(false);
