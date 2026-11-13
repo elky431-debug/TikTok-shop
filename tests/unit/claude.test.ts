@@ -56,7 +56,7 @@ describe('génération avec Claude', () => {
 
   beforeEach(() => {
     parse.mockReset();
-    process.env.ANTHROPIC_API_KEY = 'sk-test';
+    process.env.ANTHROPIC_API_KEY = 'fausse-cle-anthropic-pour-test';
     process.env.ANTHROPIC_MODEL = '';
   });
 

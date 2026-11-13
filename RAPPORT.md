@@ -414,7 +414,7 @@ Ce n'était ni le modèle ni un paramètre : la variable **`OPENAI_API_KEY` de N
 L'appel est conforme à la doc de `gpt-6-luna` (sorties structurées, `max_output_tokens`, `store`) et fonctionne en
 local avec une vraie clé : le modèle est gardé.
 
-**À faire :** Netlify → Site configuration → Environment variables → `OPENAI_API_KEY` = ta clé `sk-…` (sans
+**À faire :** Netlify → Site configuration → Environment variables → `OPENAI_API_KEY` = ta vraie clé OpenAI (sans
 crochets, sans espace), puis « Trigger deploy ». `/api/health` passe alors de `degraded` à `ok` (champ
 `ai.keyOk: true`). Tant que la clé est mauvaise, le studio l'écrit clairement au lieu d'un « Bad Request ».
 Profites-en pour corriger `NEXT_PUBLIC_SITE_URL` (il doit valoir l'adresse Netlify actuelle ou `https://tracktout.com`).

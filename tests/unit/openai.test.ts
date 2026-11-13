@@ -63,7 +63,7 @@ const bodyOf = (fetchMock: ReturnType<typeof fakeFetch>, call = 0) => JSON.parse
 
 beforeEach(() => {
   vi.stubEnv('AI_PROVIDER', 'openai');
-  vi.stubEnv('OPENAI_API_KEY', 'sk-test-openai-0123456789abcdef');
+  vi.stubEnv('OPENAI_API_KEY', 'fausse-cle-openai-pour-test');
   vi.stubEnv('OPENAI_MODEL', '');
 });
 
@@ -77,10 +77,10 @@ describe('choix du fournisseur', () => {
     expect(env.aiProvider).toBeNull();
     expect(isAiConfigured()).toBe(false);
     vi.stubEnv('AI_PROVIDER', 'anthropic');
-    vi.stubEnv('ANTHROPIC_API_KEY', 'sk-ant-test');
+    vi.stubEnv('ANTHROPIC_API_KEY', 'fausse-cle-anthropic-pour-test');
     expect(env.aiProvider).toBe('anthropic');
     vi.stubEnv('AI_PROVIDER', '');
-    vi.stubEnv('OPENAI_API_KEY', 'sk-test-openai-0123456789abcdef');
+    vi.stubEnv('OPENAI_API_KEY', 'fausse-cle-openai-pour-test');
     expect(env.aiProvider).toBe('anthropic'); // sans AI_PROVIDER : Claude d'abord s'il a sa clé
   });
 });
@@ -95,7 +95,7 @@ describe('génération avec OpenAI', () => {
 
     const [url, init] = fetchMock.mock.calls[0];
     expect(String(url)).toBe('https://api.openai.com/v1/responses');
-    expect(new Headers(init?.headers).get('authorization')).toBe('Bearer sk-test-openai-0123456789abcdef');
+    expect(new Headers(init?.headers).get('authorization')).toBe('Bearer fausse-cle-openai-pour-test');
     const body = bodyOf(fetchMock);
     expect(body).toMatchObject({ model: 'gpt-6-luna', instructions: SYSTEM_PROMPT, store: false, max_output_tokens: 16000 });
     expect(body.text.format).toMatchObject({ type: 'json_schema', name: 'scripts_video', strict: true });
@@ -152,11 +152,11 @@ describe('génération avec OpenAI', () => {
   });
 
   it('traduit les erreurs de l’API en français, sans jamais montrer la clé', async () => {
-    const fetchMock = fakeFetch(json({ error: { message: 'Incorrect API key provided: sk-test-openai', type: 'invalid_request_error' } }, 401));
+    const fetchMock = fakeFetch(json({ error: { message: 'Incorrect API key provided: fausse-cle-openai-pour-test', type: 'invalid_request_error' } }, 401));
     const error = await generateScripts(input, new OpenAIScriptModel({ fetch: fetchMock as unknown as typeof fetch })).catch((e) => e);
     expect(error).toBeInstanceOf(ScriptGenerationError);
     expect(error.message).toBe('La clé OPENAI_API_KEY est refusée : vérifie-la dans les réglages.');
-    expect(error.message).not.toContain('sk-test-openai');
+    expect(error.message).not.toContain('fausse-cle-openai-pour-test');
   });
 
   it('repère un texte d’exemple collé à la place de la clé (OpenAI répond alors 400) et le dit sans le montrer', async () => {
@@ -167,7 +167,7 @@ describe('génération avec OpenAI', () => {
     expect(error.message).toMatch(/n’est pas une vraie clé OpenAI/);
     expect(error.message).not.toContain('ta clé');
     expect(fetchMock).not.toHaveBeenCalled(); // aucun appel inutile
-    vi.stubEnv('OPENAI_API_KEY', 'sk-test-openai-0123456789abcdef');
+    vi.stubEnv('OPENAI_API_KEY', 'fausse-cle-openai-pour-test');
     expect(env.aiKeyProblem).toBeNull();
   });
 

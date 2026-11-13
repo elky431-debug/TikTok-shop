@@ -141,7 +141,7 @@ describe('coûts', () => {
   it('coût de l’IA : jetons mesurés × prix du modèle ; inconnu si le prix manque, 0 sans IA', () => {
     expect(aiPrice()).toEqual({ model: 'simulé', input: 0, output: 0 });
     vi.stubEnv('AI_PROVIDER', 'openai');
-    vi.stubEnv('OPENAI_API_KEY', 'sk-test');
+    vi.stubEnv('OPENAI_API_KEY', 'fausse-cle-openai-pour-test');
     expect(aiPrice()).toEqual({ model: 'gpt-6-luna', input: 0.1, output: 0.5 });
     // Script : 1 300 × 0,10 + 3 800 × 0,50 par million ≈ 0,002 $ (mesure de la décision 115).
     expect(aiCostUsd({ scripts: 1, otherAi: 0 })).toBeCloseTo(0.00203, 5);

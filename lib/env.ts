@@ -61,17 +61,16 @@ export const env = {
     return null;
   },
   /**
-   * Problème de forme de la clé du fournisseur d'IA choisi (texte d'exemple collé à la place de la clé, espace, guillemets),
-   * ou null. Ne dit jamais rien de la clé elle-même. Les clés OpenAI commencent par « sk- », celles d'Anthropic par
-   * « sk-ant- » (docs officielles).
+   * Problème de forme de la clé du fournisseur d'IA choisi (texte d'exemple collé à la place de la clé : espace, crochet,
+   * accent, guillemet, longueur trop courte), ou null. Ne dit jamais rien de la clé elle-même. Pas de préfixe écrit ici :
+   * le scan des secrets de Netlify prend un préfixe de clé suivi de caractères pour une vraie clé.
    */
   get aiKeyProblem(): string | null {
     const provider = this.aiProvider;
-    if (provider === 'openai' && !/^sk-[A-Za-z0-9_-]{20,}$/.test(this.openaiKey)) {
-      return "OPENAI_API_KEY n'a pas la forme d'une clé OpenAI (une clé commence par sk- et ne contient ni espace ni accent)";
-    }
-    if (provider === 'anthropic' && !/^sk-ant-[A-Za-z0-9_-]{20,}$/.test(this.anthropicKey)) {
-      return "ANTHROPIC_API_KEY n'a pas la forme d'une clé Anthropic (une clé commence par sk-ant-)";
+    const key = provider === 'openai' ? this.openaiKey : provider === 'anthropic' ? this.anthropicKey : '';
+    if (provider && !/^[A-Za-z0-9_-]{20,}$/.test(key)) {
+      const name = provider === 'openai' ? 'OPENAI_API_KEY' : 'ANTHROPIC_API_KEY';
+      return `${name} n'a pas la forme d'une clé (texte d'exemple ? une clé ne contient ni espace, ni crochet, ni accent, ni guillemet)`;
     }
     return null;
   },
@@ -81,14 +80,12 @@ export const env = {
     if (!provider || !this.aiKeyProblem) return [];
     const raw = process.env[provider === 'openai' ? 'OPENAI_API_KEY' : 'ANTHROPIC_API_KEY'] ?? '';
     const key = raw.trim();
-    const prefix = provider === 'openai' ? 'sk-' : 'sk-ant-';
     const hints: string[] = [];
-    if (!key.startsWith(prefix)) hints.push(`ne commence pas par ${prefix}`);
     if (/["'`]/.test(key)) hints.push('contient des guillemets (à retirer)');
     if (/\s/.test(key)) hints.push('contient des espaces ou des retours à la ligne');
     if (/[^\x21-\x7E]/.test(key)) hints.push('contient des accents ou des caractères spéciaux');
     if (/[[\]<>]/.test(key)) hints.push('contient des crochets : texte d’exemple ?');
-    if (key.length < 40) hints.push(`trop courte (${key.length} caractères)`);
+    if (key.length < 20) hints.push(`trop courte (${key.length} caractères)`);
     return hints;
   },
   /** Nom lisible du modèle utilisé pour les scripts (écran admin). */

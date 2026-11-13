@@ -897,8 +897,8 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      identifiant de requête OpenAI présent) ont montré que la demande atteignait bien OpenAI et que la variable
      `OPENAI_API_KEY` de Netlify contenait un texte d'exemple de 15 caractères au lieu d'une clé. Aucun paramètre de
      l'appel n'est en cause (doc du modèle : sorties structurées, `max_output_tokens`, `store` pris en charge) : on
-     garde `gpt-6-luna`. Désormais `env.aiKeyProblem` repère une clé mal formée (OpenAI : `sk-…` sans espace ni accent ;
-     Anthropic : `sk-ant-…`), le studio l'écrit en clair sans jamais montrer la clé, et `/api/health` la liste dans
+     garde `gpt-6-luna`. Désormais `env.aiKeyProblem` repère une clé mal formée (texte d'exemple : espace, crochet,
+     accent, guillemet, moins de 20 caractères), le studio l'écrit en clair sans jamais montrer la clé, et `/api/health` la liste dans
      `problems` (statut « degraded ») avec `ai: { provider, model, keyOk }`.
 165. **Coque copiée d'EtSmart** (`components/app/shell.tsx`, d'après `src/app/dashboard/page.tsx` d'EtSmart) : barre
      latérale fixe de 64 px qui s'ouvre à 256 px au survol ou au focus clavier (`transition-[width] 300 ms ease-out`),
@@ -1025,3 +1025,10 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      de 150 caractères sans promesse de gains (`BRAND_TAGLINE`, `BRAND_DESCRIPTION` dans `lib/brand.ts`), reprises
      par Open Graph, Twitter, l'image de partage et le manifeste ; adresse canonique « / ». Vérifié à 360, 390 et
      1440 px : aucun débordement.
+186. **Scan des secrets de Netlify** : le build échouait depuis le commit qui ajoutait, dans un test, une fausse clé au
+     format exact d'une clé OpenAI (« likely secret »). Plus aucune chaîne de clé dans le dépôt : tests et exemples
+     utilisent « fausse-cle-openai-pour-test » / « fausse-cle-anthropic-pour-test », le contrôle de forme de la clé ne
+     cite plus de préfixe (il repère un texte d'exemple : espace, crochet, accent, guillemet, moins de 20 caractères),
+     et le masquage des messages d'erreur cache toute suite de 20 caractères de clé ou plus. Le scan reste actif.
+     Vérifié sur un build de production local avec le vrai fichier d'environnement : la vraie clé n'apparaît dans aucun
+     fichier du build (navigateur comme serveur) ; seule reste la propriété CSS `mask-composite`.

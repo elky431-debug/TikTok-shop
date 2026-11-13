@@ -20,7 +20,7 @@ import { ModelRefusalError, withCorrection, type ScriptModel } from './types';
  * Modèle : OPENAI_MODEL, par défaut gpt-6-luna (le moins cher des modèles en service avec sorties structurées).
  */
 const KEY_PROBLEM_MESSAGE =
-  'L’écriture des scripts est indisponible : la clé OPENAI_API_KEY du serveur n’est pas une vraie clé OpenAI (elle doit commencer par sk-). Remplace-la dans les variables d’environnement, puis redéploie.';
+  'L’écriture des scripts est indisponible : la clé OPENAI_API_KEY du serveur n’est pas une vraie clé OpenAI (texte d’exemple, espace ou guillemets ?). Remplace-la dans les variables d’environnement, puis redéploie.';
 
 /** Clé mal formée : inutile d'appeler OpenAI (réponse 400 assurée), on le dit tout de suite. */
 class KeyProblemError extends Error {}
@@ -109,7 +109,8 @@ export class OpenAIScriptModel implements ScriptModel {
       if (env.aiKeyProblem) return KEY_PROBLEM_MESSAGE;
       // Détail renvoyé par l'API (paramètre et code, jamais la clé ni la demande) : la cause exacte se lit à l'écran.
       const apiMessage = String((error.error as { message?: string } | undefined)?.message ?? error.message ?? '')
-        .replace(/sk-[A-Za-z0-9_-]+/g, 'sk-…')
+        // Toute suite de 20 caractères de clé ou plus est masquée (une clé ne s'affiche jamais, quel que soit son format).
+        .replace(/[A-Za-z0-9_-]{20,}/g, '…')
         .slice(0, 160);
       const detail = [
         error.param ? `paramètre « ${error.param} »` : null,
