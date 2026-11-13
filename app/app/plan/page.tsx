@@ -1,26 +1,23 @@
 import type { Metadata } from 'next';
-import { CalendarDays } from 'lucide-react';
+import { CalendarDays, LayoutGrid } from 'lucide-react';
 import Link from 'next/link';
 import { PlanGate } from '@/components/app/plan-gate';
+import { MonthCalendar } from '@/components/v2/month-calendar';
 import { LinkButton } from '@/components/ui/button';
-import { Field, Select } from '@/components/ui/field';
+import { Field, Input, Select } from '@/components/ui/field';
 import { SubmitButton } from '@/components/ui/submit-button';
-import { Callout, Card, EmptyState, PageHeader } from '@/components/ui/surface';
+import { Callout, Card, EmptyState, PageHeader, ProgressBar } from '@/components/ui/surface';
 import { requireOnboardedViewer } from '@/lib/auth/session';
 import { getRepo } from '@/lib/db';
 import { getPlan } from '@/lib/plans';
-import { cn, formatShortDate, parisDate } from '@/lib/utils';
-import { planProgress, RHYTHMS, type PlanItemStatus, type PublicationPlan } from '@/lib/v2/planning';
-import { createPlanAction, deletePlanAction, setPlanItemAction } from './actions';
+import { addDays, formatLongDate, parisDate } from '@/lib/utils';
+import { loadMyProducts } from '@/lib/v2/my-products';
+import { monthCalendar, parseMonth, planProgress, RHYTHMS } from '@/lib/v2/planning';
+import { createPlanAction, unschedulePlanAction } from './actions';
 
 export const metadata: Metadata = { title: 'Plan de publication' };
 
-const NEXT_STATUS: Record<PlanItemStatus, { next: PlanItemStatus; label: string }> = {
-  a_tourner: { next: 'tourne', label: 'Tournée' },
-  tourne: { next: 'poste', label: 'Postée' },
-  poste: { next: 'a_tourner', label: 'Annuler' },
-};
-const STATUS_LABEL: Record<PlanItemStatus, string> = { a_tourner: 'À tourner', tourne: 'Tournée', poste: 'Postée' };
+const RHYTHM_HINTS: Record<number, string> = { 3: 'lundi, mercredi, vendredi', 5: 'du lundi au vendredi', 7: 'tous les jours' };
 
 export default async function PlanPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
   const { profile } = await requireOnboardedViewer('/app/plan');
@@ -29,16 +26,21 @@ export default async function PlanPage({ searchParams }: { searchParams: Record<
       <div className="max-w-3xl">
         <PageHeader title="Plan de publication" />
         <PlanGate plan="Pro" title="20 vidéos par produit, au bon rythme">
-          Choisis un produit suivi et ton rythme : les 20 vidéos sont réparties sur les semaines à venir, avec un rappel le
-          jour J par e-mail et Discord, et un calendrier à importer.
+          Choisis un produit suivi et ton rythme : ses vidéos sont réparties sur les semaines à venir dans un calendrier, avec
+          un rappel le jour J par notification, e-mail et Discord, et un fichier à importer dans ton agenda.
         </PlanGate>
       </div>
     );
   }
-  const repo = getRepo();
-  const [plans, saved] = await Promise.all([repo.listRecords<PublicationPlan>(profile.id, 'publication'), repo.listSavedProducts(profile.id)]);
-  const products = await repo.getProducts(saved.map((s) => s.product_id));
   const today = parisDate();
+  const { rows } = await loadMyProducts(getRepo(), profile, today);
+  const month = parseMonth(searchParams.mois) ?? today.slice(0, 7);
+  const scheduled = rows.filter((r) => r.board.data.rhythm);
+  const weeks = monthCalendar(
+    month,
+    rows.map((r) => ({ id: r.board.id, data: r.board.data })),
+  );
+  const preselected = rows.some((r) => r.product.id === searchParams.produit) ? searchParams.produit : undefined;
 
   return (
     <div className="max-w-4xl">
@@ -46,18 +48,20 @@ export default async function PlanPage({ searchParams }: { searchParams: Record<
         title="Plan de publication"
         description="Tenir 20 vidéos par produit, c’est là que l’affiliation paie. Rien n’est publié à ta place : tu reçois un rappel le jour J."
       />
-      {searchParams.ok === 'cree' ? <Callout tone="gain" className="mb-6" title="Plan créé : premier rappel demain." /> : null}
+      {searchParams.ok === 'cree' ? <Callout tone="gain" className="mb-6" title="Vidéos réparties dans le calendrier : rappel le jour J à l’heure de ton récap." /> : null}
+      {searchParams.ok === 'retire' ? <Callout tone="neutral" className="mb-6" title="Calendrier retiré. Ton tableau de vidéos est intact." /> : null}
       {searchParams.erreur ? <Callout tone="rose" className="mb-6" title="Choisis un produit de « Mes produits » et un rythme." /> : null}
 
-      <Card>
-        <h2 className="text-lg">Nouveau plan</h2>
-        {products.length ? (
-          <form action={createPlanAction} className="mt-4 grid gap-3 sm:grid-cols-[1fr_12rem_auto] sm:items-end">
-            <Field label="Produit suivi" htmlFor="produit">
-              <Select id="produit" name="produit" required>
-                {products.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name.slice(0, 80)}
+      <Card id="nouveau">
+        <h2 className="text-lg">Planifier un produit</h2>
+        <p className="mt-1 text-sm text-muted">Les vidéos pas encore postées sont réparties selon ton rythme. Refaire un plan le remplace.</p>
+        {rows.length ? (
+          <form action={createPlanAction} className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_13rem_10rem_auto] lg:items-end">
+            <Field label="Produit suivi" htmlFor="produit" className="sm:col-span-2 lg:col-span-1">
+              <Select id="produit" name="produit" required defaultValue={preselected}>
+                {rows.map((r) => (
+                  <option key={r.product.id} value={r.product.id}>
+                    {r.product.name.slice(0, 80)}
                   </option>
                 ))}
               </Select>
@@ -66,12 +70,15 @@ export default async function PlanPage({ searchParams }: { searchParams: Record<
               <Select id="rythme" name="rythme" defaultValue="5">
                 {RHYTHMS.map((r) => (
                   <option key={r} value={r}>
-                    {r} vidéos par semaine
+                    {r} par semaine ({RHYTHM_HINTS[r]})
                   </option>
                 ))}
               </Select>
             </Field>
-            <SubmitButton pendingLabel="Création…">Créer le plan</SubmitButton>
+            <Field label="À partir du" htmlFor="debut">
+              <Input id="debut" name="debut" type="date" min={today} defaultValue={addDays(today, 1)} />
+            </Field>
+            <SubmitButton pendingLabel="Répartition…">Planifier les vidéos</SubmitButton>
           </form>
         ) : (
           <p className="mt-2 text-sm text-muted">
@@ -84,70 +91,58 @@ export default async function PlanPage({ searchParams }: { searchParams: Record<
         )}
       </Card>
 
-      {plans.length ? (
-        <div className="mt-6 space-y-6">
-          {plans.map((record) => {
-            const plan = record.data;
+      <Card className="mt-6">
+        <MonthCalendar month={month} weeks={weeks} today={today} hrefFor={(m) => `/app/plan?mois=${m}`} />
+      </Card>
+
+      {scheduled.length ? (
+        <section className="mt-6 space-y-3" aria-labelledby="plans-en-cours">
+          <h2 id="plans-en-cours" className="text-lg">
+            Produits planifiés
+          </h2>
+          {scheduled.map(({ board, product }) => {
+            const plan = board.data;
             const progress = planProgress(plan);
+            const next = plan.items.filter((i) => i.status !== 'poste' && i.date && i.date >= today).sort((a, b) => a.date!.localeCompare(b.date!))[0];
+            const late = plan.items.filter((i) => i.status !== 'poste' && i.date && i.date < today).length;
             return (
-              <Card key={record.id} id={`plan-${record.id}`}>
+              <Card key={board.id}>
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <h2 className="line-clamp-2 text-lg">{plan.product_name}</h2>
+                    <h3 className="line-clamp-2 text-base">{product.name}</h3>
                     <p className="text-sm text-muted">
                       {plan.rhythm} vidéos par semaine · {progress.posted}/{progress.total} postées
+                      {next ? ` · prochaine : ${next.date === today ? 'aujourd’hui' : formatLongDate(next.date!)}` : ''}
                     </p>
+                    {late ? <p className="mt-1 text-sm text-warn">{late} vidéo{late > 1 ? 's' : ''} en retard : replanifie pour les répartir à nouveau.</p> : null}
                   </div>
-                  <div className="flex gap-2">
-                    <LinkButton href={`/api/plan/${record.id}/ics`} variant="outline" size="sm">
+                  <div className="flex flex-wrap gap-2">
+                    <LinkButton href={`/app/mes-produits/${encodeURIComponent(product.id)}`} variant="outline" size="sm">
+                      <LayoutGrid className="h-4 w-4" aria-hidden="true" />
+                      Ouvrir le tableau
+                    </LinkButton>
+                    <LinkButton href={`/api/plan/${board.id}/ics`} variant="outline" size="sm" prefetch={false}>
                       <CalendarDays className="h-4 w-4" aria-hidden="true" />
                       Exporter le calendrier
                     </LinkButton>
-                    <form action={deletePlanAction}>
-                      <input type="hidden" name="plan" value={record.id} />
-                      <SubmitButton variant="ghost" size="sm" pendingLabel="…">
-                        Supprimer
+                    <form action={unschedulePlanAction}>
+                      <input type="hidden" name="plan" value={board.id} />
+                      <SubmitButton variant="ghost" size="sm" pendingLabel="Retrait…">
+                        Retirer du calendrier
                       </SubmitButton>
                     </form>
                   </div>
                 </div>
-                <div className="mt-3 h-2 rounded-full bg-surface" aria-hidden="true">
-                  <div className="h-full rounded-full bg-gain" style={{ width: `${(progress.posted / progress.total) * 100}%` }} />
-                </div>
-                <ol className="mt-4 grid gap-2 sm:grid-cols-2">
-                  {plan.items.map((item) => (
-                    <li
-                      key={item.n}
-                      className={cn(
-                        'flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm',
-                        item.date === today && item.status !== 'poste' ? 'border-cyan-ink/50 bg-cyan-ink/5' : 'border-line',
-                      )}
-                    >
-                      <span>
-                        <span className="num font-semibold">n°{item.n}</span>
-                        <span className="text-muted"> · {item.date === today ? 'aujourd’hui' : formatShortDate(item.date)}</span>
-                        <span className={cn('ml-2 text-xs', item.status === 'poste' ? 'text-gain' : 'text-muted')}>{STATUS_LABEL[item.status]}</span>
-                      </span>
-                      <form action={setPlanItemAction}>
-                        <input type="hidden" name="plan" value={record.id} />
-                        <input type="hidden" name="n" value={item.n} />
-                        <input type="hidden" name="statut" value={NEXT_STATUS[item.status].next} />
-                        <SubmitButton variant="ghost" size="sm" pendingLabel="…">
-                          {NEXT_STATUS[item.status].label}
-                        </SubmitButton>
-                      </form>
-                    </li>
-                  ))}
-                </ol>
+                <ProgressBar className="mt-3" value={progress.posted} max={progress.total} label={`Vidéos postées sur ${product.name}`} />
               </Card>
             );
           })}
-        </div>
-      ) : (
-        <EmptyState title="Pas encore de plan" className="mt-6">
-          Crée ton premier plan : 20 vidéos réparties sur les semaines à venir.
+        </section>
+      ) : rows.length ? (
+        <EmptyState title="Aucun produit planifié" className="mt-6">
+          Choisis un produit et un rythme ci-dessus : ses vidéos sont réparties sur les semaines à venir.
         </EmptyState>
-      )}
+      ) : null}
     </div>
   );
 }
