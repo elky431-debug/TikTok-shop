@@ -579,11 +579,9 @@ nuit (découverte, vidéos, détails) est un coût fixe partagé, suivi dans l'a
 scripts, 50 recherches par jour). Usage courant : bien en dessous.
 
 **À faire de ton côté**
-0. **Migration de la base** (autorisée le 13 novembre, appliquée par la session après le push, voir plus bas) :
-   `npm run db:setup -- --sans-seed` applique `20261117000100_nouvelle_grille.sql` (renomme `free` → `aucun`,
-   `proplus` → `elite`, ajoute `starter`, protège la preuve du consentement). Sans elle, le site marche (tout le monde
-   est envoyé au choix de l'abonnement) mais aucun plan ne peut être enregistré : ni paiement, ni plan offert par l'admin
-   (message clair dans `/admin/utilisateurs`).
+0. ✅ **Migration de la base appliquée** en production le 13 novembre, après le push (autorisée) :
+   `20261117000100_nouvelle_grille.sql` (`free` → `aucun`, `proplus` → `elite`, `starter` ajouté, preuve du
+   consentement protégée). Types régénérés, identiques à ceux du code.
 1. **Stripe** : mettre `STRIPE_SECRET_KEY` (test d'abord), lancer `npm run stripe:setup` (3 produits, 6 prix retrouvés
    par `lookup_key`, coupon formateur, portail), puis `npm run stripe:setup -- --webhook` une fois en ligne. Plus aucune
    variable `STRIPE_PRICE_…` à recopier ; tu peux retirer les anciennes de Netlify.
@@ -591,3 +589,10 @@ scripts, 50 recherches par jour). Usage courant : bien en dessous.
    personne ne peut entrer dans l'appli. Pour tester ou ouvrir un compte : `/admin/utilisateurs` → « Changer le plan »
    (plan offert, sans facture ni commission, exclu du MRR).
 3. Relire les textes juridiques ci-dessus.
+
+**Vérifications** (avant le push) : 430 tests unitaires ✅ (dont 5 corrections de code trouvées par la mise à jour des
+tests : plan offert sans e-mail de confirmation ni statut « abonné », plafonds de sécurité jamais chiffrés dans les
+messages des séries, du style et des retouches, pas de récap du matin sans abonnement), 4 parcours Playwright ✅
+(inscription → choix de l'abonnement → paiement simulé, code formateur à −20 %, paiement annuel puis résiliation,
+studio Starter avec 5 formats), build ✅, lint ✅, migrations rejouées deux fois + tests RLS ✅, audit axe ✅ sur
+`/abonnement`, `/prix` et `/app/passer-pro`.
