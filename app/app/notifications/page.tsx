@@ -35,8 +35,8 @@ export default async function NotificationsPage({ searchParams }: { searchParams
     .find(Boolean);
 
   return (
-    <div className="max-w-3xl">
-      <PageHeader
+    <div className="mx-auto max-w-3xl">
+      <PageHeader eyebrow="Compte"
         title="Notifications"
         description={unread ? `${plural(unread, 'notification non lue', 'notifications non lues')}.` : 'Tu es à jour.'}
         actions={

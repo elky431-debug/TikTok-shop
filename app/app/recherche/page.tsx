@@ -30,7 +30,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
   if (!plan.keywordSearchesPerDay) {
     return (
       <div>
-        <PageHeader title="Recherche par mot-clé" />
+        <PageHeader eyebrow="Trouver" title="Recherche par mot-clé"  description="Les produits de TikTok Shop France qui contiennent ce mot, triés par ventes sur 7 jours. Chaque chiffre vient de la source ; ce qu’elle ne donne pas n’est pas affiché." />
         <PlanGate plan="Pro" title="Cherche n’importe quel produit de TikTok Shop">
           Tape un mot-clé (« sérum », « gourde »…) et vois les produits qui se vendent le plus en France sur 7 jours, avec leur
           commission et leur nombre d’affiliés.
@@ -52,7 +52,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
       <Link href="/app/radar" className="mb-4 inline-flex items-center gap-1 text-sm text-muted hover:text-fg">
         <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Radar
       </Link>
-      <PageHeader
+      <PageHeader eyebrow="Trouver"
         title="Recherche par mot-clé"
         description="Les produits de TikTok Shop France qui contiennent ce mot, triés par ventes sur 7 jours. Chaque chiffre vient de la source ; ce qu’elle ne donne pas n’est pas affiché."
       />

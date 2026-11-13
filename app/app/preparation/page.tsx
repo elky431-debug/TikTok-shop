@@ -66,8 +66,8 @@ export default async function PreparationPage({ searchParams }: { searchParams: 
     : '';
 
   return (
-    <div className="max-w-3xl">
-      <PageHeader
+    <div className="mx-auto max-w-3xl">
+      <PageHeader eyebrow="Compte"
         title="Mode préparation"
         description={`Sous ${formatInt(AFFILIATE_THRESHOLD)} abonnés, on prépare ton compte : une niche, 30 jours de vidéos sans vente, et tout ce qu’il faut pour être prêt le jour où tu passes le cap.`}
       />

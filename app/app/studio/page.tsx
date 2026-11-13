@@ -46,7 +46,7 @@ export default async function StudioPage({
 
   return (
     <div>
-      <PageHeader
+      <PageHeader eyebrow="Créer"
         title="Studio de scripts"
         description="10 accroches et 3 scripts complets, plan par plan, écrits pour ton style. Tu choisis, tu tournes avec le téléprompteur."
       />

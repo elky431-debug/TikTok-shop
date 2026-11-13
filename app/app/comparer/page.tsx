@@ -85,7 +85,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Reco
   if (!plan.compare) {
     return (
       <div>
-        <PageHeader title="Comparer des produits" />
+        <PageHeader eyebrow="Trouver" title="Comparer des produits"  description="Choisis 2 à 4 produits parmi tes favoris et tes produits suivis. Le meilleur chiffre de chaque ligne est marqué ; une donnée que la source ne donne pas reste vide." />
         <PlanGate plan="Pro" title="Compare 2 à 4 produits côte à côte">
           Score, commission, ventes, affiliés, note : tout sur une seule page pour choisir le produit de tes 20 prochaines vidéos.
         </PlanGate>
@@ -127,7 +127,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Reco
       <Link href="/app/radar" className="mb-4 inline-flex items-center gap-1 text-sm text-muted hover:text-fg">
         <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Radar
       </Link>
-      <PageHeader
+      <PageHeader eyebrow="Trouver"
         title="Comparer des produits"
         description="Choisis 2 à 4 produits parmi tes favoris et tes produits suivis. Le meilleur chiffre de chaque ligne est marqué ; une donnée que la source ne donne pas reste vide."
       />

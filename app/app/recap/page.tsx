@@ -135,7 +135,7 @@ export default async function RecapPage({ searchParams }: { searchParams: Record
 
   return (
     <div>
-      <PageHeader
+      <PageHeader eyebrow="Compte"
         title="Récap"
         description={`Chaque matin à ${profile.digest_hour} h : tes meilleurs produits, ton défi du jour et un script prêt. Le dimanche à ${settings.dimanche.heure} h : ta semaine en chiffres.`}
       />

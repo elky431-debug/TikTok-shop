@@ -396,3 +396,64 @@ Site URL : `https://tracktout.com` (domaine définitif).
 > `AUTH_SITE_URL=https://tracktout.com AUTH_REDIRECT_ORIGINS=<adresse Netlify>,https://www.tracktout.com AUTH_EMAIL_CONFIRMATION=on npm run auth:setup`
 > (la même commande branche aussi le SMTP de Resend). Les modèles d'e-mail de confirmation et de lien magique sont
 > déjà en français et ramènent à l'adresse d'où vient la demande.
+
+## Refonte de l'appli : identique à EtSmart, avec un vrai dashboard (13 novembre 2026)
+
+| Étape | État | Où |
+| --- | --- | --- |
+| 0. Studio en panne en production | **Cause trouvée, action de ta part requise** (voir ci-dessous) | `lib/ai/providers/openai.ts`, `lib/env.ts`, `/api/health` |
+| 1. Coque et composants d'EtSmart | Fait | `components/app/shell.tsx`, `components/ui/surface.tsx`, `field.tsx`, `app/app/template.tsx` |
+| 2. Dashboard sur `/app`, radar sur `/app/radar` | Fait | `app/app/page.tsx`, `lib/dashboard.ts`, `lib/creator-profile.ts`, `components/dashboard/widgets.tsx` |
+| 3. Onboarding en 10 écrans | Fait, migration appliquée sur Supabase | `app/bienvenue/`, `lib/onboarding-steps.ts`, `supabase/migrations/20261116000100_onboarding_v2.sql` |
+| 4. Toutes les pages + vérifications | Fait (sauf comparaison en images avec EtSmart, voir plus bas) | `docs/captures/refonte-app/` |
+
+### Étape 0 : pourquoi le studio échouait en ligne
+
+Ce n'était ni le modèle ni un paramètre : la variable **`OPENAI_API_KEY` de Netlify contient un texte d'exemple de
+15 caractères** (il commence par « [ta clé »), pas une clé OpenAI. OpenAI répond alors 400 « Bad Request » sans détail.
+L'appel est conforme à la doc de `gpt-6-luna` (sorties structurées, `max_output_tokens`, `store`) et fonctionne en
+local avec une vraie clé : le modèle est gardé.
+
+**À faire :** Netlify → Site configuration → Environment variables → `OPENAI_API_KEY` = ta clé `sk-…` (sans
+crochets, sans espace), puis « Trigger deploy ». `/api/health` passe alors de `degraded` à `ok` (champ
+`ai.keyOk: true`). Tant que la clé est mauvaise, le studio l'écrit clairement au lieu d'un « Bad Request ».
+Profites-en pour corriger `NEXT_PUBLIC_SITE_URL` (il doit valoir l'adresse Netlify actuelle ou `https://tracktout.com`).
+
+### Ce qui a changé pour l'utilisateur
+
+- **Barre latérale d'EtSmart** en 5 sections (Accueil ; Trouver : Radar, Recherche, Alertes, Comparer ; Créer : Studio,
+  Analyse de vidéo, Plan de publication ; Suivre : Mes produits, Mes gains, Propositions de marques ; Compte : Récap,
+  Parrainage, Préparation en mode préparation, Compte). Espace formateur et admin dans la même coque.
+- **Dashboard** : profil (initiale, prénom, @pseudo, plan, statut, série), chiffres publics du compte TikTok
+  (Nexscope, un relevé par jour au plus) ou tranche déclarée, 5 indicateurs avec variation (gains et ventes du mois,
+  vidéos de la semaine face à l'objectif, produits suivis, alertes du jour), courbe gains + ventes sur 7/30/90 jours,
+  produit du jour (score qui compte, commission, « Écrire mes scripts »), produits suivis (mini-courbe, baisse en
+  tête), objectif du mois (anneau), 3 vidéos à tourner (à cocher), activité récente, raccourcis. Que des chiffres
+  saisis ou mesurés ; un état vide utile partout.
+- **Onboarding** : 10 questions, une par écran, ≈ 1 minute ; comptes existants : 6 nouvelles questions, une fois.
+- **Toutes les pages** : en-tête d'EtSmart (section, titre, une phrase d'utilité), cartes et champs d'EtSmart, pages
+  de formulaire centrées comme les réglages d'EtSmart, onglets à trait dégradé.
+
+### Coût ajouté
+
+- Profil TikTok (Nexscope `social/tiktok/profile`) : 10 crédits par relevé, 0 si Nexscope répond depuis son cache ;
+  au plus 1 par utilisateur actif et par jour, et seulement s'il a un pseudo. Aucun appel réel n'a été fait pendant ce
+  travail (testé sur la réponse documentée).
+- OpenAI : inchangé.
+
+### Vérifications
+
+- `npm run build`, `npm run lint`, tests unitaires (390), Playwright (4 parcours) : verts.
+- Audit axe WCAG 2.1 AA : 0 erreur sur les 17 pages de l'appli, l'admin, l'espace formateur et l'onboarding, à 390 et
+  1440 px.
+- Onboarding : tient dans 390 × 844 sans défiler, vérifié écran par écran.
+- Migration `onboarding_v2` rejouée deux fois sur un Postgres jetable, puis appliquée sur Supabase (API de gestion).
+- Captures 390 / 1440 px : `docs/captures/refonte-app/` (comparaison avec le code d'EtSmart dans son README).
+
+### Ce qui reste
+
+- **Comparaison en images avec EtSmart** : son appli exige un compte connecté à son Supabase. Avec un compte de
+  démonstration EtSmart, les mêmes pages se capturent en une commande. En attendant, la correspondance a été faite
+  classe par classe dans le code (`docs/captures/refonte-app/README.md`).
+- **Génération réelle en ligne** : dès que `OPENAI_API_KEY` est corrigée sur Netlify.
+- Reprise de la session 5 sur la refonte : section « Session 5 » du rapport, captures, coûts par utilisateur.

@@ -38,12 +38,12 @@ export default async function ImportMappingPage({ searchParams }: { searchParams
   const preview = table.rows.slice(0, 5);
 
   return (
-    <div className="max-w-4xl">
+    <div className="mx-auto max-w-5xl">
       <Link href="/app/gains" className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-muted hover:text-fg">
         <ArrowLeft className="h-4 w-4" aria-hidden="true" />
         Mes gains
       </Link>
-      <PageHeader
+      <PageHeader eyebrow="Suivre"
         title="Choisis les colonnes"
         description={`${pending.data.file_name ? `« ${pending.data.file_name} » : ` : ''}${table.rows.length} ligne${table.rows.length > 1 ? 's' : ''}. Dis-nous quelle colonne contient quoi : ce choix est gardé pour tes prochains imports.`}
       />

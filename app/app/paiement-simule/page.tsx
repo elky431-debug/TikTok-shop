@@ -24,7 +24,7 @@ export default async function PaiementSimulePage({
     const sub = await getRepo().getActiveSubscription(profile.id);
     return (
       <div className="mx-auto max-w-lg">
-        <PageHeader title="Portail d’abonnement (simulé)" description="En production, cette page est le portail client Stripe." />
+        <PageHeader eyebrow="Compte" title="Portail d’abonnement (simulé)" description="En production, cette page est le portail client Stripe." />
         <Card className="space-y-4">
           {sub ? (
             <>
@@ -55,7 +55,7 @@ export default async function PaiementSimulePage({
 
   return (
     <div className="mx-auto max-w-lg">
-      <PageHeader title="Paiement simulé" description="Mode local : aucune clé Stripe n’est configurée." />
+      <PageHeader eyebrow="Compte" title="Paiement simulé" description="Mode local : aucune clé Stripe n’est configurée." />
       <Callout tone="cyan" className="mb-4" title="Aucune carte, aucun prélèvement">
         Ce paiement passe par le même traitement que les webhooks Stripe : ton plan, ton parrain et ses commissions sont mis à
         jour comme en vrai.

@@ -61,8 +61,8 @@ export default async function ComptePage({ searchParams }: { searchParams: Recor
   const mode = billingMode();
 
   return (
-    <div className="max-w-3xl">
-      <PageHeader title="Mon compte" description={user.email} />
+    <div className="mx-auto max-w-3xl">
+      <PageHeader eyebrow="Compte" title="Mon compte" description={user.email} />
       {message ? (
         <Callout tone={message.tone} className="mb-6" title={message.text} />
       ) : null}

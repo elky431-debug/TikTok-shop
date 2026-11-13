@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { SimpleShell } from '@/components/app/simple-shell';
 import { Input } from '@/components/ui/field';
 import { SubmitButton } from '@/components/ui/submit-button';
-import { Badge, Callout, Card, EmptyState } from '@/components/ui/surface';
+import { Badge, Callout, Card, EmptyState, PageHeader } from '@/components/ui/surface';
 import { listBeneficiaries, listCoachRows } from '@/lib/admin/people';
 import { requireAdmin } from '@/lib/auth/session';
 import { getRepo } from '@/lib/db';
@@ -38,7 +38,7 @@ export default async function AdminCoachesPage({ searchParams }: { searchParams:
 
   return (
     <SimpleShell title="Administration">
-      <h1 className="text-2xl sm:text-3xl">Formateurs et versements</h1>
+      <PageHeader eyebrow="Administration" title="Formateurs et versements" description="Les candidatures, les codes et les commissions à verser aux formateurs." className="mb-6" />
       <div className="mt-4">
         <AdminNav current="formateurs" />
       </div>

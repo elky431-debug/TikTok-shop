@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { SimpleShell } from '@/components/app/simple-shell';
 import { SubmitButton } from '@/components/ui/submit-button';
-import { Badge, Callout, Card, EmptyState, Panel } from '@/components/ui/surface';
+import { Badge, Callout, Card, EmptyState, Panel, PageHeader } from '@/components/ui/surface';
 import { aiPrice, aiCostUsd, estimateMargin, nexscopeByDay, NEXSCOPE_CREDITS, TOKENS } from '@/lib/admin/costs';
 import { getBusinessMetrics, latestSubscriptions, listDailyMetrics } from '@/lib/admin/metrics';
 import { adminSettings } from '@/lib/admin/settings';
@@ -94,7 +94,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Record
 
   return (
     <SimpleShell title="Administration">
-      <h1 className="text-2xl sm:text-3xl">Administration</h1>
+      <PageHeader eyebrow="Administration" title="Aperçu" description="Inscriptions, abonnements, données et tâches de la nuit : l’état de Tracktout en un coup d’œil." className="mb-6" />
       <div className="mt-4">
         <AdminNav current="apercu" />
       </div>

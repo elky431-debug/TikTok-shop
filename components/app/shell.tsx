@@ -88,6 +88,7 @@ export interface ShellUser {
 export function isActivePath(pathname: string, href: string): boolean {
   if (href === '/app') return pathname === '/app';
   if (href === '/app/radar') return pathname === '/app/radar' || pathname.startsWith('/app/produit');
+  if (href === '/admin') return pathname === '/admin' || pathname.startsWith('/admin/emails');
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 

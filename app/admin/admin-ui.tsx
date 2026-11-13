@@ -10,15 +10,16 @@ export function AdminNav({ current }: { current: 'apercu' | 'utilisateurs' | 'fo
     { id: 'formateurs', href: '/admin/formateurs', label: 'Formateurs et versements' },
   ] as const;
   return (
-    <nav aria-label="Sections de l’administration" className="scrollbar-none -mx-4 mb-6 flex gap-1 overflow-x-auto px-4 text-sm font-semibold sm:mx-0 sm:px-0">
+    <nav aria-label="Sections de l’administration" className="scrollbar-none -mx-3 mb-8 flex overflow-x-auto border-b border-line px-3 text-sm font-semibold sm:mx-0 sm:px-0">
       {tabs.map((t) => (
         <Link
           key={t.id}
           href={t.href}
           aria-current={t.id === current ? 'page' : undefined}
-          className={cn('whitespace-nowrap rounded-full px-3.5 py-1.5', t.id === current ? 'bg-surface text-fg' : 'text-muted hover:text-fg')}
+          className={cn('relative whitespace-nowrap px-4 py-3 transition-all sm:px-6', t.id === current ? 'text-fg' : 'text-muted hover:text-fg/80')}
         >
           {t.label}
+          {t.id === current ? <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[image:var(--gradient)]" aria-hidden="true" /> : null}
         </Link>
       ))}
     </nav>

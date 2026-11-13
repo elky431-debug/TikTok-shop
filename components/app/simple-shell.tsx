@@ -1,34 +1,50 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { Logo } from '@/components/brand/logo';
-import { PageGlow } from '@/components/ui/page-glow';
+import { AppBottomNav, AppMobileHeader, AppSidebar, AppTopBar, type NavLink, type NavSection, type ShellUser } from '@/components/app/shell';
+import { MotionProvider } from '@/components/app/motion-provider';
+import { getCoachForViewer, requireViewer } from '@/lib/auth/session';
+import { countUnreadNotifications } from '@/lib/notification-center';
+import { getPlan, isPaidPlan } from '@/lib/plans';
 
-/** Coquille légère des espaces formateur et admin (hors de l'appli principale). */
-export function SimpleShell({ title, children }: { title: string; children: ReactNode }) {
+/**
+ * Coque des espaces formateur et admin : la même que l'appli (barre latérale d'EtSmart), avec les sections de l'espace
+ * et un retour à l'appli. Les droits sont vérifiés par chaque page (requireCoach, requireAdmin).
+ */
+export async function SimpleShell({ children }: { title?: string; children: ReactNode }) {
+  const viewer = await requireViewer('/app');
+  const { profile } = viewer;
+  const [coach, unread] = await Promise.all([getCoachForViewer(viewer.user.id), countUnreadNotifications(profile.id)]);
+  const sections: NavSection[] = [{ label: 'Appli', items: [{ href: '/app', label: 'Dashboard', icon: 'dashboard' }, { href: '/app/radar', label: 'Radar', icon: 'radar' }] }];
+  if (coach) sections.push({ label: 'Formateur', items: [{ href: '/formateur', label: 'Mes élèves', icon: 'formateur' }] });
+  if (viewer.isAdmin) {
+    sections.push({
+      label: 'Administration',
+      items: [
+        { href: '/admin', label: 'Aperçu', icon: 'admin' },
+        { href: '/admin/utilisateurs', label: 'Utilisateurs', icon: 'eleve' },
+        { href: '/admin/formateurs', label: 'Formateurs et versements', icon: 'formateur' },
+      ],
+    });
+  }
+  const shortcuts: NavLink[] = sections.flatMap((s) => s.items).slice(0, 5);
+  const plan = getPlan(profile.plan);
+  const user: ShellUser = {
+    firstName: profile.first_name ?? 'Mon compte',
+    initial: (profile.first_name ?? profile.email).trim().charAt(0).toUpperCase() || '?',
+    planName: plan.name,
+    paid: isPaidPlan(profile.plan),
+    unread,
+  };
   return (
-    <div className="relative min-h-dvh">
-      <PageGlow />
-      <header className="sticky top-0 z-30 border-b border-line bg-bg/80 backdrop-blur-xl">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-          <div className="flex items-center gap-3">
-            <Logo href="/app" />
-            <span className="hidden text-sm font-semibold text-muted sm:inline">{title}</span>
-          </div>
-          <nav className="flex items-center gap-1 text-sm font-semibold">
-            <Link href="/app" className="rounded-full px-3 py-1.5 text-muted hover:bg-surface hover:text-fg">
-              Retour à l’appli
-            </Link>
-            <form action="/auth/deconnexion" method="post">
-              <button type="submit" className="rounded-full px-3 py-1.5 text-muted hover:bg-surface hover:text-fg">
-                Me déconnecter
-              </button>
-            </form>
-          </nav>
-        </div>
-      </header>
-      <main id="contenu" className="relative mx-auto max-w-6xl px-4 pb-16 pt-6 sm:px-6 sm:pt-10">
-        {children}
-      </main>
-    </div>
+    <MotionProvider>
+      <div className="flex min-h-dvh bg-bg">
+        <AppSidebar sections={sections} user={user} />
+        <AppMobileHeader sections={sections} user={user} />
+        <main id="contenu" className="flex min-h-0 min-w-0 flex-1 flex-col bg-bg pb-16 pt-16 lg:ml-16 lg:pb-0 lg:pt-0">
+          <AppTopBar user={user} />
+          <div className="mx-auto w-full max-w-7xl flex-1 px-3 py-4 sm:px-6 sm:py-6 md:px-8 md:py-10 lg:px-10">{children}</div>
+        </main>
+        <AppBottomNav items={shortcuts} />
+      </div>
+    </MotionProvider>
   );
 }

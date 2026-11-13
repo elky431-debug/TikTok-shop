@@ -24,8 +24,8 @@ export default async function PlanPage({ searchParams }: { searchParams: Record<
   const { profile } = await requireOnboardedViewer('/app/plan');
   if (!getPlan(profile.plan).planning) {
     return (
-      <div className="max-w-3xl">
-        <PageHeader title="Plan de publication" />
+      <div className="mx-auto max-w-5xl">
+        <PageHeader eyebrow="Créer" title="Plan de publication"  description="Tenir 20 vidéos par produit, c’est là que l’affiliation paie. Rien n’est publié à ta place : tu reçois un rappel le jour J." />
         <PlanGate plan="Pro" title="20 vidéos par produit, au bon rythme">
           Choisis un produit suivi et ton rythme : ses vidéos sont réparties sur les semaines à venir dans un calendrier, avec
           un rappel le jour J par notification, e-mail et Discord, et un fichier à importer dans ton agenda.
@@ -44,8 +44,8 @@ export default async function PlanPage({ searchParams }: { searchParams: Record<
   const preselected = rows.some((r) => r.product.id === searchParams.produit) ? searchParams.produit : undefined;
 
   return (
-    <div className="max-w-4xl">
-      <PageHeader
+    <div className="mx-auto max-w-5xl">
+      <PageHeader eyebrow="Créer"
         title="Plan de publication"
         description="Tenir 20 vidéos par produit, c’est là que l’affiliation paie. Rien n’est publié à ta place : tu reçois un rappel le jour J."
       />

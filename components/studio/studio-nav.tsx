@@ -10,11 +10,14 @@ const TABS = [
 
 export type StudioTab = (typeof TABS)[number]['id'];
 
-/** Onglets du studio : écrire, série de 20 vidéos, style personnel. Défilement horizontal sur mobile. */
+/**
+ * Onglets du studio au style d'EtSmart : texte blanc pour l'onglet ouvert, trait en dégradé dessous, trait de séparation
+ * sur toute la largeur. Défilement horizontal sur mobile.
+ */
 export function StudioNav({ active, badges = {} }: { active: StudioTab; badges?: Partial<Record<StudioTab, string>> }) {
   return (
-    <nav aria-label="Studio" className="scrollbar-none -mx-4 mb-6 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-      <ul className="flex w-max gap-1 rounded-2xl border border-line bg-raised p-1">
+    <nav aria-label="Studio" className="scrollbar-none -mx-3 mb-8 overflow-x-auto px-3 sm:mx-0 sm:px-0">
+      <ul className="flex min-w-max border-b border-line">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const current = tab.id === active;
@@ -24,13 +27,16 @@ export function StudioNav({ active, badges = {} }: { active: StudioTab; badges?:
                 href={tab.href}
                 aria-current={current ? 'page' : undefined}
                 className={cn(
-                  'flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold transition-colors',
-                  current ? 'bg-surface text-fg' : 'text-muted hover:bg-surface/60 hover:text-fg',
+                  'relative flex items-center gap-2 px-4 py-3 text-sm font-semibold transition-all sm:px-6',
+                  current ? 'text-fg' : 'text-muted hover:text-fg/80',
                 )}
               >
                 <Icon className={cn('h-4 w-4', current && 'text-cyan-ink')} aria-hidden="true" />
                 {tab.label}
-                {badges[tab.id] ? <span className="rounded-full bg-cyan-soft px-1.5 py-px text-[0.68rem] font-bold text-cyan-ink">{badges[tab.id]}</span> : null}
+                {badges[tab.id] ? (
+                  <span className="rounded-full border border-cyan-ink/25 bg-cyan-ink/10 px-1.5 py-px text-[0.68rem] font-bold text-cyan-ink">{badges[tab.id]}</span>
+                ) : null}
+                {current ? <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[image:var(--gradient)]" aria-hidden="true" /> : null}
               </Link>
             </li>
           );

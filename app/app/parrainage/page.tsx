@@ -46,8 +46,8 @@ export default async function ParrainagePage() {
   const texts = shareTexts({ link, code: profile.referral_code });
 
   return (
-    <div className="max-w-3xl">
-      <PageHeader
+    <div className="mx-auto max-w-3xl">
+      <PageHeader eyebrow="Compte"
         title="Parrainage"
         description={`Invite d’autres créateurs : tu touches ${rate} % de ce qu’ils paient (hors taxes), chaque mois, tant qu’ils restent abonnés.`}
       />

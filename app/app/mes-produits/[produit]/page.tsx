@@ -32,12 +32,12 @@ export default async function ProductBoardPage({ params, searchParams }: { param
   const canPlan = getPlan(profile.plan).planning;
 
   return (
-    <div className="max-w-5xl">
+    <div className="mx-auto max-w-5xl">
       <Link href="/app/mes-produits" className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-muted hover:text-fg">
         <ArrowLeft className="h-4 w-4" aria-hidden="true" />
         Mes produits
       </Link>
-      <PageHeader
+      <PageHeader eyebrow="Suivre"
         title={<span className="line-clamp-2">{product.name}</span>}
         description={`${progress.posted} vidéo${progress.posted > 1 ? 's' : ''} postée${progress.posted > 1 ? 's' : ''} sur ${progress.total}. Glisse chaque vidéo d’une colonne à l’autre au fil du tournage.`}
         actions={

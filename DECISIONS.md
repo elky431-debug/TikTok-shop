@@ -955,3 +955,14 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
 173. **Score « pour toi »** : facteurs par nouvelle tranche (les petits comptes privilégient faible concurrence et petit
      prix, les gros la commission), facteur de niveau (débute : concurrence ×1,2 et prix ×1,15 ; vend régulièrement :
      commission ×1,15), bonus de style si **un** des styles choisis se prête à la niche. Expliqué en phrases.
+174. **Toutes les pages au format EtSmart** : chaque en-tête porte la section de la barre latérale (Trouver, Créer,
+     Suivre, Compte, Formateur, Administration), un titre et une phrase d'utilité, y compris les pages verrouillées.
+     Pages de formulaire centrées en `max-w-3xl` (comme les réglages d'EtSmart), pages à tableaux et graphiques en
+     `max-w-5xl`, radar et dashboard sur toute la largeur du conteneur (`max-w-7xl`). Onglets du studio et de l'admin au
+     style d'EtSmart (trait dégradé sous l'onglet ouvert).
+175. **Espaces formateur et admin dans la coque de l'appli** (`SimpleShell` réécrit) : mêmes barre latérale, en-tête et
+     barre du bas, avec leurs propres sections (Appli, Formateur, Administration) ; les droits restent vérifiés par
+     chaque page.
+176. **Captures** : `npm run screenshots` suit la nouvelle connexion (lien magique en option) et l'onboarding en 10
+     questions ; sur téléphone, la barre du bas est masquée dans les captures pleine page. L'appli EtSmart ne peut pas
+     être capturée ici (compte et Supabase à elle) : comparaison faite dans le code.

@@ -32,7 +32,7 @@ export default async function AlertsPage({ searchParams }: { searchParams: Recor
   if (!plan.alerts) {
     return (
       <div>
-        <PageHeader title="Alertes" />
+        <PageHeader eyebrow="Trouver" title="Alertes"  description="Une règle, et chaque nuit après le relevé, tu es prévenu dès qu’un nouveau produit la remplit. Une notification par alerte et par jour, au plus." />
         <PlanGate plan="Pro" title="Sois prévenu quand un produit remplit tes critères">
           Niche, commission minimum, ventes sur 7 jours, croissance, prix : chaque nuit, dès qu’un nouveau produit remplit ta règle,
           tu reçois une notification, un e-mail et un message Discord.
@@ -65,7 +65,7 @@ export default async function AlertsPage({ searchParams }: { searchParams: Recor
 
   return (
     <div>
-      <PageHeader
+      <PageHeader eyebrow="Trouver"
         title="Alertes"
         description="Une règle, et chaque nuit après le relevé, tu es prévenu dès qu’un nouveau produit la remplit. Une notification par alerte et par jour, au plus."
       />

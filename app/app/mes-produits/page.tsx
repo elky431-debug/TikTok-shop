@@ -115,8 +115,8 @@ export default async function MesProduitsPage({ searchParams }: { searchParams: 
   const weekDone = stats.thisWeek >= stats.weeklyGoal;
 
   return (
-    <div className="max-w-3xl">
-      <PageHeader
+    <div className="mx-auto max-w-5xl">
+      <PageHeader eyebrow="Suivre"
         title="Mes produits"
         description="Choisis peu de produits et publie beaucoup sur chacun. Objectif : 20 vidéos par produit."
       />

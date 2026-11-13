@@ -65,8 +65,8 @@ export default async function GainsPage({ searchParams }: { searchParams: Record
   const { profile } = await requireOnboardedViewer('/app/gains');
   if (!getPlan(profile.plan).earnings) {
     return (
-      <div className="max-w-3xl">
-        <PageHeader title="Mes gains" />
+      <div className="mx-auto max-w-5xl">
+        <PageHeader eyebrow="Suivre" title="Mes gains"  description="Tes commissions, saisies par toi ou importées. Tes chiffres restent privés." />
         <PlanGate plan="Pro" title="Suis ce que tu gagnes, produit par produit">
           Note tes commissions à la main ou importe ton relevé en CSV : gains par jour, semaine et mois, par produit, par
           format et par niche, objectif du mois et export pour ta comptabilité.
@@ -97,8 +97,8 @@ export default async function GainsPage({ searchParams }: { searchParams: Record
   const fieldLabel = (key: string) => EARNING_FIELDS.find((f) => f.key === key)?.label ?? key;
 
   return (
-    <div className="max-w-4xl">
-      <PageHeader
+    <div className="mx-auto max-w-5xl">
+      <PageHeader eyebrow="Suivre"
         title="Mes gains"
         description="Tes commissions, saisies par toi ou importées. Tes chiffres restent privés."
         actions={

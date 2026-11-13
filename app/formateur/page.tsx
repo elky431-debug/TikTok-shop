@@ -5,7 +5,7 @@ import { SimpleShell } from '@/components/app/simple-shell';
 import { CopyButton } from '@/components/ui/copy-button';
 import { Input, Label, Textarea } from '@/components/ui/field';
 import { SubmitButton } from '@/components/ui/submit-button';
-import { Badge, Callout, Card, EmptyState, Panel } from '@/components/ui/surface';
+import { Badge, Callout, Card, EmptyState, Panel, PageHeader } from '@/components/ui/surface';
 import { requireCoach } from '@/lib/auth/session';
 import { ANNOUNCES_PER_DAY, getCoachDashboard, listAnnouncements } from '@/lib/coach';
 import type { ReferralStatus } from '@/lib/db/types';
@@ -64,14 +64,11 @@ export default async function FormateurPage({ searchParams }: { searchParams: Re
 
   return (
     <SimpleShell title="Espace formateur">
-      <div className="mb-8">
-        <p className="text-sm font-medium text-muted">{coach.training_name}</p>
-        <h1 className="mt-1 text-2xl sm:text-3xl">Tes élèves</h1>
-        <p className="mt-1.5 max-w-prose text-muted">
-          Tes élèves ont {months} mois de Pro offerts avec tes codes. Tu touches {rate} % de ce qu’ils paient ensuite, chaque mois, tant
-          qu’ils restent abonnés.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow={<>Formateur · {coach.training_name}</>}
+        title="Tes élèves"
+        description={`Tes élèves ont ${months} mois de Pro offerts avec tes codes. Tu touches ${rate} % de ce qu’ils paient ensuite, chaque mois, tant qu’ils restent abonnés.`}
+      />
       {notice ? <Callout tone={notice.tone} className="mb-6" title={notice.text} /> : null}
 
       <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line bg-line md:grid-cols-4">

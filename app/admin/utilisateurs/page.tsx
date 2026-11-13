@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { SimpleShell } from '@/components/app/simple-shell';
 import { Input, Label, Select } from '@/components/ui/field';
 import { SubmitButton } from '@/components/ui/submit-button';
-import { Badge, Callout, EmptyState } from '@/components/ui/surface';
+import { Badge, Callout, EmptyState, PageHeader } from '@/components/ui/surface';
 import { filterProfiles } from '@/lib/admin/people';
 import { requireAdmin } from '@/lib/auth/session';
 import { getRepo } from '@/lib/db';
@@ -36,7 +36,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: R
 
   return (
     <SimpleShell title="Administration">
-      <h1 className="text-2xl sm:text-3xl">Utilisateurs</h1>
+      <PageHeader eyebrow="Administration" title="Utilisateurs" description="Retrouve un compte, son plan et son activité ; change un plan à la main si besoin." className="mb-6" />
       <div className="mt-4">
         <AdminNav current="utilisateurs" />
       </div>

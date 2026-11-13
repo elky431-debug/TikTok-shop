@@ -20,7 +20,7 @@ export default async function SeriesPage({ searchParams }: { searchParams: { pro
   const rights = studioRights(profile.plan);
   const header = (
     <>
-      <PageHeader
+      <PageHeader eyebrow="Créer"
         title="Série de 20 vidéos"
         description="Sur TikTok Shop, c’est le volume sur un même produit qui compte : 20 angles différents, chacun prêt à devenir un script en un clic."
       />

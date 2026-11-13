@@ -30,8 +30,8 @@ export default async function OffresPage({ searchParams }: { searchParams: Recor
   const plan = getPlan(profile.plan);
   if (!plan.offersPerDay) {
     return (
-      <div className="max-w-3xl">
-        <PageHeader title="Propositions de marques" />
+      <div className="mx-auto max-w-5xl">
+        <PageHeader eyebrow="Suivre" title="Propositions de marques"  description="Colle le message d’une marque : on le lit, on le note, et tu réponds en un clic." />
         <PlanGate plan="Pro+" title="Trie les propositions de marques en 10 secondes">
           Colle le message reçu : marque, commission, échantillon et conditions sont extraits, notés sur 100 face aux produits
           du radar, avec les points d’attention, trois réponses prêtes à copier et un rappel pour relancer.
@@ -50,8 +50,8 @@ export default async function OffresPage({ searchParams }: { searchParams: Recor
     .sort((a, b) => a.data.follow_up_on!.localeCompare(b.data.follow_up_on!));
 
   return (
-    <div className="max-w-4xl">
-      <PageHeader title="Propositions de marques" description="Colle le message d’une marque : on le lit, on le note, et tu réponds en un clic." />
+    <div className="mx-auto max-w-5xl">
+      <PageHeader eyebrow="Suivre" title="Propositions de marques" description="Colle le message d’une marque : on le lit, on le note, et tu réponds en un clic." />
       {searchParams.erreur ? <Callout tone="rose" className="mb-6" title={ERRORS[searchParams.erreur] ?? ERRORS.ia} /> : null}
       {searchParams.ok === 'statut' ? <Callout tone="gain" className="mb-6" title="Statut et relance enregistrés." /> : null}
       {searchParams.ok === 'suppression' ? <Callout tone="neutral" className="mb-6" title="Proposition supprimée." /> : null}

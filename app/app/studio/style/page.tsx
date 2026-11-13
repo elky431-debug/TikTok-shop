@@ -25,7 +25,7 @@ export default async function StylePage({ searchParams }: { searchParams: { ok?:
   const rights = studioRights(profile.plan);
   const header = (
     <>
-      <PageHeader title="Mon style" description="Colle les textes de 3 à 5 de tes vidéos : on en tire ta façon de parler, et chaque script l’imite." />
+      <PageHeader eyebrow="Créer" title="Mon style" description="Colle les textes de 3 à 5 de tes vidéos : on en tire ta façon de parler, et chaque script l’imite." />
       <StudioNav active="style" />
     </>
   );
@@ -45,7 +45,7 @@ export default async function StylePage({ searchParams }: { searchParams: { ok?:
   const samples = data?.samples ?? [];
 
   return (
-    <div className="max-w-4xl">
+    <div className="mx-auto max-w-5xl">
       {header}
       {searchParams.ok && OK[searchParams.ok] ? (
         <Callout tone="gain" className="mb-6">

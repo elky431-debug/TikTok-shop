@@ -23,8 +23,8 @@ export default async function ConsentementFormateurPage({ searchParams }: { sear
 
   if (!coach) {
     return (
-      <div className="max-w-2xl">
-        <PageHeader title="Mon formateur" />
+      <div className="mx-auto max-w-2xl">
+        <PageHeader eyebrow="Compte" title="Mon formateur" />
         <EmptyState title="Tu n’es rattaché à aucun formateur" action={<LinkButton href="/app/radar">Retour au radar</LinkButton>}>
           Si ton formateur t’a donné un code, il s’applique à l’inscription. Rien n’est partagé avec personne.
         </EmptyState>
@@ -35,8 +35,8 @@ export default async function ConsentementFormateurPage({ searchParams }: { sear
   const [consent, announcements] = await Promise.all([getStudentConsent(profile), listAnnouncements(coach, getRepo(), 10)]);
 
   return (
-    <div className="max-w-2xl">
-      <PageHeader title="Mon formateur" description={`Tu es inscrit avec ${coach.training_name}. Tu décides de ce qu’il voit.`} />
+    <div className="mx-auto max-w-2xl">
+      <PageHeader eyebrow="Compte" title="Mon formateur" description={`Tu es inscrit avec ${coach.training_name}. Tu décides de ce qu’il voit.`} />
       {searchParams.ok ? <Callout tone="gain" className="mb-4" title="Tes choix sont enregistrés. Tu peux les changer quand tu veux." /> : null}
 
       <Card className="sm:p-6">

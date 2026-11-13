@@ -32,7 +32,7 @@ export default async function PasserProPage({ searchParams }: { searchParams: { 
 
   return (
     <div>
-      <PageHeader
+      <PageHeader eyebrow="Compte"
         title="Choisis ton plan"
         description="Sans engagement : tu résilies quand tu veux depuis ton compte, en deux clics."
       />

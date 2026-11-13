@@ -41,8 +41,8 @@ export default async function AnalysePage({ searchParams }: { searchParams: Reco
   const plan = getPlan(profile.plan);
   if (!plan.analysesPerDay) {
     return (
-      <div className="max-w-3xl">
-        <PageHeader title="Analyse de vidéo" />
+      <div className="mx-auto max-w-5xl">
+        <PageHeader eyebrow="Créer" title="Analyse de vidéo"  description="Le lien d’une vidéo qui marche, son texte, et ton produit : on la décortique et on l’adapte pour toi." />
         <PlanGate plan="Pro+" title="Comprends pourquoi une vidéo cartonne">
           Colle le lien et le texte d’une vidéo virale : découpage seconde par seconde, ce qui marche et pourquoi, une version
           adaptée à ton produit et à ton style à envoyer au studio, et ta bibliothèque d’inspirations.
@@ -73,8 +73,8 @@ export default async function AnalysePage({ searchParams }: { searchParams: Reco
   };
 
   return (
-    <div className="max-w-4xl">
-      <PageHeader title="Analyse de vidéo" description="Le lien d’une vidéo qui marche, son texte, et ton produit : on la décortique et on l’adapte pour toi." />
+    <div className="mx-auto max-w-5xl">
+      <PageHeader eyebrow="Créer" title="Analyse de vidéo" description="Le lien d’une vidéo qui marche, son texte, et ton produit : on la décortique et on l’adapte pour toi." />
       {searchParams.erreur ? <Callout tone="rose" className="mb-6" title={ERRORS[searchParams.erreur] ?? ERRORS.ia} /> : null}
       {searchParams.ok === 'classement' ? <Callout tone="gain" className="mb-6" title="Classement enregistré." /> : null}
 
