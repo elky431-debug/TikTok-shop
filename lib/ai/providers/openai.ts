@@ -19,6 +19,9 @@ import { ModelRefusalError, withCorrection, type ScriptModel } from './types';
  * `store: false` : la demande (prénom, phrase d'exemple) n'est pas conservée dans l'historique OpenAI.
  * Modèle : OPENAI_MODEL, par défaut gpt-6-luna (le moins cher des modèles en service avec sorties structurées).
  */
+const KEY_PROBLEM_MESSAGE =
+  'L’écriture des scripts est indisponible : la clé OPENAI_API_KEY du serveur n’est pas une vraie clé OpenAI (elle doit commencer par sk-). Remplace-la dans les variables d’environnement, puis redéploie.';
+
 export class OpenAIScriptModel implements ScriptModel {
   readonly name = 'openai' as const;
   readonly source = 'openai' as const;
@@ -87,38 +90,26 @@ export class OpenAIScriptModel implements ScriptModel {
   }
 
   describeError(error: unknown): string {
-    if (error instanceof OpenAI.AuthenticationError) return 'La clé OPENAI_API_KEY est refusée : vérifie-la dans les réglages.';
+    if (error instanceof OpenAI.AuthenticationError) return env.aiKeyProblem ? KEY_PROBLEM_MESSAGE : 'La clé OPENAI_API_KEY est refusée : vérifie-la dans les réglages.';
     if (error instanceof OpenAI.PermissionDeniedError) return 'Ce compte OpenAI n’a pas accès à ce modèle ou à ce service : vérifie OPENAI_MODEL.';
     if (error instanceof OpenAI.RateLimitError) return 'Le service d’écriture est très sollicité (ou le crédit OpenAI est épuisé). Réessaie dans une minute.';
     if (error instanceof OpenAI.NotFoundError) return `Le modèle « ${env.openaiModel} » est introuvable : vérifie OPENAI_MODEL.`;
     if (error instanceof OpenAI.BadRequestError) {
+      // Indices sans secret dans les journaux : hôte appelé et identifiant de requête OpenAI.
+      console.error('[openai] demande refusée', error.status, error.param, error.code, error.requestID, error.message);
+      // Cause vue en production : un texte d'exemple collé à la place de la clé (OpenAI répond alors 400, pas 401).
+      if (env.aiKeyProblem) return KEY_PROBLEM_MESSAGE;
       // Détail renvoyé par l'API (paramètre et code, jamais la clé ni la demande) : la cause exacte se lit à l'écran.
-      // Extrait du message de l'API (une éventuelle clé masquée), utile quand ni paramètre ni code ne sont donnés.
       const apiMessage = String((error.error as { message?: string } | undefined)?.message ?? error.message ?? '')
         .replace(/sk-[A-Za-z0-9_-]+/g, 'sk-…')
         .slice(0, 160);
-      // Indices sans secret : hôte appelé, identifiant de requête OpenAI (absent = réponse d'un intermédiaire), format
-      // de la clé (préfixe, longueur, caractères inattendus).
-      const key = env.openaiKey;
-      const host = (() => {
-        try {
-          return new URL(this.client?.baseURL ?? 'https://api.openai.com/v1').host;
-        } catch {
-          return 'inconnu';
-        }
-      })();
-      const keyShape = `${key.slice(0, 8).replace(/[A-Za-z0-9]{4}$/, '…')} ${key.length} car.${/[^A-Za-z0-9_-]/.test(key) ? ', caractères inattendus' : ''}`;
       const detail = [
         error.param ? `paramètre « ${error.param} »` : null,
         error.code ? `code ${error.code}` : null,
         !error.param && !error.code && apiMessage ? `« ${apiMessage} »` : null,
-        `hôte ${host}`,
-        error.requestID ? `requête ${error.requestID}` : 'sans identifiant OpenAI',
-        `clé ${keyShape}`,
       ]
         .filter(Boolean)
         .join(', ');
-      console.error('[openai] demande refusée', error.status, error.param, error.code, error.message);
       return `Le modèle « ${env.openaiModel} » a refusé la demande${detail ? ` (${detail})` : ''}. Réessaie, ou vérifie OPENAI_MODEL.`;
     }
     if (error instanceof OpenAI.APIConnectionError) return 'Impossible de joindre le service d’écriture. Vérifie la connexion et réessaie.';

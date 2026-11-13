@@ -51,6 +51,21 @@ export const env = {
     if (this.openaiKey) return 'openai';
     return null;
   },
+  /**
+   * Problème de forme de la clé du fournisseur d'IA choisi (texte d'exemple collé à la place de la clé, espace, guillemets),
+   * ou null. Ne dit jamais rien de la clé elle-même. Les clés OpenAI commencent par « sk- », celles d'Anthropic par
+   * « sk-ant- » (docs officielles).
+   */
+  get aiKeyProblem(): string | null {
+    const provider = this.aiProvider;
+    if (provider === 'openai' && !/^sk-[A-Za-z0-9_-]{20,}$/.test(this.openaiKey)) {
+      return "OPENAI_API_KEY n'a pas la forme d'une clé OpenAI (une clé commence par sk- et ne contient ni espace ni accent)";
+    }
+    if (provider === 'anthropic' && !/^sk-ant-[A-Za-z0-9_-]{20,}$/.test(this.anthropicKey)) {
+      return "ANTHROPIC_API_KEY n'a pas la forme d'une clé Anthropic (une clé commence par sk-ant-)";
+    }
+    return null;
+  },
   /** Nom lisible du modèle utilisé pour les scripts (écran admin). */
   get aiModelLabel(): string {
     if (this.aiProvider === 'openai') return `OpenAI (${this.openaiModel})`;

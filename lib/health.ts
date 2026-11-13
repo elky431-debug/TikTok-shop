@@ -30,6 +30,8 @@ export interface HealthReport {
     demo: boolean;
   };
   siteUrl: { value: string; ok: boolean };
+  /** Fournisseur d'IA des scripts (null = générateur simulé) et forme de sa clé, jamais la clé. */
+  ai: { provider: 'openai' | 'anthropic' | null; model: string; keyOk: boolean };
   problems: string[];
 }
 
@@ -69,6 +71,8 @@ export async function healthReport(now: Date = new Date()): Promise<HealthReport
   if (production && catalog?.demo) problems.push('produits fictifs affichés en production');
   const siteOk = !production || !/localhost|127\.0\.0\.1/.test(env.siteUrl);
   if (!siteOk) problems.push('NEXT_PUBLIC_SITE_URL pointe vers localhost');
+  const aiProblem = env.aiKeyProblem;
+  if (aiProblem) problems.push(aiProblem);
 
   const down = !databaseOk || Boolean(catalog?.stale);
   return {
@@ -90,6 +94,7 @@ export async function healthReport(now: Date = new Date()): Promise<HealthReport
       demo: catalog?.demo ?? false,
     },
     siteUrl: { value: env.siteUrl, ok: siteOk },
+    ai: { provider: env.aiProvider, model: env.aiModelLabel, keyOk: !aiProblem },
     problems,
   };
 }

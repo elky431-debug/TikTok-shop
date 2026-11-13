@@ -889,3 +889,14 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      voyage dans un cookie. Filet de sécurité dans le middleware pour les liens qui retombent sur l'accueil.
 163. **Confirmation d'e-mail coupée temporairement** (`mailer_autoconfirm`), à la demande, tant que Resend n'est pas
      branché ; procédure de réactivation dans RAPPORT.md.
+
+## Refonte de l'appli au modèle d'EtSmart (13 novembre 2026)
+
+164. **Bug du studio en production : la clé, pas le modèle.** En ligne, `gpt-6-luna` répondait 400 « Bad Request »
+     sans paramètre ni code, alors que le même appel passait en local. Les indices ajoutés (hôte `api.openai.com`,
+     identifiant de requête OpenAI présent) ont montré que la demande atteignait bien OpenAI et que la variable
+     `OPENAI_API_KEY` de Netlify contenait un texte d'exemple de 15 caractères au lieu d'une clé. Aucun paramètre de
+     l'appel n'est en cause (doc du modèle : sorties structurées, `max_output_tokens`, `store` pris en charge) : on
+     garde `gpt-6-luna`. Désormais `env.aiKeyProblem` repère une clé mal formée (OpenAI : `sk-…` sans espace ni accent ;
+     Anthropic : `sk-ant-…`), le studio l'écrit en clair sans jamais montrer la clé, et `/api/health` la liste dans
+     `problems` (statut « degraded ») avec `ai: { provider, model, keyOk }`.

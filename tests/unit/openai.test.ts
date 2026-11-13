@@ -63,7 +63,7 @@ const bodyOf = (fetchMock: ReturnType<typeof fakeFetch>, call = 0) => JSON.parse
 
 beforeEach(() => {
   vi.stubEnv('AI_PROVIDER', 'openai');
-  vi.stubEnv('OPENAI_API_KEY', 'sk-test-openai');
+  vi.stubEnv('OPENAI_API_KEY', 'sk-test-openai-0123456789abcdef');
   vi.stubEnv('OPENAI_MODEL', '');
 });
 
@@ -80,7 +80,7 @@ describe('choix du fournisseur', () => {
     vi.stubEnv('ANTHROPIC_API_KEY', 'sk-ant-test');
     expect(env.aiProvider).toBe('anthropic');
     vi.stubEnv('AI_PROVIDER', '');
-    vi.stubEnv('OPENAI_API_KEY', 'sk-test-openai');
+    vi.stubEnv('OPENAI_API_KEY', 'sk-test-openai-0123456789abcdef');
     expect(env.aiProvider).toBe('anthropic'); // sans AI_PROVIDER : Claude d'abord s'il a sa clé
   });
 });
@@ -95,7 +95,7 @@ describe('génération avec OpenAI', () => {
 
     const [url, init] = fetchMock.mock.calls[0];
     expect(String(url)).toBe('https://api.openai.com/v1/responses');
-    expect(new Headers(init?.headers).get('authorization')).toBe('Bearer sk-test-openai');
+    expect(new Headers(init?.headers).get('authorization')).toBe('Bearer sk-test-openai-0123456789abcdef');
     const body = bodyOf(fetchMock);
     expect(body).toMatchObject({ model: 'gpt-6-luna', instructions: SYSTEM_PROMPT, store: false, max_output_tokens: 16000 });
     expect(body.text.format).toMatchObject({ type: 'json_schema', name: 'scripts_video', strict: true });
@@ -157,6 +157,17 @@ describe('génération avec OpenAI', () => {
     expect(error).toBeInstanceOf(ScriptGenerationError);
     expect(error.message).toBe('La clé OPENAI_API_KEY est refusée : vérifie-la dans les réglages.');
     expect(error.message).not.toContain('sk-test-openai');
+  });
+
+  it('repère un texte d’exemple collé à la place de la clé (OpenAI répond alors 400) et le dit sans le montrer', async () => {
+    vi.stubEnv('OPENAI_API_KEY', '[ta clé OpenAI]');
+    expect(env.aiKeyProblem).toMatch(/OPENAI_API_KEY/);
+    const fetchMock = fakeFetch(json({ error: { message: 'Bad Request', type: 'invalid_request_error' } }, 400));
+    const error = await generateScripts(input, new OpenAIScriptModel({ fetch: fetchMock as unknown as typeof fetch })).catch((e) => e);
+    expect(error.message).toMatch(/n’est pas une vraie clé OpenAI/);
+    expect(error.message).not.toContain('ta clé');
+    vi.stubEnv('OPENAI_API_KEY', 'sk-test-openai-0123456789abcdef');
+    expect(env.aiKeyProblem).toBeNull();
   });
 
   it('régénère une accroche avec un schéma dédié', async () => {
