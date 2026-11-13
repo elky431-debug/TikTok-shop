@@ -1,0 +1,81 @@
+{
+  "_source": "Réponse simulée au format documenté de tiktok-product-discovery (www.nexscope.ai/api-docs/tiktok-product-discovery, page lue le 12 novembre 2026 : enveloppe { code, msg, data: { total, products } }, champs du tableau « Response fields »), recherche « sérum » en France. Devise « € » comme dans la vraie réponse du relevé de nuit. Noms et identifiants fictifs, aucune donnée personnelle.",
+  "code": 0,
+  "msg": "ok",
+  "data": {
+    "total": 4,
+    "type": "productTable",
+    "products": [
+      {
+        "productId": "1729000000000000001",
+        "title": "Sérum éclat vitamine C 30 ml",
+        "region": "FR",
+        "price": 12.9,
+        "minPrice": 12.9,
+        "maxPrice": 19.9,
+        "currency": "€",
+        "totalSaleCnt": 5400,
+        "totalSale1dCnt": 0,
+        "totalSale7dCnt": 840,
+        "totalSale28dCnt": 2600,
+        "totalSale90dCnt": 5400,
+        "totalSaleGmv7dAmt": 10836,
+        "totalSaleGmv28dAmt": 33540,
+        "totalVideoCnt": 120,
+        "totalLiveCnt": 2,
+        "totalIflCnt": 35,
+        "productCommissionRate": 0.15,
+        "productRating": 4.6,
+        "reviewCount": 230,
+        "skuCount": 2,
+        "shopName": "Boutique A",
+        "isCrossBorder": 0,
+        "availableDate": "2026-10-30 08:00:00",
+        "categoryName": "Beauty & Personal Care -> Skincare -> Serums & Essences",
+        "imageUrl": "https://agent-files.linkfox.com/fastmoss_images/exemple-serum.jpg"
+      },
+      {
+        "productId": "1729000000000000002",
+        "title": "Sérum cheveux importé",
+        "region": "FR",
+        "price": 9.5,
+        "currency": "$",
+        "totalSale7dCnt": 300,
+        "totalSale28dCnt": 900,
+        "totalIflCnt": 12,
+        "totalVideoCnt": 40,
+        "productCommissionRate": 0.1,
+        "shopName": "Boutique B",
+        "categoryName": "Beauty & Personal Care -> Haircare & Styling"
+      },
+      {
+        "productId": "1729000000000000003",
+        "title": "Sérum sans affiliation",
+        "region": "FR",
+        "price": 15,
+        "currency": "€",
+        "totalSale7dCnt": 50,
+        "totalSale28dCnt": 200,
+        "totalIflCnt": 0,
+        "totalVideoCnt": 3,
+        "productCommissionRate": 0,
+        "shopName": "Boutique C",
+        "categoryName": "Beauty & Personal Care -> Skincare"
+      },
+      {
+        "productId": "1729000000000000004",
+        "title": "Sérum de collection en coffret",
+        "region": "FR",
+        "price": 24,
+        "currency": "€",
+        "totalSale7dCnt": 70,
+        "totalSale28dCnt": 210,
+        "totalIflCnt": 4,
+        "totalVideoCnt": 9,
+        "productCommissionRate": 12,
+        "shopName": "Boutique D",
+        "categoryName": "Collectibles -> Boxes"
+      }
+    ]
+  }
+}

@@ -1,8 +1,9 @@
-import { BookmarkCheck, Lock, Users } from 'lucide-react';
+import { BookmarkCheck, Lock, Star, Users } from 'lucide-react';
 import Link from 'next/link';
 import type { ProductView } from '@/lib/radar';
 import { nicheShort } from '@/lib/niches';
 import { cn, formatCompact, formatEuros } from '@/lib/utils';
+import { ProductBadges, WhyNowLine } from './badges';
 import { ProductImage, TrendBadge } from './bits';
 import { ScoreValue } from './score';
 import { Sparkline } from './sparkline';
@@ -44,13 +45,30 @@ function Signals({ product }: { product: ProductView }) {
           {formatCompact(product.active_affiliates)} affiliés
         </span>
       ) : null}
+      <ProductBadges badges={product.badges} trend={product.trend} growthKnown={product.growth_known} />
       {product.saved ? (
         <span className="inline-flex items-center gap-1 text-xs font-semibold text-fg">
           <BookmarkCheck className="h-3.5 w-3.5" aria-hidden="true" />
           Suivi
         </span>
       ) : null}
+      {product.favorite ? (
+        <span className="inline-flex items-center gap-1 text-xs font-semibold text-fg">
+          <Star className="h-3.5 w-3.5" aria-hidden="true" />
+          Favori
+        </span>
+      ) : null}
     </div>
+  );
+}
+
+/** « Pour toi 72 » à côté du score général (plans qui montrent le score). */
+export function PersonalScore({ product, className }: { product: ProductView; className?: string }) {
+  if (product.personal_score === null || product.score === null) return null;
+  return (
+    <span className={cn('num whitespace-nowrap text-xs font-semibold text-muted', className)}>
+      Pour toi <span className="text-fg">{product.personal_score}</span>
+    </span>
   );
 }
 
@@ -76,13 +94,15 @@ export function FeaturedProductCard({ product }: { product: ProductView }) {
         <div>
           <p className="mb-1 text-xs font-medium text-muted">Score d’opportunité</p>
           <ScoreValue score={product.score} size="lg" />
+          <PersonalScore product={product} className="mt-1 block" />
         </div>
         <div className="flex flex-col items-end gap-2">
           <Sparkline values={product.sales_7d} width={132} height={44} tone={trendTone(product.trend)} />
           <Signals product={product} />
         </div>
       </div>
-      {product.breakdown ? <p className="mt-3 text-sm text-muted">{product.breakdown.summary}</p> : null}
+      <WhyNowLine whyNow={product.why_now} className="mt-3" withLabel />
+      {product.breakdown ? <p className="mt-2 text-sm text-muted">{product.breakdown.summary}</p> : null}
     </Link>
   );
 }
@@ -106,9 +126,11 @@ export function ProductCard({ product, rank }: { product: ProductView; rank: num
         </h3>
         <Meta product={product} compact />
         <Signals product={product} />
+        <WhyNowLine whyNow={product.why_now} className="mt-2" compact />
       </div>
-      <div className="flex shrink-0 flex-col items-end justify-between">
+      <div className="flex shrink-0 flex-col items-end justify-between gap-1">
         <ScoreValue score={product.score} size="sm" showMax={false} />
+        <PersonalScore product={product} />
         <Sparkline values={product.sales_7d} width={72} height={26} tone={trendTone(product.trend)} />
       </div>
     </Link>

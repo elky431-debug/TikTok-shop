@@ -8,6 +8,7 @@ import { getRepo } from '@/lib/db';
 import { videosAreFresh } from '@/lib/jobs/refresh';
 import { DEFAULT_VIDEO_GOAL, isPaidPlan } from '@/lib/plans';
 import { canAccessProduct } from '@/lib/radar';
+import { requestHookAnalysis } from '@/lib/radar/hook-analysis';
 
 export async function saveProductAction(formData: FormData) {
   const { profile } = await requireOnboardedViewer();
@@ -19,6 +20,25 @@ export async function saveProductAction(formData: FormData) {
   revalidatePath(`/app/produit/${productId}`);
   revalidatePath('/app/mes-produits');
   revalidatePath('/app');
+}
+
+/**
+ * Analyse IA des accroches des vidéos qui vendent : plan et quota quotidien (`hookAnalysesPerDay`) vérifiés côté
+ * serveur ; une analyse déjà en cache (même produit, mêmes vidéos) ne coûte rien.
+ */
+export async function analyzeHooksAction(formData: FormData) {
+  const { profile } = await requireOnboardedViewer();
+  const productId = String(formData.get('produit') ?? '');
+  const back = `/app/produit/${encodeURIComponent(productId)}`;
+  const product = await getRepo().getProduct(productId);
+  if (!product || !(await canAccessProduct(profile, productId))) redirect('/app');
+  const result = await requestHookAnalysis(profile, product);
+  if (!result.ok) {
+    if (result.reason === 'plan') redirect('/app/passer-pro');
+    redirect(`${back}?accroches=${result.reason}#accroches`);
+  }
+  revalidatePath(back);
+  redirect(`${back}#accroches`);
 }
 
 /**

@@ -21,6 +21,8 @@ import { ProviderConfigError } from './provider';
  *    `productVideoSortField` 4 = ventes de la vidéo, `sortType` 1 = décroissant, `pageSize` multiple de 10), ~11 crédits ;
  *  - tiktok-batch-product-detail : POST https://api.nexscope.ai/et/batchProductDetail (`productIds`, 1000 au plus),
  *    ventes sur 1, 7, 15, 30, 60 et 90 jours, note, avis, date du premier relevé (`firstCrawlDt`), ~22 crédits.
+ *  - tiktok-product-discovery (page relue le 12 novembre 2026, adresse REST affichée : POST
+ *    https://api.nexscope.ai/fm/productSearch) accepte aussi `keyword` : utilisé pour la recherche par mot-clé ;
  *  Les vraies réponses (2 appels, 12 novembre 2026) contiennent aussi des champs que la page ne liste pas, mais que
  *  la réponse décrit elle-même dans `columns` (titre de chaque champ) : vues, likes, partages, durée, couverture.
  * Les exemples de réponse publiés sont d'anciens gabarits « pas encore réconciliés avec l'enveloppe HTTP
@@ -212,11 +214,29 @@ function crawlDate(value: unknown): string | null {
   return m ? `${m[1]}-${m[2]}-${m[3]}` : null;
 }
 
+/** Devise déclarée par la source : l'euro s'écrit « € » dans les vraies réponses, « EUR » dans la doc. */
+export const isEuroCurrency = (value: unknown) => typeof value === 'string' && ['€', 'EUR'].includes(value.trim().toUpperCase());
+
+/**
+ * Prix minimum et maximum et chiffre d'affaires, seulement si la réponse déclare des euros. La page
+ * tiktok-batch-product-detail les annonce en dollars (« Minimum SKU price (USD) ») et ne renvoie pas de devise ; la
+ * vraie réponse du 12 novembre 2026 donne 0,01 pour un produit vendu 2,90 € (discovery) : rien n'est lu dans ce cas.
+ */
+function euroExtras(raw: Record<string, unknown>): Partial<ProductDetails> {
+  if (!isEuroCurrency(raw.currency)) return {};
+  return {
+    price_min_cents: toCents(raw.minPrice),
+    price_max_cents: toCents(raw.maxPrice),
+    revenue_cents: { d7: toCents(raw.totalSaleGmv7dAmt), d30: toCents(raw.totalSaleGmv30dAmt) },
+  };
+}
+
 /** Produit de batchProductDetail : ventes par période, note, avis. Les prix (annoncés en dollars) ne sont pas lus. */
 export function mapNexscopeDetails(raw: Record<string, unknown>, fetchedAt: string): ProductDetails | null {
   if (!raw.productId) return null;
   const rating = Number(raw.productRating);
   return {
+    ...euroExtras(raw),
     sales: {
       d1: toCount(raw.totalSale1dCnt),
       d7: toCount(raw.totalSale7dCnt),
@@ -338,6 +358,22 @@ export class NexscopeProvider implements ProductDataProvider {
       if (!(error instanceof BudgetExceededError) || found.size === 0) throw error;
     }
     return [...found.values()];
+  }
+
+  /**
+   * Recherche par mot-clé (bloc 1, à la demande) : même route que le relevé de nuit, tiktok-product-discovery, avec son
+   * paramètre documenté `keyword` (« fuzzy matching of product titles »), pays demandé, tri sur les ventes 7 jours,
+   * une page de 10 produits (11 à 22 crédits). Renvoie les produits bruts ; la lecture est dans lib/radar/keyword-search.ts.
+   */
+  async searchProducts(keyword: string, region: string): Promise<Record<string, unknown>[]> {
+    const json = await this.run(NEXSCOPE_SLUGS.discovery, {
+      keyword,
+      region,
+      orderField: 'day7_units_sold',
+      page: 1,
+      pageSize: PAGE_SIZE,
+    });
+    return findList(json, 'products') ?? [];
   }
 
   async fetchProductHistory(_productId: string, _days: number, _endDate?: string): Promise<SalesPoint[]> {
