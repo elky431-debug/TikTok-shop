@@ -524,3 +524,13 @@ nuit (découverte, vidéos, détails) est un coût fixe partagé, suivi dans l'a
 8. Mesurer la qualité des scripts en « low » et en « medium » sur 20 produits réels (notes des utilisateurs).
 9. Remplir les `[À COMPLÉTER]` des mentions légales, CGV et confidentialité, puis passer sur tracktout.com.
 10. Ajouter un test de bout en bout en ligne régulier (inscription → script) déclenché après chaque déploiement.
+
+### Mise à jour du 13 novembre, 16 h 35 : déploiement débloqué et vérifié en ligne
+
+- Les déploiements Netlify échouaient depuis 14 h 37 au scan des secrets (une fausse clé au format exact d'une clé
+  OpenAI dans un test). Corrigé sans couper le scan (décision 186) ; déploiement publié 2 minutes après le push.
+- En ligne : titre « Automatise ton business TikTok Shop de A à Z », description et aperçu de partage à jour, fond blanc,
+  `/api/health` à `ok` (clé OpenAI acceptée).
+- **Génération réelle vérifiée** : inscription → 10 questions → dashboard → « Écrire mes scripts » → page d'attente
+  (environ 25 s, tâche en arrière-plan) → 10 accroches et 3 scripts écrits par OpenAI. Déconnexion vers l'accueil.
+  Comptes de test supprimés.
