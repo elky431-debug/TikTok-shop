@@ -375,6 +375,21 @@ sur la page d'accueil, sans ouvrir de session.
   compte » → onboarding → radar « Inès, voici tes produits du jour », puis reconnexion par mot de passe
   (`tests/integration/e2e/auth.spec.ts`, comptes de test supprimés).
 
+**Vérifié en ligne** (13 novembre 2026, https://splendorous-kleicha-5d07d3.netlify.app, branche
+`claude/kind-galileo-ardtih`, navigateur réel) : accueil → « Commencer » → « Créer mon compte » (e-mail et mot de
+passe) → onboarding → radar « Inès, voici tes produits du jour » (3 fiches ouvertes) → déconnexion (`/app` renvoie à
+la connexion) → reconnexion par mot de passe → radar. Comptes de test supprimés ensuite (ainsi que 4 comptes
+`itest-…@example.com` laissés par d'anciens tests d'intégration).
+
+Adresses de retour autorisées chez Supabase : `https://tracktout.com`, `https://www.tracktout.com`,
+`https://splendorous-kleicha-5d07d3.netlify.app` et `http://localhost:3000` (`/auth/callback**` pour chacune) ;
+Site URL : `https://tracktout.com` (domaine définitif).
+
+> ⚠ **À corriger dans Netlify** : `NEXT_PUBLIC_SITE_URL` vaut `https://tracktout.netlify.app`, une adresse qui
+> n'existe pas (vu dans `/api/health`). L'inscription n'en dépend plus, mais les liens des e-mails (récap,
+> désinscription), les retours de Stripe et les boutons Discord l'utilisent : mets
+> `https://splendorous-kleicha-5d07d3.netlify.app` en attendant que `tracktout.com` pointe vers le site, puis redéploie.
+
 > ⚠ **À réactiver quand Resend sera branché : la confirmation d'e-mail est désactivée** (`mailer_autoconfirm = true`,
 > réglé le 12 novembre 2026 par l'API de gestion de Supabase). Pour la remettre, une fois `RESEND_API_KEY` et
 > `EMAIL_FROM` en place :
