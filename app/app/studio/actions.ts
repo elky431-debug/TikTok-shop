@@ -2,10 +2,11 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { isScriptFormat } from '@/lib/ai/formats';
+import { isScriptFormat, isTranslationLang, parseSettings } from '@/lib/ai/formats';
 import { requireOnboardedViewer } from '@/lib/auth/session';
-import { getRepo } from '@/lib/db';
-import { createScripts, regenerateHookAt, setScriptSaved, StudioError } from '@/lib/studio';
+import { createScripts, deleteGeneration, latestSettings, regenerateHookAt, setScriptSaved, StudioError } from '@/lib/studio';
+import { editLine, rateScript, rewriteScript, translateDocScript, undoScript } from '@/lib/studio/edit';
+import type { StudioDocView } from '@/lib/studio/types';
 
 export interface StudioState {
   error?: string;
@@ -18,11 +19,14 @@ export async function generateAction(_prev: StudioState, formData: FormData): Pr
   const format = formData.get('format');
   if (!productId) return { error: 'Choisis un produit.' };
   if (!isScriptFormat(format)) return { error: 'Choisis un format de vidéo.' };
+  const settings = parseSettings(
+    { duration: formData.get('duree'), tone: formData.get('ton'), angle: formData.get('angle') },
+    await latestSettings(profile),
+  );
 
   let id: string;
   try {
-    const record = await createScripts(profile, productId, format);
-    id = record.id;
+    id = (await createScripts(profile, productId, format, { settings })).id;
   } catch (error) {
     if (error instanceof StudioError) return { error: error.message, code: error.code };
     console.error('[studio] génération', error);
@@ -32,33 +36,131 @@ export async function generateAction(_prev: StudioState, formData: FormData): Pr
   redirect(`/app/studio/${id}`);
 }
 
+function field(formData: FormData, name: string): string {
+  return String(formData.get(name) ?? '');
+}
+
+function intField(formData: FormData, name: string): number {
+  const n = Number(formData.get(name));
+  return Number.isInteger(n) ? n : -1;
+}
+
+function failure(id: string, error: unknown, fallback: string, script?: number): never {
+  const message = error instanceof StudioError ? error.message : fallback;
+  if (!(error instanceof StudioError)) console.error('[studio]', error);
+  const where = script !== undefined && script >= 0 ? `&script=${script}#script-${script + 1}` : '';
+  redirect(`/app/studio/${id}?erreur=${encodeURIComponent(message)}${where}`);
+}
+
+/** Après une retouche : la page se met à jour sur place (ou suit la fiche reprise d'une ancienne génération). */
+function done(requestedId: string, doc: StudioDocView, script?: number) {
+  revalidatePath(`/app/studio/${doc.id}`);
+  revalidatePath('/app/studio');
+  if (doc.id !== requestedId) redirect(`/app/studio/${doc.id}${script !== undefined ? `#script-${script + 1}` : ''}`);
+}
+
 export async function regenerateHookAction(formData: FormData) {
   const { profile } = await requireOnboardedViewer('/app/studio');
-  const id = String(formData.get('script') ?? '');
-  const index = Number(formData.get('index'));
+  const id = field(formData, 'script');
+  const index = intField(formData, 'index');
+  let doc: StudioDocView;
   try {
-    await regenerateHookAt(profile, id, index);
+    doc = await regenerateHookAt(profile, id, index);
   } catch (error) {
-    const message = error instanceof StudioError ? error.message : 'La nouvelle accroche n’a pas pu être écrite. Réessaie.';
-    redirect(`/app/studio/${id}?erreur=${encodeURIComponent(message)}`);
+    failure(id, error, 'La nouvelle accroche n’a pas pu être écrite. Réessaie.');
   }
-  revalidatePath(`/app/studio/${id}`);
-  redirect(`/app/studio/${id}?nouvelle=${index}#accroches`);
+  revalidatePath(`/app/studio/${doc.id}`);
+  redirect(`/app/studio/${doc.id}?nouvelle=${index}#accroches`);
 }
 
 export async function toggleSaveAction(formData: FormData) {
   const { profile } = await requireOnboardedViewer('/app/studio');
-  const id = String(formData.get('script') ?? '');
-  const saved = formData.get('garder') === '1';
-  await setScriptSaved(profile, id, saved);
-  revalidatePath(`/app/studio/${id}`);
-  revalidatePath('/app/studio');
+  const id = field(formData, 'script');
+  let doc: StudioDocView;
+  try {
+    doc = await setScriptSaved(profile, id, formData.get('garder') === '1');
+  } catch (error) {
+    failure(id, error, 'Le favori n’a pas pu être enregistré.');
+  }
+  done(id, doc);
 }
 
 export async function deleteScriptAction(formData: FormData) {
   const { profile } = await requireOnboardedViewer('/app/studio');
-  const id = String(formData.get('script') ?? '');
-  await getRepo().deleteScript(profile.id, id);
+  await deleteGeneration(profile, field(formData, 'script'));
   revalidatePath('/app/studio');
   redirect('/app/studio?supprime=1');
+}
+
+export async function editLineAction(formData: FormData) {
+  const { profile } = await requireOnboardedViewer('/app/studio');
+  const id = field(formData, 'id');
+  const script = intField(formData, 'script');
+  let doc: StudioDocView;
+  try {
+    doc = await editLine(profile, id, script, intField(formData, 'plan'));
+  } catch (error) {
+    failure(id, error, 'La ligne n’a pas pu être réécrite. Réessaie.', script);
+  }
+  done(id, doc, script);
+}
+
+export async function rewriteAction(formData: FormData) {
+  const { profile } = await requireOnboardedViewer('/app/studio');
+  const id = field(formData, 'id');
+  const script = intField(formData, 'script');
+  const mode = field(formData, 'mode') === 'raccourcir' ? 'raccourcir' : 'percutant';
+  let doc: StudioDocView;
+  try {
+    doc = await rewriteScript(profile, id, script, mode);
+  } catch (error) {
+    failure(id, error, 'La retouche n’a pas pu être faite. Réessaie.', script);
+  }
+  done(id, doc, script);
+}
+
+export async function undoAction(formData: FormData) {
+  const { profile } = await requireOnboardedViewer('/app/studio');
+  const id = field(formData, 'id');
+  const script = intField(formData, 'script');
+  let doc: StudioDocView;
+  try {
+    doc = await undoScript(profile, id, script);
+  } catch (error) {
+    failure(id, error, 'La version précédente n’a pas pu être rétablie.', script);
+  }
+  done(id, doc, script);
+}
+
+export async function translateAction(formData: FormData) {
+  const { profile } = await requireOnboardedViewer('/app/studio');
+  const id = field(formData, 'id');
+  const script = intField(formData, 'script');
+  const lang = formData.get('langue');
+  if (!isTranslationLang(lang)) failure(id, new StudioError('invalide', 'Choisis l’allemand, l’italien ou l’espagnol.'), '', script);
+  let doc: StudioDocView;
+  try {
+    doc = await translateDocScript(profile, id, script, lang);
+  } catch (error) {
+    failure(id, error, 'La traduction n’a pas pu être faite. Réessaie.', script);
+  }
+  done(id, doc, script);
+}
+
+export async function rateAction(formData: FormData) {
+  const { profile } = await requireOnboardedViewer('/app/studio');
+  const id = field(formData, 'id');
+  const script = intField(formData, 'script');
+  const note = formData.get('note');
+  const vendu = formData.get('vendu');
+  let doc: StudioDocView;
+  try {
+    doc = await rateScript(profile, id, script, {
+      ...(note !== null ? { stars: Number(note) } : {}),
+      ...(vendu !== null ? { sold: vendu === 'oui' ? 'oui' : vendu === 'non' ? 'non' : null } : {}),
+    });
+  } catch (error) {
+    failure(id, error, 'La note n’a pas pu être enregistrée.', script);
+  }
+  done(id, doc, script);
 }

@@ -25,6 +25,12 @@ export const ScriptSchema = z.object({
   call_to_action: z.string(),
   caption: z.string().describe('Légende de la vidéo, sans hashtags.'),
   hashtags: z.array(z.string()),
+  // Facultatif à la lecture (anciens échanges, tests) mais demandé : « nullable » pour le JSON Schema strict d'OpenAI.
+  broll: z
+    .array(z.string())
+    .nullable()
+    .optional()
+    .describe('Idées de plans de coupe à filmer en plus pour le montage (2 à 4) : gestes, détails, gros plans.'),
 });
 
 export const GenerationSchema = z.object({

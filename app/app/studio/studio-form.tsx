@@ -1,11 +1,13 @@
 'use client';
 
+import { Fingerprint, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useFormState } from 'react-dom';
-import { ChoiceChip, Label, Select } from '@/components/ui/field';
+import { OptionChip, OptionGroup } from '@/components/studio/option-chip';
+import { Label, Select } from '@/components/ui/field';
 import { SubmitButton } from '@/components/ui/submit-button';
 import { Callout } from '@/components/ui/surface';
-import { SCRIPT_FORMATS } from '@/lib/ai/formats';
+import { ANGLES, DURATION_HINTS, DURATIONS, SCRIPT_FORMATS, TONES, type ScriptSettings } from '@/lib/ai/formats';
 import { generateAction, type StudioState } from './actions';
 
 interface Option {
@@ -19,12 +21,19 @@ export function StudioForm({
   selected,
   remaining,
   disabled,
+  settings,
+  style,
+  feedbackCount,
 }: {
   today: Option[];
   saved: Option[];
   selected?: string;
   remaining: number;
   disabled: boolean;
+  settings: ScriptSettings;
+  /** « actif », « inactif », « absent » (Pro sans style) ou « verrouillé » (plan gratuit). */
+  style: 'actif' | 'inactif' | 'absent' | 'verrouille';
+  feedbackCount: number;
 }) {
   const [state, action] = useFormState<StudioState, FormData>(generateAction, {});
   const hasProducts = today.length + saved.length > 0;
@@ -71,20 +80,92 @@ export function StudioForm({
             ) : null}
           </Select>
         ) : (
-          <p className="text-sm text-muted">Aucun produit disponible. Ouvre le radar pour en choisir un.</p>
+          <p className="text-sm text-muted">
+            Aucun produit disponible.{' '}
+            <Link href="/app" className="font-semibold text-cyan-ink underline underline-offset-2">
+              Ouvre le radar
+            </Link>{' '}
+            pour en choisir un.
+          </p>
         )}
       </div>
 
-      <fieldset>
-        <legend className="mb-2 text-sm font-semibold">Format de la vidéo</legend>
-        <div className="grid gap-2.5 sm:grid-cols-2">
-          {SCRIPT_FORMATS.map((format, i) => (
-            <ChoiceChip key={format.id} type="radio" name="format" value={format.id} defaultChecked={i === 0} description={format.hint}>
-              {format.label}
-            </ChoiceChip>
+      <OptionGroup legend="Format de la vidéo" columns="grid-cols-2 lg:grid-cols-4">
+        {SCRIPT_FORMATS.map((format, i) => (
+          <OptionChip key={format.id} name="format" value={format.id} defaultChecked={i === 0} hint={format.hint}>
+            {format.label}
+          </OptionChip>
+        ))}
+      </OptionGroup>
+
+      <div className="grid gap-6 lg:grid-cols-[auto_1fr]">
+        <OptionGroup legend="Durée" columns="grid-cols-3">
+          {DURATIONS.map((d) => (
+            <OptionChip key={d} name="duree" value={String(d)} defaultChecked={settings.duration === d} hint={DURATION_HINTS[d]} className="lg:w-36">
+              <span className="num">{d} s</span>
+            </OptionChip>
           ))}
-        </div>
-      </fieldset>
+        </OptionGroup>
+        <OptionGroup legend="Ton" columns="grid-cols-2 sm:grid-cols-4">
+          {TONES.map((t) => (
+            <OptionChip key={t.id} name="ton" value={t.id} defaultChecked={settings.tone === t.id} hint={t.hint}>
+              {t.label}
+            </OptionChip>
+          ))}
+        </OptionGroup>
+      </div>
+
+      <OptionGroup legend="Angle" columns="grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+        {ANGLES.map((a) => (
+          <OptionChip key={a.id} name="angle" value={a.id} defaultChecked={settings.angle === a.id} hint={a.hint}>
+            {a.label}
+          </OptionChip>
+        ))}
+      </OptionGroup>
+
+      <ul className="space-y-1.5 text-sm text-muted">
+        <li className="flex items-start gap-2">
+          <Fingerprint className="mt-0.5 h-4 w-4 shrink-0 text-cyan-ink" aria-hidden="true" />
+          {style === 'actif' ? (
+            <span>
+              Ton style perso est appliqué.{' '}
+              <Link href="/app/studio/style" className="font-semibold text-fg underline underline-offset-2">
+                Le modifier
+              </Link>
+            </span>
+          ) : style === 'inactif' ? (
+            <span>
+              Ton style perso est en pause.{' '}
+              <Link href="/app/studio/style" className="font-semibold text-fg underline underline-offset-2">
+                Le réactiver
+              </Link>
+            </span>
+          ) : style === 'absent' ? (
+            <span>
+              Colle 3 textes de tes vidéos pour que les scripts parlent comme toi.{' '}
+              <Link href="/app/studio/style" className="font-semibold text-fg underline underline-offset-2">
+                Créer mon style
+              </Link>
+            </span>
+          ) : (
+            <span>
+              Scripts écrits avec ta phrase type. Le style perso (tiré de tes vidéos) arrive avec{' '}
+              <Link href="/app/passer-pro" className="font-semibold text-fg underline underline-offset-2">
+                le plan Pro
+              </Link>
+              .
+            </span>
+          )}
+        </li>
+        <li className="flex items-start gap-2">
+          <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-cyan-ink" aria-hidden="true" />
+          <span>
+            {feedbackCount > 0
+              ? `${feedbackCount} de tes scripts les mieux notés serviront d’exemple.`
+              : 'Note tes scripts après les avoir tournés : les mieux notés servent d’exemple aux suivants.'}
+          </span>
+        </li>
+      </ul>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
         <SubmitButton size="lg" pendingLabel="Écriture de tes scripts…" disabled={disabled || !hasProducts} className="sm:min-w-64">

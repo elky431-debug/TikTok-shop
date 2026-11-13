@@ -1,24 +1,24 @@
-import { generateScripts, regenerateHook, scriptsToText, ScriptGenerationError } from '@/lib/ai/scripts';
+import { DEFAULT_SETTINGS, type ScriptSettings, type StudioFormat } from '@/lib/ai/formats';
+import { ensureCommercialMention } from '@/lib/ai/guard';
+import { generateScripts, regenerateHook, ScriptGenerationError } from '@/lib/ai/scripts';
+import type { SeriesAngle } from '@/lib/ai/series';
 import type { ScriptInput } from '@/lib/ai/types';
 import { getRepo } from '@/lib/db';
-import type { Product, Profile, ScriptFormat, ScriptRecord } from '@/lib/db/types';
+import type { Product, Profile } from '@/lib/db/types';
 import { ensureCatalog } from '@/lib/jobs/nightly';
 import { getPlan, isPaidPlan, MAX_HOOK_REGENERATIONS, remainingScripts, scriptLimitForUsage } from '@/lib/plans';
 import { canAccessProduct } from '@/lib/radar';
 import { rankForUser, visibleProductIds } from '@/lib/radar-rules';
 import { parisDate } from '@/lib/utils';
+import { aiFailure, StudioError } from './studio/errors';
+import { collectFeedback } from './studio/feedback';
+import { deleteDoc, getDoc, insertDoc, listDocs, updateDoc } from './studio/store';
+import { activeStyle } from './studio/style';
+import type { StudioDocView } from './studio/types';
 
-export type StudioErrorCode = 'limite' | 'acces' | 'produit' | 'generation' | 'regeneration';
-
-export class StudioError extends Error {
-  constructor(
-    public readonly code: StudioErrorCode,
-    message: string,
-  ) {
-    super(message);
-    this.name = 'StudioError';
-  }
-}
+export { StudioError, type StudioErrorCode } from './studio/errors';
+export { studioRights, type StudioRights } from './studio/limits';
+export type { StudioDoc, StudioDocView } from './studio/types';
 
 export interface UsageToday {
   used: number;
@@ -46,7 +46,18 @@ export async function listStudioProducts(profile: Profile): Promise<{ today: Pro
   return { today, saved };
 }
 
-function inputFor(profile: Profile, product: Product, format: ScriptFormat): ScriptInput {
+/** Réglages de la dernière génération (pour pré-remplir le formulaire et écrire un angle de série en un clic). */
+export async function latestSettings(profile: Profile): Promise<ScriptSettings> {
+  const [last] = await listDocs(profile.id);
+  return last?.settings ?? DEFAULT_SETTINGS;
+}
+
+export function buildScriptInput(
+  profile: Profile,
+  product: Product,
+  format: StudioFormat,
+  extras: Pick<ScriptInput, 'settings' | 'personalStyle' | 'feedback' | 'seriesAngle'> = {},
+): ScriptInput {
   return {
     product,
     format,
@@ -54,14 +65,25 @@ function inputFor(profile: Profile, product: Product, format: ScriptFormat): Scr
     examplePhrase: profile.example_phrase,
     firstName: profile.first_name,
     topVideos: product.top_videos,
+    settings: extras.settings ?? DEFAULT_SETTINGS,
+    personalStyle: extras.personalStyle ?? null,
+    feedback: extras.feedback ?? null,
+    seriesAngle: extras.seriesAngle ?? null,
   };
 }
 
+export interface CreateOptions {
+  settings?: ScriptSettings;
+  /** Génération demandée depuis un angle d'une série de 20 vidéos. */
+  series?: { id: string; index: number; angle: SeriesAngle };
+}
+
 /**
- * Écrit 10 accroches et 3 scripts. La limite du plan est vérifiée et consommée de façon atomique
- * AVANT l'appel au modèle ; le crédit est rendu si la génération échoue.
+ * Écrit 10 accroches et 3 scripts complets. La limite du plan est vérifiée et consommée de façon atomique AVANT
+ * l'appel au modèle ; le crédit est rendu si la génération échoue. Le style personnel (Pro) et les scripts que
+ * l'utilisateur a le mieux notés (ou qui ont vendu) sont donnés au modèle.
  */
-export async function createScripts(profile: Profile, productId: string, format: ScriptFormat): Promise<ScriptRecord> {
+export async function createScripts(profile: Profile, productId: string, format: StudioFormat, options: CreateOptions = {}): Promise<StudioDocView> {
   const repo = getRepo();
   const product = await repo.getProduct(productId);
   if (!product) throw new StudioError('produit', 'Ce produit n’existe plus. Choisis-en un autre.');
@@ -80,17 +102,33 @@ export async function createScripts(profile: Profile, productId: string, format:
   }
 
   try {
-    const result = await generateScripts(inputFor(profile, product, format));
-    return await repo.insertScript({
-      user_id: profile.id,
+    const settings = options.settings ?? DEFAULT_SETTINGS;
+    const [personalStyle, docs] = await Promise.all([activeStyle(profile), listDocs(profile.id)]);
+    const feedback = collectFeedback(docs);
+    const result = await generateScripts(
+      buildScriptInput(profile, product, format, { settings, personalStyle, feedback, seriesAngle: options.series?.angle ?? null }),
+    );
+    const scripts = result.scripts.map((s) => ensureCommercialMention(s));
+    return await insertDoc(profile.id, {
       product_id: product.id,
+      product_name: product.name,
       format,
+      settings,
       hooks: result.hooks,
-      script: result.scripts,
-      full_text: scriptsToText(product.name, format, result.hooks, result.scripts),
-      source: result.source,
+      scripts,
+      previous: scripts.map(() => null),
+      versions: scripts.map(() => 1),
+      translations: scripts.map(() => ({})),
+      ratings: scripts.map(() => null),
       saved: false,
+      source: result.source,
+      personal_style: Boolean(personalStyle),
+      feedback_used: feedback.best.length,
+      series: options.series ? { id: options.series.id, index: options.series.index } : null,
       regen_count: 0,
+      edit_count: 0,
+      simulated_edits: 0,
+      generated_at: new Date().toISOString(),
     });
   } catch (error) {
     await repo.decrementUsage(profile.id, day);
@@ -99,35 +137,39 @@ export async function createScripts(profile: Profile, productId: string, format:
   }
 }
 
-/** Remplace l'accroche n°index (gratuit, dans la limite de 5 par script). */
-export async function regenerateHookAt(profile: Profile, scriptId: string, index: number): Promise<ScriptRecord> {
-  const repo = getRepo();
-  const record = await repo.getScript(profile.id, scriptId);
-  if (!record) throw new StudioError('produit', 'Ce script est introuvable.');
-  if (index < 0 || index >= record.hooks.length) throw new StudioError('regeneration', 'Accroche introuvable.');
-  if (record.regen_count >= MAX_HOOK_REGENERATIONS) {
-    throw new StudioError('regeneration', `Tu as déjà régénéré ${MAX_HOOK_REGENERATIONS} accroches sur ce script. Écris de nouveaux scripts pour en avoir d’autres.`);
-  }
-  const product = await repo.getProduct(record.product_id);
-  if (!product) throw new StudioError('produit', 'Ce produit n’existe plus.');
-  try {
-    const hook = await regenerateHook(
-      inputFor(profile, product, record.format),
-      record.hooks.map((h) => h.text),
-      record.regen_count,
-    );
-    const hooks = record.hooks.map((h, i) => (i === index ? hook : h));
-    return await repo.updateScript(profile.id, scriptId, {
-      hooks,
-      regen_count: record.regen_count + 1,
-      full_text: scriptsToText(product.name, record.format, hooks, record.script),
-    });
-  } catch (error) {
-    if (error instanceof ScriptGenerationError) throw new StudioError('generation', error.message);
-    throw error;
-  }
+/** Une génération de l'utilisateur, ou une erreur claire. */
+export async function requireDoc(profile: Profile, id: string): Promise<StudioDocView> {
+  const doc = await getDoc(profile.id, id);
+  if (!doc) throw new StudioError('produit', 'Ce script est introuvable.');
+  return doc;
 }
 
-export async function setScriptSaved(profile: Profile, scriptId: string, saved: boolean): Promise<void> {
-  await getRepo().updateScript(profile.id, scriptId, { saved });
+/** Remplace l'accroche n°index (gratuit, dans la limite de 5 par génération). */
+export async function regenerateHookAt(profile: Profile, docId: string, index: number): Promise<StudioDocView> {
+  const doc = await requireDoc(profile, docId);
+  if (index < 0 || index >= doc.hooks.length) throw new StudioError('regeneration', 'Accroche introuvable.');
+  if (doc.regen_count >= MAX_HOOK_REGENERATIONS) {
+    throw new StudioError('regeneration', `Tu as déjà régénéré ${MAX_HOOK_REGENERATIONS} accroches sur ce script. Écris de nouveaux scripts pour en avoir d’autres.`);
+  }
+  const product = await getRepo().getProduct(doc.product_id);
+  if (!product) throw new StudioError('produit', 'Ce produit n’existe plus.');
+  const input = buildScriptInput(profile, product, doc.format, { settings: doc.settings, personalStyle: await activeStyle(profile) });
+  let hook;
+  try {
+    hook = await regenerateHook(input, doc.hooks.map((h) => h.text), doc.regen_count);
+  } catch (error) {
+    if (error instanceof ScriptGenerationError) throw new StudioError('generation', error.message);
+    throw aiFailure(error, 'L’accroche');
+  }
+  return updateDoc(profile.id, doc, { hooks: doc.hooks.map((h, i) => (i === index ? hook : h)), regen_count: doc.regen_count + 1 });
+}
+
+export async function setScriptSaved(profile: Profile, docId: string, saved: boolean): Promise<StudioDocView> {
+  const doc = await requireDoc(profile, docId);
+  return updateDoc(profile.id, doc, { saved });
+}
+
+export async function deleteGeneration(profile: Profile, docId: string): Promise<void> {
+  const doc = await getDoc(profile.id, docId);
+  if (doc) await deleteDoc(profile.id, doc);
 }
