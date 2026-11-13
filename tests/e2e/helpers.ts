@@ -13,23 +13,28 @@ export async function signIn(page: Page, email: string, next?: string) {
   await page.getByTestId('lien-magique-local').click();
 }
 
-/** Onboarding complet en 4 écrans. */
+/**
+ * Onboarding complet : 3 écrans de profil, puis les produits du jour (étape passée ici) et l'offre Pro
+ * (« Continuer en Gratuit », ou « Ouvrir mon radar » pendant l'essai offert par un formateur).
+ */
 export async function completeOnboarding(
   page: Page,
   opts: { firstName?: string; range?: string; niches?: string[]; style?: string } = {},
 ) {
   await expect(page).toHaveURL(/\/bienvenue/);
   await page.getByLabel('Ton prénom').fill(opts.firstName ?? 'Léa');
-  await page.getByRole('button', { name: 'Continuer' }).click();
-  await expect(page).toHaveURL(/etape=2/);
   await page.getByText(opts.range ?? 'Entre 1 500 et 5 000', { exact: true }).click();
   await page.getByRole('button', { name: 'Continuer' }).click();
-  await expect(page).toHaveURL(/etape=3/);
+  await expect(page).toHaveURL(/etape=2/);
   for (const niche of opts.niches ?? ['Beauté et soins']) await page.getByText(niche, { exact: true }).click();
   await page.getByRole('button', { name: 'Continuer' }).click();
-  await expect(page).toHaveURL(/etape=4/);
+  await expect(page).toHaveURL(/etape=3/);
   await page.getByText(opts.style ?? 'Face caméra', { exact: true }).click();
-  await page.getByRole('button', { name: 'Voir mes produits du jour' }).click();
+  await page.getByRole('button', { name: 'Voir mes 3 produits du jour' }).click();
+  await expect(page).toHaveURL(/\/bienvenue\/produits/);
+  await page.getByRole('link', { name: 'Passer cette étape' }).click();
+  await expect(page).toHaveURL(/\/bienvenue\/pro/);
+  await page.getByRole('link', { name: /^(Ouvrir mon radar|Continuer en Gratuit)$/ }).click();
   await expect(page).toHaveURL(/\/app\?bienvenue=/);
 }
 

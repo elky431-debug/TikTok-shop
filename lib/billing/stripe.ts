@@ -192,6 +192,24 @@ async function ensureCustomer(profile: Profile): Promise<string> {
   return customer.id;
 }
 
+/**
+ * Session Checkout d'un nouvel abonnement. `allow_promotion_codes` affiche le champ « code promotionnel » de la page de
+ * paiement Stripe : les codes se créent dans le tableau de bord Stripe (coupon + code promotionnel), sans code ici.
+ */
+export function checkoutSessionParams(input: { customer: string; userId: string; price: string; siteUrl: string }): Stripe.Checkout.SessionCreateParams {
+  return {
+    mode: 'subscription',
+    customer: input.customer,
+    client_reference_id: input.userId,
+    line_items: [{ price: input.price, quantity: 1 }],
+    subscription_data: { metadata: { user_id: input.userId } },
+    allow_promotion_codes: true,
+    locale: 'fr',
+    success_url: `${input.siteUrl}/app/compte?paiement=ok`,
+    cancel_url: `${input.siteUrl}/app/passer-pro?paiement=annule`,
+  };
+}
+
 export class StripeBilling implements BillingProvider {
   readonly name = 'stripe' as const;
 
@@ -206,17 +224,7 @@ export class StripeBilling implements BillingProvider {
     if (active?.provider === 'stripe') return this.changePlan({ profile, subscriptionId: active.id, price });
 
     const customer = await ensureCustomer(profile);
-    const session = await getStripe().checkout.sessions.create({
-      mode: 'subscription',
-      customer,
-      client_reference_id: profile.id,
-      line_items: [{ price, quantity: 1 }],
-      subscription_data: { metadata: { user_id: profile.id } },
-      allow_promotion_codes: true,
-      locale: 'fr',
-      success_url: `${env.siteUrl}/app/compte?paiement=ok`,
-      cancel_url: `${env.siteUrl}/app/passer-pro?paiement=annule`,
-    });
+    const session = await getStripe().checkout.sessions.create(checkoutSessionParams({ customer, userId: profile.id, price, siteUrl: env.siteUrl }));
     if (!session.url) throw new Error('Stripe n’a pas renvoyé d’URL de paiement.');
     return session.url;
   }

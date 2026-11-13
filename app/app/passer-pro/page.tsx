@@ -1,11 +1,15 @@
 import type { Metadata } from 'next';
+import { CalendarCheck, Repeat, Ticket } from 'lucide-react';
 import { PricingCards } from '@/components/pricing/pricing-cards';
-import { Callout, PageHeader } from '@/components/ui/surface';
+import { SubmitButton } from '@/components/ui/submit-button';
+import { Callout, Card, PageHeader } from '@/components/ui/surface';
 import { requireOnboardedViewer } from '@/lib/auth/session';
 import { billingMode } from '@/lib/billing';
+import { annualOffer } from '@/lib/billing/annual-offer';
 import { getRepo } from '@/lib/db';
+import { getPlan, isPaidPlan } from '@/lib/plans';
 import { pricingCards } from '@/lib/pricing';
-import { formatLongDate } from '@/lib/utils';
+import { formatEuros, formatLongDate } from '@/lib/utils';
 import { startCheckoutAction } from './actions';
 
 export const metadata: Metadata = { title: 'Passer Pro' };
@@ -20,6 +24,11 @@ export default async function PasserProPage({ searchParams }: { searchParams: { 
   const { profile } = await requireOnboardedViewer('/app/passer-pro');
   const mode = billingMode();
   const active = await getRepo().getActiveSubscription(profile.id);
+  const proOffer = annualOffer('pro');
+  const plusOffer = annualOffer('proplus');
+  const subscribed = Boolean(active && isPaidPlan(active.plan) && active.status !== 'trialing');
+  const currentPaid = active && isPaidPlan(active.plan) ? (active.plan as 'pro' | 'proplus') : null;
+  const monthly = active?.billing_interval === 'month' && currentPaid && active.status !== 'trialing';
 
   return (
     <div>
@@ -50,12 +59,56 @@ export default async function PasserProPage({ searchParams }: { searchParams: { 
         ) : null}
         {active?.status === 'trialing' && active.trial_end ? (
           <Callout tone="gain" title="Tu es en essai Pro">
-            Ton essai offert court jusqu’au {formatLongDate(active.trial_end.slice(0, 10))}. Ajoute un moyen de paiement depuis
-            ton compte pour continuer ensuite.
+            Ton essai offert court jusqu’au {formatLongDate(active.trial_end.slice(0, 10))}. Choisis un plan ci-dessous pour continuer
+            ensuite : Stripe te montre le montant exact avant de confirmer.
+          </Callout>
+        ) : null}
+        {!subscribed ? (
+          <Callout tone="gain" icon={<CalendarCheck className="h-5 w-5 text-gain" aria-hidden="true" />} title={`À l’année : ${proOffer.badge.toLowerCase()}`}>
+            Pro à {formatEuros(getPlan('pro').prices.year, { round: true })} par an au lieu de {formatEuros(getPlan('pro').prices.month * 12)} en payant
+            au mois : {proOffer.savings} économisés (−{proOffer.percent} %). Pro+ : {plusOffer.savings} économisés. La période « Annuel » est
+            choisie par défaut ci-dessous.
           </Callout>
         ) : null}
       </div>
-      <PricingCards plans={pricingCards()} mode="app" currentPlan={profile.plan} action={startCheckoutAction} />
+
+      <PricingCards plans={pricingCards()} mode="app" currentPlan={profile.plan} action={startCheckoutAction} defaultInterval="year" />
+
+      <div className="mt-8 grid gap-4 md:grid-cols-2">
+        {currentPaid && active?.status !== 'trialing' ? (
+          <Card id="changer">
+            <h2 className="flex items-center gap-2 text-lg">
+              <Repeat className="h-5 w-5 text-cyan-ink" aria-hidden="true" /> Changer de plan
+            </h2>
+            <p className="mt-2 text-sm text-muted">
+              Tu es en {getPlan(currentPaid).name}
+              {active?.billing_interval === 'year' ? ', à l’année' : active?.billing_interval === 'month' ? ', au mois' : ''}. Choisis un autre plan
+              ci-dessus : pas de second abonnement, ton abonnement actuel change de prix. {mode === 'stripe' ? 'Stripe' : 'Le portail'} affiche le
+              montant au prorata (ce qui reste de ta période est déduit) avant que tu confirmes.
+            </p>
+            {monthly && mode !== 'disabled' ? (
+              <form action={startCheckoutAction} className="mt-4">
+                <input type="hidden" name="plan" value={currentPaid} />
+                <input type="hidden" name="periode" value="year" />
+                <SubmitButton variant="outline" size="sm" pendingLabel="Ouverture…">
+                  Passer à l’annuel ({annualOffer(currentPaid).savings} économisés)
+                </SubmitButton>
+              </form>
+            ) : null}
+          </Card>
+        ) : null}
+        <Card id="code">
+          <h2 className="flex items-center gap-2 text-lg">
+            <Ticket className="h-5 w-5 text-cyan-ink" aria-hidden="true" /> Un code de réduction ?
+          </h2>
+          <p className="mt-2 text-sm text-muted">
+            Choisis ton plan, puis saisis ton code dans le champ « code promotionnel » de la page de paiement sécurisée Stripe : la
+            réduction s’affiche avant que tu paies. Un code vaut pour un nouvel abonnement.
+          </p>
+          {mode === 'simulation' ? <p className="mt-2 text-xs text-muted">Mode local : le paiement simulé n’a pas de champ pour les codes.</p> : null}
+        </Card>
+      </div>
+
       <p className="mt-6 text-center text-sm text-muted">
         Prix en euros. Paiement sécurisé par Stripe. Pas de promesse de ventes : l’outil t’aide à choisir et à produire, le reste
         dépend de tes vidéos.
