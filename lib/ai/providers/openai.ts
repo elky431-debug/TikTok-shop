@@ -22,6 +22,9 @@ import { ModelRefusalError, withCorrection, type ScriptModel } from './types';
 const KEY_PROBLEM_MESSAGE =
   'L’écriture des scripts est indisponible : la clé OPENAI_API_KEY du serveur n’est pas une vraie clé OpenAI (elle doit commencer par sk-). Remplace-la dans les variables d’environnement, puis redéploie.';
 
+/** Clé mal formée : inutile d'appeler OpenAI (réponse 400 assurée), on le dit tout de suite. */
+class KeyProblemError extends Error {}
+
 export class OpenAIScriptModel implements ScriptModel {
   readonly name = 'openai' as const;
   readonly source = 'openai' as const;
@@ -41,6 +44,7 @@ export class OpenAIScriptModel implements ScriptModel {
   private async call<R extends { output: OpenAI.Responses.ResponseOutputItem[]; usage?: OpenAI.Responses.ResponseUsage }>(
     request: () => Promise<R>,
   ): Promise<R | null> {
+    if (env.aiKeyProblem) throw new KeyProblemError(env.aiKeyProblem);
     let response: R;
     try {
       response = await request();
@@ -90,6 +94,7 @@ export class OpenAIScriptModel implements ScriptModel {
   }
 
   describeError(error: unknown): string {
+    if (error instanceof KeyProblemError) return KEY_PROBLEM_MESSAGE;
     if (error instanceof OpenAI.AuthenticationError) return env.aiKeyProblem ? KEY_PROBLEM_MESSAGE : 'La clé OPENAI_API_KEY est refusée : vérifie-la dans les réglages.';
     if (error instanceof OpenAI.PermissionDeniedError) return 'Ce compte OpenAI n’a pas accès à ce modèle ou à ce service : vérifie OPENAI_MODEL.';
     if (error instanceof OpenAI.RateLimitError) return 'Le service d’écriture est très sollicité (ou le crédit OpenAI est épuisé). Réessaie dans une minute.';

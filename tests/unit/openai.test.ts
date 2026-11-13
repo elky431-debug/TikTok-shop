@@ -166,6 +166,7 @@ describe('génération avec OpenAI', () => {
     const error = await generateScripts(input, new OpenAIScriptModel({ fetch: fetchMock as unknown as typeof fetch })).catch((e) => e);
     expect(error.message).toMatch(/n’est pas une vraie clé OpenAI/);
     expect(error.message).not.toContain('ta clé');
+    expect(fetchMock).not.toHaveBeenCalled(); // aucun appel inutile
     vi.stubEnv('OPENAI_API_KEY', 'sk-test-openai-0123456789abcdef');
     expect(env.aiKeyProblem).toBeNull();
   });
