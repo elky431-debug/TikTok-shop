@@ -9,12 +9,13 @@ import { moveItem } from '@/lib/v2/planning';
 import { parisDate } from '@/lib/utils';
 
 /**
- * Actions du dashboard. Session revérifiée à chaque appel ; le relevé du profil TikTok garde sa règle d'un essai par
- * jour côté serveur, quel que soit le nombre de clics.
+ * Actions du dashboard. Session revérifiée à chaque appel ; le relevé du profil TikTok garde sa règle côté serveur
+ * (automatique chaque semaine, « Actualiser » une fois par jour en Pro), quel que soit le nombre de clics.
  */
-export async function refreshCreatorAction(): Promise<{ ok: boolean; message: string | null }> {
+export async function refreshCreatorAction(mode: 'auto' | 'manuel' = 'auto'): Promise<{ ok: boolean; message: string | null }> {
   const { profile } = await requireOnboardedViewer('/app');
-  const result = await refreshCreatorProfile(getRepo(), profile.id, profile.tiktok_handle);
+  // Le plan est relu côté serveur : le bouton « Actualiser » n'agit qu'en Pro et Pro+.
+  const result = await refreshCreatorProfile(getRepo(), profile.id, profile.tiktok_handle, { plan: profile.plan, mode: mode === 'manuel' ? 'manuel' : 'auto' });
   revalidatePath('/app');
   return { ok: Boolean(result?.fetched_at && !result.error), message: result?.error ?? null };
 }

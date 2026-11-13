@@ -82,8 +82,9 @@ export type CreatorPreview =
   | { ok: false; message: string };
 
 /**
- * Aperçu du compte TikTok à partir du pseudo (Nexscope, route documentée). Même règle qu'au dashboard : un relevé par
- * personne et par jour au plus ; le pseudo est enregistré pour que le relevé lui corresponde.
+ * Aperçu du compte TikTok à partir du pseudo (Nexscope, route documentée). Même règle qu'au dashboard
+ * (`creatorRefreshPolicy`) ; ce relevé compte comme celui de la semaine. Le pseudo est enregistré pour que le relevé
+ * lui corresponde.
  */
 export async function previewCreatorAction(rawHandle: string): Promise<CreatorPreview> {
   const viewer = await requireViewer('/bienvenue');
@@ -92,7 +93,8 @@ export async function previewCreatorAction(rawHandle: string): Promise<CreatorPr
   if (!env.nexscopeApiKey) return { ok: false, message: 'Aperçu indisponible pour l’instant : continue, tu choisiras la taille de ton compte juste après.' };
   const repo = getRepo();
   await repo.updateProfile(viewer.user.id, { tiktok_handle: handle });
-  const result = await refreshCreatorProfile(repo, viewer.user.id, handle);
+  // Premier relevé du compte (règle automatique : pas déjà essayé aujourd'hui pour ce pseudo).
+  const result = await refreshCreatorProfile(repo, viewer.user.id, handle, { plan: viewer.profile.plan, mode: 'auto' });
   if (!result || result.handle.toLowerCase() !== handle.toLowerCase() || !result.fetched_at) {
     return { ok: false, message: result?.error ?? 'Aperçu déjà demandé aujourd’hui : continue, tu choisiras la taille de ton compte juste après.' };
   }

@@ -22,7 +22,7 @@ import { Sparkline } from '@/components/product/sparkline';
 import { LinkButton } from '@/components/ui/button';
 import { Badge, Callout, EmptyState, IconChip, SectionTitle, TrendPill } from '@/components/ui/surface';
 import { requireOnboardedViewer } from '@/lib/auth/session';
-import { canRefreshCreator, cleanHandle } from '@/lib/creator-profile';
+import { cleanHandle, creatorRefreshPolicy } from '@/lib/creator-profile';
 import { loadDashboard, type Kpi } from '@/lib/dashboard';
 import { getRepo } from '@/lib/db';
 import { fallbackImageUrl } from '@/lib/product-image';
@@ -103,7 +103,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Re
   const access = searchParams.acces;
   const handle = cleanHandle(profile.tiktok_handle);
   const creator = data.creator && handle && data.creator.handle.toLowerCase() === handle.toLowerCase() ? data.creator : null;
-  const canRefresh = canRefreshCreator(data.creator, handle);
+  const refresh = creatorRefreshPolicy(data.creator, handle, profile.plan);
   const gainsKpi = data.kpis[0];
   const progress = goalProgress(data.monthGains, data.goalCents);
   const firstName = profile.first_name ?? 'toi';
@@ -199,7 +199,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Re
               </dl>
               <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted">
                 Relevé public du {formatDayMonth(creator.fetched_at.slice(0, 10))} (Nexscope)
-                <CreatorRefresh auto={canRefresh} canRefresh={canRefresh} />
+                <CreatorRefresh {...refresh} />
               </p>
             </>
           ) : (
@@ -207,7 +207,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Re
               <p className="font-semibold">{followerRangeLabel(profile.follower_range)} abonnés</p>
               <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted">
                 Chiffre déclaré dans ton compte.
-                {canRefresh ? <CreatorRefresh auto={canRefresh} canRefresh={canRefresh} /> : (
+                {refresh.auto || refresh.manual ? <CreatorRefresh {...refresh} /> : (
                   <Link href="/app/compte#profil" className="font-semibold text-cyan-ink hover:underline">
                     Mettre à jour
                   </Link>

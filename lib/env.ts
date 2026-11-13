@@ -66,6 +66,22 @@ export const env = {
     }
     return null;
   },
+  /** Indices sur la forme de la clé du fournisseur d'IA (jamais la clé elle-même), pour `/api/health`. */
+  get aiKeyHints(): string[] {
+    const provider = this.aiProvider;
+    if (!provider || !this.aiKeyProblem) return [];
+    const raw = process.env[provider === 'openai' ? 'OPENAI_API_KEY' : 'ANTHROPIC_API_KEY'] ?? '';
+    const key = raw.trim();
+    const prefix = provider === 'openai' ? 'sk-' : 'sk-ant-';
+    const hints: string[] = [];
+    if (!key.startsWith(prefix)) hints.push(`ne commence pas par ${prefix}`);
+    if (/["'`]/.test(key)) hints.push('contient des guillemets (à retirer)');
+    if (/\s/.test(key)) hints.push('contient des espaces ou des retours à la ligne');
+    if (/[^\x21-\x7E]/.test(key)) hints.push('contient des accents ou des caractères spéciaux');
+    if (/[[\]<>]/.test(key)) hints.push('contient des crochets : texte d’exemple ?');
+    if (key.length < 40) hints.push(`trop courte (${key.length} caractères)`);
+    return hints;
+  },
   /** Nom lisible du modèle utilisé pour les scripts (écran admin). */
   get aiModelLabel(): string {
     if (this.aiProvider === 'openai') return `OpenAI (${this.openaiModel})`;

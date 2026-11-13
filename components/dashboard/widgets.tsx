@@ -315,42 +315,60 @@ export function UpcomingList({ items }: { items: UpcomingVideo[] }) {
 }
 
 /* ------------------------------------------------------------------------------------------------------------------ */
-/* Profil TikTok : relevé du jour                                                                                      */
+/* Profil TikTok : relevé hebdomadaire                                                                                    */
 /* ------------------------------------------------------------------------------------------------------------------ */
 
 /**
- * Lance le relevé du profil à l'ouverture si le serveur l'autorise (une fois par jour), sans ralentir la page ;
- * bouton « Mettre à jour » sinon. La règle est revérifiée côté serveur.
+ * Profil TikTok : relevé automatique une fois par semaine, lancé après l'affichage de la page (pas d'attente) ; bouton
+ * « Actualiser » une fois par jour en Pro et Pro+. La règle est revérifiée côté serveur.
  */
-export function CreatorRefresh({ auto, canRefresh }: { auto: boolean; canRefresh: boolean }) {
+export function CreatorRefresh({
+  auto,
+  manual,
+  manualIncluded,
+  nextAuto,
+}: {
+  auto: boolean;
+  manual: boolean;
+  manualIncluded: boolean;
+  nextAuto: string | null;
+}) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
   const started = useRef(false);
-  const run = () =>
+  const run = (mode: 'auto' | 'manuel') =>
     start(async () => {
-      const result = await refreshCreatorAction();
+      const result = await refreshCreatorAction(mode);
       setMessage(result.message);
       router.refresh();
     });
   useEffect(() => {
     if (auto && !started.current) {
       started.current = true;
-      run();
+      run('auto');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auto]);
+  if (!manualIncluded) {
+    return (
+      <span className="text-xs text-muted">
+        {pending ? 'Mise à jour…' : nextAuto ? `Mis à jour chaque semaine (prochain relevé le ${formatDayMonth(nextAuto)}).` : 'Mis à jour chaque semaine.'}{' '}
+        {message ? <span role="status">{message}</span> : null}
+      </span>
+    );
+  }
   return (
     <span className="inline-flex flex-wrap items-center gap-2">
       <button
         type="button"
-        onClick={run}
-        disabled={pending || !canRefresh}
-        title={canRefresh ? undefined : 'Un relevé par jour au plus'}
+        onClick={() => run('manuel')}
+        disabled={pending || !manual}
+        title={manual ? undefined : 'Déjà actualisé aujourd’hui : une fois par jour'}
         className="inline-flex items-center gap-1.5 rounded-lg border border-line-strong px-2.5 py-1 text-xs font-semibold text-muted transition-all hover:border-cyan-ink/45 hover:text-cyan-ink disabled:cursor-not-allowed disabled:opacity-50"
       >
         <RefreshCw className={cn('h-3.5 w-3.5', pending && 'animate-spin')} aria-hidden="true" />
-        {pending ? 'Mise à jour…' : 'Mettre à jour'}
+        {pending ? 'Actualisation…' : manual ? 'Actualiser' : 'Actualisé aujourd’hui'}
       </button>
       {message ? (
         <span className="text-xs text-muted" role="status">

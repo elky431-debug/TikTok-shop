@@ -31,7 +31,7 @@ export interface HealthReport {
   };
   siteUrl: { value: string; ok: boolean };
   /** Fournisseur d'IA des scripts (null = générateur simulé) et forme de sa clé, jamais la clé. */
-  ai: { provider: 'openai' | 'anthropic' | null; model: string; keyOk: boolean };
+  ai: { provider: 'openai' | 'anthropic' | null; model: string; keyOk: boolean; keyHints: string[] };
   problems: string[];
 }
 
@@ -94,7 +94,7 @@ export async function healthReport(now: Date = new Date()): Promise<HealthReport
       demo: catalog?.demo ?? false,
     },
     siteUrl: { value: env.siteUrl, ok: siteOk },
-    ai: { provider: env.aiProvider, model: env.aiModelLabel, keyOk: !aiProblem },
+    ai: { provider: env.aiProvider, model: env.aiModelLabel, keyOk: !aiProblem, keyHints: env.aiKeyHints },
     problems,
   };
 }

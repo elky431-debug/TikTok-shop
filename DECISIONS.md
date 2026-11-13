@@ -970,3 +970,9 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      exports : sur Netlify, `request.url` est l'adresse interne du déploiement de branche, ce qui envoyait la personne
      sur un autre domaine (vu au test en ligne de la déconnexion). Un « Location: /chemin » garde l'adresse du
      navigateur. Onboarding : un passage automatique en attente (choix au doigt) est annulé dès qu'on navigue autrement.
+178. **Profil TikTok : une fois par semaine** (à la demande, pour le coût en crédits Nexscope) : `creatorRefreshPolicy`
+     (`lib/creator-profile.ts`) — relevé automatique tous les 7 jours (ou pour un nouveau pseudo), bouton « Actualiser »
+     une fois par jour en Pro et Pro+ (plan relu côté serveur), jamais deux essais le même jour. En Gratuit, le
+     dashboard affiche la date du prochain relevé. Remplace la règle « un relevé par jour » de la décision 169.
+     `/api/health` donne aussi des indices non secrets sur la forme de la clé d'IA (`ai.keyHints` : préfixe, espaces,
+     guillemets, longueur).

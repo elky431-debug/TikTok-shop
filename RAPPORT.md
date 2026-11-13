@@ -436,9 +436,10 @@ Profites-en pour corriger `NEXT_PUBLIC_SITE_URL` (il doit valoir l'adresse Netli
 
 ### Coût ajouté
 
-- Profil TikTok (Nexscope `social/tiktok/profile`) : 10 crédits par relevé, 0 si Nexscope répond depuis son cache ;
-  au plus 1 par utilisateur actif et par jour, et seulement s'il a un pseudo. Aucun appel réel n'a été fait pendant ce
-  travail (testé sur la réponse documentée).
+- Profil TikTok (Nexscope `social/tiktok/profile`) : 10 crédits par relevé, 0 si Nexscope répond depuis son cache.
+  **Une fois par semaine** par utilisateur actif qui a un pseudo (≈ 43 crédits par mois au plus), plus le bouton
+  « Actualiser » des abonnés Pro et Pro+ (une fois par jour au plus, jamais deux relevés le même jour). Avant ce
+  changement : jusqu'à un relevé par jour pour tout le monde (≈ 300 crédits par mois et par utilisateur actif).
 - OpenAI : inchangé.
 
 ### Vérifications

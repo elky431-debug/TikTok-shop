@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { dailySeries, mondayOf, monthSpans, nextVideos, variation } from '@/lib/dashboard';
-import { cleanHandle, mapTiktokProfile, refreshCreatorProfile } from '@/lib/creator-profile';
+import { cleanHandle, creatorRefreshPolicy, mapTiktokProfile, refreshCreatorProfile } from '@/lib/creator-profile';
 import type { PublicationPlan } from '@/lib/v2/planning';
 
 describe('variation entre deux périodes', () => {
@@ -82,7 +82,7 @@ describe('profil TikTok (Nexscope)', () => {
     expect(mapTiktokProfile({ code: 0, data: { data: { stats: { followerCount: 12 } } } }, 'x1')).toMatchObject({ followers: 12, likes: null, videos: null });
     expect(mapTiktokProfile({ code: 0, data: { resourceStatus: 'NOT_FOUND' } }, 'x1')).toBeNull();
   });
-  it('un seul essai par jour, même en cas d’échec', async () => {
+  it('automatique une fois par semaine, « Actualiser » une fois par jour en Pro, essai compté même en cas d’échec', async () => {
     const records = new Map<string, { id: string; data: unknown }>();
     const repo = {
       listRecords: async () => [...records.values()],
@@ -98,16 +98,30 @@ describe('profil TikTok (Nexscope)', () => {
       calls++;
       return response;
     };
-    const now = new Date('2026-11-13T10:00:00Z');
-    const first = await refreshCreatorProfile(repo, 'u1', '@lea.teste', { now, fetcher });
-    expect(first).toMatchObject({ followers: 4100, error: null, attempted_on: '2026-11-13' });
-    await refreshCreatorProfile(repo, 'u1', '@lea.teste', { now, fetcher });
+    const day = (d: number) => new Date(`2026-11-${String(d).padStart(2, '0')}T10:00:00Z`);
+    const current = () => [...records.values()][0]?.data as { followers: number; error: string | null; attempted_on: string } | undefined;
+
+    // Premier relevé (onboarding ou première visite), puis plus rien d'automatique pendant 7 jours.
+    expect(await refreshCreatorProfile(repo, 'u1', '@lea.teste', { now: day(13), fetcher })).toMatchObject({ followers: 4100, error: null });
+    await refreshCreatorProfile(repo, 'u1', '@lea.teste', { now: day(13), fetcher });
+    await refreshCreatorProfile(repo, 'u1', '@lea.teste', { now: day(19), fetcher });
     expect(calls).toBe(1);
-    await refreshCreatorProfile(repo, 'u1', '@lea.teste', { now: new Date('2026-11-14T10:00:00Z'), fetcher: async () => { calls++; throw new Error('panne'); } });
+    expect(creatorRefreshPolicy(current() as never, 'lea.teste', 'free', day(19))).toMatchObject({ auto: false, manual: false, manualIncluded: false, nextAuto: '2026-11-20' });
+
+    // Gratuit : « Actualiser » refusé côté serveur.
+    await refreshCreatorProfile(repo, 'u1', '@lea.teste', { now: day(19), fetcher, plan: 'free', mode: 'manuel' });
+    expect(calls).toBe(1);
+    // Pro : une fois par jour, pas deux.
+    await refreshCreatorProfile(repo, 'u1', '@lea.teste', { now: day(19), fetcher, plan: 'pro', mode: 'manuel' });
+    await refreshCreatorProfile(repo, 'u1', '@lea.teste', { now: day(19), fetcher, plan: 'pro', mode: 'manuel' });
     expect(calls).toBe(2);
-    const kept = [...records.values()][0].data as { followers: number; error: string };
-    expect(kept.followers).toBe(4100);
-    expect(kept.error).toMatch(/Nouvel essai demain/);
+    expect(creatorRefreshPolicy(current() as never, 'lea.teste', 'pro', day(19))).toMatchObject({ auto: false, manual: false, manualIncluded: true });
+
+    // 7 jours après le dernier essai : relevé automatique ; un échec garde les anciens chiffres.
+    await refreshCreatorProfile(repo, 'u1', '@lea.teste', { now: day(26), fetcher: async () => { calls++; throw new Error('panne'); } });
+    expect(calls).toBe(3);
+    expect(current()).toMatchObject({ followers: 4100, attempted_on: '2026-11-26' });
+    expect(current()!.error).toMatch(/prochain relevé/);
     delete process.env.NEXSCOPE_API_KEY;
   });
 });
