@@ -254,7 +254,7 @@ function PrompterScreen({ title, lines, onClose }: { title: string; lines: strin
                 {lines.map((text, i) => (
                   <p key={i}>{text}</p>
                 ))}
-                <p className="text-cyan-ink" aria-hidden="true">
+                <p className="text-[#25F4EE]" aria-hidden="true">
                   ■
                 </p>
               </div>
@@ -274,7 +274,7 @@ function PrompterScreen({ title, lines, onClose }: { title: string; lines: strin
 
         {countdown !== null ? (
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/70" aria-live="assertive">
-            <span className="num text-8xl font-bold text-cyan-ink">{countdown}</span>
+            <span className="num text-8xl font-bold text-[#25F4EE]">{countdown}</span>
           </div>
         ) : null}
         {finished && countdown === null ? (

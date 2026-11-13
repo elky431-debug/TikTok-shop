@@ -1010,3 +1010,18 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      cyan gardé aux courbes et aux chiffres positifs. Thème clair : même logique en noir et gris (#161823, #52525B).
      Suivent aussi : images de partage (`lib/og.tsx`), icône et icônes de l'appli installable (`scripts/pwa-icons.py`),
      e-mails (boutons noirs, chiffres positifs en cyan foncé). Captures de comparaison gardées dans `docs/captures/palettes/`.
+184. **Retour à la palette TikTok (A), sur fond blanc** (à la demande, après la J) : le thème clair, qui existait en
+     option, devient le thème par défaut partout ; le noir passe en option du compte (cookie `tracktout_theme=dark`,
+     appliqué avant l'affichage). Sur blanc, cyan et rose foncés (#00777A, #C8103F) pour rester AA ; dégradé à texte
+     blanc (`--on-gradient`) ; boutons #E0144A. Les graphiques lisent leurs couleurs dans le thème (`useChartColors`),
+     la constellation dessine à la couleur d'encre du thème, le téléprompteur reste noir (cyan vif en dur). Icônes et
+     images de partage reprennent le cyan et le rose ; écrans de démarrage de l'appli installable sur fond blanc ;
+     manifeste en blanc. Pastille cyan éclaircie (fond 7 %) : la page Notifications tombait à 4,44:1. Audit axe :
+     0 erreur sur 22 pages en blanc et 6 pages en noir.
+185. **Nouveau titre de l'accueil** : « Automatise ton business TikTok Shop de A à Z. » (« de A à Z. » en italique et
+     en dégradé vivant, même composant animé qu'avant) ; sous-titre « Tracktout trouve les produits qui vont exploser,
+     écrit tes scripts, planifie tes vidéos et suit tes gains. Toi, tu tournes. ». Balise title « Automatise ton
+     business TikTok Shop de A à Z · Tracktout » (accroche d'abord, le nom ensuite, pour la recherche) et description
+     de 150 caractères sans promesse de gains (`BRAND_TAGLINE`, `BRAND_DESCRIPTION` dans `lib/brand.ts`), reprises
+     par Open Graph, Twitter, l'image de partage et le manifeste ; adresse canonique « / ». Vérifié à 360, 390 et
+     1440 px : aucun débordement.

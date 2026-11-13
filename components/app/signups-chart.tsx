@@ -1,23 +1,25 @@
 'use client';
 
+import { tooltipStyle, useChartColors } from '@/components/charts/colors';
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 export function SignupsChart({ data }: { data: Array<{ label: string; inscrits: number }> }) {
+  const c = useChartColors();
   return (
     <div className="h-40 w-full text-cyan-ink" role="img" aria-label="Inscriptions d’élèves par semaine sur 8 semaines">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 4, right: 0, bottom: 0, left: -24 }}>
           <defs>
             <linearGradient id="inscrits-fill" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="#25F4EE" stopOpacity={0.9} />
-              <stop offset="100%" stopColor="#25F4EE" stopOpacity={0.15} />
+              <stop offset="0%" stopColor={c.line} stopOpacity={0.9} />
+              <stop offset="100%" stopColor={c.line} stopOpacity={0.15} />
             </linearGradient>
           </defs>
-          <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fill: '#8A8B91', fontSize: 11 }} />
-          <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fill: '#8A8B91', fontSize: 11 }} />
+          <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fill: c.axis, fontSize: 11 }} />
+          <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fill: c.axis, fontSize: 11 }} />
           <Tooltip
-            cursor={{ fill: '#FFFFFF', fillOpacity: 0.04 }}
-            contentStyle={{ background: '#0A0A0B', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 12, color: '#fff' }}
+            cursor={{ fill: c.grid, fillOpacity: 0.04 }}
+            contentStyle={tooltipStyle}
             formatter={(value) => [String(value), 'Inscrits']}
             labelFormatter={(label) => `Semaine du ${String(label)}`}
           />

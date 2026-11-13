@@ -1,5 +1,6 @@
 'use client';
 
+import { useChartColors } from '@/components/charts/colors';
 import { Area, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { formatInt } from '@/lib/utils';
 
@@ -25,22 +26,23 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
 
 /** Courbe 30 jours : ventes estimées en cyan avec remplissage dégradé, affiliés en pointillés gris. */
 export function SalesChart({ data, showAffiliates = true }: { data: SalesPointView[]; showAffiliates?: boolean }) {
+  const c = useChartColors();
   return (
     <div className="h-56 w-full sm:h-64" role="img" aria-label="Ventes estimées et nombre d'affiliés sur 30 jours">
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -12 }}>
           <defs>
             <linearGradient id="ventes-fill" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="#25F4EE" stopOpacity={0.3} />
-              <stop offset="100%" stopColor="#25F4EE" stopOpacity={0} />
+              <stop offset="0%" stopColor={c.line} stopOpacity={0.3} />
+              <stop offset="100%" stopColor={c.line} stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid stroke="#FFFFFF" strokeOpacity={0.06} vertical={false} />
+          <CartesianGrid stroke={c.grid} strokeOpacity={0.06} vertical={false} />
           <XAxis
             dataKey="label"
             tickLine={false}
             axisLine={false}
-            tick={{ fill: '#8A8B91', fontSize: 12 }}
+            tick={{ fill: c.axis, fontSize: 12 }}
             interval="preserveStartEnd"
             minTickGap={28}
           />
@@ -48,18 +50,18 @@ export function SalesChart({ data, showAffiliates = true }: { data: SalesPointVi
             yAxisId="ventes"
             tickLine={false}
             axisLine={false}
-            tick={{ fill: '#8A8B91', fontSize: 12 }}
+            tick={{ fill: c.axis, fontSize: 12 }}
             width={44}
             tickFormatter={(v: number) => (v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(v))}
           />
           <YAxis yAxisId="affilies" orientation="right" hide />
-          <Tooltip content={<ChartTooltip />} cursor={{ stroke: '#25F4EE', strokeOpacity: 0.3 }} />
+          <Tooltip content={<ChartTooltip />} cursor={{ stroke: c.line, strokeOpacity: 0.3 }} />
           {showAffiliates ? (
             <Line
               yAxisId="affilies"
               type="monotone"
               dataKey="affilies"
-              stroke="#8A8B91"
+              stroke={c.axis}
               strokeWidth={1.5}
               strokeDasharray="4 4"
               dot={false}
@@ -70,11 +72,11 @@ export function SalesChart({ data, showAffiliates = true }: { data: SalesPointVi
             yAxisId="ventes"
             type="monotone"
             dataKey="ventes"
-            stroke="#25F4EE"
+            stroke={c.line}
             strokeWidth={2.5}
             fill="url(#ventes-fill)"
             dot={false}
-            activeDot={{ r: 4, fill: '#25F4EE', stroke: '#000' }}
+            activeDot={{ r: 4, fill: c.line, stroke: c.page }}
             isAnimationActive={false}
           />
         </ComposedChart>

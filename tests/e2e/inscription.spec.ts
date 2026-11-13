@@ -3,7 +3,7 @@ import { completeOnboarding, signIn, signUpWithPassword, uniqueEmail } from './h
 
 test('inscription : de l’accueil au radar, en mode préparation', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Sache quoi vendre sur TikTok Shop chaque matin.');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Automatise ton business TikTok Shop de A à Z.');
   await page.getByRole('link', { name: 'Démarrer gratuitement' }).first().click();
   await expect(page).toHaveURL(/\/connexion/);
 

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { Download } from 'lucide-react';
 import { ForgetDeviceForm } from '@/components/pwa/forget-device';
@@ -6,6 +7,7 @@ import { LinkButton } from '@/components/ui/button';
 import { ChoiceChip, Field, Input, Label, Select, Textarea } from '@/components/ui/field';
 import { SubmitButton } from '@/components/ui/submit-button';
 import { Badge, Callout, Card, PageHeader } from '@/components/ui/surface';
+import { THEME_COOKIE } from '@/lib/auth/constants';
 import { requireOnboardedViewer } from '@/lib/auth/session';
 import { billingMode } from '@/lib/billing';
 import { getRepo } from '@/lib/db';
@@ -253,9 +255,9 @@ export default async function ComptePage({ searchParams }: { searchParams: Recor
           <form action={updatePreferencesAction} className="mt-4 space-y-5">
             <div>
               <Label htmlFor="theme">Apparence</Label>
-              <Select id="theme" name="theme" defaultValue={profile.theme === 'light' ? 'light' : 'dark'} className="sm:max-w-xs">
-                <option value="dark">Sombre (par défaut)</option>
-                <option value="light">Clair</option>
+              <Select id="theme" name="theme" defaultValue={cookies().get(THEME_COOKIE)?.value === 'dark' ? 'dark' : 'light'} className="sm:max-w-xs">
+                <option value="light">Clair (par défaut)</option>
+                <option value="dark">Noir</option>
               </Select>
             </div>
             {coach ? (

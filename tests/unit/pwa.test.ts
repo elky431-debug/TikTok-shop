@@ -68,8 +68,8 @@ describe('appli installable : manifeste et icônes', () => {
   it('manifeste complet : nom, couleurs, affichage autonome, icônes 192, 512 et maskable', () => {
     const manifest = webManifest();
     expect(manifest).toMatchObject({ name: BRAND, short_name: BRAND, lang: 'fr', display: 'standalone', start_url: '/app', scope: '/' });
-    expect(manifest.background_color).toBe('#000000');
-    expect(manifest.theme_color).toBe('#000000');
+    expect(manifest.background_color).toBe('#ffffff');
+    expect(manifest.theme_color).toBe('#ffffff');
     const icons = manifest.icons ?? [];
     expect(icons.find((i) => i.sizes === '192x192' && i.purpose === 'any')).toBeTruthy();
     expect(icons.find((i) => i.sizes === '512x512' && i.purpose === 'any')).toBeTruthy();

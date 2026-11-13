@@ -4,8 +4,8 @@ const token = (name: string) => `rgb(var(--${name}) / <alpha-value>)`;
 
 const config: Config = {
   content: ['./app/**/*.{ts,tsx}', './components/**/*.{ts,tsx}', './lib/**/*.{ts,tsx}'],
-  // Le noir est le thème par défaut : « dark: » s'applique partout sauf en thème clair choisi dans le compte.
-  darkMode: ['variant', ':root:not([data-theme="light"]) &'],
+  // Le blanc est le thème par défaut : « dark: » ne s'applique qu'au thème noir choisi dans le compte.
+  darkMode: ['variant', ':root[data-theme="dark"] &'],
   theme: {
     screens: {
       sm: '640px',
@@ -43,6 +43,7 @@ const config: Config = {
           soft: token('warn-soft'),
         },
         'on-primary': token('on-primary'),
+        'on-gradient': token('on-gradient'),
         positive: token('positive'),
         ink: '#161823',
       },

@@ -6,8 +6,8 @@ import { BRAND, BRAND_TAGLINE } from '@/lib/brand';
  * (`MetadataRoute.Manifest`) : nom, couleurs, affichage autonome, icônes 192/512 et « maskable ». Android compose son
  * écran de démarrage avec `name`, `background_color` et l'icône 512 ; iOS demande ses propres images (voir plus bas).
  */
-export const PWA_BACKGROUND = '#000000';
-export const PWA_THEME = '#000000';
+export const PWA_BACKGROUND = '#ffffff';
+export const PWA_THEME = '#ffffff';
 
 export function webManifest(): MetadataRoute.Manifest {
   return {

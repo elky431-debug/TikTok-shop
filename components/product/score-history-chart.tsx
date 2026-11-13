@@ -1,5 +1,6 @@
 'use client';
 
+import { useChartColors } from '@/components/charts/colors';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { SCALE } from '@/lib/score';
 
@@ -20,28 +21,29 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
 
 /** Évolution du score du jour sur 30 jours (instantanés quotidiens), sur l'échelle affichée de 15 à 90. */
 export function ScoreHistoryChart({ data }: { data: ScorePointView[] }) {
+  const c = useChartColors();
   return (
     <div className="h-44 w-full" role="img" aria-label={`Score des ${data.length} derniers jours, de ${data[0]?.score} à ${data.at(-1)?.score}`}>
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -20 }}>
           <defs>
             <linearGradient id="score-fill" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="#25F4EE" stopOpacity={0.25} />
-              <stop offset="100%" stopColor="#25F4EE" stopOpacity={0} />
+              <stop offset="0%" stopColor={c.line} stopOpacity={0.25} />
+              <stop offset="100%" stopColor={c.line} stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid stroke="#FFFFFF" strokeOpacity={0.06} vertical={false} />
-          <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fill: '#8A8B91', fontSize: 12 }} interval="preserveStartEnd" minTickGap={28} />
-          <YAxis domain={[SCALE.min, SCALE.max]} ticks={[15, 45, 60, 75, 90]} tickLine={false} axisLine={false} tick={{ fill: '#8A8B91', fontSize: 12 }} width={40} />
-          <Tooltip content={<ChartTooltip />} cursor={{ stroke: '#25F4EE', strokeOpacity: 0.3 }} />
+          <CartesianGrid stroke={c.grid} strokeOpacity={0.06} vertical={false} />
+          <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fill: c.axis, fontSize: 12 }} interval="preserveStartEnd" minTickGap={28} />
+          <YAxis domain={[SCALE.min, SCALE.max]} ticks={[15, 45, 60, 75, 90]} tickLine={false} axisLine={false} tick={{ fill: c.axis, fontSize: 12 }} width={40} />
+          <Tooltip content={<ChartTooltip />} cursor={{ stroke: c.line, strokeOpacity: 0.3 }} />
           <Area
             type="monotone"
             dataKey="score"
-            stroke="#25F4EE"
+            stroke={c.line}
             strokeWidth={2.5}
             fill="url(#score-fill)"
             dot={data.length < 3}
-            activeDot={{ r: 4, fill: '#25F4EE', stroke: '#000' }}
+            activeDot={{ r: 4, fill: c.line, stroke: c.page }}
             isAnimationActive={false}
           />
         </AreaChart>

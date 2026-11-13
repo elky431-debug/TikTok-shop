@@ -19,14 +19,20 @@ import { RadarShowcase } from '@/components/public/radar-showcase';
 import { SectionHeading } from '@/components/public/section-heading';
 import { LinkButton } from '@/components/ui/button';
 import { FeatureCard } from '@/components/ui/feature-card';
-import { BRAND, BRAND_TAGLINE } from '@/lib/brand';
+import { BRAND, BRAND_DESCRIPTION, BRAND_TAGLINE } from '@/lib/brand';
 import { COACH_TRIAL_DAYS, getPlan, REFERRAL_COMMISSION_RATE } from '@/lib/plans';
 import { pricingCards } from '@/lib/pricing';
 import { MARKET_FIGURES } from '@/lib/market';
 import { getShowcase } from '@/lib/public-demo';
 import { formatEuros } from '@/lib/utils';
 
-export const metadata: Metadata = { title: { absolute: `${BRAND} · ${BRAND_TAGLINE}` } };
+export const metadata: Metadata = {
+  title: { absolute: `${BRAND_TAGLINE} · ${BRAND}` },
+  description: BRAND_DESCRIPTION,
+  alternates: { canonical: '/' },
+  openGraph: { title: `${BRAND_TAGLINE} · ${BRAND}`, description: BRAND_DESCRIPTION, url: '/' },
+  twitter: { card: 'summary_large_image', title: `${BRAND_TAGLINE} · ${BRAND}`, description: BRAND_DESCRIPTION },
+};
 export const revalidate = 3600;
 
 /** Chiffres vrais sur le produit (Tracktout n'a pas encore d'utilisateurs : aucun chiffre d'usage). */
@@ -127,9 +133,9 @@ export default async function HomePage() {
         <Constellation />
         <HeroIntro
           pill="Le radar TikTok Shop pour les affiliés français"
-          title="Sache quoi vendre sur TikTok Shop"
-          accent="chaque matin."
-          subtitle={`${BRAND} repère les produits qui vont exploser, te dit pourquoi, et t’écrit les scripts pour les vendre. Pour que tu postes ce qui marche, pas ce que tu espères.`}
+          title="Automatise ton business TikTok Shop"
+          accent="de A à Z."
+          subtitle={`${BRAND} trouve les produits qui vont exploser, écrit tes scripts, planifie tes vidéos et suit tes gains. Toi, tu tournes.`}
           actions={
             <>
               <LinkButton href="/connexion" size="lg" arrow>

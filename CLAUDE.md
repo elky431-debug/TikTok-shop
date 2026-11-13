@@ -82,41 +82,42 @@ Tendances : explose ≥ +40 % (et ≥ 5 ventes/j), monte ≥ +10 %, baisse ≤ �
 | pro | 19,90 €/mois · 167 €/an | radar complet, 30 scripts/jour, récap Discord + e-mail |
 | proplus | 39,90 €/mois · 335 €/an | illimité, export, priorité nouveautés |
 
-## Design (refonte : style EtSmart, palette « blanc pur »)
+## Design (refonte : style EtSmart, couleurs TikTok, fond blanc)
 
 Référence : le design d'EtSmart (etsmart.app, même fondateur), reproduit fidèlement — structure,
-espacements, typographie, effets — avec la palette « blanc pur » (choisie le 13 novembre parmi 10 palettes,
-`DECISIONS.md` 183) et le contenu de Tracktout. Quand une mesure du brief diverge du code EtSmart, la mesure
+espacements, typographie, effets — avec les couleurs TikTok (cyan et rose) **sur fond blanc** (choix du 13 novembre,
+`DECISIONS.md` 184) et le contenu de Tracktout. Quand une mesure du brief diverge du code EtSmart, la mesure
 d'EtSmart l'emporte (voir `DECISIONS.md`, refonte).
 
-- **Thème** : noir par défaut partout (site et appli). Le clair n'existe qu'en option dans le compte
-  (`data-theme="light"`, palette en noir et gris), jamais selon le système.
-- **Tokens** (`app/globals.css`) : `--bg-page` #000, `--bg-elevated` #0A0A0B (cartes), `--bg-subtle`
-  #111114 (champs, pastilles), `--border` blanc 8 %, `--border-strong` blanc 14 %, `--text` #FFF,
-  `--text-muted` #8A8B91, `--text-faint` #7E7F85. Accents (`--cyan-hex`, `cyan-ink`) #F4F4F5, dégradé
-  `--gradient` blanc → #A1A1AA, boutons principaux blancs à texte noir (`bg-rose-fill text-on-primary`), erreurs
-  `rose-ink` #FF5C5C. Le **cyan #25F4EE est réservé aux courbes et aux chiffres positifs** (`positive`, `gain`). Les
-  noms `cyan-*` / `rose-*` viennent de l'ancienne palette TikTok : ce sont les rôles « accent » et « principal ».
+- **Thème** : blanc par défaut partout (site et appli). Le noir n'existe qu'en option dans le compte
+  (`data-theme="dark"`, cookie `tracktout_theme=dark`), jamais selon le système.
+- **Tokens** (`app/globals.css`, `:root` = blanc, `:root[data-theme='dark']` = noir) : fond #FFF, cartes #FFF bordées,
+  `--bg-subtle` #F1F1F2, `--border` encre 12 %, texte #161823, `--text-muted` #5F6068. Cyan foncé #00777A et rose
+  foncé #C8103F (AA sur blanc) pour les textes ; `--gradient` #00777A → #C8103F (texte blanc dessus, `on-gradient`) ;
+  boutons roses #E0144A à texte blanc (`bg-rose-fill text-on-primary`). En noir : cyan #25F4EE, rose #FE2C55, boutons
+  #E3174D. Courbes : couleur `--cyan-hex` lue par `useChartColors` (`components/charts/colors.ts`), jamais en dur.
   Classes Tailwind : `bg-bg`, `bg-raised`, `bg-surface`, `border-line`, `text-muted`, `text-subtle`, `rose-*`, `cyan-*`,
-  `gain-*`, `warn-*`, `positive`, `on-primary`.
+  `gain-*`, `warn-*`, `positive`, `on-primary`, `on-gradient`.
+- **Correspondance EtSmart** : son dégradé bleu-cyan → turquoise devient `--gradient` (cyan → rose) ;
+  son cyan seul (étiquettes, icônes, liens) devient `cyan-ink` ; le bouton principal est rose.
 - **Police** : Sora (celle d'EtSmart), auto-hébergée (`app/fonts`). Chiffres tabulaires partout.
 - **Typo** : grand titre de l'accueil en gras serré (`tracking-tight`), centré, partie finale en
   italique et en dégradé (`.text-gradient-live`) ; titres de section sur deux lignes, la seconde en
   dégradé ; étiquettes en majuscules espacées (`.eyebrow`, `.eyebrow-category`) — voulues.
-- **Composants** : en-tête fixe noir flouté, logo à halo + nom en deux tons (« Track » blanc, « tout »
-  en dégradé) ; bouton principal blanc arrondi 12 px avec flèche → (monte de 2 px, halo, flèche
+- **Composants** : en-tête fixe flouté, logo à halo + nom en deux tons (« Track » blanc, « tout »
+  en dégradé) ; bouton principal rose arrondi 12 px avec flèche → (monte de 2 px, halo rose, flèche
   qui glisse au survol) ; bouton secondaire bordé ; pastille d'annonce avec point cyan qui pulse ;
   bandeau de chiffres en dégradé (faits vrais uniquement) ; cartes `.feature-card` (bordure dégradée au
   survol) avec `.icon-chip`.
-- **Héros** : constellation animée sur canvas (lignes, points, losanges, cercles, « + », halos blancs
-  diffus), dérive lente, parallaxe à la souris, pause hors onglet, arrêt si `prefers-reduced-motion`.
+- **Héros** : titre « Automatise ton business TikTok Shop de A à Z. » (« de A à Z. » en italique et en dégradé
+  vivant) ; constellation animée sur canvas (traits à la couleur d'encre du thème, halos cyan et rose), dérive lente, parallaxe à la souris, pause hors onglet, arrêt si `prefers-reduced-motion`.
 - **Animations** (Motion, `motion/react`) : chargement du héros en séquence, dégradé vivant, comptage
   des chiffres, apparitions au défilement (une fois), aperçu du radar qui fait défiler les produits.
   Toujours une version sans mouvement si `prefers-reduced-motion`.
-- **Signature** : le décalage en deux tons (gris clair / gris) reste réservé au logo et au score.
+- **Signature** : le décalage cyan / rose façon logo TikTok reste réservé au logo et au score.
 - **Appli** (refonte du 13 novembre, `DECISIONS.md` 164-176) : coque copiée d'EtSmart
   (`components/app/shell.tsx` : barre latérale 64 → 256 px en sections Accueil / Trouver / Créer / Suivre / Compte,
-  en-tête et barre du bas sur téléphone), conteneur `max-w-7xl`, `PageHeader` à étiquette de section, cartes noires
+  en-tête et barre du bas sur téléphone), conteneur `max-w-7xl`, `PageHeader` à étiquette de section, cartes
   bordées, onglets à trait dégradé. **Dashboard sur `/app`** (`lib/dashboard.ts`, chiffres saisis ou mesurés
   uniquement), **radar sur `/app/radar`**. Onboarding : 10 questions, une par écran (`app/bienvenue`,
   `lib/onboarding-steps.ts`) ; `onboarding_version` < 2 ⇒ nouvelles questions une fois. Courbes Recharts cyan avec

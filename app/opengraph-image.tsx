@@ -12,9 +12,9 @@ export default function Image() {
     (
       <ShareVisual
         eyebrow="TikTok Shop France"
-        title="Sache chaque matin"
-        accent="quoi vendre."
-        subtitle="Les produits qui montent dans tes niches, un score expliqué et des scripts vidéo prêts à tourner. En français."
+        title="Automatise ton business TikTok Shop"
+        accent="de A à Z."
+        subtitle="Les produits qui vont exploser, tes scripts, tes vidéos planifiées et tes gains suivis. Toi, tu tournes."
       />
     ),
     { ...size },

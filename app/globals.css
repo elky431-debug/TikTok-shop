@@ -3,73 +3,23 @@
 @tailwind utilities;
 
 /*
- * Tokens de design : style EtSmart, palette « blanc pur » (choisie le 13 novembre parmi 10 palettes comparées) :
- * boutons, accents, logo et dégradé en blanc et gris ; le cyan reste aux courbes et aux chiffres positifs ; erreurs en
- * rouge. Les noms des variables (--cyan-*, --rose-*) datent de la palette TikTok d'origine. Le noir est le thème par
- * défaut partout ;
- * le clair n'existe qu'en option dans le compte (data-theme="light"), jamais selon le système.
+ * Tokens de design : style EtSmart, couleurs TikTok (cyan et rose), sur fond blanc par défaut (choix du 13 novembre) ;
+ * le noir existe en option dans le compte (data-theme="dark"), jamais selon le système.
  *
  * Deux familles de variables :
  *  - les tokens du brief (--bg-elevated, --text-muted, --gradient…), utilisés tels quels ;
  *  - des triplets RGB (--fg, --raised, --surface…) pour garder l'opacité Tailwind (bg-rose/10).
  *
- * Contrastes (WCAG AA, mesurés) :
- *  - --text-muted #8A8B91 : 6,2:1 sur noir, 5,8:1 sur les cartes ;
- *  - --text-faint #7E7F85 : 5,3:1 sur noir, 4,7:1 sur --bg-subtle (le #5C5D63 du brief faisait 3,2:1) ;
- *  - boutons : fond blanc + texte noir = 21:1 ; accents #F4F4F5 : 18:1 sur les cartes ;
- *  - dégradé blanc → #A1A1AA : texte noir dessus ≥ 8,2:1 ; erreurs #FF5C5C : 6,9:1 ; cyan des courbes #25F4EE : 15:1.
+ * Contrastes (WCAG AA, sur blanc) : texte #161823 16:1 ; secondaire #5F6068 6,4:1 ; cyan #00777A 5,4:1 ;
+ * rose #C8103F 5,8:1 ; bouton #E0144A + texte blanc 4,8:1 ; texte blanc sur le dégradé ≥ 5,4:1 ; positif #00777A.
+ * En noir : cyan #25F4EE 15:1, rose #FE2C55 5,7:1, bouton #E3174D + blanc 4,7:1, texte noir sur le dégradé ≥ 5,7:1.
  */
 @layer base {
+  /* Fond blanc par défaut, palette TikTok (cyan foncé et rose foncé pour rester AA sur blanc). */
   :root {
-    color-scheme: dark;
+    color-scheme: light;
 
     /* Tokens du brief */
-    --bg-page: #000000;
-    --bg-elevated: #0a0a0b;
-    --bg-subtle: #111114;
-    --border: rgba(255, 255, 255, 0.08);
-    --border-strong: rgba(255, 255, 255, 0.14);
-    --text: #ffffff;
-    --text-muted: #8a8b91;
-    --text-faint: #7e7f85;
-    --cyan-hex: #f4f4f5;
-    --pink-hex: #a1a1aa;
-    --pink-fill: #ffffff;
-    --gradient: linear-gradient(90deg, #ffffff 0%, #a1a1aa 100%);
-    --gradient-diag: linear-gradient(135deg, #ffffff 0%, #a1a1aa 100%);
-    --glow-cyan: 0 0 40px rgba(244, 244, 245, 0.18);
-    --glow-pink: 0 0 40px rgba(255, 255, 255, 0.22);
-
-    /* Triplets RGB pour Tailwind */
-    --bg: 0 0 0;
-    --fg: 255 255 255;
-    --surface: 17 17 20;
-    --raised: 10 10 11;
-    --muted: 138 139 145;
-    --subtle: 126 127 133;
-    --rose: 255 255 255;
-    --rose-ink: 255 92 92;
-    --rose-fill: 255 255 255;
-    --rose-soft: 41 41 41;
-    --cyan: 244 244 245;
-    --cyan-ink: 244 244 245;
-    --cyan-soft: 39 39 42;
-    --gain: 37 244 238;
-    --gain-soft: 6 36 35;
-    --warn: 251 191 36;
-    --warn-soft: 45 33 8;
-
-    /* Texte posé sur le bouton principal ; chiffres positifs (cyan, comme les courbes) ; halo et reflets du logo. */
-    --on-primary: 0 0 0;
-    --positive: 37 244 238;
-    --chart-2: #a1a1aa;
-    --logo-halo: radial-gradient(circle, rgba(244, 244, 245, 0.4) 0%, rgba(161, 161, 170, 0.2) 100%);
-    --logo-shadow: rgba(255, 255, 255, 0.25);
-  }
-
-  /* Thème clair : uniquement sur demande, depuis le compte. */
-  :root[data-theme='light'] {
-    color-scheme: light;
     --bg-page: #ffffff;
     --bg-elevated: #ffffff;
     --bg-subtle: #f1f1f2;
@@ -78,35 +28,85 @@
     --text: #161823;
     --text-muted: #5f6068;
     --text-faint: #5f6068;
-    --cyan-hex: #161823;
-    --pink-hex: #52525b;
-    --gradient: linear-gradient(90deg, #161823 0%, #52525b 100%);
-    --gradient-diag: linear-gradient(135deg, #161823 0%, #52525b 100%);
-    --glow-cyan: 0 0 40px rgba(22, 24, 35, 0.12);
-    --glow-pink: 0 0 40px rgba(22, 24, 35, 0.16);
+    --cyan-hex: #00777a;
+    --pink-hex: #c8103f;
+    --pink-fill: #e0144a;
+    --gradient: linear-gradient(90deg, #00777a 0%, #c8103f 100%);
+    --gradient-diag: linear-gradient(135deg, #00777a 0%, #c8103f 100%);
+    --glow-cyan: 0 0 40px rgba(0, 119, 122, 0.15);
+    --glow-pink: 0 0 40px rgba(200, 16, 63, 0.18);
 
+    /* Triplets RGB pour Tailwind */
     --bg: 255 255 255;
     --fg: 22 24 35;
     --surface: 241 241 242;
     --raised: 255 255 255;
     --muted: 95 96 104;
     --subtle: 95 96 104;
-    --rose: 22 24 35;
+    --rose: 254 44 85;
     --rose-ink: 200 16 63;
-    --rose-fill: 22 24 35;
-    --rose-soft: 241 241 242;
-    --cyan: 22 24 35;
-    --cyan-ink: 22 24 35;
-    --cyan-soft: 241 241 242;
+    --rose-fill: 224 20 74;
+    --rose-soft: 255 235 239;
+    --cyan: 37 244 238;
+    --cyan-ink: 0 119 122;
+    --cyan-soft: 222 251 250;
     --gain: 14 122 67;
     --gain-soft: 228 246 236;
     --warn: 180 83 9;
     --warn-soft: 254 243 199;
-    --positive: 0 119 122;
+
+    /* Texte posé sur le bouton principal et sur le dégradé ; chiffres positifs ; seconde courbe ; logo. */
     --on-primary: 255 255 255;
-    --chart-2: #52525b;
-    --logo-halo: radial-gradient(circle, rgba(22, 24, 35, 0.18) 0%, rgba(82, 82, 91, 0.1) 100%);
-    --logo-shadow: rgba(22, 24, 35, 0.2);
+    --on-gradient: 255 255 255;
+    --positive: 0 119 122;
+    --chart-2: #c8103f;
+    --logo-halo: radial-gradient(circle, rgba(37, 244, 238, 0.35) 0%, rgba(254, 44, 85, 0.2) 100%);
+    --logo-shadow: rgba(0, 119, 122, 0.25);
+  }
+
+  /* Thème noir : sur demande, depuis le compte (cyan et rose TikTok purs). */
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+    --bg-page: #000000;
+    --bg-elevated: #0a0a0b;
+    --bg-subtle: #111114;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.14);
+    --text: #ffffff;
+    --text-muted: #8a8b91;
+    --text-faint: #7e7f85;
+    --cyan-hex: #25f4ee;
+    --pink-hex: #fe2c55;
+    --pink-fill: #e3174d;
+    --gradient: linear-gradient(90deg, #25f4ee 0%, #fe2c55 100%);
+    --gradient-diag: linear-gradient(135deg, #25f4ee 0%, #fe2c55 100%);
+    --glow-cyan: 0 0 40px rgba(37, 244, 238, 0.25);
+    --glow-pink: 0 0 40px rgba(254, 44, 85, 0.3);
+
+    --bg: 0 0 0;
+    --fg: 255 255 255;
+    --surface: 17 17 20;
+    --raised: 10 10 11;
+    --muted: 138 139 145;
+    --subtle: 126 127 133;
+    --rose: 254 44 85;
+    --rose-ink: 254 44 85;
+    --rose-fill: 227 23 77;
+    --rose-soft: 42 9 16;
+    --cyan: 37 244 238;
+    --cyan-ink: 37 244 238;
+    --cyan-soft: 6 36 35;
+    --gain: 74 222 128;
+    --gain-soft: 10 38 22;
+    --warn: 251 191 36;
+    --warn-soft: 45 33 8;
+
+    --on-primary: 255 255 255;
+    --on-gradient: 0 0 0;
+    --positive: 37 244 238;
+    --chart-2: #fe2c55;
+    --logo-halo: radial-gradient(circle, rgba(37, 244, 238, 0.45) 0%, rgba(254, 44, 85, 0.25) 100%);
+    --logo-shadow: rgba(37, 244, 238, 0.3);
   }
 
   html {
@@ -169,12 +169,12 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.2em;
-    color: rgb(var(--cyan-ink) / 0.75);
+    color: var(--cyan-hex);
   }
 
-  /* En thème clair, l'opacité réduite ferait passer le texte sous 4,5:1. */
-  :root[data-theme='light'] .eyebrow-category {
-    color: var(--cyan-hex);
+  /* En noir, un peu atténuée (le cyan pur reste à plus de 10:1). */
+  :root[data-theme='dark'] .eyebrow-category {
+    color: rgb(var(--cyan-ink) / 0.7);
   }
 
   /*
@@ -280,10 +280,10 @@
    * Signature visuelle : décalage cyan / rose façon logo TikTok.
    * Réservée au score d'opportunité et au logo.
    */
-  /* Badge « explose » : un chiffre positif, donc en cyan comme les courbes. */
+  /* Badge « explose » : rose TikTok. */
   .trend-explose {
-    background-color: rgb(var(--positive) / 0.16);
-    color: rgb(var(--positive));
+    background-color: rgb(var(--rose-soft));
+    color: rgb(var(--rose-ink));
   }
 
   .split-glow {

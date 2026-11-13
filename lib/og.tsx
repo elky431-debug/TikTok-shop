@@ -8,9 +8,8 @@ import { BRAND_SPLIT } from '@/lib/brand';
  * par next/og (Noto Sans) : Sora n'existe qu'en woff2, format que Satori ne lit pas.
  * Aucun chiffre de gains, aucune promesse : seulement ce que fait l'outil.
  */
-// Palette « blanc pur » (accent et fin du dégradé) ; noms gardés de la palette TikTok d'origine.
-export const CYAN = '#F4F4F5';
-export const PINK = '#A1A1AA';
+export const CYAN = '#25F4EE';
+export const PINK = '#FE2C55';
 export const GRADIENT = `linear-gradient(90deg, ${CYAN} 0%, ${PINK} 100%)`;
 
 export const SHARE_FORMATS = {

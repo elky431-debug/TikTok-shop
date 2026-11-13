@@ -110,7 +110,7 @@ export function Callout({
 const badgeTones = {
   neutral: 'border-line-strong bg-fg/5 text-fg/80',
   rose: 'border-rose-ink/30 bg-rose-ink/10 text-rose-ink',
-  cyan: 'border-cyan-ink/25 bg-cyan-ink/10 text-cyan-ink',
+  cyan: 'border-cyan-ink/25 bg-cyan-ink/[0.07] text-cyan-ink',
   gain: 'border-gain/25 bg-gain/10 text-gain',
   warn: 'border-warn/30 bg-warn/10 text-warn',
   ink: 'border-transparent bg-fg text-bg',

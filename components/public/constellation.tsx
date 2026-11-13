@@ -75,7 +75,7 @@ const MOTION = SHAPES.map((_, i) => ({
   depth: 0.3 + ((i * 13) % 10) / 10,
 }));
 
-function draw(ctx: CanvasRenderingContext2D, width: number, height: number, t: number, mouse: { x: number; y: number }) {
+function draw(ctx: CanvasRenderingContext2D, width: number, height: number, t: number, mouse: { x: number; y: number }, ink = '255,255,255') {
   ctx.clearRect(0, 0, width, height);
   ctx.lineWidth = 1;
   SHAPES.forEach((shape, i) => {
@@ -83,7 +83,7 @@ function draw(ctx: CanvasRenderingContext2D, width: number, height: number, t: n
     const drift = (Math.PI * 2 * t) / m.period + m.phase;
     const x = (shape.x / 100) * width + Math.sin(drift) * m.ampX + mouse.x * 18 * m.depth;
     const y = (shape.y / 100) * height + Math.cos(drift) * m.ampY + mouse.y * 12 * m.depth;
-    const color = `rgba(255,255,255,${shape.alpha})`;
+    const color = `rgba(${ink},${shape.alpha})`;
     ctx.strokeStyle = color;
     ctx.fillStyle = color;
     switch (shape.kind) {
@@ -93,7 +93,7 @@ function draw(ctx: CanvasRenderingContext2D, width: number, height: number, t: n
         const y2 = y + Math.sin(rad) * shape.len;
         const gradient = ctx.createLinearGradient(x, y, x2, y2);
         gradient.addColorStop(0, color);
-        gradient.addColorStop(1, 'rgba(255,255,255,0)');
+        gradient.addColorStop(1, `rgba(${ink},0)`);
         ctx.strokeStyle = gradient;
         ctx.beginPath();
         ctx.moveTo(x, y);
@@ -154,6 +154,8 @@ export function Constellation() {
     if (!ctx) return;
 
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // Couleur d'encre du thème (triplet RVB de --fg) : traits foncés sur fond blanc, clairs sur fond noir.
+    const ink = getComputedStyle(document.documentElement).getPropertyValue('--fg').trim().split(/\s+/).join(',') || '22,24,35';
     const finePointer = window.matchMedia('(pointer: fine) and (min-width: 1024px)').matches;
     let width = 0;
     let height = 0;
@@ -172,13 +174,13 @@ export function Constellation() {
       el.style.width = `${width}px`;
       el.style.height = `${height}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      draw(ctx, width, height, reduced ? 0 : performance.now(), mouse);
+      draw(ctx, width, height, reduced ? 0 : performance.now(), mouse, ink);
     };
 
     const loop = (now: number) => {
       mouse.x += (target.x - mouse.x) * 0.06;
       mouse.y += (target.y - mouse.y) * 0.06;
-      draw(ctx, width, height, now, mouse);
+      draw(ctx, width, height, now, mouse, ink);
       frame = requestAnimationFrame(loop);
     };
     const start = () => {

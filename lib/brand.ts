@@ -4,7 +4,11 @@
 export const BRAND = 'Tracktout';
 
 /** Phrase d'accroche courte, réutilisée dans les métadonnées. */
-export const BRAND_TAGLINE = 'Sache chaque matin quoi vendre sur TikTok Shop';
+export const BRAND_TAGLINE = 'Automatise ton business TikTok Shop de A à Z';
+
+/** Description courte (référencement, partage) : ce que fait le produit, sans promesse de gains. */
+export const BRAND_DESCRIPTION =
+  'Tracktout trouve les produits TikTok Shop qui vont exploser, écrit tes scripts vidéo, planifie tes vidéos et suit tes gains. En français, pour les affiliés.';
 
 /** Identifiant technique (cookies, clés de stockage) dérivé du nom, sans accents. */
 export const BRAND_SLUG = BRAND.normalize('NFD')

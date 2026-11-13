@@ -94,7 +94,7 @@ export function isActivePath(pathname: string, href: string): boolean {
 
 const itemBase =
   'relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan';
-const itemActive = 'bg-[image:var(--gradient)] font-semibold text-black';
+const itemActive = 'bg-[image:var(--gradient)] font-semibold text-on-gradient';
 const itemIdle = 'bg-transparent text-fg/70 hover:bg-fg/5 hover:text-fg';
 /** Libellé qui apparaît quand la barre se déplie (survol ou focus clavier), comme sur EtSmart. */
 const reveal =
@@ -146,7 +146,7 @@ export function AppSidebar({ sections, user }: { sections: NavSection[]; user: S
         {/* Bloc utilisateur et abonnement */}
         <div className="shrink-0 space-y-1 border-t border-line-strong bg-bg p-2">
           <Link href="/app/compte" className={cn(itemBase, itemIdle)}>
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[image:var(--gradient-diag)] text-[11px] font-bold text-black" aria-hidden="true">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[image:var(--gradient-diag)] text-[11px] font-bold text-on-gradient" aria-hidden="true">
               {user.initial}
             </span>
             <span className={cn(reveal, 'flex min-w-0 items-center gap-2')}>

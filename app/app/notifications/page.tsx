@@ -124,7 +124,7 @@ export default async function NotificationsPage({ searchParams }: { searchParams
                         type="submit"
                         className={cn(
                           'flex w-full items-start gap-3 px-4 py-3.5 text-left transition-colors hover:bg-surface focus-visible:bg-surface',
-                          !record.data.read && 'bg-cyan-ink/[0.04]',
+                          !record.data.read && 'bg-cyan-ink/[0.03]',
                         )}
                       >
                         <span

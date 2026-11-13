@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, useTransition, type ReactNode } from 'react';
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { refreshCreatorAction, toggleUpcomingVideoAction } from '@/app/app/dashboard-actions';
+import { tooltipStyle, useChartColors } from '@/components/charts/colors';
 import { cn, formatDayMonth, formatEuros, formatInt } from '@/lib/utils';
 import type { DayPoint, UpcomingVideo } from '@/lib/dashboard';
 
@@ -127,20 +128,11 @@ export function Tabs<T extends string | number>({
   );
 }
 
-/** Couleur d'une variable CSS de la palette en cours (lue après l'affichage ; valeur de repli côté serveur). */
-function usePaletteColor(name: string, fallback: string): string {
-  const [color, setColor] = useState(fallback);
-  useEffect(() => {
-    const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-    if (value) setColor(value);
-  }, [name]);
-  return color;
-}
-
 export function GainsChart({ series }: { series: DayPoint[] }) {
   const [days, setDays] = useState<7 | 30 | 90>(30);
-  // La courbe des gains reste cyan ; la seconde suit la palette (gris).
-  const second = usePaletteColor('--chart-2', '#A1A1AA');
+  // Courbe des gains en cyan, ventes en rose, aux teintes du thème (blanc ou noir).
+  const c = useChartColors();
+  const second = c.second;
   const reduce = useReducedMotion();
   const data = series.slice(-days).map((p) => ({ date: p.date, label: formatDayMonth(p.date), gains: p.gains_cents / 100, ventes: p.sales }));
   const total = data.reduce((s, p) => s + p.gains, 0);
@@ -162,27 +154,27 @@ export function GainsChart({ series }: { series: DayPoint[] }) {
           <AreaChart data={data} margin={{ top: 8, right: 4, bottom: 0, left: -12 }}>
             <defs>
               <linearGradient id="gainsGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#25F4EE" stopOpacity={0.4} />
-                <stop offset="100%" stopColor="#25F4EE" stopOpacity={0} />
+                <stop offset="0%" stopColor={c.line} stopOpacity={0.4} />
+                <stop offset="100%" stopColor={c.line} stopOpacity={0} />
               </linearGradient>
               <linearGradient id="ventesGrad" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={second} stopOpacity={0.25} />
                 <stop offset="100%" stopColor={second} stopOpacity={0} />
               </linearGradient>
             </defs>
-            <XAxis dataKey="label" stroke="#8A8B91" fontSize={11} tickLine={false} minTickGap={24} />
-            <YAxis yAxisId="g" stroke="#8A8B91" fontSize={11} tickLine={false} tickFormatter={(v: number) => `${v} €`} width={56} />
+            <XAxis dataKey="label" stroke={c.axis} fontSize={11} tickLine={false} minTickGap={24} />
+            <YAxis yAxisId="g" stroke={c.axis} fontSize={11} tickLine={false} tickFormatter={(v: number) => `${v} €`} width={56} />
             <YAxis yAxisId="v" orientation="right" hide allowDecimals={false} />
             <Tooltip
-              contentStyle={{ background: '#1a1a1a', border: '1px solid #333', borderRadius: 12, color: '#fff' }}
-              labelStyle={{ color: '#8A8B91' }}
+              contentStyle={tooltipStyle}
+              labelStyle={{ color: 'var(--text-muted)' }}
               formatter={(value, name) => (name === 'gains' ? [`${Number(value).toFixed(2).replace('.', ',')} €`, 'Gains'] : [formatInt(Number(value)), 'Ventes'])}
             />
             <Area
               yAxisId="g"
               type="monotone"
               dataKey="gains"
-              stroke="#25F4EE"
+              stroke={c.line}
               strokeWidth={2}
               fill="url(#gainsGrad)"
               isAnimationActive={!reduce}

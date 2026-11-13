@@ -71,9 +71,10 @@ export async function updatePreferencesAction(formData: FormData) {
   const theme = String(formData.get('theme') ?? 'system') as Theme;
   const share = formData.get('partage') === '1';
   // Sombre par défaut ; le clair est une option du compte.
-  const safeTheme: Theme = theme === 'light' ? 'light' : 'dark';
+  // Blanc par défaut ; le noir est une option du compte.
+  const safeTheme: Theme = theme === 'dark' ? 'dark' : 'light';
   await getRepo().updateProfile(profile.id, { theme: safeTheme, share_email_with_coach: share });
-  if (safeTheme === 'light') cookies().set(THEME_COOKIE, 'light', { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' });
+  if (safeTheme === 'dark') cookies().set(THEME_COOKIE, 'dark', { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' });
   else cookies().delete(THEME_COOKIE);
   revalidatePath('/app', 'layout');
   back('ok=preferences#preferences');

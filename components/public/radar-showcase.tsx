@@ -151,12 +151,12 @@ export function RadarShowcase({ products, demoData }: { products: ShowcaseProduc
           <svg viewBox="0 0 320 96" preserveAspectRatio="none" className="mt-3 h-20 w-full" aria-hidden="true">
             <defs>
               <linearGradient id="showcase-fill" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stopColor="#25F4EE" stopOpacity="0.28" />
-                <stop offset="100%" stopColor="#25F4EE" stopOpacity="0" />
+                <stop offset="0%" stopOpacity="0.28" style={{ stopColor: 'var(--cyan-hex)' }} />
+                <stop offset="100%" stopOpacity="0" style={{ stopColor: 'var(--cyan-hex)' }} />
               </linearGradient>
             </defs>
             <path d={area} fill="url(#showcase-fill)" />
-            <path d={line} fill="none" stroke="#25F4EE" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            <path d={line} fill="none" style={{ stroke: 'var(--cyan-hex)' }} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           <p className="text-right text-[11px] text-subtle">Ventes estimées, 14 derniers jours</p>
 

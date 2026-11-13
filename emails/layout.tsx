@@ -9,10 +9,9 @@ export const colors = {
   paper: '#FFFFFF',
   surface: '#F1F1F2',
   muted: '#5F6068',
-  // Palette « blanc pur » sur fond clair : boutons et accents en noir, chiffres positifs en cyan foncé.
-  rose: '#161823',
-  cyan: '#161823',
-  gain: '#00777A',
+  rose: '#E0144A',
+  cyan: '#00777A',
+  gain: '#0E7A43',
 };
 
 export const font =

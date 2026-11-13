@@ -3,7 +3,7 @@ import localFont from 'next/font/local';
 import type { ReactNode } from 'react';
 import { ServiceWorkerRegistration } from '@/components/pwa/service-worker';
 import { THEME_COOKIE } from '@/lib/auth/constants';
-import { BRAND, BRAND_TAGLINE } from '@/lib/brand';
+import { BRAND, BRAND_DESCRIPTION, BRAND_TAGLINE } from '@/lib/brand';
 import { env } from '@/lib/env';
 import { appleWebApp } from '@/lib/pwa';
 import './globals.css';
@@ -19,9 +19,8 @@ const sans = localFont({
 
 export const metadata: Metadata = {
   metadataBase: new URL(env.siteUrl),
-  title: { default: `${BRAND} · ${BRAND_TAGLINE}`, template: `%s · ${BRAND}` },
-  description:
-    "Chaque matin, les produits TikTok Shop à vendre dans tes niches, avec un score expliqué et des scripts vidéo prêts à tourner. En français.",
+  title: { default: `${BRAND_TAGLINE} · ${BRAND}`, template: `%s · ${BRAND}` },
+  description: BRAND_DESCRIPTION,
   applicationName: BRAND,
   openGraph: { locale: 'fr_FR', siteName: BRAND, type: 'website' },
   // Appli installable (manifeste : app/manifest.ts) : réglages iOS de l'écran d'accueil.
@@ -32,12 +31,11 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: '#000000',
+  themeColor: '#ffffff',
 };
 
-// Le noir est le thème par défaut. Le clair n'est appliqué que s'il a été choisi dans le compte,
-// avant l'affichage et sans rendre les pages dynamiques.
-const themeScript = `try{if(/(?:^|; )${THEME_COOKIE}=light/.test(document.cookie))document.documentElement.setAttribute('data-theme','light')}catch(e){}`;
+// Fond blanc par défaut ; le noir s'applique avant l'affichage si la personne l'a choisi dans son compte.
+const themeScript = `try{if(/(?:^|; )${THEME_COOKIE}=dark/.test(document.cookie))document.documentElement.setAttribute('data-theme','dark')}catch(e){}`;
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

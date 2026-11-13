@@ -18,9 +18,9 @@ from PIL import Image, ImageDraw, ImageFilter
 ROOT = Path(__file__).resolve().parent.parent
 ICONS = ROOT / "public" / "icons"
 SPLASH = ICONS / "splash"
-# Palette « blanc pur » : reflets gris clair et gris du logo.
-CYAN = (212, 212, 216, 255)
-PINK = (113, 113, 122, 255)
+CYAN = (37, 244, 238, 255)
+PINK = (254, 44, 85, 255)
+INK = (22, 24, 35, 255)
 WHITE = (255, 255, 255, 255)
 BLACK = (0, 0, 0, 255)
 SCALE = 4  # sur-échantillonnage pour des bords lisses
@@ -34,19 +34,19 @@ def diamond_points(cx, cy, size, dx=0.0, dy=0.0):
     return [((x - 16) * k + cx + dx * k, (y - 16) * k + cy + dy * k) for x, y in DIAMOND]
 
 
-def draw_mark(img, cx, cy, size, glow=True):
+def draw_mark(img, cx, cy, size, glow=True, main=WHITE):
     """Logo centré en (cx, cy), haut de `size` pixels (image déjà sur-échantillonnée)."""
     if glow:
         halo = Image.new("RGBA", img.size, (0, 0, 0, 0))
         hd = ImageDraw.Draw(halo)
         r = size * 0.62
-        hd.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(244, 244, 245, 45))
+        hd.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(37, 244, 238, 60))
         halo = halo.filter(ImageFilter.GaussianBlur(size * 0.18))
         img.alpha_composite(halo)
     d = ImageDraw.Draw(img)
     d.polygon(diamond_points(cx, cy, size, -1.4, -1.0), fill=CYAN)
     d.polygon(diamond_points(cx, cy, size, 1.4, 1.0), fill=PINK)
-    d.polygon(diamond_points(cx, cy, size), fill=WHITE)
+    d.polygon(diamond_points(cx, cy, size), fill=main)
 
 
 def save(img, path, size):
@@ -92,8 +92,9 @@ SPLASH_SCREENS = [
 
 def splash(w, h):
     k = 2  # sur-échantillonnage plus léger : ces images sont grandes
-    img = Image.new("RGBA", (w * k, h * k), BLACK)
-    draw_mark(img, w * k / 2, h * k / 2, min(w, h) * k * 0.28)
+    # Fond blanc comme l'appli ; le losange central passe en encre foncée pour rester visible.
+    img = Image.new("RGBA", (w * k, h * k), WHITE)
+    draw_mark(img, w * k / 2, h * k / 2, min(w, h) * k * 0.28, main=INK)
     return img
 
 
