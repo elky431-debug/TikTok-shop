@@ -463,3 +463,64 @@ Profites-en pour corriger `NEXT_PUBLIC_SITE_URL` (il doit valoir l'adresse Netli
   classe par classe dans le code (`docs/captures/refonte-app/README.md`).
 - **Génération réelle en ligne** : dès que `OPENAI_API_KEY` est corrigée sur Netlify.
 - Reprise de la session 5 sur la refonte : section « Session 5 » du rapport, captures, coûts par utilisateur.
+
+## Session 5 : chaque fonctionnalité au maximum (bilan, 13 novembre 2026)
+
+Travail fait par 5 agents en parallèle puis fusionné et branché (détail par bloc dans `docs/session5/*.md`, décisions
+146 à 160 de `DECISIONS.md`), revérifié après la refonte de l'appli. Tout passe par un quota par plan appliqué côté
+serveur ; rien n'est inventé : une donnée absente masque la fonctionnalité qui en dépend.
+
+| Bloc | État | Plan |
+| --- | --- | --- |
+| 1. Radar : filtres avancés, badges, « pourquoi maintenant », recherche par mot-clé, favoris, comparateur, alertes, vues, export | Réel (filtre masqué sans donnée) ; alertes vérifiées chaque nuit | Recherche, comparateur, alertes : Pro ; export : Pro+ |
+| 2. Score : « pour toi » (niches, taille, niveau, styles), évolution 30 j, poids réglables, phrases | Réel | « Pour toi », évolution : Pro ; poids : Pro+ |
+| 3. Fiche produit : courbe et périodes, simulation, accroches analysées, similaires, actions | Réel ; CA et prix min/max masqués (pas fiables en euros) ; créateurs du produit masqués (pas de route utile) | Accroches : Pro |
+| 4. Studio : 8 formats, réglages, style perso, série de 20, retouches, traduction, téléprompteur, notes, export | Réel (génération en arrière-plan, voir décision 179) | Style, série : Pro ; traduction, export : Pro+ |
+| 5. Mes produits et plan de publication : tableau à tourner/tourné/posté, calendrier, rappels, `.ics`, série, baisse | Réel ; rappels toutes les heures, baisses chaque nuit | Calendrier : Pro |
+| 6. Gains : saisie, import CSV, tableaux, objectif, export | Réel | Pro |
+| 7. Propositions de marques : lecture, note, points d'attention, 3 réponses, relance | Réel (IA en arrière-plan) ; relances chaque nuit | Pro+ |
+| 8. Analyse de vidéo : lien ou texte, découpage, version adaptée, envoi au studio, bibliothèque | Réel (Nexscope pour le lien, IA en arrière-plan) ; le studio lit le brouillon | Pro+ |
+| 9. Récaps du matin et du dimanche : 5 produits, script, alertes, baisses, défi ; e-mail, Discord, push | Réel ; e-mails réels dès que Resend est branché | Tous (Discord : Pro) |
+| 10. Discord : `/lier`, `/produits`, `/score`, `/script`, `/alerte`, `/classement`, salons, rôle Pro | Prêt ; `npm run discord:setup` à lancer avec les clés Discord | Quotas par plan |
+| 11. Mode préparation : niche, plan de 30 jours, liste de vérification, courbe d'abonnés, passage au mode affilié | Réel (plan en arrière-plan) | Tous |
+| 12. Formateurs : tableau agrégé, détail avec consentement révocable, plusieurs codes, page `/f/[code]`, annonces, versements | Réel (versement manuel) | Formateurs |
+| 13. Parrainage : lien, code, filleuls, gains, kit de partage | Réel | Tous |
+| 14. Premier contact, e-mails de cycle de vie, changement de plan, codes de réduction | Réel ; onboarding refait en 10 questions (refonte) | Tous |
+| 15. Appli installable, push, centre de notifications | Réel ; push actif dès les clés VAPID | Tous |
+| 16. Admin : MRR, conversion, résiliations, actifs par jour, coûts, marge, relances | Réel ; euros de Nexscope dès `NEXSCOPE_EUR_PER_1000_CREDITS` | Admin |
+| 17. Pages `/tendances/[niche]`, plan du site, métadonnées | Réel avec les données Nexscope (masqué sous 5 produits) | Public |
+| RGPD : export et suppression de toutes les données, consentement formateur | Réel | Tous |
+
+### Budget Nexscope de la session
+
+**0 appel réel sur les 40 autorisés** : chaque route a été lue dans sa documentation et testée sur la réponse
+documentée (fixtures). La tâche de nuit du site continue, elle, de consommer normalement (catalogue partagé par tous).
+
+### Coût par utilisateur et par mois (estimations, hypothèses visibles)
+
+Prix publics : OpenAI `gpt-6-luna` 0,10 $ / 1 M de jetons en entrée, 0,50 $ en sortie ; Nexscope ≈ 0,75 $ les
+1 000 crédits (formules mensuelles 24 000 à 140 000 crédits pour 19 à 99 $, page « Pricing » du 13 novembre).
+
+| Poste | Hypothèse | Pro, usage courant | Pro, plafond |
+| --- | --- | --- | --- |
+| Scripts (OpenAI, raisonnement « low ») | ≈ 4 000 jetons en entrée et 2 300 en sortie par génération ≈ 0,0015 $ | 3 par jour ≈ 0,14 $ | 30 par jour ≈ 1,40 $ |
+| Autres IA (retouches, série, analyses, plan) | quelques centièmes de cent par appel | ≈ 0,10 $ | ≈ 0,50 $ |
+| Profil TikTok (Nexscope) | 10 crédits, une fois par semaine ; « Actualiser » une fois par jour | ≈ 0,03 $ | ≈ 0,25 $ |
+| Recherche par mot-clé (Nexscope) | 11 à 22 crédits, cache 24 h | 2 par jour ≈ 0,70 $ | 5 par jour ≈ 2,50 $ |
+| **Total** | | **≈ 1 $ par mois** | **≈ 4,70 $ par mois** |
+
+En Gratuit : 3 scripts par jour au plus (≈ 0,14 $ par mois), profil hebdomadaire, pas de recherche. Le catalogue de la
+nuit (découverte, vidéos, détails) est un coût fixe partagé, suivi dans l'admin. Frais Stripe à part (1,5 % + 0,25 €).
+
+### Les 10 prochaines améliorations
+
+1. Brancher Resend (domaine vérifié) puis remettre la confirmation d'e-mail (`npm run auth:setup`).
+2. Clés VAPID pour les notifications push, et clés Discord + `npm run discord:setup`.
+3. Prévenir par notification quand une tâche longue (scripts, analyse) se termine et que la page d'attente a été quittée.
+4. Fixer le prix des crédits Nexscope (`NEXSCOPE_EUR_PER_1000_CREDITS`) pour voir la marge réelle dans l'admin.
+5. Choisir la palette (A ou B) et retirer l'autre.
+6. Demander à TikTok l'accès à l'API officielle des affiliés (commandes réelles, sans saisie).
+7. Comparer en images avec l'appli EtSmart (compte de démonstration EtSmart).
+8. Mesurer la qualité des scripts en « low » et en « medium » sur 20 produits réels (notes des utilisateurs).
+9. Remplir les `[À COMPLÉTER]` des mentions légales, CGV et confidentialité, puis passer sur tracktout.com.
+10. Ajouter un test de bout en bout en ligne régulier (inscription → script) déclenché après chaque déploiement.
