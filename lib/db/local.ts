@@ -19,6 +19,7 @@ import type {
   Subscription,
   TopVideo,
   RecordKind,
+  UserDataExport,
   UserRecord,
 } from './types';
 import type { NicheId } from '@/lib/niches';
@@ -328,6 +329,7 @@ export class LocalRepo implements Repo {
 
   async deleteUser(userId: string) {
     this.write((d) => {
+      const removedEmail = d.users.find((u) => u.id === userId)?.email ?? d.profiles.find((p) => p.id === userId)?.email ?? null;
       d.users = d.users.filter((u) => u.id !== userId);
       d.profiles = d.profiles.filter((p) => p.id !== userId);
       d.scripts = d.scripts.filter((s) => s.user_id !== userId);
@@ -347,6 +349,39 @@ export class LocalRepo implements Repo {
         .map((r) => r.id);
       d.referrals = d.referrals.filter((r) => !referralIds.includes(r.id));
       d.commissions = d.commissions.filter((c) => !referralIds.includes(c.referral_id) && c.referrer_id !== userId);
+      // Fiches de tous les types (gains, plans, notifications, abonnements push…) et tâches du jour à son nom.
+      d.user_records = d.user_records.filter((r) => r.user_id !== userId);
+      d.daily_tasks = d.daily_tasks.filter((t) => !t.task.includes(userId));
+      // Demande de partenariat et boîte de test (mode local) à son adresse.
+      if (removedEmail) {
+        const email = removedEmail.toLowerCase();
+        d.coach_applications = d.coach_applications.filter((a) => a.email.toLowerCase() !== email);
+        d.emails = d.emails.filter((e) => e.to.toLowerCase() !== email);
+      }
+    });
+  }
+
+  async exportUserData(userId: string): Promise<UserDataExport> {
+    return this.read((d) => {
+      const profile = d.profiles.find((p) => p.id === userId) ?? null;
+      const email = profile?.email.toLowerCase() ?? null;
+      const received = d.referrals.find((r) => r.referred_id === userId);
+      return clone({
+        profile,
+        scripts: d.scripts.filter((s) => s.user_id === userId),
+        saved_products: d.saved_products.filter((s) => s.user_id === userId),
+        subscriptions: d.subscriptions.filter((s) => s.user_id === userId),
+        usage: d.usage.filter((u) => u.user_id === userId).map((u) => ({ day: u.day, scripts_generated: u.scripts_generated })),
+        digests: d.digests.filter((x) => x.user_id === userId),
+        records: d.user_records.filter((r) => r.user_id === userId),
+        referrals_made: d.referrals
+          .filter((r) => r.referrer_id === userId)
+          .map((r) => ({ id: r.id, status: r.status, commission_due_cents: r.commission_due_cents, commission_paid_cents: r.commission_paid_cents, created_at: r.created_at })),
+        referral_received: received ? { id: received.id, status: received.status, created_at: received.created_at } : null,
+        commissions: d.commissions.filter((c) => c.referrer_id === userId),
+        coach: d.coaches.find((c) => c.user_id === userId) ?? null,
+        coach_applications: email ? d.coach_applications.filter((a) => a.email.toLowerCase() === email) : [],
+      });
     });
   }
 

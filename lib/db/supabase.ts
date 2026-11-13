@@ -18,6 +18,7 @@ import type {
   Subscription,
   TopVideo,
   RecordKind,
+  UserDataExport,
   UserRecord,
 } from './types';
 import type { NicheId } from '@/lib/niches';
@@ -196,9 +197,62 @@ export class SupabaseRepo implements Repo {
   }
 
   async deleteUser(userId: string) {
-    // Supprime l'utilisateur d'auth : les tables liées sont nettoyées en cascade.
+    // Ce qui n'est pas relié au compte par une clé : tâches du jour à son nom, demande de partenariat à son adresse.
+    const profile = await this.getProfile(userId);
+    check('tâches du jour', await this.db.from('daily_tasks').delete().like('task', `%${userId}%`).select('task'));
+    if (profile?.email) {
+      check('demandes de partenariat', await this.db.from('coach_applications').delete().in('email', [...new Set([profile.email, profile.email.toLowerCase()])]).select('id'));
+    }
+    // Supprime l'utilisateur d'auth : les tables liées (profil, scripts, fiches, récaps…) sont nettoyées en cascade.
     const { error } = await this.db.auth.admin.deleteUser(userId);
     if (error) throw new DbError('suppression du compte', error.message);
+  }
+
+  async exportUserData(userId: string): Promise<UserDataExport> {
+    const profile = await this.getProfile(userId);
+    const all = async <T>(context: string, table: string, column: string, value: string, order = 'created_at'): Promise<T[]> => {
+      const rows: T[] = [];
+      for (let from = 0; ; from += 1000) {
+        const data = check(context, await this.db.from(table).select('*').eq(column, value).order(order, { ascending: true }).range(from, from + 999)) as T[];
+        rows.push(...data);
+        if (data.length < 1000) return rows;
+      }
+    };
+    const [scripts, saved, subscriptions, usage, digests, records, referralsMade, received, commissions, coach, applications] = await Promise.all([
+      all<ScriptRecord>('scripts', 'scripts', 'user_id', userId),
+      all<SavedProduct>('mes produits', 'saved_products', 'user_id', userId),
+      all<Subscription>('abonnements', 'subscriptions', 'user_id', userId, 'updated_at'),
+      all<{ day: string; scripts_generated: number }>('usage', 'usage', 'user_id', userId, 'day'),
+      all<Digest>('récaps', 'digests', 'user_id', userId, 'day'),
+      all<UserRecord>('fiches', 'user_records', 'user_id', userId),
+      all<Referral>('parrainages', 'referrals', 'referrer_id', userId),
+      this.getReferralByReferred(userId),
+      all<Commission>('commissions', 'commissions', 'referrer_id', userId),
+      this.getCoachByUserId(userId),
+      profile?.email
+        ? check('demandes de partenariat', await this.db.from('coach_applications').select('*').in('email', [...new Set([profile.email, profile.email.toLowerCase()])])) as CoachApplication[]
+        : Promise.resolve([] as CoachApplication[]),
+    ]);
+    return {
+      profile,
+      scripts,
+      saved_products: saved,
+      subscriptions,
+      usage: usage.map((u) => ({ day: u.day, scripts_generated: u.scripts_generated })),
+      digests,
+      records,
+      referrals_made: referralsMade.map((r) => ({
+        id: r.id,
+        status: r.status,
+        commission_due_cents: Number(r.commission_due_cents),
+        commission_paid_cents: Number(r.commission_paid_cents),
+        created_at: r.created_at,
+      })),
+      referral_received: received ? { id: received.id, status: received.status, created_at: received.created_at } : null,
+      commissions,
+      coach,
+      coach_applications: applications,
+    };
   }
 
   // ------------------------------------------------------------------

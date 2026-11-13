@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Download } from 'lucide-react';
+import { ForgetDeviceForm } from '@/components/pwa/forget-device';
 import { LinkButton } from '@/components/ui/button';
 import { ChoiceChip, Field, Input, Label, Select, Textarea } from '@/components/ui/field';
 import { SubmitButton } from '@/components/ui/submit-button';
@@ -7,13 +9,15 @@ import { Badge, Callout, Card, PageHeader } from '@/components/ui/surface';
 import { requireOnboardedViewer } from '@/lib/auth/session';
 import { billingMode } from '@/lib/billing';
 import { getRepo } from '@/lib/db';
+import { getDisabledLifecycle } from '@/lib/lifecycle/preferences';
+import { LIFECYCLE_INFO, LIFECYCLE_TYPES } from '@/lib/lifecycle/types';
 import { NICHES } from '@/lib/niches';
 import { getPlan, isPaidPlan } from '@/lib/plans';
 import { enabledRegions, REGION_IDS, REGIONS } from '@/lib/regions';
 import { FOLLOWER_RANGES, VIDEO_STYLES } from '@/lib/profile-rules';
 import { formatLongDate } from '@/lib/utils';
 import { openPortalAction } from '../passer-pro/actions';
-import { deleteAccountAction, updatePreferencesAction, updateProfileAction, updateRegionAction } from './actions';
+import { deleteAccountAction, updateEmailPreferencesAction, updatePreferencesAction, updateProfileAction, updateRegionAction } from './actions';
 
 export const metadata: Metadata = { title: 'Mon compte' };
 
@@ -21,6 +25,7 @@ const MESSAGES: Record<string, { tone: 'gain' | 'rose'; text: string }> = {
   'ok=profil': { tone: 'gain', text: 'Profil enregistré.' },
   'ok=preferences': { tone: 'gain', text: 'Préférences enregistrées.' },
   'ok=pays': { tone: 'gain', text: 'Pays du catalogue enregistré.' },
+  'ok=emails': { tone: 'gain', text: 'Choix des e-mails enregistré.' },
   'erreur=pays': { tone: 'rose', text: 'Le choix du pays est réservé au plan Pro+.' },
   'paiement=ok': { tone: 'gain', text: 'Paiement confirmé : ton plan est actif. Bienvenue !' },
   'resiliation=ok': { tone: 'gain', text: 'Abonnement résilié. Tu repasses en Gratuit.' },
@@ -38,9 +43,10 @@ const MESSAGES: Record<string, { tone: 'gain' | 'rose'; text: string }> = {
 export default async function ComptePage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
   const { profile, user } = await requireOnboardedViewer('/app/compte');
   const repo = getRepo();
-  const [subscription, coach] = await Promise.all([
+  const [subscription, coach, disabledEmails] = await Promise.all([
     repo.getActiveSubscription(profile.id),
     profile.coach_id ? repo.getCoachById(profile.coach_id) : Promise.resolve(null),
+    getDisabledLifecycle(profile.id),
   ]);
   const plan = getPlan(profile.plan);
   const message = Object.entries(searchParams)
@@ -229,21 +235,75 @@ export default async function ComptePage({ searchParams }: { searchParams: Recor
           </p>
         </Card>
 
+        {/* E-mails de cycle de vie */}
+        <Card id="emails" className="scroll-mt-20">
+          <h2 className="text-lg">E-mails</h2>
+          <p className="mt-1 text-sm text-muted">
+            Chacun part une seule fois, au bon moment. Décoche ceux que tu ne veux pas recevoir. Les récaps se règlent sur la{' '}
+            <Link href="/app/recap#reglages" className="font-semibold text-fg underline underline-offset-2">
+              page Récap
+            </Link>
+            .
+          </p>
+          <form action={updateEmailPreferencesAction} className="mt-4 space-y-4">
+            {(['conseils', 'abonnement'] as const).map((group) => (
+              <fieldset key={group} className="space-y-2">
+                <legend className="mb-2 text-sm font-semibold">{group === 'conseils' ? 'Conseils et nouvelles' : 'Ton abonnement'}</legend>
+                {LIFECYCLE_TYPES.filter((t) => LIFECYCLE_INFO[t].group === group).map((type) => (
+                  <ChoiceChip
+                    key={type}
+                    name="emails"
+                    value={type}
+                    defaultChecked={!disabledEmails.has(type)}
+                    description={LIFECYCLE_INFO[type].description}
+                  >
+                    {LIFECYCLE_INFO[type].label}
+                  </ChoiceChip>
+                ))}
+              </fieldset>
+            ))}
+            <p className="text-xs text-muted">
+              Les e-mails indispensables (lien de connexion, échec d’un prélèvement, reçus de paiement) partent toujours.
+            </p>
+            <SubmitButton variant="outline" pendingLabel="Enregistrement…">
+              Enregistrer mes e-mails
+            </SubmitButton>
+          </form>
+        </Card>
+
+        {/* Données personnelles */}
+        <Card id="donnees" className="scroll-mt-20">
+          <h2 className="text-lg">Mes données</h2>
+          <p className="mt-1 max-w-prose text-sm text-muted">
+            Télécharge tout ce que nous gardons sur toi, dans un fichier JSON : profil, scripts, produits suivis, récaps, abonnement,
+            parrainages, gains, plans de publication, notifications et réglages.
+          </p>
+          <a
+            href="/app/compte/export"
+            download
+            className="mt-4 inline-flex h-11 items-center gap-2 rounded-xl border border-line-strong px-6 text-sm font-semibold hover:bg-surface"
+          >
+            <Download className="h-4 w-4" aria-hidden="true" />
+            Télécharger mes données
+          </a>
+        </Card>
+
         {/* Suppression */}
         <section id="suppression" className="rounded-2xl border border-rose-ink/30 p-4 sm:p-5">
           <h2 className="text-lg">Supprimer mon compte</h2>
           <p className="mt-1 max-w-prose text-sm text-muted">
-            Tout est effacé : profil, scripts, produits suivis, récaps, liaison Discord. Ton abonnement est résilié tout de suite.
-            C’est définitif.
+            Tout est effacé : profil, scripts, produits suivis, récaps, gains, plans de publication, notifications, réglages, liaison
+            Discord et notifications de tes appareils. Ton abonnement est résilié tout de suite et les e-mails déjà programmés sont
+            annulés. C’est définitif : télécharge tes données avant si tu veux les garder.
           </p>
-          <form action={deleteAccountAction} className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+          <ForgetDeviceForm action={deleteAccountAction} className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
             <Field label="Tape SUPPRIMER pour confirmer" htmlFor="confirmation" className="sm:w-64">
               <Input id="confirmation" name="confirmation" autoComplete="off" autoCapitalize="characters" />
             </Field>
             <SubmitButton variant="danger" pendingLabel="Suppression…">
               Supprimer mon compte
             </SubmitButton>
-          </form>
+          </ForgetDeviceForm>
         </section>
 
         <form action="/auth/deconnexion" method="post" className="lg:hidden">
