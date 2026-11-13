@@ -113,7 +113,16 @@ export default async function RadarPage({
         ) : null}
 
         {profile.eligibility === 'preparation' ? (
-          <Callout tone="neutral" icon={<Sprout className="h-5 w-5 text-gain" aria-hidden="true" />} title="Mode préparation">
+          <Callout
+            tone="neutral"
+            icon={<Sprout className="h-5 w-5 text-gain" aria-hidden="true" />}
+            title="Mode préparation"
+            action={
+              <Link href="/app/preparation" className="text-sm font-semibold text-cyan-ink hover:underline">
+                Ouvrir mon plan de préparation
+              </Link>
+            }
+          >
             Tu n’as pas encore {formatInt(AFFILIATE_THRESHOLD)} abonnés : poste déjà sur ces produits pour faire grandir ton
             compte et entraîne-toi avec les scripts. Le jour où tu passes le cap, tu sauras quoi vendre.
           </Callout>

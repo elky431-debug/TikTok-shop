@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarDays, Clapperboard, Gift, GraduationCap, Handshake, ListChecks, Radar, ScanSearch, Shield, Sprout, Sunrise, UserRound, Wallet } from 'lucide-react';
+import { BellRing, CalendarDays, Clapperboard, Columns3, Gift, GraduationCap, Handshake, ListChecks, Radar, ScanSearch, Search, Shield, Sprout, Sunrise, UserRound, Wallet } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -13,6 +13,9 @@ const ICONS = {
   parrainage: Gift,
   plan: CalendarDays,
   preparation: Sprout,
+  recherche: Search,
+  alertes: BellRing,
+  comparer: Columns3,
   gains: Wallet,
   offres: Handshake,
   analyse: ScanSearch,
