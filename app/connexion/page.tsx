@@ -57,7 +57,7 @@ export default async function ConnexionPage({
               </Callout>
             ) : null}
             {code?.kind === 'coach' ? (
-              <Callout tone="cyan" title={`Code formateur ${code.coach.promo_code} appliqué`}>
+              <Callout tone="cyan" title={`Code formateur ${code.code} appliqué`}>
                 Avec {code.coach.training_name}, tu profites de {Math.round(COACH_TRIAL_DAYS / 30)} mois de Pro offerts
                 après ton inscription.
               </Callout>

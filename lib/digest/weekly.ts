@@ -96,7 +96,9 @@ export async function buildWeeklyRecap(profile: Profile, repo: Repo = getRepo(),
 
   const nextStart = addDays(start, 7);
   const nextEnd = addDays(start, 13);
-  const nextWeek = plans.flatMap((p) => p.data.items).filter((i) => i.date >= nextStart && i.date <= nextEnd && i.status !== 'poste').length;
+  const nextWeek = plans
+    .flatMap((p) => p.data.items)
+    .filter((i) => i.date !== null && i.date >= nextStart && i.date <= nextEnd && i.status !== 'poste').length;
 
   return {
     week_start: start,

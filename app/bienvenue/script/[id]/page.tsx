@@ -6,6 +6,7 @@ import { CopyButton } from '@/components/ui/copy-button';
 import { Callout, Card, Panel } from '@/components/ui/surface';
 import { requireViewer } from '@/lib/auth/session';
 import { getRepo } from '@/lib/db';
+import { getDoc } from '@/lib/studio/store';
 import { quote } from '@/lib/utils';
 import { WelcomeShell } from '../../welcome-shell';
 
@@ -17,8 +18,10 @@ export default async function PremierScriptPage({ params }: { params: { id: stri
   const { profile } = await requireViewer('/bienvenue/produits');
   if (!profile.onboarded_at) redirect('/bienvenue');
   const repo = getRepo();
-  const record = await repo.getScript(profile.id, params.id);
-  if (!record) notFound();
+  // Génération du studio (fiche `studio_script`), créée par createScripts à l'étape précédente.
+  const doc = await getDoc(profile.id, params.id, repo);
+  if (!doc) notFound();
+  const record = { id: doc.id, product_id: doc.product_id, source: doc.source, hooks: doc.hooks, script: doc.scripts };
   const product = await repo.getProduct(record.product_id);
   const [hook] = record.hooks;
   const [script] = record.script;

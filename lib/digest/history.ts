@@ -69,7 +69,8 @@ export function applyObservation(
     // Premier relevé : les vidéos des plans marquées « postées », à leur date prévue (jamais dans le futur).
     for (const plan of plans) {
       for (const item of plan.items) {
-        if (item.status === 'poste') add(history.days, item.date > today ? today : item.date, plan.product_id, 1);
+        // Vidéo postée sans date prévue (tableau sans calendrier) : comptée aujourd'hui.
+        if (item.status === 'poste') add(history.days, !item.date || item.date > today ? today : item.date, plan.product_id, 1);
       }
     }
     for (const row of saved) history.last[row.product_id] = row.videos_posted;

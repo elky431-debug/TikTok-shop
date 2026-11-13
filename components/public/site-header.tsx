@@ -11,6 +11,7 @@ const LINKS = [
   { href: '/#fonctionnalites', label: 'Fonctionnalités' },
   { href: '/#comment', label: 'Comment ça marche' },
   { href: '/#prix', label: 'Tarifs' },
+  { href: '/tendances', label: 'Tendances' },
 ];
 
 /** En-tête fixe au style EtSmart : noir flouté, liens centrés, langue, connexion, bouton rose. */

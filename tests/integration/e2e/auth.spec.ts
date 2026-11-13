@@ -39,14 +39,18 @@ test('inscription par mot de passe : accueil → Commencer → compte → onboar
   await expect(page).toHaveURL(/\/bienvenue/);
   created.push(await profileId(email));
 
+  // Onboarding : 3 écrans de profil, les 3 produits du jour, puis l'offre Pro.
   await page.getByLabel('Ton prénom').fill('Inès');
-  await page.getByRole('button', { name: 'Continuer' }).click();
   await page.getByText('Moins de 500', { exact: true }).click();
   await page.getByRole('button', { name: 'Continuer' }).click();
   await page.getByText('Beauté et soins', { exact: true }).click();
   await page.getByRole('button', { name: 'Continuer' }).click();
   await page.getByText('Voix off', { exact: true }).click();
-  await page.getByRole('button', { name: 'Voir mes produits du jour' }).click();
+  await page.getByRole('button', { name: 'Voir mes 3 produits du jour' }).click();
+  await expect(page).toHaveURL(/\/bienvenue\/produits/);
+  await page.getByRole('link', { name: 'Passer cette étape' }).click();
+  await expect(page).toHaveURL(/\/bienvenue\/pro/);
+  await page.getByRole('link', { name: 'Continuer en Gratuit' }).click();
   await expect(page).toHaveURL(/\/app\?bienvenue=/);
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Inès, voici tes produits du jour');
 

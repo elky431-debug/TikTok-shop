@@ -60,7 +60,8 @@ export async function sendPublicationReminders(day: string, repo: Repo, now = ne
         body: bodyFor(items),
         path: '/app/plan',
         action: 'Ouvrir mon plan',
-        channels: { push: true, email: profile.digest_email, discord: profile.digest_discord && Boolean(profile.discord_user_id) },
+        // Le récap du matin par e-mail contient déjà le défi du jour : pas de second e-mail à la même heure.
+        channels: { push: true, email: !profile.digest_email, discord: profile.digest_discord && Boolean(profile.discord_user_id) },
         dedupeKey: `rappel-publication:${day}`,
       },
       repo,

@@ -6,6 +6,7 @@ import { LinkButton } from '@/components/ui/button';
 import { Badge } from '@/components/ui/surface';
 import { getCoachForViewer, requireOnboardedViewer } from '@/lib/auth/session';
 import { getRepo } from '@/lib/db';
+import { countUnreadNotifications } from '@/lib/notification-center';
 import { getPlan, isPaidPlan } from '@/lib/plans';
 
 export const dynamic = 'force-dynamic';
@@ -21,6 +22,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     await getRepo().updateProfile(profile.id, { last_seen_at: new Date().toISOString() });
   }
 
+  const unread = await countUnreadNotifications(profile.id);
   const items: NavItem[] = [
     { href: '/app', label: 'Radar', icon: 'radar', mobile: true },
     { href: '/app/studio', label: 'Studio', icon: 'studio', mobile: true },
@@ -35,6 +37,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     { href: '/app/offres', label: 'Propositions de marques', icon: 'offres' },
     { href: '/app/analyse', label: 'Analyse de vidéo', icon: 'analyse' },
     { href: '/app/parrainage', label: 'Parrainage', icon: 'parrainage' },
+    { href: '/app/notifications', label: unread ? `Notifications (${unread})` : 'Notifications', icon: 'notifications' },
+    ...(profile.coach_id ? [{ href: '/app/consentement-formateur', label: 'Mon formateur', icon: 'formateur' } as NavItem] : []),
     { href: '/app/compte', label: 'Compte', icon: 'compte', mobile: true },
   ];
   if (coach) items.push({ href: '/formateur', label: 'Espace formateur', icon: 'formateur' });

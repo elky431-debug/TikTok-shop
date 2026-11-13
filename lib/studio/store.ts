@@ -56,7 +56,7 @@ export async function insertDoc(userId: string, doc: Omit<StudioDoc, 'script_id'
     user_id: userId,
     product_id: doc.product_id,
     // La base accepte les 8 formats (migration 20261115000410) ; le type ScriptFormat de lib/db/types.ts n'en liste que 5.
-    format: doc.format as ScriptFormat,
+    format: doc.format,
     hooks: doc.hooks,
     script: doc.scripts,
     full_text: docToText({ ...doc, script_id: null }),

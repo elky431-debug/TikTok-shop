@@ -7,8 +7,14 @@
 -- Nombre d'affiliés et échantillon gratuit : inconnus chez certains fournisseurs.
 alter table public.products alter column active_affiliates drop not null;
 alter table public.products alter column active_affiliates drop default;
-alter table public.products alter column free_sample drop not null;
-alter table public.products alter column free_sample drop default;
+-- Rejouable même après la suppression de la colonne (migration 20261114000300, échantillon retiré partout).
+do $$
+begin
+  if exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'products' and column_name = 'free_sample') then
+    alter table public.products alter column free_sample drop not null;
+    alter table public.products alter column free_sample drop default;
+  end if;
+end $$;
 
 alter table public.product_snapshots alter column affiliates drop not null;
 alter table public.product_snapshots alter column affiliates drop default;

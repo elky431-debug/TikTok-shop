@@ -77,7 +77,10 @@ export function pickChallenge(input: {
       product_id: first.plan.data.product_id,
     };
   }
-  const late = open.filter((o) => o.item.date < day).sort((a, b) => a.item.date.localeCompare(b.item.date) || a.item.n - b.item.n);
+  // Seules les vidéos datées (calendrier) peuvent être en retard.
+  const late = open
+    .filter((o): o is typeof o & { item: { date: string } } => Boolean(o.item.date) && o.item.date! < day)
+    .sort((a, b) => a.item.date.localeCompare(b.item.date) || a.item.n - b.item.n);
   if (late.length) {
     const first = late[0];
     return {

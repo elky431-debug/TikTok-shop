@@ -128,8 +128,14 @@ describe('bloc 5.4 · rappels par notify', () => {
     expect(await sendPublicationReminders('2026-11-12', repo, new Date('2026-11-12T08:30:00Z'))).toBe(1);
     expect(await sendPublicationReminders('2026-11-12', repo, new Date('2026-11-12T09:30:00Z'))).toBe(0);
     const [notification] = await listNotifications('pro', repo);
-    expect(notification.data).toMatchObject({ type: 'rappel', title: 'Aujourd’hui : ta vidéo n°1 sur Sérum', path: '/app/plan', channels: { email: true } });
+    // Récap du matin par e-mail actif (par défaut) : il porte déjà le défi du jour, donc pas de second e-mail.
+    expect(notification.data).toMatchObject({ type: 'rappel', title: 'Aujourd’hui : ta vidéo n°1 sur Sérum', path: '/app/plan', channels: { email: false } });
     expect(await listNotifications('gratuit', repo)).toHaveLength(0);
+    // Sans récap e-mail, le rappel part par e-mail.
+    await makeUser(repo, 'sans-recap', 'pro', { digest_hour: 9, digest_email: false });
+    await repo.saveRecord('sans-recap', 'publication', buildPlan({ productId: 'p', productName: 'Sérum', rhythm: 7, start: '2026-11-12' }));
+    await sendPublicationReminders('2026-11-12', repo, new Date('2026-11-12T08:30:00Z'));
+    expect((await listNotifications('sans-recap', repo))[0].data.channels).toMatchObject({ email: true });
   });
 });
 

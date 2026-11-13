@@ -70,8 +70,9 @@ test('inscription avec un lien formateur : 3 mois de Pro offerts, sans carte', a
   // 2. L'admin (admin@tracktout.local en mode local) le passe en formateur.
   const adminContext = await browser.newContext();
   const admin = await adminContext.newPage();
-  await signIn(admin, 'admin@tracktout.local', '/admin');
-  await expect(admin).toHaveURL(/\/admin/);
+  // Gestion des utilisateurs : /admin/utilisateurs, avec une recherche par e-mail.
+  await signIn(admin, 'admin@tracktout.local', `/admin/utilisateurs?q=${encodeURIComponent(coachEmail)}`);
+  await expect(admin).toHaveURL(/\/admin\/utilisateurs/);
   const row = admin.locator('li', { has: admin.getByText(coachEmail) });
   await row.locator('summary').click();
   await row.getByLabel('Nom de la formation').fill('Formation E2E');

@@ -213,10 +213,15 @@ export default async function ComptePage({ searchParams }: { searchParams: Recor
                 name="partage"
                 value="1"
                 defaultChecked={profile.share_email_with_coach}
-                description={`${coach.training_name} voit déjà ton prénom, ton plan et ta progression, jamais ton e-mail sans ton accord.`}
+                description={`${coach.training_name} ne voit que des chiffres d’ensemble sur ses élèves, jamais ton e-mail sans ton accord. Ton détail (plan, progression) se partage dans « Mon formateur ».`}
               >
                 Partager mon e-mail avec mon formateur
               </ChoiceChip>
+            ) : null}
+            {coach ? (
+              <Link href="/app/consentement-formateur" className="text-sm font-semibold text-cyan-ink hover:underline">
+                Gérer ce que voit mon formateur
+              </Link>
             ) : null}
             <SubmitButton variant="outline" pendingLabel="Enregistrement…">
               Enregistrer mes préférences

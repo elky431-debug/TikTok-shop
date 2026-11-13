@@ -4,6 +4,7 @@ import { env } from '@/lib/env';
 import { getPlan } from '@/lib/plans';
 import { parisDate, parisHour } from '@/lib/utils';
 import { discordStatus } from './config';
+import { runRecapHourly, type RecapHourlyResult } from '@/lib/digest/hourly';
 import { getVeilleSelection } from '@/lib/tendances';
 import { sendPublicationReminders } from '@/lib/v2/reminders';
 import { postWeeklyLeaderboard, type LeaderboardOutcome } from './leaderboard';
@@ -25,6 +26,7 @@ export interface DiscordRunResult {
   roles: number | null;
   reminders: number;
   leaderboard: LeaderboardOutcome;
+  recap: RecapHourlyResult;
 }
 
 async function send(channelId: string, message: DiscordMessage) {
@@ -108,5 +110,7 @@ export async function runDiscordHourly(opts: { repo?: Repo; now?: Date } = {}): 
     roles: await syncAllDiscordRoles(repo, now),
     reminders: await sendPublicationReminders(parisDate(now), repo, now),
     leaderboard: await postWeeklyLeaderboard(repo, now),
+    // Récap du matin en push à l'heure de chacun et récap du dimanche (tourne même sans Discord).
+    recap: await runRecapHourly(now, repo),
   };
 }

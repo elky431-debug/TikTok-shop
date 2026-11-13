@@ -5,7 +5,16 @@ export type Eligibility = 'preparation' | 'affilie';
 export type FollowerRange = '0-500' | '500-1500' | '1500-5000' | '5000-20000' | '20000+';
 export type Theme = 'system' | 'light' | 'dark';
 export type Trend = 'explose' | 'monte' | 'stable' | 'baisse';
-export type ScriptFormat = 'demo' | 'avant_apres' | 'histoire' | 'reponse_commentaire' | 'unboxing';
+/** Les 8 formats du studio (contrainte `scripts.format` élargie par la migration 20261115000410). */
+export type ScriptFormat =
+  | 'demo'
+  | 'avant_apres'
+  | 'histoire'
+  | 'reponse_commentaire'
+  | 'unboxing'
+  | 'comparaison'
+  | 'routine'
+  | 'top3';
 export type BillingInterval = 'month' | 'year';
 
 export interface Profile {

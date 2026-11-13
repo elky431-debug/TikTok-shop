@@ -797,6 +797,7 @@ export type Database = {
         Args: { p_day: string; p_limit: number; p_user: string }
         Returns: number
       }
+      is_server_record_kind: { Args: { k: string }; Returns: boolean }
     }
     Enums: {
       eligibility: "preparation" | "affilie"
