@@ -93,7 +93,17 @@ export class OpenAIScriptModel implements ScriptModel {
     if (error instanceof OpenAI.NotFoundError) return `Le modèle « ${env.openaiModel} » est introuvable : vérifie OPENAI_MODEL.`;
     if (error instanceof OpenAI.BadRequestError) {
       // Détail renvoyé par l'API (paramètre et code, jamais la clé ni la demande) : la cause exacte se lit à l'écran.
-      const detail = [error.param ? `paramètre « ${error.param} »` : null, error.code ? `code ${error.code}` : null].filter(Boolean).join(', ');
+      // Extrait du message de l'API (une éventuelle clé masquée), utile quand ni paramètre ni code ne sont donnés.
+      const apiMessage = String((error.error as { message?: string } | undefined)?.message ?? error.message ?? '')
+        .replace(/sk-[A-Za-z0-9_-]+/g, 'sk-…')
+        .slice(0, 160);
+      const detail = [
+        error.param ? `paramètre « ${error.param} »` : null,
+        error.code ? `code ${error.code}` : null,
+        !error.param && !error.code && apiMessage ? `« ${apiMessage} »` : null,
+      ]
+        .filter(Boolean)
+        .join(', ');
       console.error('[openai] demande refusée', error.status, error.param, error.code, error.message);
       return `Le modèle « ${env.openaiModel} » a refusé la demande${detail ? ` (${detail})` : ''}. Réessaie, ou vérifie OPENAI_MODEL.`;
     }
