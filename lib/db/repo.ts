@@ -16,6 +16,7 @@ import type {
   Subscription,
   TopVideo,
   RecordKind,
+  UserDataExport,
   UserRecord,
 } from './types';
 import type { NicheId } from '@/lib/niches';
@@ -39,6 +40,8 @@ export interface Repo {
   listOnboardedProfiles(): Promise<Profile[]>;
   listDiscordLinkedProfiles(): Promise<Profile[]>;
   deleteUser(userId: string): Promise<void>;
+  /** RGPD (droit d'accès et portabilité) : toutes les lignes liées au compte, sans les données d'autres personnes. */
+  exportUserData(userId: string): Promise<UserDataExport>;
 
   // Catalogue
   upsertProducts(products: Product[]): Promise<void>;

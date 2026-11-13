@@ -54,12 +54,12 @@ export const IOS_SPLASH_SCREENS: Array<[number, number, number]> = [
  * Réglages iOS de l'appli ajoutée à l'écran d'accueil : titre, barre d'état noire, écrans de démarrage (une image par
  * taille d'écran, choisie par media query). Images produites par `python3 scripts/pwa-icons.py`.
  */
-export const appleWebApp: NonNullable<Metadata['appleWebApp']> = {
+export const appleWebApp = {
   capable: true,
   title: BRAND,
-  statusBarStyle: 'black',
+  statusBarStyle: 'black' as const,
   startupImage: IOS_SPLASH_SCREENS.map(([w, h, dpr]) => ({
     url: `/icons/splash/splash-${w * dpr}x${h * dpr}.png`,
     media: `(device-width: ${w}px) and (device-height: ${h}px) and (-webkit-device-pixel-ratio: ${dpr}) and (orientation: portrait)`,
   })),
-};
+} satisfies NonNullable<Metadata['appleWebApp']>;

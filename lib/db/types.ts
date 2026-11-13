@@ -361,3 +361,22 @@ export interface UserRecord<T = Record<string, unknown>> {
 }
 
 export type RegionId = 'FR' | 'DE' | 'IT' | 'ES';
+
+/** Export RGPD d'un compte : ses lignes, jamais les données personnelles d'un autre (filleuls, élèves). */
+export interface UserDataExport {
+  profile: Profile | null;
+  scripts: ScriptRecord[];
+  saved_products: SavedProduct[];
+  subscriptions: Subscription[];
+  usage: Array<{ day: string; scripts_generated: number }>;
+  digests: Digest[];
+  /** Fiches de tous les types (gains, plans, notifications, réglages, abonnements push…). */
+  records: UserRecord[];
+  /** Parrainages faits : statut et montants, sans l'identité des filleuls. */
+  referrals_made: Array<Pick<Referral, 'id' | 'status' | 'commission_due_cents' | 'commission_paid_cents' | 'created_at'>>;
+  /** Parrainage dont le compte vient (sans l'identité du parrain). */
+  referral_received: Pick<Referral, 'id' | 'status' | 'created_at'> | null;
+  commissions: Commission[];
+  coach: Coach | null;
+  coach_applications: CoachApplication[];
+}

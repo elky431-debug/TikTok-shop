@@ -7,7 +7,7 @@ import { BRAND } from '@/lib/brand';
 import { setRepoForTests } from '@/lib/db';
 import { LocalRepo } from '@/lib/db/local';
 import { countUnreadNotifications, groupNotifications, openNotification, pruneNotifications, safePath } from '@/lib/notification-center';
-import { notify } from '@/lib/notify';
+import { notify, type NotificationData } from '@/lib/notify';
 import { registerPushSender, sendPush } from '@/lib/push';
 import { appleWebApp, IOS_SPLASH_SCREENS, webManifest } from '@/lib/pwa';
 import { isPushConfigured, vapidProblems } from '@/lib/webpush/config';
@@ -81,7 +81,7 @@ describe('appli installable : manifeste et icônes', () => {
   });
 
   it('écrans de démarrage iOS : une image par écran, à la bonne taille', () => {
-    const images = appleWebApp.startupImage as Array<{ url: string; media: string }>;
+    const images = appleWebApp.startupImage;
     expect(images).toHaveLength(IOS_SPLASH_SCREENS.length);
     for (const [i, [w, h, dpr]] of IOS_SPLASH_SCREENS.entries()) {
       expect(images[i].media).toContain(`(device-width: ${w}px)`);
@@ -203,6 +203,8 @@ describe('service worker', () => {
     sw.setNetwork(async (req) => (req.url.endsWith('/app') ? page('connexion', { redirected: true }) : page(`réseau ${new URL(req.url).pathname}`)));
     await sw.navigate('/app');
     await sw.navigate('/admin');
+    sw.setNetwork(async () => page('{}', { headers: { 'content-type': 'application/json' } }));
+    await sw.navigate('/app/compte/export'); // téléchargement de l'export RGPD : jamais gardé
     expect([...(sw.stores.get('pages-v1')?.keys() ?? [])]).toEqual([]);
 
     sw.setNetwork(async (req) => page('js', { headers: { 'cache-control': req.url.includes('immuable') ? 'public, max-age=31536000, immutable' : 'no-store' } }));
@@ -350,7 +352,7 @@ describe('centre de notifications', () => {
     await notify('u', { type: 'alerte', title: 'Alerte', body: '2 produits', path: '/app?alerte=1' }, repo);
     await notify('u', { type: 'baisse', title: 'Baisse', body: 'Sérum', path: '//pirate.fr' }, repo);
     expect(await countUnreadNotifications('u', repo)).toBe(2);
-    const records = await repo.listRecords<{ title: string }>('u', 'notification');
+    const records = await repo.listRecords<NotificationData>('u', 'notification');
     const alerte = records.find((r) => r.data.title === 'Alerte')!;
     const baisse = records.find((r) => r.data.title === 'Baisse')!;
     expect(await openNotification('u', alerte.id, repo)).toBe('/app?alerte=1');
@@ -360,7 +362,7 @@ describe('centre de notifications', () => {
     expect(safePath('https://pirate.fr')).toBe('/app/notifications');
 
     const old = { ...alerte, created_at: new Date(now.getTime() - 10 * 86_400_000).toISOString() };
-    expect(groupNotifications([old, baisse as never], now).map((g) => g.label)).toEqual(['Aujourd’hui', 'Plus ancien']);
+    expect(groupNotifications([old, baisse], now).map((g) => g.label)).toEqual(['Aujourd’hui', 'Plus ancien']);
     expect(await pruneNotifications(repo, new Date(now.getTime() + 61 * 86_400_000))).toBe(2);
   });
 });

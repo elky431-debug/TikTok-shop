@@ -11,6 +11,9 @@ import type { Theme } from '@/lib/db/types';
 import { isLocalMode } from '@/lib/env';
 import { isNicheId, type NicheId } from '@/lib/niches';
 import { isFollowerRange, isVideoStyle } from '@/lib/profile-rules';
+import { setDisabledLifecycle } from '@/lib/lifecycle/preferences';
+import { cancelScheduledEmails } from '@/lib/lifecycle/scheduled';
+import { isLifecycleType, LIFECYCLE_TYPES } from '@/lib/lifecycle/types';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { getPlan } from '@/lib/plans';
 import { isRegionId } from '@/lib/regions';
@@ -59,7 +62,19 @@ export async function updatePreferencesAction(formData: FormData) {
   back('ok=preferences#preferences');
 }
 
-/** Droit à l'effacement (RGPD) : résilie l'abonnement puis supprime toutes les données. */
+/** E-mails de cycle de vie : chaque type coché est reçu, chaque type décoché est coupé. */
+export async function updateEmailPreferencesAction(formData: FormData) {
+  const { profile } = await requireOnboardedViewer('/app/compte');
+  const wanted = new Set(formData.getAll('emails').filter(isLifecycleType));
+  await setDisabledLifecycle(profile.id, LIFECYCLE_TYPES.filter((t) => !wanted.has(t)));
+  revalidatePath('/app/compte');
+  back('ok=emails#emails');
+}
+
+/**
+ * Droit à l'effacement (RGPD) : résilie l'abonnement, annule les e-mails déjà programmés (récap, cycle de vie), puis
+ * supprime toutes les données (profil, scripts, produits suivis, récaps, fiches de tous les types, abonnements push…).
+ */
 export async function deleteAccountAction(formData: FormData) {
   const { profile } = await requireOnboardedViewer('/app/compte');
   if (String(formData.get('confirmation') ?? '').trim().toUpperCase() !== 'SUPPRIMER') back('erreur=confirmation#suppression');
@@ -69,6 +84,7 @@ export async function deleteAccountAction(formData: FormData) {
     console.error('[suppression] résiliation', error);
     back('erreur=resiliation#suppression');
   }
+  await cancelScheduledEmails(profile.id).catch((error) => console.warn('[suppression] e-mails programmés', error));
   await getRepo().deleteUser(profile.id);
   if (isLocalMode()) cookies().delete(LOCAL_SESSION_COOKIE);
   else await createSupabaseServerClient().auth.signOut();

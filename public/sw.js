@@ -1,7 +1,7 @@
 /*
  * Service worker de l'appli installable (bloc 15).
  *
- * - Pages (navigations) : réseau d'abord ; si le réseau ne répond pas, la dernière version vue de la page ; sinon la
+ * - Pages HTML (navigations) : réseau d’abord ; si le réseau ne répond pas, la dernière version vue de la page ; sinon la
  *   page hors ligne. Seules les vraies pages du site sont gardées (réponse 200, sans redirection), jamais l'admin,
  *   l'authentification, l'API ni la désinscription.
  * - Ressources statiques : cache d'abord, pour les fichiers immuables de Next (/_next/static, marqués « immutable »),
@@ -61,7 +61,8 @@ async function trimPages() {
 async function networkFirstPage(event, url) {
   try {
     const response = await fetch(event.request);
-    if (response.ok && !response.redirected && response.type === 'basic' && cacheablePage(url)) {
+    const html = (response.headers.get('content-type') || '').includes('text/html');
+    if (response.ok && !response.redirected && response.type === 'basic' && html && cacheablePage(url)) {
       const copy = response.clone();
       event.waitUntil(
         caches
