@@ -449,6 +449,11 @@ Profites-en pour corriger `NEXT_PUBLIC_SITE_URL` (il doit valoir l'adresse Netli
 - Onboarding : tient dans 390 × 844 sans défiler, vérifié écran par écran.
 - Migration `onboarding_v2` rejouée deux fois sur un Postgres jetable, puis appliquée sur Supabase (API de gestion).
 - Captures 390 / 1440 px : `docs/captures/refonte-app/` (comparaison avec le code d'EtSmart dans son README).
+- **En ligne** (https://splendorous-kleicha-5d07d3.netlify.app, 13 novembre) : inscription par mot de passe → 10
+  questions → « On prépare ton radar » → dashboard avec un vrai produit du jour (Nexscope) → studio → déconnexion vers
+  l'accueil, sans erreur JavaScript. La génération affiche le message de clé invalide (attendu tant que
+  `OPENAI_API_KEY` n'est pas corrigée). Corrigé au passage : la déconnexion et le retour des liens de connexion
+  renvoyaient vers l'adresse interne du déploiement de branche. Comptes de test supprimés.
 
 ### Ce qui reste
 
