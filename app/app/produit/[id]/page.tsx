@@ -22,7 +22,7 @@ import { getLiveCatalog } from '@/lib/catalog';
 import { getRepo } from '@/lib/db';
 import { MIN_DAYS_FOR_CURVE, videosAreFresh } from '@/lib/jobs/refresh';
 import { nicheLabel } from '@/lib/niches';
-import { getPlan, isPaidPlan } from '@/lib/plans';
+import { getPlan, isPaidPlan, isUnlimited, quotaReachedMessage, remainingLabel } from '@/lib/plans';
 import { periodBars } from '@/lib/product-periods';
 import { accessibleIds, canAccessProduct, scoresFor, toProductView } from '@/lib/radar';
 import { HOOK_KIND, readHookAnalysis } from '@/lib/radar/hook-analysis';
@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 }
 
 const HOOK_ERRORS: Record<string, string> = {
-  quota: 'Tes analyses d’accroches du jour sont faites : reviens demain.',
+  quota: 'Tes analyses d’accroches du jour sont faites : le compteur repart à minuit.',
   videos: 'Il faut d’abord les vidéos de ce produit.',
   ia: 'L’analyse n’a pas abouti. Réessaie dans un moment : rien n’a été décompté.',
 };
@@ -61,11 +61,11 @@ export default async function ProductPage({
   if (!(await canAccessProduct(profile, product.id))) {
     return (
       <EmptyState
-        title="Ce produit est réservé au plan Pro"
-        action={<LinkButton href="/app/passer-pro">Passer Pro</LinkButton>}
+        title="Fiche réservée aux abonnés"
+        action={<LinkButton href="/abonnement">Choisir mon abonnement</LinkButton>}
         className="mt-10"
       >
-        Le plan Gratuit ouvre tes 3 produits du jour. Avec Pro, tu ouvres toutes les fiches, avec le score détaillé.
+        Avec un abonnement, tu ouvres toutes les fiches du radar, avec le score détaillé.
       </EmptyState>
     );
   }
@@ -119,7 +119,7 @@ export default async function ProductPage({
     ? await Promise.all([readHookAnalysis(product, repo), remainingToday(profile.id, HOOK_KIND, plan.hookAnalysesPerDay)])
     : [null, 0];
 
-  // Produits proches : seulement ceux que ce compte peut ouvrir (Gratuit : ses produits du jour et ceux qu'il suit).
+  // Produits proches : seulement ceux que ce compte peut ouvrir.
   const open = await accessibleIds(profile, catalog.products);
   const allowed = catalog.products.filter((p) => !open || open.has(p.id));
   const similar = similarProducts(product, allowed);
@@ -284,7 +284,7 @@ export default async function ProductPage({
               <p className="text-sm text-muted">
                 L’évolution du score sur 30 jours s’ouvre avec Pro.{' '}
                 <Link href="/app/passer-pro" className="font-semibold text-rose-ink hover:underline">
-                  Passer Pro
+                  Passer à Pro
                 </Link>
               </p>
             ) : scoreHistory.length >= 2 ? (
@@ -335,7 +335,7 @@ export default async function ProductPage({
               <p className="text-sm text-muted">
                 Les vidéos de chaque produit s’ouvrent avec le plan Pro.{' '}
                 <Link href="/app/passer-pro" className="font-semibold text-rose-ink hover:underline">
-                  Passer Pro
+                  Passer à Pro
                 </Link>
               </p>
             ) : (
@@ -355,7 +355,9 @@ export default async function ProductPage({
                   <Panel className="flex flex-wrap items-center justify-between gap-3">
                     <p className="text-sm text-muted">
                       Type d’accroche, durée et structure de chaque vidéo, à partir de son texte et de ses chiffres.{' '}
-                      {hooksLeft > 0 ? `${plural(hooksLeft, 'analyse restante', 'analyses restantes')} aujourd’hui.` : 'Plus d’analyse aujourd’hui.'}
+                      {hooksLeft > 0
+                        ? remainingLabel(profile.plan, 'hookAnalysesPerDay', hooksLeft, { one: 'analyse', many: 'analyses', feminine: true }, 'aujourd’hui')
+                        : quotaReachedMessage(profile.plan, 'hookAnalysesPerDay', 'analyses d’accroches', 'du jour')}
                     </p>
                     <form action={analyzeHooksAction}>
                       <input type="hidden" name="produit" value={view.id} />
@@ -368,7 +370,7 @@ export default async function ProductPage({
                   <p className="text-sm text-muted">
                     L’analyse des accroches s’ouvre avec Pro.{' '}
                     <Link href="/app/passer-pro" className="font-semibold text-rose-ink hover:underline">
-                      Passer Pro
+                      Passer à Pro
                     </Link>
                   </p>
                 )}
@@ -435,6 +437,21 @@ export default async function ProductPage({
                   <SubmitButton variant="outline" size="lg" className="w-full" pendingLabel="Ajout…">
                     Ajouter à mes produits
                   </SubmitButton>
+                  {searchParams.suivi === 'limite' ? (
+                    <p className="mt-2 text-xs text-rose-ink" role="alert">
+                      {isUnlimited(profile.plan, 'savedProducts') ? (
+                        'Limite de sécurité des produits suivis atteinte. Retire-en un dans Mes produits pour en suivre un autre.'
+                      ) : (
+                        <>
+                          Tu suis déjà {plan.savedProducts} produits, la limite du plan {plan.name}. Retire-en un dans Mes produits, ou{' '}
+                          <Link href="/app/passer-pro" className="font-semibold underline">
+                            passe à Pro
+                          </Link>{' '}
+                          pour suivre autant de produits que tu veux.
+                        </>
+                      )}
+                    </p>
+                  ) : null}
                 </form>
               )}
               <LinkButton href={links.plan} variant="outline" size="lg" className="w-full">

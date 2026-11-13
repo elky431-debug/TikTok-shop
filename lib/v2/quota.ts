@@ -12,3 +12,11 @@ export async function remainingToday(userId: string, kind: RecordKind, limit: nu
   const used = await getRepo().countRecordsSince(userId, kind, since);
   return Math.max(0, limit - used);
 }
+
+/** Quota mensuel (analyses de vidéo, propositions de marques) : fiches créées depuis le 1er du mois (heure de Paris). */
+export async function remainingThisMonth(userId: string, kind: RecordKind, limit: number, now = new Date()): Promise<number> {
+  if (limit <= 0) return 0;
+  const since = parisTimeToUtc(`${parisDate(now).slice(0, 7)}-01`, 0).toISOString();
+  const used = await getRepo().countRecordsSince(userId, kind, since);
+  return Math.max(0, limit - used);
+}

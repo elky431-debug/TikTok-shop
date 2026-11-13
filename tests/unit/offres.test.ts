@@ -91,19 +91,26 @@ describe('bloc 7.5 · historique et rappel de relance', () => {
     expect(followUpDate('demain', '2026-11-12')).toBeNull();
   });
 
-  it('tâche nocturne : notification le jour J, une seule fois, rien pour une proposition close ni hors Pro+', async () => {
-    await makeUser(repo, 'plus', 'proplus');
+  it('tâche nocturne : notification le jour J, une seule fois, rien pour une proposition close ni sous Pro', async () => {
     await makeUser(repo, 'pro', 'pro');
-    const open = await repo.saveRecord('plus', 'offre', data());
-    await repo.saveRecord('plus', 'offre', data({ status: 'acceptee' }));
-    await repo.saveRecord('pro', 'offre', data());
+    await makeUser(repo, 'elite', 'elite');
+    await makeUser(repo, 'starter', 'starter');
+    await makeUser(repo, 'sans-abo', 'aucun');
+    const open = await repo.saveRecord('pro', 'offre', data());
+    await repo.saveRecord('pro', 'offre', data({ status: 'acceptee' }));
+    await repo.saveRecord('elite', 'offre', data());
+    // Propositions gardées d'un ancien abonnement : plus de rappel en Starter ni sans abonnement.
+    await repo.saveRecord('starter', 'offre', data());
+    await repo.saveRecord('sans-abo', 'offre', data());
     expect(await sendOfferFollowUps('2026-11-14', repo)).toBe(0);
-    expect(await sendOfferFollowUps('2026-11-15', repo)).toBe(1);
+    expect(await sendOfferFollowUps('2026-11-15', repo)).toBe(2);
     expect(await sendOfferFollowUps('2026-11-15', repo)).toBe(0);
     expect(await sendOfferFollowUps('2026-11-16', repo)).toBe(0);
-    const [n] = await listNotifications('plus', repo);
+    const [n] = await listNotifications('pro', repo);
     expect(n.data).toMatchObject({ type: 'rappel', title: 'Relance Lumi aujourd’hui', path: `/app/offres?offre=${open.id}`, channels: { email: true } });
-    expect((await repo.getRecord<OfferData>('plus', open.id))?.data.follow_up_sent).toBe('2026-11-15');
-    expect(await listNotifications('pro', repo)).toHaveLength(0);
+    expect((await repo.getRecord<OfferData>('pro', open.id))?.data.follow_up_sent).toBe('2026-11-15');
+    expect(await listNotifications('elite', repo)).toHaveLength(1);
+    expect(await listNotifications('starter', repo)).toHaveLength(0);
+    expect(await listNotifications('sans-abo', repo)).toHaveLength(0);
   });
 });

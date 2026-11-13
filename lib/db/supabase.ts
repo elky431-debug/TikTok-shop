@@ -576,7 +576,7 @@ export class SupabaseRepo implements Repo {
       return {
         ...(rest as Referral),
         referred_first_name: (referred?.first_name as string | null) ?? null,
-        referred_plan: (referred?.plan as Profile['plan']) ?? 'free',
+        referred_plan: (referred?.plan as Profile['plan']) ?? 'aucun',
       };
     });
   }

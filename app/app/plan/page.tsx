@@ -26,7 +26,7 @@ export default async function PlanPage({ searchParams }: { searchParams: Record<
     return (
       <div className="mx-auto max-w-5xl">
         <PageHeader eyebrow="Créer" title="Plan de publication"  description="Tenir 20 vidéos par produit, c’est là que l’affiliation paie. Rien n’est publié à ta place : tu reçois un rappel le jour J." />
-        <PlanGate plan="Pro" title="20 vidéos par produit, au bon rythme">
+        <PlanGate plan="starter" title="20 vidéos par produit, au bon rythme">
           Choisis un produit suivi et ton rythme : ses vidéos sont réparties sur les semaines à venir dans un calendrier, avec
           un rappel le jour J par notification, e-mail et Discord, et un fichier à importer dans ton agenda.
         </PlanGate>

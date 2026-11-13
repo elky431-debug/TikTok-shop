@@ -92,8 +92,8 @@ export default async function ParrainagePage() {
         </h2>
         {referrals.length === 0 ? (
           <EmptyState title="Pas encore de filleul">
-            Partage ton lien à des créateurs qui veulent se lancer sur TikTok Shop. Ils s’inscrivent gratuitement ; tu touches {rate} % s’ils
-            passent Pro.
+            Partage ton lien à des créateurs qui veulent se lancer sur TikTok Shop. Ils s’inscrivent avec ton lien ; tu touches {rate} % de ce
+            qu’ils paient, chaque mois, tant qu’ils restent abonnés.
           </EmptyState>
         ) : (
           <ul className="divide-y divide-line rounded-2xl border border-line">

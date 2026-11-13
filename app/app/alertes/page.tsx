@@ -10,7 +10,7 @@ import { requireOnboardedViewer } from '@/lib/auth/session';
 import { getLiveCatalog } from '@/lib/catalog';
 import { getRepo } from '@/lib/db';
 import { NICHES } from '@/lib/niches';
-import { getPlan } from '@/lib/plans';
+import { cheapestPlanWith, getPlan, isUnlimited } from '@/lib/plans';
 import { COMMISSION_STEPS, filterAvailability, filterTarget, RATING_STEPS, type RadarFilters } from '@/lib/radar-filters';
 import { ALERT_KIND, activeAlertsWithinPlan, alertSummary, type AlertData } from '@/lib/radar/alerts';
 import { BADGES } from '@/lib/radar/badges';
@@ -29,11 +29,12 @@ const ERRORS: Record<string, string> = {
 export default async function AlertsPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
   const { profile } = await requireOnboardedViewer('/app/alertes');
   const plan = getPlan(profile.plan);
+  const nextAlerts = cheapestPlanWith((p) => p.alerts > plan.alerts);
   if (!plan.alerts) {
     return (
       <div>
         <PageHeader eyebrow="Trouver" title="Alertes"  description="Une règle, et chaque nuit après le relevé, tu es prévenu dès qu’un nouveau produit la remplit. Une notification par alerte et par jour, au plus." />
-        <PlanGate plan="Pro" title="Sois prévenu quand un produit remplit tes critères">
+        <PlanGate plan="starter" title="Sois prévenu quand un produit remplit tes critères">
           Niche, commission minimum, ventes sur 7 jours, croissance, prix : chaque nuit, dès qu’un nouveau produit remplit ta règle,
           tu reçois une notification, un e-mail et un message Discord.
         </PlanGate>
@@ -48,7 +49,7 @@ export default async function AlertsPage({ searchParams }: { searchParams: Recor
   ]);
   const checked = new Set(activeAlertsWithinPlan(alerts, profile.plan).map((a) => a.id));
   const activeCount = alerts.filter((a) => a.data.active).length;
-  const limitLabel = Number.isFinite(plan.alerts) ? `${activeCount} sur ${plan.alerts}` : `${activeCount}, sans limite`;
+  const limitLabel = isUnlimited(profile.plan, 'alerts') ? `${activeCount}, sans limite` : `${activeCount} sur ${plan.alerts}`;
   const canCreate = activeCount < plan.alerts;
   const availability = filterAvailability(catalog.products.map(filterTarget));
 
@@ -267,17 +268,25 @@ export default async function AlertsPage({ searchParams }: { searchParams: Recor
               </form>
             ) : (
               <div className="mt-3 space-y-3 text-sm text-muted">
-                <p>Tu as {plural(activeCount, 'alerte active', 'alertes actives')} : c’est la limite du plan {plan.name}.</p>
+                <p>
+                  {isUnlimited(profile.plan, 'alerts')
+                    ? `Tu as ${plural(activeCount, 'alerte active', 'alertes actives')} : c’est la limite de sécurité.`
+                    : `Tu as ${plural(activeCount, 'alerte active', 'alertes actives')} : c’est la limite du plan ${plan.name}.`}
+                </p>
                 <Button variant="outline" size="sm" disabled>
                   Créer l’alerte
                 </Button>
-                <p>
-                  Mets-en une en pause, ou{' '}
-                  <Link href="/app/passer-pro" className="font-semibold text-rose-ink hover:underline">
-                    passe Pro+
-                  </Link>{' '}
-                  pour des alertes sans limite.
-                </p>
+                {isUnlimited(profile.plan, 'alerts') ? (
+                  <p>Mets-en une en pause pour en créer une autre.</p>
+                ) : (
+                  <p>
+                    Mets-en une en pause, ou{' '}
+                    <Link href="/app/passer-pro" className="font-semibold text-rose-ink hover:underline">
+                      passe à {nextAlerts.name}
+                    </Link>{' '}
+                    pour {isUnlimited(nextAlerts.id, 'alerts') ? 'des alertes sans limite' : `${nextAlerts.alerts} alertes`}.
+                  </p>
+                )}
               </div>
             )}
           </Card>

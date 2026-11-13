@@ -7,7 +7,7 @@ import { requireOnboardedViewer } from '@/lib/auth/session';
 import { createProvider, type ProviderName } from '@/lib/data';
 import { getRepo } from '@/lib/db';
 import { videosAreFresh } from '@/lib/jobs/refresh';
-import { DEFAULT_VIDEO_GOAL, isPaidPlan } from '@/lib/plans';
+import { DEFAULT_VIDEO_GOAL, getPlan, isPaidPlan } from '@/lib/plans';
 import { canAccessProduct } from '@/lib/radar';
 
 export async function saveProductAction(formData: FormData) {
@@ -16,6 +16,11 @@ export async function saveProductAction(formData: FormData) {
   const repo = getRepo();
   const product = await repo.getProduct(productId);
   if (!product || !(await canAccessProduct(profile, productId))) redirect('/app/radar');
+  // Produits suivis : 10 en Starter, illimités ensuite (plafond de sécurité invisible), vérifié ici côté serveur.
+  const saved = await repo.listSavedProducts(profile.id);
+  if (!saved.some((s) => s.product_id === productId) && saved.length >= getPlan(profile.plan).savedProducts) {
+    redirect(`/app/produit/${encodeURIComponent(productId)}?suivi=limite`);
+  }
   await repo.saveProduct(profile.id, productId, DEFAULT_VIDEO_GOAL);
   revalidatePath(`/app/produit/${productId}`);
   revalidatePath('/app/mes-produits');
@@ -38,7 +43,7 @@ export async function analyzeHooksAction(formData: FormData) {
 }
 
 /**
- * Vidéos qui vendent, à la demande (Pro et Pro+) : un seul appel à la source par produit tous les 3 jours, quel que
+ * Vidéos qui vendent, à la demande (Pro et Elite) : un seul appel à la source par produit tous les 3 jours, quel que
  * soit le nombre de personnes qui ouvrent la fiche.
  */
 export async function loadVideosAction(formData: FormData) {

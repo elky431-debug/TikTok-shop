@@ -4,18 +4,18 @@ import { Reveal } from '@/components/motion/reveal';
 import { FeatureCard } from '@/components/ui/feature-card';
 import { Card } from '@/components/ui/surface';
 import { BRAND } from '@/lib/brand';
-import { COACH_TRIAL_DAYS, getPlan, REFERRAL_COMMISSION_RATE } from '@/lib/plans';
+import { COACH_FIRST_MONTH_DISCOUNT, getPlan, REFERRAL_COMMISSION_RATE } from '@/lib/plans';
 import { formatEuros } from '@/lib/utils';
 import { PartnerForm } from './partner-form';
 
 export const metadata: Metadata = {
   title: 'Formateurs',
-  description: `Propose ${BRAND} à tes élèves : 3 mois de Pro offerts pour eux, 30 % de commission récurrente pour toi.`,
+  description: `Propose ${BRAND} à tes élèves : −20 % sur leur premier mois, 30 % de commission récurrente pour toi.`,
 };
 
 export default function FormateursPage() {
   const rate = Math.round(REFERRAL_COMMISSION_RATE * 100);
-  const months = Math.round(COACH_TRIAL_DAYS / 30);
+  const percent = Math.round(COACH_FIRST_MONTH_DISCOUNT * 100);
   const proMonthly = getPlan('pro').prices.month;
 
   const benefits = [
@@ -26,8 +26,8 @@ export default function FormateursPage() {
     },
     {
       icon: Gift,
-      title: `${months} mois de Pro offerts à tes élèves`,
-      text: 'Avec ton code ou ton lien, sans carte bancaire. Ils arrivent sur un radar complet dès le premier jour.',
+      title: `−${percent} % sur le premier mois de tes élèves`,
+      text: 'Avec ton code ou ton lien, sur le premier mois de l’abonnement mensuel, quel que soit le plan. Ils arrivent sur un radar complet dès le premier jour.',
     },
     {
       icon: BarChart3,

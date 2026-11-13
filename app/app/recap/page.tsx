@@ -123,7 +123,7 @@ export default async function RecapPage({ searchParams }: { searchParams: Record
   const code = searchParams.code && /^[A-Z0-9]{6}$/.test(searchParams.code) ? searchParams.code : null;
 
   const discordState = !plan.discordDigest
-    ? { allowed: false, reason: 'Réservé au plan Pro.' }
+    ? { allowed: false, reason: 'Réservé aux abonnés.' }
     : profile.discord_user_id
       ? { allowed: true, reason: 'En message privé, à l’heure choisie.' }
       : { allowed: false, reason: 'Lie d’abord ton compte Discord ci-dessous.' };
@@ -196,7 +196,7 @@ export default async function RecapPage({ searchParams }: { searchParams: Record
                 <p className="mt-3 border-t border-line pt-3 text-sm text-muted">
                   + {content.locked_count} autres produits avec le plan Pro.{' '}
                   <Link href="/app/passer-pro" className="font-semibold text-rose-ink hover:underline">
-                    Passer Pro
+                    Passer à Pro
                   </Link>
                 </p>
               ) : null}
@@ -253,13 +253,27 @@ export default async function RecapPage({ searchParams }: { searchParams: Record
               <h2 id="titre-dimanche" className="flex items-center gap-2 text-lg">
                 <CalendarCheck className="h-5 w-5 text-cyan-ink" aria-hidden="true" /> Récap du dimanche · ta semaine
               </h2>
-              <form action={sendTestWeeklyAction}>
-                <SubmitButton variant="ghost" size="sm" className="text-muted" pendingLabel="Envoi…">
-                  M’envoyer ma semaine par e-mail
-                </SubmitButton>
-              </form>
+              {plan.weeklyDigest ? (
+                <form action={sendTestWeeklyAction}>
+                  <SubmitButton variant="ghost" size="sm" className="text-muted" pendingLabel="Envoi…">
+                    M’envoyer ma semaine par e-mail
+                  </SubmitButton>
+                </form>
+              ) : null}
             </div>
-            <WeeklyPreview content={weekly} />
+            {plan.weeklyDigest ? (
+              <WeeklyPreview content={weekly} />
+            ) : (
+              <Card>
+                <p className="text-sm text-muted">
+                  Le dimanche, ta semaine en chiffres : vidéos postées, série, gains saisis et meilleur produit. Inclus à partir du plan
+                  Pro.{' '}
+                  <Link href="/app/passer-pro" className="font-semibold text-rose-ink hover:underline">
+                    Passer à Pro
+                  </Link>
+                </p>
+              </Card>
+            )}
           </section>
         </div>
 
@@ -300,6 +314,7 @@ export default async function RecapPage({ searchParams }: { searchParams: Record
             ) : null}
           </Card>
 
+{plan.weeklyDigest ? (
           <Card id="reglages-dimanche" className="scroll-mt-20">
             <h2 className="text-lg">Récap du dimanche</h2>
             <p className="mt-1 text-sm text-muted">Vidéos postées, série, gains saisis et meilleur produit de ta semaine.</p>
@@ -334,6 +349,7 @@ export default async function RecapPage({ searchParams }: { searchParams: Record
               .
             </p>
           </Card>
+          ) : null}
 
           <Card id="discord" className="scroll-mt-20">
             <h2 className="text-lg">Discord</h2>

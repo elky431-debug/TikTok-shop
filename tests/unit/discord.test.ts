@@ -128,6 +128,17 @@ describe('interactions HTTP (/api/discord/interactions)', () => {
     expect(calls).toContainEqual(expect.objectContaining({ method: 'DELETE', path: rolePath('987654321098765432') }));
   });
 
+  it('/lier sans abonnement : compte lié, mais ni récap privé ni rôle des abonnés', async () => {
+    await repo.ensureProfile({ id: 'eva', email: 'eva@test.fr' });
+    await repo.updateProfile('eva', { plan: 'aucun', first_name: 'Éva' });
+    const { code } = await createDiscordLinkCode('eva');
+    const linked = await (await interactionsRoute(signed(command('lier', '987654321098765433', [{ name: 'code', type: 3, value: code }])))).json();
+    expect(linked.data.content).toContain('C’est lié, Éva');
+    expect(linked.data.content).toContain('arrivent avec ton abonnement');
+    expect(await repo.getProfile('eva')).toMatchObject({ discord_user_id: '987654321098765433', digest_discord: false });
+    expect(calls).not.toContainEqual(expect.objectContaining({ method: 'PUT', path: rolePath('987654321098765433') }));
+  });
+
   it('déclare les commandes avec des noms et options conformes à la doc (32 caractères, 25 choix, obligatoires d’abord)', () => {
     expect(DISCORD_COMMANDS.map((c) => c.name)).toEqual(['lier', 'delier', 'produits', 'score', 'script', 'alerte', 'classement']);
     expect(DISCORD_COMMANDS[0].options).toEqual([expect.objectContaining({ type: 3, name: 'code', required: true })]);
@@ -153,13 +164,14 @@ describe('tâche horaire Discord', () => {
     // Deux jours de relevés : le salon public montre ceux de la veille.
     await refreshCatalog({ repo, provider: new MockProvider(), date: DAY, backfillDays: 2 });
     for (const [id, plan, hour, discord] of [
-      ['pro9', 'pro', 9, '100000000000000001'],
+      ['starter9', 'starter', 9, '100000000000000001'],
       ['pro7', 'pro', 7, '100000000000000002'],
-      ['ferme', 'pro', 7, '100000000000000003'],
-      ['gratuit', 'free', 7, '100000000000000004'],
+      ['ferme', 'elite', 7, '100000000000000003'],
+      ['sans-abo', 'aucun', 7, '100000000000000004'],
     ] as const) {
       await repo.ensureProfile({ id, email: `${id}@test.fr` });
-      await repo.updateProfile(id, { plan, niches: ['maison'], onboarded_at: '2026-11-01T00:00:00Z', digest_hour: hour, discord_user_id: discord, digest_discord: plan !== 'free' });
+      // Récap Discord coché même sans abonnement : c'est le plan, vérifié côté serveur, qui décide.
+      await repo.updateProfile(id, { plan, niches: ['maison'], onboarded_at: '2026-11-01T00:00:00Z', digest_hour: hour, discord_user_id: discord, digest_discord: true });
     }
     await prepareDigests(DAY, repo);
     failDmFor.add('100000000000000003');
@@ -179,7 +191,9 @@ describe('tâche horaire Discord', () => {
       { type: 1, components: [{ type: 2, style: 5, label: 'Ouvrir mon radar', url: 'https://tracktout.com/app' }] },
     ]);
     expect((await repo.getDigest('ferme', DAY))?.discord_status).toBe('failed');
-    expect((await repo.getDigest('gratuit', DAY))?.discord_status).toBe('skipped');
+    // Sans abonnement : aucun récap préparé, donc aucun message privé.
+    expect(await repo.getDigest('sans-abo', DAY)).toBeFalsy();
+    expect(calls.some((c) => JSON.stringify(c.body ?? {}).includes('100000000000000004'))).toBe(false);
 
     calls = [];
     const nine = await runDiscordHourly({ repo, now: new Date(`${DAY}T08:00:00Z`) });
@@ -207,7 +221,7 @@ describe('tâche horaire Discord', () => {
     expect(calls.some((c) => c.path.startsWith('/channels/4'))).toBe(false);
   });
 
-  it('synchronise le rôle Pro une fois par jour, et tout de suite quand le plan change', async () => {
+  it('synchronise le rôle des abonnés (Starter compris) une fois par jour, et tout de suite quand le plan change', async () => {
     const run = await runDiscordHourly({ repo, now: new Date(`${DAY}T07:00:00Z`) });
     expect(run.roles).toBe(4);
     expect(calls).toContainEqual(expect.objectContaining({ method: 'PUT', path: rolePath('100000000000000001') }));
@@ -216,8 +230,8 @@ describe('tâche horaire Discord', () => {
 
     calls = [];
     await handleBillingEvent({
-      kind: 'subscription', eventId: 'evt_role', provider: 'stripe', subscriptionId: 'sub_g', customerId: null, userId: 'gratuit',
-      status: 'active', plan: 'pro', interval: 'month', priceId: null, currentPeriodEnd: null, trialEnd: null, cancelAtPeriodEnd: false,
+      kind: 'subscription', eventId: 'evt_role', provider: 'stripe', subscriptionId: 'sub_g', customerId: null, userId: 'sans-abo',
+      status: 'active', plan: 'starter', interval: 'month', priceId: null, currentPeriodEnd: null, trialEnd: null, cancelAtPeriodEnd: false,
     }, repo);
     expect(calls).toEqual([expect.objectContaining({ method: 'PUT', path: rolePath('100000000000000004') })]);
   });

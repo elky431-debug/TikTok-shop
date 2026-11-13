@@ -13,7 +13,7 @@ const HINTS: Record<ScorePartKey, string> = {
   prix: 'Prix entre 15 et 60 €.',
 };
 
-/** Poids du score (Pro+) : quatre curseurs, deux réglages tout prêts et le retour au réglage par défaut. */
+/** Poids du score (Elite) : quatre curseurs, deux réglages tout prêts et le retour au réglage par défaut. */
 export function ScoreWeightsForm({ weights, query }: { weights: Weights | null; query: string }) {
   const [values, setValues] = useState<Weights>(weights ?? DEFAULT_WEIGHTS);
   const shares = weightShares(values);

@@ -6,9 +6,10 @@ import { aiFailure, StudioError } from './errors';
 import { studioRights } from './limits';
 import { leftToday, reserveToday } from './quota';
 import { KIND_STYLE, KIND_STYLE_LOG, type StyleData } from './types';
+import { isUnlimited } from '@/lib/plans';
 
 /**
- * Style personnel (Pro et Pro+) : une seule fiche `style_perso` par personne, modifiable et supprimable. Les analyses
+ * Style personnel (Pro et Elite) : une seule fiche `style_perso` par personne, modifiable et supprimable. Les analyses
  * sont comptées dans un journal `style_analyse` (date seule, aucun texte) pour le quota du jour : supprimer son style
  * efface les textes, pas le compteur.
  */
@@ -39,7 +40,12 @@ export async function analyzeAndSaveStyle(profile: Profile, rawSamples: string[]
   }
   const log = await reserveToday(profile.id, KIND_STYLE_LOG, rights.styleAnalysesPerDay, { at: new Date().toISOString() });
   if (!log) {
-    throw new StudioError('quota', `Tu as fait tes ${rights.styleAnalysesPerDay} analyses de style du jour. Réessaie demain, ou modifie ton style à la main.`);
+    throw new StudioError(
+      'quota',
+      isUnlimited(profile.plan, 'styleAnalysesPerDay')
+        ? 'Limite de sécurité du jour atteinte pour les analyses de style. Réessaie demain, ou modifie ton style à la main.'
+        : `Tu as fait tes ${rights.styleAnalysesPerDay} analyses de style du jour. Réessaie demain, ou modifie ton style à la main.`,
+    );
   }
   let result;
   try {

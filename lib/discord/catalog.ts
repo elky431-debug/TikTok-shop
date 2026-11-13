@@ -7,8 +7,8 @@ import { regionFor } from '@/lib/regions';
 
 /**
  * Catalogue vu depuis Discord, avec exactement les règles de l'appli (lib/radar.ts) :
- * - Pro et Pro+ : tout le catalogue du jour ;
- * - Gratuit : ses 3 produits du jour (les meilleurs de ses niches) et ceux qu'il suit déjà. Les autres ne
+ * - abonnés (Starter, Pro, Elite) : tout le catalogue du jour ;
+ * - sans abonnement : ses 3 produits du jour (les meilleurs de ses niches) et ceux qu'il suit déjà. Les autres ne
  *   sortent jamais, pas même leur nom dans l'autocomplétion.
  * Le catalogue est gardé 2 minutes en mémoire : l'autocomplétion interroge à chaque lettre tapée, et Discord
  * attend une réponse en moins de 3 secondes.

@@ -23,7 +23,7 @@ export function KeywordSearchForm({
         <Search className="h-4 w-4" aria-hidden="true" />
         Chercher n’importe quel produit de TikTok Shop par mot-clé : avec Pro.{' '}
         <Link href="/app/passer-pro" className="font-semibold text-rose-ink hover:underline">
-          Passer Pro
+          Passer à Pro
         </Link>
       </p>
     );

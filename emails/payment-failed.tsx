@@ -27,8 +27,8 @@ export function PaymentFailedEmail({
       </Text>
       <Text style={{ margin: '12px 0 0', fontSize: 15, lineHeight: '22px' }}>
         {nextAttemptAt
-          ? `Nouvel essai automatique le ${formatLongDate(nextAttemptAt.slice(0, 10))}. Mets à jour ta carte avant pour éviter de repasser en Gratuit.`
-          : 'Plus aucun essai automatique n’est prévu : mets à jour ta carte pour garder ton plan, sinon tu repasseras en Gratuit.'}
+          ? `Nouvel essai automatique le ${formatLongDate(nextAttemptAt.slice(0, 10))}. Mets à jour ta carte avant pour garder ton accès.`
+          : 'Plus aucun essai automatique n’est prévu : mets à jour ta carte pour garder ton plan, sinon ton accès à l’appli se fermera.'}
       </Text>
       <Button
         href={`${siteUrl}/app/compte?paiement=echec#abonnement`}

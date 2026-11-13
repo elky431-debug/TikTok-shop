@@ -21,7 +21,7 @@ export interface LifecycleEmailProps {
   coachName?: string | null;
   /** reactivation : produits du moment dans ses niches (jamais de produits fictifs présentés comme réels). */
   products?: Array<{ id: string; name: string; commission_cents: number }>;
-  /** Accès gratuit : 3 produits du jour, 3 scripts par jour. */
+  /** Pas encore d'abonnement : l'e-mail renvoie vers le choix du plan. */
   freePlan?: boolean;
 }
 
@@ -43,7 +43,7 @@ export function lifecycleSubject(type: LifecycleType, props: Pick<LifecycleEmail
     case 'reactivation':
       return 'Tes produits du jour continuent d’arriver';
     case 'fin_essai':
-      return props.trialEnd ? `Ton essai Pro se termine le ${formatLongDate(props.trialEnd.slice(0, 10))}` : 'Ton essai Pro se termine bientôt';
+      return props.trialEnd ? `Ton essai se termine le ${formatLongDate(props.trialEnd.slice(0, 10))}` : 'Ton essai se termine bientôt';
     case 'relance_paiement':
       return 'Ton paiement est toujours en attente';
   }
@@ -70,8 +70,7 @@ function Body(props: LifecycleEmailProps) {
           </Heading>
           <Text style={p}>Voici comment {BRAND} t’aide, chaque jour :</Text>
           <Text style={p}>
-            <strong>1. Le matin</strong>, ton récap : les produits qui montent dans tes niches{props.freePlan ? ' (3 en accès gratuit)' : ''}, avec
-            leur commission par vente.
+            <strong>1. Le matin</strong>, ton récap : les produits qui montent dans tes niches, avec leur commission par vente.
           </Text>
           <Text style={p}>
             <strong>2. Au studio</strong>, 10 accroches et 3 scripts écrits pour ton style, en quelques secondes.
@@ -79,7 +78,14 @@ function Body(props: LifecycleEmailProps) {
           <Text style={p}>
             <strong>3. Dans « Mes produits »</strong>, tu suis tes vidéos vers l’objectif de 20 par produit.
           </Text>
-          <Cta href={`${siteUrl}/app`}>Voir mes produits du jour</Cta>
+          {props.freePlan ? (
+            <>
+              <Text style={p}>Dernière étape : choisis ton abonnement pour ouvrir ton radar. Sans engagement.</Text>
+              <Cta href={`${siteUrl}/abonnement`}>Choisir mon abonnement</Cta>
+            </>
+          ) : (
+            <Cta href={`${siteUrl}/app`}>Voir mes produits du jour</Cta>
+          )}
         </>
       );
     case 'astuce_j1':
@@ -142,19 +148,19 @@ function Body(props: LifecycleEmailProps) {
       return (
         <>
           <Heading as="h1" style={{ margin: 0, fontSize: 24 }}>
-            Ton essai Pro se termine bientôt
+            Ton essai se termine bientôt
           </Heading>
           <Text style={p}>
             {opening(
               props.firstName,
-              `ton essai Pro${props.coachName ? `, offert par ${props.coachName},` : ''} se termine ${props.trialEnd ? `le ${formatLongDate(props.trialEnd.slice(0, 10))}` : 'dans quelques jours'}.`,
+              `ton essai${props.coachName ? `, offert par ${props.coachName},` : ''} se termine ${props.trialEnd ? `le ${formatLongDate(props.trialEnd.slice(0, 10))}` : 'dans quelques jours'}.`,
             )}
           </Text>
           <Text style={p}>
-            Sans moyen de paiement, tu repasses en Gratuit automatiquement, sans frais. Pour garder le radar complet, le score et 30
-            scripts par jour, ajoute une carte depuis ton compte.
+            Sans abonnement, l’appli se ferme à cette date, sans frais. Pour garder ton radar et tes scripts, choisis ton abonnement :
+            ton code formateur te donne −20 % sur le premier mois.
           </Text>
-          <Cta href={`${siteUrl}/app/compte#abonnement`}>Garder Pro</Cta>
+          <Cta href={`${siteUrl}/abonnement`}>Choisir mon abonnement</Cta>
         </>
       );
     case 'relance_paiement':
@@ -165,7 +171,7 @@ function Body(props: LifecycleEmailProps) {
           </Heading>
           <Text style={p}>
             Ta banque refuse encore le prélèvement de ton abonnement. Ton accès reste ouvert pendant les nouveaux essais, mais s’ils échouent
-            tous, tu repasseras en Gratuit.
+            tous, l’appli se fermera.
           </Text>
           <Text style={p}>Le plus simple : mets à jour ta carte, l’abonnement reprend tout seul.</Text>
           <Cta href={`${siteUrl}/app/compte?paiement=echec#abonnement`}>Mettre à jour ma carte</Cta>

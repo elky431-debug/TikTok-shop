@@ -7,7 +7,8 @@ import { requireAdmin } from '@/lib/auth/session';
 import { getRepo } from '@/lib/db';
 import type { CoachApplication } from '@/lib/db/types';
 import { triggerDiscordHourly, triggerNightly } from '@/lib/jobs/trigger';
-import { REFERRAL_COMMISSION_RATE } from '@/lib/plans';
+import { grantPlan } from '@/lib/billing/grant';
+import { parsePaidPlan, REFERRAL_COMMISSION_RATE } from '@/lib/plans';
 import { addCoachCode, isCodeTaken, isValidCode, normalizeCode, recordPayout } from '@/lib/referral';
 import { parisDate } from '@/lib/utils';
 
@@ -95,4 +96,27 @@ export async function recordMetricsAction() {
   await recordDailyMetrics();
   revalidatePath('/admin');
   redirect('/admin?ok=releve#indicateurs');
+}
+
+/**
+ * Plan donné à la main par l'admin (compte de test, partenaire, geste commercial) : un abonnement « offert », sans
+ * paiement ni facture (donc sans commission), qui passe par le même traitement que les autres. « Sans abonnement »
+ * le retire. Un abonnement Stripe en cours reste prioritaire s'il est plus élevé.
+ */
+export async function grantPlanAction(formData: FormData) {
+  await requireAdmin();
+  const repo = getRepo();
+  const profile = await repo.getProfile(String(formData.get('utilisateur') ?? ''));
+  const value = String(formData.get('plan') ?? '');
+  const plan = parsePaidPlan(value);
+  if (!profile || (!plan && value !== 'aucun')) redirect('/admin/utilisateurs?erreur=plan');
+  try {
+    await grantPlan(profile.id, plan, repo);
+  } catch (error) {
+    // Base pas encore migrée (valeurs starter/elite/aucun inconnues) : message clair plutôt qu'une page d'erreur.
+    console.error('[admin] plan offert', error instanceof Error ? error.message : error);
+    redirect('/admin/utilisateurs?erreur=base');
+  }
+  revalidatePath('/admin', 'layout');
+  redirect(`/admin/utilisateurs?q=${encodeURIComponent(profile.email)}&ok=plan`);
 }

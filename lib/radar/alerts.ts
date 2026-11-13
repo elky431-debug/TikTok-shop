@@ -12,7 +12,7 @@ import { BADGES } from './badges';
  * Alertes personnalisées (bloc 1) : une règle = des critères du radar (niche, commission, ventes, croissance, prix…).
  * Vérifiées après chaque relevé de nuit (`checkAlerts`, à brancher dans la tâche) : quand un produit se met à remplir
  * la règle, une notification part par push, e-mail et Discord (canaux choisis), une seule par alerte et par jour.
- * Limites côté serveur : Gratuit 0, Pro 3, Pro+ illimité (`alerts` dans lib/plans.ts) ; après un changement de plan,
+ * Limites côté serveur : Starter 3, Pro 15, Elite illimité avec plafond de sécurité (`alerts` dans lib/plans.ts) ; après un changement de plan,
  * seules les plus anciennes dans la limite restent vérifiées.
  */
 export const ALERT_KIND = 'alerte';

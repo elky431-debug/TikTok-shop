@@ -1,9 +1,12 @@
+import { grantPlan } from '@/lib/billing/grant';
+import { simulateSubscription } from '@/lib/billing/simulated';
 import type { Repo } from '@/lib/db';
 import { LOCAL_ADMIN_EMAIL } from '@/lib/env';
 
 /**
- * Comptes de démonstration (mode local) : un formateur et deux élèves fictifs,
- * pour voir l'espace formateur sans attendre de vrais inscrits.
+ * Comptes de démonstration (mode local) : un formateur et deux élèves fictifs, pour voir l'espace formateur sans
+ * attendre de vrais inscrits. Tout est payant : le formateur et l'admin ont un plan Elite offert, Yanis un abonnement
+ * Pro simulé (sa commission apparaît chez le formateur), Inès n'a pas encore choisi d'abonnement.
  * Seulement en base locale : en production, les comptes viennent de Supabase Auth.
  */
 export async function seedDemoAccounts(repo: Repo): Promise<string[]> {
@@ -49,9 +52,22 @@ export async function seedDemoAccounts(repo: Repo): Promise<string[]> {
       last_seen_at: new Date().toISOString(),
       coach_id: coach.id,
     });
-    await repo.createReferral({ referrer_id: coachUser.id, referred_id: s.id, coach_id: coach.id });
+    if (!(await repo.getReferralByReferred(s.id))) await repo.createReferral({ referrer_id: coachUser.id, referred_id: s.id, coach_id: coach.id });
   }
+  const yanis = await repo.getProfile(students[1].id);
+  if (yanis && yanis.plan === 'aucun') await simulateSubscription(yanis, 'pro', 'month', repo, { coachDiscount: true });
 
-  await repo.ensureProfile({ id: '00000000-0000-4000-8000-0000000000a1', email: LOCAL_ADMIN_EMAIL });
+  const admin = await repo.ensureProfile({ id: '00000000-0000-4000-8000-0000000000a1', email: LOCAL_ADMIN_EMAIL });
+  if (!admin.onboarded_at) {
+    await repo.updateProfile(admin.id, {
+      first_name: 'Admin',
+      follower_range: '1000-5000',
+      niches: ['beaute'],
+      onboarding_version: 2,
+      onboarded_at: new Date().toISOString(),
+    });
+  }
+  await grantPlan(coachUser.id, 'elite', repo);
+  await grantPlan(admin.id, 'elite', repo);
   return [coachProfile.email, ...students.map((s) => s.email), LOCAL_ADMIN_EMAIL];
 }

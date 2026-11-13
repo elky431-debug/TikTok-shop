@@ -7,7 +7,7 @@ import { setStudentConsent } from '@/lib/coach';
 
 /** Enregistre les deux accords de l'élève (détail de sa progression, e-mail), révocables à tout moment. */
 export async function saveConsentAction(formData: FormData) {
-  const { profile } = await requireOnboardedViewer('/app/consentement-formateur');
+  const { profile } = await requireOnboardedViewer('/app/consentement-formateur', { abonnement: false });
   if (!profile.coach_id) redirect('/app/consentement-formateur');
   await setStudentConsent(profile, { detail: formData.get('detail') === '1', email: formData.get('email') === '1' });
   revalidatePath('/app/consentement-formateur');

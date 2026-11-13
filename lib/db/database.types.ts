@@ -816,7 +816,7 @@ export type Database = {
     }
     Enums: {
       eligibility: "preparation" | "affilie"
-      plan_id: "free" | "pro" | "proplus"
+      plan_id: "aucun" | "starter" | "pro" | "elite"
       product_trend: "explose" | "monte" | "stable" | "baisse"
     }
     CompositeTypes: {
@@ -946,7 +946,7 @@ export const Constants = {
   public: {
     Enums: {
       eligibility: ["preparation", "affilie"],
-      plan_id: ["free", "pro", "proplus"],
+      plan_id: ["aucun", "starter", "pro", "elite"],
       product_trend: ["explose", "monte", "stable", "baisse"],
     },
   },

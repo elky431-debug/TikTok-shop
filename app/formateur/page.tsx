@@ -10,7 +10,7 @@ import { requireCoach } from '@/lib/auth/session';
 import { ANNOUNCES_PER_DAY, getCoachDashboard, listAnnouncements } from '@/lib/coach';
 import type { ReferralStatus } from '@/lib/db/types';
 import { env } from '@/lib/env';
-import { COACH_TRIAL_DAYS, getPlan } from '@/lib/plans';
+import { COACH_FIRST_MONTH_DISCOUNT, getPlan, isPaidPlan } from '@/lib/plans';
 import { coachLandingLink, MAX_EXTRA_CODES, monthName, PAYOUT_THRESHOLD_CENTS, referralLink, shareTexts } from '@/lib/referral';
 import { cn, formatEuros, formatInt, formatRelative } from '@/lib/utils';
 import { addCodeAction, announceAction, toggleCodeAction } from './actions';
@@ -54,7 +54,7 @@ function Stat({ label, value, gain }: { label: string; value: string; gain?: boo
 export default async function FormateurPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
   const { coach } = await requireCoach();
   const [data, announcements] = await Promise.all([getCoachDashboard(coach), listAnnouncements(coach)]);
-  const months = Math.round(COACH_TRIAL_DAYS / 30);
+  const percent = Math.round(COACH_FIRST_MONTH_DISCOUNT * 100);
   const rate = Math.round(coach.commission_rate * 100);
   const landing = coachLandingLink(env.siteUrl, coach.promo_code);
   const [studentsMessage] = shareTexts({ link: landing, code: coach.promo_code, coach: true });
@@ -67,7 +67,7 @@ export default async function FormateurPage({ searchParams }: { searchParams: Re
       <PageHeader
         eyebrow={<>Formateur · {coach.training_name}</>}
         title="Tes élèves"
-        description={`Tes élèves ont ${months} mois de Pro offerts avec tes codes. Tu touches ${rate} % de ce qu’ils paient ensuite, chaque mois, tant qu’ils restent abonnés.`}
+        description={`Avec tes codes, tes élèves ont −${percent} % sur leur premier mois. Tu touches ${rate} % de ce qu’ils paient, chaque mois, tant qu’ils restent abonnés.`}
       />
       {notice ? <Callout tone={notice.tone} className="mb-6" title={notice.text} /> : null}
 
@@ -75,14 +75,15 @@ export default async function FormateurPage({ searchParams }: { searchParams: Re
         <Stat label="Élèves inscrits" value={formatInt(data.total)} />
         <Stat label="Actifs cette semaine" value={formatInt(data.activeThisWeek)} />
         <Stat label="Abonnés (payants)" value={formatInt(data.subscribed)} />
-        <Stat label="En essai offert" value={formatInt(data.trial)} />
+        {data.trial ? <Stat label="En essai (ancienne offre)" value={formatInt(data.trial)} /> : null}
         <Stat label="Vidéos postées" value={formatInt(data.videosPosted)} />
         <Stat label="Scripts écrits" value={formatInt(data.scriptsTotal)} />
         <Stat label="Commission du mois" value={formatEuros(earnings.thisMonthCents)} gain />
         <Stat label="Solde à verser" value={formatEuros(earnings.balanceCents)} gain />
       </dl>
       <p className="mt-2 text-sm text-muted">
-        Plans : {data.plans.free} en Gratuit, {data.plans.pro} en Pro, {data.plans.proplus} en Pro+ · {data.canceled} résiliation
+        Plans : {data.plans.starter} en Starter, {data.plans.pro} en Pro, {data.plans.elite} en Elite, {data.plans.aucun} sans abonnement ·{' '}
+        {data.canceled} résiliation
         {data.canceled > 1 ? 's' : ''} · {data.eligible} élève{data.eligible > 1 ? 's' : ''} affilié{data.eligible > 1 ? 's' : ''} (1 500
         abonnés et plus), les autres en préparation · {formatInt(data.productsFollowed)} produits suivis au total. Vidéos postées : celles que
         tes élèves marquent comme postées dans l’appli.
@@ -95,7 +96,7 @@ export default async function FormateurPage({ searchParams }: { searchParams: Re
           </h2>
           <p className="mt-1 max-w-prose text-sm text-muted">
             Un code par promo ou par formation, pour savoir d’où viennent tes élèves. Quel que soit le code, l’élève t’est rattaché, avec
-            ses {months} mois offerts.
+            −{percent} % sur son premier mois.
           </p>
           <ul className="mt-4 grid gap-3 lg:grid-cols-2">
             {data.byCode.map((c) => {
@@ -240,7 +241,7 @@ export default async function FormateurPage({ searchParams }: { searchParams: Re
                     <Panel className="p-3.5">
                       <div className="flex items-center justify-between gap-2">
                         <p className="font-semibold">{s.first_name ?? 'Sans prénom'}</p>
-                        <Badge tone={s.plan === 'free' ? 'neutral' : 'ink'}>{getPlan(s.plan).name}</Badge>
+                        <Badge tone={isPaidPlan(s.plan) ? 'ink' : 'neutral'}>{getPlan(s.plan).name}</Badge>
                       </div>
                       <p className="num mt-1 text-sm text-muted">
                         {s.videos_posted} vidéos postées · {s.scripts_generated} scripts · {s.products_followed} produits suivis · vu{' '}
@@ -270,7 +271,7 @@ export default async function FormateurPage({ searchParams }: { searchParams: Re
                       <tr key={s.student_id}>
                         <td className="px-4 py-3 font-semibold">{s.first_name ?? 'Sans prénom'}</td>
                         <td className="px-4 py-3">
-                          <Badge tone={s.plan === 'free' ? 'neutral' : 'ink'}>{getPlan(s.plan).name}</Badge>
+                          <Badge tone={isPaidPlan(s.plan) ? 'ink' : 'neutral'}>{getPlan(s.plan).name}</Badge>
                         </td>
                         <td className="px-4 py-3">{s.status ? <Badge tone={STATUS[s.status].tone}>{STATUS[s.status].label}</Badge> : '—'}</td>
                         <td className="num px-4 py-3 text-right">{formatInt(s.videos_posted)}</td>

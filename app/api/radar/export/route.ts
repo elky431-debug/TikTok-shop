@@ -9,7 +9,7 @@ import { parisDate } from '@/lib/utils';
 export const dynamic = 'force-dynamic';
 
 /**
- * Export CSV du radar filtré, avec le tri mémorisé (plan Pro+ uniquement, vérifié ici côté serveur). Passe par
+ * Export CSV du radar filtré, avec le tri mémorisé (plan Elite uniquement, vérifié ici côté serveur). Passe par
  * `getRadar` : exactement les produits que l'utilisateur voit, jamais un produit verrouillé.
  */
 export async function GET(request: Request) {
@@ -17,7 +17,7 @@ export async function GET(request: Request) {
   if (!viewer) return NextResponse.redirect(new URL('/connexion?suite=/app', request.url));
   if (!viewer.profile.onboarded_at) return NextResponse.redirect(new URL('/bienvenue', request.url));
   if (!getPlan(viewer.profile.plan).radarExport) {
-    return NextResponse.json({ error: 'L’export du radar est réservé au plan Pro+.' }, { status: 403 });
+    return NextResponse.json({ error: 'L’export du radar est réservé au plan Elite.' }, { status: 403 });
   }
   const params = Object.fromEntries(new URL(request.url).searchParams);
   const radar = await getRadar(viewer.profile, parseFilters(params));

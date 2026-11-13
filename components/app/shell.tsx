@@ -155,9 +155,9 @@ export function AppSidebar({ sections, user }: { sections: NavSection[]; user: S
             </span>
           </Link>
           {!user.paid ? (
-            <Link href="/app/passer-pro" className={cn(itemBase, 'text-rose-ink hover:bg-rose/10')}>
+            <Link href="/abonnement" className={cn(itemBase, 'text-rose-ink hover:bg-rose/10')}>
               <Sparkle />
-              <span className={reveal}>Passer Pro</span>
+              <span className={reveal}>Choisir mon abonnement</span>
             </Link>
           ) : null}
           <form action="/auth/deconnexion" method="post">
@@ -214,13 +214,13 @@ function PlanBadge({ user, compact }: { user: ShellUser; compact?: boolean }) {
     </span>
   ) : (
     <Link
-      href="/app/passer-pro"
+      href="/abonnement"
       className={cn(
         'inline-flex items-center rounded-full bg-rose-fill font-semibold text-on-primary transition-all hover:-translate-y-0.5 hover:shadow-[var(--glow-pink)]',
         compact ? 'px-3 py-1 text-xs' : 'px-3.5 py-1.5 text-xs',
       )}
     >
-      Passer Pro
+      Choisir mon abonnement
     </Link>
   );
 }

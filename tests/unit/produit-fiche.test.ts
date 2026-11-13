@@ -6,7 +6,7 @@ import { findList, mapNexscopeDetails, NexscopeProvider } from '@/lib/data/nexsc
 import { setRepoForTests } from '@/lib/db';
 import { LocalRepo } from '@/lib/db/local';
 import type { TopVideo } from '@/lib/db/types';
-import { getPlan } from '@/lib/plans';
+import { getPlan, SAFETY_CAPS } from '@/lib/plans';
 import {
   durationLabel,
   generateHookAnalysis,
@@ -113,7 +113,9 @@ describe('bloc 3.3 · accroches des vidéos qui vendent', () => {
     const repo = new LocalRepo(null);
     setRepoForTests(repo);
     const p = product('nx-v', { top_videos: videos });
-    expect(await requestHookAnalysis({ id: 'f', plan: 'free' }, p, repo)).toEqual({ ok: false, reason: 'plan' });
+    expect(await requestHookAnalysis({ id: 'f', plan: 'aucun' }, p, repo)).toEqual({ ok: false, reason: 'plan' });
+    expect(await requestHookAnalysis({ id: 's', plan: 'starter' }, p, repo)).toEqual({ ok: false, reason: 'plan' });
+    expect([getPlan('starter'), getPlan('pro'), getPlan('elite')].map((x) => x.hookAnalysesPerDay)).toEqual([0, 10, SAFETY_CAPS.hookAnalysesPerDay]);
     expect(await requestHookAnalysis({ id: 'u', plan: 'pro' }, product('nx-sans', { top_videos: [] }), repo)).toEqual({ ok: false, reason: 'videos' });
     const first = await requestHookAnalysis({ id: 'u', plan: 'pro' }, p, repo);
     expect(first).toMatchObject({ ok: true, fromCache: false });

@@ -1,12 +1,15 @@
 import { createElement } from 'react';
 import { PaymentFailedEmail } from '@/emails/payment-failed';
+import { SubscriptionConfirmedEmail } from '@/emails/subscription-confirmed';
 import { syncDiscordRole } from '@/lib/discord/link';
 import { getRepo, type Repo } from '@/lib/db';
 import type { PlanId, Profile, ReferralStatus, Subscription } from '@/lib/db/types';
 import { sendEmail } from '@/lib/email/send';
 import { env } from '@/lib/env';
-import { getPlan, REFERRAL_COMMISSION_RATE } from '@/lib/plans';
+import { getPlan, planRank, REFERRAL_COMMISSION_RATE } from '@/lib/plans';
 import { formatEuros } from '@/lib/utils';
+import { discountedFirstMonth } from './coach-discount';
+import { latestConsent } from './consent';
 import {
   ACTIVE_STATUSES,
   type BillingEvent,
@@ -53,9 +56,7 @@ function referralStatusFor(status: string): ReferralStatus {
 /** Le meilleur plan parmi les abonnements actifs de l'utilisateur. */
 function bestPlan(subscriptions: Subscription[]): PlanId {
   const active = subscriptions.filter((s) => ACTIVE_STATUSES.includes(s.status));
-  if (active.some((s) => s.plan === 'proplus')) return 'proplus';
-  if (active.some((s) => s.plan === 'pro')) return 'pro';
-  return 'free';
+  return active.reduce<PlanId>((best, s) => (planRank(s.plan) > planRank(best) ? s.plan : best), 'aucun');
 }
 
 async function onSubscription(repo: Repo, event: SubscriptionChanged): Promise<HandleResult> {
@@ -91,10 +92,44 @@ async function onSubscription(repo: Repo, event: SubscriptionChanged): Promise<H
     ...(event.status === 'trialing' ? { trial_used: true } : {}),
   });
 
+  // Plan offert par l'admin (`admin_…`, voir lib/billing/grant.ts) : rien n'est payé, donc ni statut « abonné » chez le
+  // parrain ou le formateur, ni e-mail de confirmation d'un abonnement payant.
+  const gifted = event.subscriptionId.startsWith('admin_');
   const referral = await repo.getReferralByReferred(profile.id);
-  if (referral) await repo.updateReferral(referral.id, { status: referralStatusFor(newPlan === 'free' ? 'canceled' : event.status) });
+  if (referral && !gifted) {
+    await repo.updateReferral(referral.id, { status: referralStatusFor(newPlan === 'aucun' ? 'canceled' : event.status) });
+  }
+
+  // Nouvel abonnement actif : confirmation par e-mail (support durable), une seule fois par abonnement.
+  if (!existing && !gifted && event.status === 'active' && event.plan) await sendConfirmation(repo, profile, event);
 
   return { status: 'ok', userId: profile.id, plan: newPlan };
+}
+
+/** E-mail de confirmation : plan, prix, demande de démarrage immédiat et rétractation. Jamais bloquant. */
+async function sendConfirmation(repo: Repo, profile: Profile, event: SubscriptionChanged) {
+  if (!event.plan) return;
+  const plan = getPlan(event.plan);
+  const interval = event.interval ?? 'month';
+  try {
+    const consent = await latestConsent(repo, profile.id);
+    await sendEmail({
+      to: profile.email,
+      subject: `Ton abonnement ${plan.name} a démarré`,
+      react: createElement(SubscriptionConfirmedEmail, {
+        planName: plan.name,
+        priceCents: plan.prices[interval],
+        interval,
+        firstPaymentCents: consent?.coach_discount && interval === 'month' ? discountedFirstMonth(event.plan) : null,
+        consentText: consent?.text ?? null,
+        consentAt: consent?.accepted_at ?? null,
+        siteUrl: env.siteUrl,
+      }),
+      idempotencyKey: `abonnement-${event.subscriptionId}`,
+    });
+  } catch (error) {
+    console.error('[abonnement] e-mail de confirmation', profile.id, error instanceof Error ? error.message : error);
+  }
 }
 
 /** 30 % récurrents (ou le taux du formateur) sur chaque facture payée par un filleul. */

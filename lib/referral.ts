@@ -1,7 +1,7 @@
 import { BRAND } from '@/lib/brand';
 import { getRepo, type Repo } from '@/lib/db';
 import type { Coach, Commission, Profile, UserRecord } from '@/lib/db/types';
-import { COACH_TRIAL_DAYS } from '@/lib/plans';
+import { COACH_FIRST_MONTH_DISCOUNT } from '@/lib/plans';
 import { parisDate } from '@/lib/utils';
 
 export type ReferralResult =
@@ -237,12 +237,12 @@ export async function recordPayout(
 // Kit de partage : textes prêts à poster. Aucun chiffre de gains, aucune promesse de résultat.
 // ---------------------------------------------------------------------------------------------------------------------
 export function shareTexts(input: { link: string; code: string; coach?: boolean }): Array<{ id: string; title: string; text: string }> {
-  const months = Math.round(COACH_TRIAL_DAYS / 30);
+  const percent = Math.round(COACH_FIRST_MONTH_DISCOUNT * 100);
   const texts = [
     {
       id: 'court',
       title: 'Message court',
-      text: `J’utilise ${BRAND} pour choisir mes produits TikTok Shop chaque matin et écrire mes scripts. Gratuit pour commencer, en français : ${input.link}`,
+      text: `J’utilise ${BRAND} pour choisir mes produits TikTok Shop chaque matin et écrire mes scripts. En français : ${input.link}`,
     },
     {
       id: 'story',
@@ -254,14 +254,14 @@ export function shareTexts(input: { link: string; code: string; coach?: boolean 
       title: 'Message pour un groupe de créateurs',
       text:
         `Pour celles et ceux qui font du TikTok Shop : ${BRAND} montre chaque matin les produits qui montent, avec un score expliqué, ` +
-        `et écrit des scripts vidéo. Il y a un plan gratuit pour tester. Mon lien : ${input.link} (code ${input.code}).`,
+        `et écrit des scripts vidéo. Mon lien : ${input.link} (code ${input.code}).`,
     },
   ];
   if (input.coach) {
     texts.unshift({
       id: 'eleves',
       title: 'Message pour tes élèves',
-      text: `Pour choisir tes produits TikTok Shop chaque matin et écrire tes scripts, utilise ${input.link} : avec mon code ${input.code}, tu as ${months} mois de Pro offerts, sans carte bancaire.`,
+      text: `Pour choisir tes produits TikTok Shop chaque matin et écrire tes scripts, utilise ${input.link} : avec mon code ${input.code}, tu as −${percent} % sur ton premier mois.`,
     });
   }
   return texts;

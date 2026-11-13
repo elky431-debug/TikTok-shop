@@ -11,16 +11,15 @@ import { requireOnboardedViewer } from '@/lib/auth/session';
 import { getRepo } from '@/lib/db';
 import type { Product } from '@/lib/db/types';
 import { isNicheId, NICHES, nicheShort } from '@/lib/niches';
-import { getPlan } from '@/lib/plans';
+import { getPlan, quotaReachedMessage, remainingLabel } from '@/lib/plans';
 import { cn, formatCompact, formatInt, formatShortDate } from '@/lib/utils';
 import { clock, filterLibrary, libraryFacets, normalizeAnalysis, roleAt, SEGMENT_LABELS, type AnalysisData, type SegmentRole } from '@/lib/v2/analysis';
-import { remainingToday } from '@/lib/v2/quota';
+import { remainingThisMonth } from '@/lib/v2/quota';
 import { analyzeVideoAction, classifyAnalysisAction, deleteAnalysisAction, sendToStudioAction } from './actions';
 
 export const metadata: Metadata = { title: 'Analyse de vidéo' };
 
 const ERRORS: Record<string, string> = {
-  quota: 'Tu as atteint le nombre d’analyses du jour. Reviens demain.',
   lien: 'Ce lien n’est pas celui d’une vidéo TikTok (il doit contenir /video/ suivi de chiffres).',
   texte: 'Colle le texte de la vidéo (ce qui est dit ou écrit à l’écran), 20 caractères au moins.',
   'sans-texte': 'Aucune description trouvée pour ce lien : colle le texte de la vidéo.',
@@ -39,11 +38,11 @@ const ROLE_TONE: Record<SegmentRole, string> = {
 export default async function AnalysePage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
   const { profile } = await requireOnboardedViewer('/app/analyse');
   const plan = getPlan(profile.plan);
-  if (!plan.analysesPerDay) {
+  if (!plan.analysesPerMonth) {
     return (
       <div className="mx-auto max-w-5xl">
         <PageHeader eyebrow="Créer" title="Analyse de vidéo"  description="Le lien d’une vidéo qui marche, son texte, et ton produit : on la décortique et on l’adapte pour toi." />
-        <PlanGate plan="Pro+" title="Comprends pourquoi une vidéo cartonne">
+        <PlanGate plan="pro" title="Comprends pourquoi une vidéo cartonne">
           Colle le lien et le texte d’une vidéo virale : découpage seconde par seconde, ce qui marche et pourquoi, une version
           adaptée à ton produit et à ton style à envoyer au studio, et ta bibliothèque d’inspirations.
         </PlanGate>
@@ -54,7 +53,7 @@ export default async function AnalysePage({ searchParams }: { searchParams: Reco
   const [records, saved, left] = await Promise.all([
     repo.listRecords<AnalysisData>(profile.id, 'analyse'),
     repo.listSavedProducts(profile.id),
-    remainingToday(profile.id, 'analyse', plan.analysesPerDay),
+    remainingThisMonth(profile.id, 'analyse', plan.analysesPerMonth),
   ]);
   const products = await repo.getProducts(saved.map((s) => s.product_id));
   const current = records.find((r) => r.id === searchParams.analyse) ?? null;
@@ -75,7 +74,13 @@ export default async function AnalysePage({ searchParams }: { searchParams: Reco
   return (
     <div className="mx-auto max-w-5xl">
       <PageHeader eyebrow="Créer" title="Analyse de vidéo" description="Le lien d’une vidéo qui marche, son texte, et ton produit : on la décortique et on l’adapte pour toi." />
-      {searchParams.erreur ? <Callout tone="rose" className="mb-6" title={ERRORS[searchParams.erreur] ?? ERRORS.ia} /> : null}
+      {searchParams.erreur ? (
+        <Callout
+          tone="rose"
+          className="mb-6"
+          title={searchParams.erreur === 'quota' ? quotaReachedMessage(profile.plan, 'analysesPerMonth', 'analyses de vidéo', 'du mois') : (ERRORS[searchParams.erreur] ?? ERRORS.ia)}
+        />
+      ) : null}
       {searchParams.ok === 'classement' ? <Callout tone="gain" className="mb-6" title="Classement enregistré." /> : null}
 
       <Card>
@@ -100,7 +105,7 @@ export default async function AnalysePage({ searchParams }: { searchParams: Reco
             Analyser la vidéo
           </SubmitButton>
           <p className="text-xs text-muted">
-            {left} analyse{left > 1 ? 's' : ''} restante{left > 1 ? 's' : ''} aujourd’hui. La vidéo n’est ni téléchargée ni regardée : seuls son texte et ses
+            {remainingLabel(profile.plan, 'analysesPerMonth', left, { one: 'analyse', many: 'analyses', feminine: true }, 'ce mois-ci')} La vidéo n’est ni téléchargée ni regardée : seuls son texte et ses
             chiffres publics servent.
           </p>
         </form>

@@ -1,10 +1,10 @@
 import type { PlanId } from '@/lib/db/types';
-import { getPlan, isPaidPlan, MAX_HOOK_REGENERATIONS } from '@/lib/plans';
+import { SCRIPT_FORMATS, type StudioFormat } from '@/lib/ai/formats';
+import { getPlan, MAX_HOOK_REGENERATIONS } from '@/lib/plans';
 
 /**
- * Droits du studio par plan, tous vérifiés côté serveur. Les quotas de la session 5 viennent de `lib/plans.ts`
- * (scripts par jour, séries de 20 angles, traduction, export) ; les limites propres au studio (style personnel,
- * retouches) sont ici, faute de champ dans `lib/plans.ts` (à y déplacer si besoin).
+ * Droits du studio par plan, tous vérifiés côté serveur, tirés de `lib/plans.ts` (scripts par jour, formats, séries de
+ * 20 vidéos, style personnel, retouches, traduction, export).
  */
 export interface StudioRights {
   /** Générations (10 accroches + 3 scripts) par jour, Infinity = illimité. */
@@ -23,25 +23,26 @@ export interface StudioRights {
   editsPerGeneration: number;
   /** Accroches remplacées par génération. */
   hookRegenerations: number;
+  /** Formats de vidéo ouverts. */
+  formats: StudioFormat[];
 }
-
-const STUDIO_EXTRA: Record<PlanId, Pick<StudioRights, 'styleAnalysesPerDay' | 'editsPerGeneration'>> = {
-  free: { styleAnalysesPerDay: 0, editsPerGeneration: 5 },
-  pro: { styleAnalysesPerDay: 5, editsPerGeneration: 20 },
-  proplus: { styleAnalysesPerDay: 20, editsPerGeneration: 60 },
-};
 
 export function studioRights(plan: PlanId): StudioRights {
   const p = getPlan(plan);
-  const extra = STUDIO_EXTRA[p.id] ?? STUDIO_EXTRA.free;
   return {
     scriptsPerDay: p.scriptsPerDay,
     seriesPerDay: p.anglesSeriesPerDay,
     translation: p.scriptTranslation,
     export: p.export,
-    personalStyle: isPaidPlan(p.id),
-    styleAnalysesPerDay: extra.styleAnalysesPerDay,
-    editsPerGeneration: extra.editsPerGeneration,
+    personalStyle: p.personalStyle,
+    styleAnalysesPerDay: p.styleAnalysesPerDay,
+    editsPerGeneration: p.editsPerGeneration,
     hookRegenerations: MAX_HOOK_REGENERATIONS,
+    formats: allowedFormats(plan),
   };
+}
+
+/** Formats de vidéo ouverts par le plan : les 5 premiers en Starter, les 8 en Pro et Elite. */
+export function allowedFormats(plan: PlanId): StudioFormat[] {
+  return SCRIPT_FORMATS.slice(0, getPlan(plan).scriptFormats).map((f) => f.id);
 }

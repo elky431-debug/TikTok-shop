@@ -64,7 +64,7 @@ interface AlertMemory {
 
 /**
  * Tâche nocturne : une notification « baisse » par produit suivi qui commence à baisser, au plus une fois tous les
- * 14 jours par produit. Remplaçants nommés pour Pro et Pro+ seulement (le plan Gratuit ne voit que 3 produits du
+ * 14 jours par produit. Remplaçants nommés pour les abonnés seulement (sans abonnement, on ne voit que 3 produits du
  * jour : on ne les contourne pas par une alerte). Canaux : centre de notifications et push, e-mail si l'utilisateur
  * reçoit le récap par e-mail. Pas de message Discord la nuit.
  */

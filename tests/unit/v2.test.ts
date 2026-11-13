@@ -4,14 +4,28 @@ import { selectLiveCatalog } from '@/lib/catalog';
 import { mapNexscopeVideoFacts, nexscopeId, sourceProductId } from '@/lib/data/nexscope';
 import { setRepoForTests } from '@/lib/db';
 import { LocalRepo } from '@/lib/db/local';
-import type { Product } from '@/lib/db/types';
-import { getPlan } from '@/lib/plans';
+import type { PlanId, Product } from '@/lib/db/types';
+import {
+  cheapestPlanWith,
+  getPlan,
+  isPlanId,
+  isUnlimited,
+  PAID_PLANS,
+  parsePaidPlan,
+  planRank,
+  quotaReachedMessage,
+  RECOMMENDED_PLAN,
+  remainingLabel,
+  SAFETY_CAPS,
+  yearlySavings,
+  type PlanLimits,
+} from '@/lib/plans';
 import { enabledRegions, regionFor } from '@/lib/regions';
 import { simulateAnalysis, tiktokVideoId, AnalysisSchema } from '@/lib/v2/analysis';
 import { earningsDashboard, parseAmount, parseEarningsCsv, weekStart } from '@/lib/v2/earnings';
 import { OfferExtractionSchema, scoreOffer, simulateExtraction, type OfferExtraction } from '@/lib/v2/offers';
 import { buildPlan, dueOn, planToIcs } from '@/lib/v2/planning';
-import { remainingToday } from '@/lib/v2/quota';
+import { remainingThisMonth, remainingToday } from '@/lib/v2/quota';
 import { schedulePublicationEmails } from '@/lib/v2/reminders';
 
 let repo: LocalRepo;
@@ -26,10 +40,46 @@ afterEach(() => {
 });
 
 describe('plans : fonctions V2 et quotas côté serveur', () => {
-  it('gains et plan en Pro, propositions, analyses et Europe en Pro+', () => {
-    expect(getPlan('free')).toMatchObject({ earnings: false, planning: false, offersPerDay: 0, analysesPerDay: 0, europe: false });
-    expect(getPlan('pro')).toMatchObject({ earnings: true, planning: true, offersPerDay: 0, analysesPerDay: 0, europe: false });
-    expect(getPlan('proplus')).toMatchObject({ earnings: true, planning: true, offersPerDay: 20, analysesPerDay: 20, europe: true });
+  it('plan de publication dès Starter ; gains, analyses et propositions (par mois) dès Pro ; Europe en Elite', () => {
+    expect(getPlan('aucun')).toMatchObject({ access: false, earnings: false, planning: false, offersPerMonth: 0, analysesPerMonth: 0, europe: false });
+    expect(getPlan('starter')).toMatchObject({ access: true, earnings: false, planning: true, offersPerMonth: 0, analysesPerMonth: 0, europe: false });
+    expect(getPlan('pro')).toMatchObject({ earnings: true, planning: true, offersPerMonth: 20, analysesPerMonth: 20, europe: false });
+    expect(getPlan('elite')).toMatchObject({
+      earnings: true,
+      planning: true,
+      offersPerMonth: SAFETY_CAPS.offersPerMonth,
+      analysesPerMonth: SAFETY_CAPS.analysesPerMonth,
+      europe: true,
+    });
+    // Elite « illimité » : le plafond existe côté serveur mais n'est jamais affiché.
+    expect(isUnlimited('elite', 'analysesPerMonth')).toBe(true);
+    expect(isUnlimited('elite', 'offersPerMonth')).toBe(true);
+    expect(isUnlimited('pro', 'analysesPerMonth')).toBe(false);
+  });
+
+  it('quota mensuel : les fiches comptent depuis le 1er du mois à minuit, heure de Paris', async () => {
+    await repo.ensureProfile({ id: 'u', email: 'u@test.fr' });
+    const saveAt = async (iso: string) => {
+      vi.useFakeTimers({ now: new Date(iso), toFake: ['Date'] });
+      try {
+        await repo.saveRecord('u', 'analyse', {});
+      } finally {
+        vi.useRealTimers();
+      }
+    };
+    await saveAt('2026-10-31T22:30:00Z'); // 31 octobre, 23 h 30 à Paris : mois précédent
+    await saveAt('2026-10-31T23:30:00Z'); // 1er novembre, 0 h 30 à Paris : compte
+    await saveAt('2026-11-02T09:00:00Z'); // un autre jour du mois : compte aussi (pas un quota du jour)
+    const now = new Date('2026-11-13T10:00:00Z');
+    expect(await remainingThisMonth('u', 'analyse', 20, now)).toBe(18);
+    expect(await remainingToday('u', 'analyse', 20, now)).toBe(20);
+    expect(await remainingThisMonth('u', 'offre', 20, now)).toBe(20);
+    expect(await remainingThisMonth('u', 'analyse', 2, now)).toBe(0);
+    expect(await remainingThisMonth('u', 'analyse', 0, now)).toBe(0);
+    // Le 1er décembre à 0 h 30 à Paris : le compteur est reparti.
+    expect(await remainingThisMonth('u', 'analyse', 20, new Date('2026-11-30T23:30:00Z'))).toBe(20);
+    // Le 30 novembre à 23 h 30 à Paris : encore novembre.
+    expect(await remainingThisMonth('u', 'analyse', 20, new Date('2026-11-30T22:30:00Z'))).toBe(18);
   });
 
   it('compte les fiches du jour (heure de Paris) pour le quota', async () => {
@@ -50,6 +100,125 @@ describe('plans : fonctions V2 et quotas côté serveur', () => {
     expect((await repo.getRecord<{ x: number }>('a', mine.id))?.data.x).toBe(1);
     await repo.deleteRecord('b', mine.id);
     expect(await repo.listRecords('a', 'gain')).toHaveLength(1);
+  });
+});
+
+describe('plans : grille du 13 novembre (lib/plans.ts)', () => {
+  const PAID = ['starter', 'pro', 'elite'] as const;
+  const limits = (key: keyof PlanLimits) => PAID.map((id) => getPlan(id)[key]);
+
+  it('trois plans payants, Pro recommandé ; annuel = 10 mois (2 mois offerts)', () => {
+    expect(PAID_PLANS).toEqual(['starter', 'pro', 'elite']);
+    expect(RECOMMENDED_PLAN).toBe('pro');
+    expect(limits('prices')).toEqual([
+      { month: 3499, year: 34990 },
+      { month: 5999, year: 59990 },
+      { month: 9999, year: 99990 },
+    ]);
+    for (const id of PAID) {
+      expect(getPlan(id).prices.year).toBe(getPlan(id).prices.month * 10);
+      expect(yearlySavings(id)).toBe(getPlan(id).prices.month * 2);
+    }
+  });
+
+  it('sans abonnement (« aucun », ou plan inconnu) : aucun accès, chaque limite à 0 ou fermée', () => {
+    const none = getPlan('aucun');
+    expect(none.access).toBe(false);
+    expect(none.unlimited).toEqual([]);
+    expect(none.prices).toEqual({ month: 0, year: 0 });
+    for (const [key, value] of Object.entries(none)) {
+      if (['id', 'name', 'unlimited', 'prices'].includes(key)) continue;
+      expect(value === 0 || value === false, key).toBe(true);
+    }
+    expect(getPlan(null).id).toBe('aucun');
+    expect(getPlan(undefined).id).toBe('aucun');
+    expect(getPlan('free' as PlanId).id).toBe('aucun');
+  });
+
+  it('tous les plans payants : appli, radar complet avec score, récap e-mail et Discord', () => {
+    expect(limits('access')).toEqual([true, true, true]);
+    expect(limits('visibleProducts')).toEqual([Infinity, Infinity, Infinity]);
+    expect(limits('showScore')).toEqual([true, true, true]);
+    expect(limits('emailDigest')).toEqual([true, true, true]);
+    expect(limits('discordDigest')).toEqual([true, true, true]);
+    expect(limits('planning')).toEqual([true, true, true]);
+    expect(limits('preparation')).toEqual([true, true, true]);
+  });
+
+  it('quotas de Starter, Pro, Elite (Elite = plafonds de sécurité)', () => {
+    expect(limits('scriptsPerDay')).toEqual([10, 40, SAFETY_CAPS.scriptsPerDay]);
+    expect(limits('scriptFormats')).toEqual([5, 8, 8]);
+    expect(limits('savedProducts')).toEqual([10, SAFETY_CAPS.savedProducts, SAFETY_CAPS.savedProducts]);
+    expect(limits('alerts')).toEqual([3, 15, SAFETY_CAPS.alerts]);
+    expect(limits('keywordSearchesPerDay')).toEqual([3, 15, 50]);
+    expect(limits('analysesPerMonth')).toEqual([0, 20, SAFETY_CAPS.analysesPerMonth]);
+    expect(limits('offersPerMonth')).toEqual([0, 20, SAFETY_CAPS.offersPerMonth]);
+    expect(limits('anglesSeriesPerDay')).toEqual([0, 3, SAFETY_CAPS.anglesSeriesPerDay]);
+    expect(limits('hookAnalysesPerDay')).toEqual([0, 10, SAFETY_CAPS.hookAnalysesPerDay]);
+    expect(limits('discordCommandsPerDay')).toEqual([10, 40, SAFETY_CAPS.discordCommandsPerDay]);
+    expect(limits('editsPerGeneration')).toEqual([10, 20, SAFETY_CAPS.editsPerGeneration]);
+    expect(limits('styleAnalysesPerDay')).toEqual([0, 5, SAFETY_CAPS.styleAnalysesPerDay]);
+    for (const key of ['compare', 'earnings', 'personalScore', 'personalStyle', 'weeklyDigest'] as const) {
+      expect(limits(key), key).toEqual([false, true, true]);
+    }
+    for (const key of ['europe', 'scriptTranslation', 'customWeights', 'radarExport', 'export'] as const) {
+      expect(limits(key), key).toEqual([false, false, true]);
+    }
+    // Chaque quota « illimité » d'Elite est exactement son plafond de sécurité.
+    for (const key of getPlan('elite').unlimited) expect(getPlan('elite')[key], key).toBe(SAFETY_CAPS[key]);
+  });
+
+  it('lit un plan payant (« proplus » de l’ancienne grille = Elite), et les range', () => {
+    expect(parsePaidPlan('starter')).toBe('starter');
+    expect(parsePaidPlan('elite')).toBe('elite');
+    expect(parsePaidPlan('proplus')).toBe('elite');
+    for (const bad of ['aucun', 'free', 'PRO', '', null, undefined, 3]) expect(parsePaidPlan(bad)).toBeNull();
+    expect(isPlanId('aucun')).toBe(true);
+    expect(isPlanId('free')).toBe(false);
+    expect(isPlanId('proplus')).toBe(false);
+    expect([null, 'aucun', 'starter', 'pro', 'elite'].map((p) => planRank(p as PlanId | null))).toEqual([0, 0, 1, 2, 3]);
+  });
+
+  it('le moins cher des plans qui offre une fonction', () => {
+    expect(cheapestPlanWith((p) => p.planning).id).toBe('starter');
+    expect(cheapestPlanWith((p) => p.compare).id).toBe('pro');
+    expect(cheapestPlanWith((p) => p.europe).id).toBe('elite');
+    expect(cheapestPlanWith((p) => p.scriptFormats > 5).id).toBe('pro');
+    expect(cheapestPlanWith(() => false).id).toBe('elite');
+  });
+
+  it('« illimité » ne montre jamais le plafond de sécurité ni ce qu’il en reste', () => {
+    const noun = { one: 'analyse', many: 'analyses', feminine: true };
+    for (const key of getPlan('elite').unlimited) {
+      expect(isUnlimited('elite', key)).toBe(true);
+      const cap = String(SAFETY_CAPS[key]);
+      for (const left of [SAFETY_CAPS[key], SAFETY_CAPS[key] - 1, 1, 0]) {
+        const label = remainingLabel('elite', key, left, noun, 'aujourd’hui');
+        expect(label).not.toMatch(/\d/);
+        expect(label).toMatch(/illimitées\.$/);
+      }
+      expect(quotaReachedMessage('elite', key, 'analyses', 'du jour')).not.toContain(cap);
+      expect(quotaReachedMessage('elite', key, 'analyses', 'du mois')).toBe('Limite de sécurité du mois atteinte. Le compteur repart le 1er du mois.');
+    }
+    // Pro : produits suivis « illimités » aussi.
+    expect(isUnlimited('pro', 'savedProducts')).toBe(true);
+    expect(remainingLabel('pro', 'savedProducts', 499, { one: 'produit', many: 'produits' }, 'aujourd’hui')).toBe('Produits illimités.');
+    expect(isUnlimited('pro', 'analysesPerMonth')).toBe(false);
+    expect(isUnlimited('aucun', 'scriptsPerDay')).toBe(false);
+    expect(isUnlimited(null, 'scriptsPerDay')).toBe(false);
+  });
+
+  it('quota fini : ce qu’il reste en clair, et le plan qui va plus loin une fois épuisé', () => {
+    const noun = { one: 'analyse', many: 'analyses', feminine: true };
+    expect(remainingLabel('pro', 'analysesPerMonth', 12, noun, 'ce mois-ci')).toBe('12 analyses restantes ce mois-ci.');
+    expect(remainingLabel('pro', 'analysesPerMonth', 1, noun, 'ce mois-ci')).toBe('1 analyse restante ce mois-ci.');
+    expect(remainingLabel('starter', 'scriptsPerDay', 4, { one: 'script', many: 'scripts' }, 'aujourd’hui')).toBe('4 scripts restants aujourd’hui.');
+    expect(quotaReachedMessage('starter', 'scriptsPerDay', 'scripts', 'du jour')).toBe(
+      'Tu as utilisé tes scripts du jour. Pro va plus loin. Le compteur repart à minuit.',
+    );
+    expect(quotaReachedMessage('pro', 'analysesPerMonth', 'analyses de vidéo', 'du mois')).toBe(
+      'Tu as utilisé tes analyses de vidéo du mois. Elite va plus loin. Le compteur repart le 1er du mois.',
+    );
   });
 });
 
@@ -151,16 +320,17 @@ describe('plan de publication', () => {
     for (const line of ics.split('\r\n')) expect(Buffer.byteLength(line, 'utf8')).toBeLessThanOrEqual(75);
   });
 
-  it('rappel par e-mail une seule fois par jour, Pro seulement, à l’heure du récap', async () => {
-    for (const [id, plan] of [['pro', 'pro'], ['gratuit', 'free']] as const) {
+  it('rappel par e-mail une seule fois par jour, pour les abonnés (dès Starter), à l’heure du récap', async () => {
+    for (const [id, plan] of [['pro', 'pro'], ['starter', 'starter'], ['sans-abo', 'aucun']] as const) {
       await repo.ensureProfile({ id, email: `${id}@test.fr` });
       await repo.updateProfile(id, { plan, digest_hour: 9 });
       await repo.saveRecord(id, 'publication', buildPlan({ productId: 'p', productName: 'Sérum', rhythm: 7, start: '2026-11-12' }));
     }
-    expect(await schedulePublicationEmails('2026-11-12', repo, new Date('2026-11-12T03:00:00Z'))).toBe(1);
+    expect(await schedulePublicationEmails('2026-11-12', repo, new Date('2026-11-12T03:00:00Z'))).toBe(2);
     expect(await schedulePublicationEmails('2026-11-12', repo, new Date('2026-11-12T03:00:00Z'))).toBe(0);
-    const [mail] = await repo.listLocalEmails!(5);
-    expect(mail).toMatchObject({ to: 'pro@test.fr', subject: 'Aujourd’hui : ta vidéo n°1 sur Sérum', scheduled_at: '2026-11-12T08:00:00.000Z' });
+    const mails = await repo.listLocalEmails!(5);
+    expect(mails.map((m) => m.to).sort()).toEqual(['pro@test.fr', 'starter@test.fr']);
+    expect(mails[0]).toMatchObject({ subject: 'Aujourd’hui : ta vidéo n°1 sur Sérum', scheduled_at: '2026-11-12T08:00:00.000Z' });
   });
 });
 
@@ -195,9 +365,10 @@ describe('Europe', () => {
     expect(enabledRegions()).toEqual(['FR', 'DE', 'ES']);
   });
 
-  it('le pays choisi ne vaut qu’en Pro+', () => {
-    expect(regionFor({ plan: 'proplus', region: 'DE' })).toBe('DE');
-    expect(regionFor({ plan: 'pro', region: 'DE' })).toBe('FR');
+  it('le pays choisi ne vaut qu’en Elite', () => {
+    expect(regionFor({ plan: 'elite', region: 'DE' })).toBe('DE');
+    expect(regionFor({ plan: 'elite', region: 'ES' })).toBe('ES');
+    for (const plan of ['aucun', 'starter', 'pro'] as const) expect(regionFor({ plan, region: 'DE' })).toBe('FR');
   });
 
   it('garde des identifiants France inchangés et sépare les autres pays', () => {

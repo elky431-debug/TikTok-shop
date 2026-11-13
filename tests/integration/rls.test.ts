@@ -71,14 +71,14 @@ describe.skipIf(!supabaseReady)('RLS : chacun ne voit que ses données', () => {
   it('peut modifier son prénom, mais pas son plan ni son formateur', async () => {
     const ok = await alice.client.from('profiles').update({ first_name: 'Alice B.' }).eq('id', alice.id);
     expect(ok.error).toBeNull();
-    const plan = await alice.client.from('profiles').update({ plan: 'proplus' }).eq('id', alice.id);
+    const plan = await alice.client.from('profiles').update({ plan: 'elite' }).eq('id', alice.id);
     expect(denied(plan.error)).toBe(true);
     const coachChange = await alice.client.from('profiles').update({ coach_id: null }).eq('id', alice.id);
     expect(denied(coachChange.error)).toBe(true);
     const other = await alice.client.from('profiles').update({ first_name: 'Piraté' }).eq('id', bob.id).select('id');
     expect(other.data ?? []).toHaveLength(0);
     const check = await adminClient().from('profiles').select('first_name, plan').eq('id', bob.id).single();
-    expect(check.data).toEqual({ first_name: 'Bob', plan: 'free' });
+    expect(check.data).toEqual({ first_name: 'Bob', plan: 'aucun' });
   });
 
   it('ne peut lire ni le catalogue ni les instantanés (limites de plan)', async () => {

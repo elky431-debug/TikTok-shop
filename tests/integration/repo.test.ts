@@ -68,7 +68,7 @@ describe.skipIf(!supabaseReady)('SupabaseRepo contre la vraie base', () => {
     expect(profile).not.toBeNull();
     expect(profile!.email).toBe(student.email);
     expect(profile!.referral_code).toMatch(/^[A-Z2-9]{7}$/);
-    expect(profile!.plan).toBe('free');
+    expect(profile!.plan).toBe('aucun');
     expect(profile!.eligibility).toBe('preparation');
     const again = await repo.ensureProfile({ id: student.id, email: student.email });
     expect(again.referral_code).toBe(profile!.referral_code);
@@ -138,24 +138,26 @@ describe.skipIf(!supabaseReady)('SupabaseRepo contre la vraie base', () => {
 
   it('applique les limites de plan au radar, côté serveur', async () => {
     const { getRadar, canAccessProduct } = await import('@/lib/radar');
-    const free = (await repo.updateProfile(other.id, { plan: 'free' }))!;
-    const radar = await getRadar(free, {});
-    expect(radar.visibleCount).toBeLessThanOrEqual(3);
+    // Sans abonnement : rien en clair, les produits verrouillés ne portent aucune donnée.
+    const none = (await repo.updateProfile(other.id, { plan: 'aucun' }))!;
+    const radar = await getRadar(none, {});
+    expect(radar.visibleCount).toBe(0);
     for (const item of radar.items) {
-      if (item.kind === 'locked') expect(Object.keys(item).sort()).toEqual(['key', 'kind', 'niche', 'rank']);
+      expect(item.kind).toBe('locked');
+      expect(Object.keys(item).sort()).toEqual(['key', 'kind', 'niche', 'rank']);
     }
-    const lockedVisible = radar.items.find((i) => i.kind === 'locked');
-    if (lockedVisible) {
-      const all = await repo.listProducts({ niches: ['animaux'] });
-      const visibleIds = new Set(radar.items.flatMap((i) => (i.kind === 'visible' ? [i.product.id] : [])));
-      const hidden = all.find((p) => !visibleIds.has(p.id));
-      if (hidden) expect(await canAccessProduct(free, hidden.id)).toBe(false);
+    const all = await repo.listProducts({ niches: ['animaux'] });
+    const saved = new Set((await repo.listSavedProducts(other.id)).map((s) => s.product_id));
+    const hidden = all.find((p) => !saved.has(p.id));
+    if (hidden) expect(await canAccessProduct(none, hidden.id)).toBe(false);
+    // Tout plan payant, Starter compris : tout le radar, avec le score.
+    for (const plan of ['starter', 'pro'] as const) {
+      const member = await repo.updateProfile(other.id, { plan });
+      const memberRadar = await getRadar(member, {});
+      expect(memberRadar.lockedCount).toBe(0);
+      expect(memberRadar.items.every((i) => i.kind === 'visible' && i.product.score !== null)).toBe(true);
     }
-    const pro = await repo.updateProfile(other.id, { plan: 'pro' });
-    const proRadar = await getRadar(pro, {});
-    expect(proRadar.lockedCount).toBe(0);
-    expect(proRadar.items.every((i) => i.kind === 'visible' && i.product.score !== null)).toBe(true);
-    await repo.updateProfile(other.id, { plan: 'free' });
+    await repo.updateProfile(other.id, { plan: 'aucun' });
   });
 
   it('sauvegarde, modifie, liste et supprime des scripts', async () => {

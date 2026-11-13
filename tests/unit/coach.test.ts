@@ -125,15 +125,20 @@ describe('plusieurs codes par formateur', () => {
 });
 
 describe('page co-brandée /f/[code]', () => {
-  it('affiche le nom de la formation et l’offre de 3 mois, pas d’indexation ; 404 pour un code inconnu ou de parrainage', async () => {
+  it('affiche le nom de la formation et −20 % sur le premier mois, pas d’indexation ; 404 pour un code inconnu ou de parrainage', async () => {
     await addCoachCode(coach, 'PROMO2', 'Promo 2');
     const html = renderToStaticMarkup(await CoachLandingPage({ params: { code: 'promo2' } }));
     expect(html).toContain('Proposé par Formation Shop');
-    expect(html).toContain('3 mois de Pro');
+    expect(html).toContain('−20 % sur ton');
+    expect(html).toContain('premier mois avec PROMO2.');
+    // Le prix remisé vient de lib/plans.ts : Pro à 59,99 € → 47,99 € le premier mois.
+    expect(html).toContain('47,99');
+    expect(html).toContain('59,99');
+    expect(html).not.toMatch(/mois de Pro offerts|gratuit|sans carte/i);
     expect(html).toContain('href="/r/PROMO2"');
     expect(html).not.toMatch(/gagne[rsz]? \d|€ par mois de gains/);
     const meta = await generateMetadata({ params: { code: 'FORM30' } });
-    expect(meta.title).toBe('Formation Shop t’offre 3 mois de Tracktout Pro');
+    expect(meta.title).toBe('Formation Shop : −20 % sur ton premier mois de Tracktout');
     expect(meta.robots).toMatchObject({ index: false });
 
     await repo.ensureProfile({ id: 'parrain', email: 'p@test.fr' });

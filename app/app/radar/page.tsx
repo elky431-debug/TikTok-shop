@@ -48,10 +48,10 @@ export default async function RadarPage({
   const list = featured ? rest : radar.items;
   const nicheNames = (radar.niches.length ? radar.niches : NICHES.map((n) => n.id)).map((n) => nicheLabel(n).toLowerCase());
 
-  // Colonnes de tri proposées : celles qui ont des données aujourd'hui ; sans le score en Gratuit.
+  // Colonnes de tri proposées : celles qui ont des données aujourd'hui ; « pour toi » à partir de Pro.
   const a = radar.availability;
   const hasData: Partial<Record<SortKey, boolean>> = {
-    pourtoi: plan.showScore,
+    pourtoi: plan.personalScore,
     ventes7: a.sales7,
     ventes30: a.sales30,
     croissance: a.growth,
@@ -156,10 +156,10 @@ export default async function RadarPage({
                 <ScoreWeightsForm weights={radar.weights} query={query} />
               ) : (
                 <p className="text-sm text-muted">
-                  Avec Pro+, donne plus d’importance à la commission ou à la croissance : le score du radar et des fiches suit
+                  Avec Elite, donne plus d’importance à la commission ou à la croissance : le score du radar et des fiches suit
                   tes poids.{' '}
                   <Link href="/app/passer-pro" className="font-semibold text-rose-ink hover:underline">
-                    Passer Pro+
+                    Passer à Elite
                   </Link>
                 </p>
               )}
@@ -237,11 +237,10 @@ export default async function RadarPage({
                     {plural(radar.lockedCount, 'autre produit', 'autres produits')} à vendre aujourd’hui
                   </h2>
                   <p className="mt-1 max-w-prose text-sm text-muted">
-                    Le plan Gratuit montre tes {plan.visibleProducts} meilleurs produits du jour, sans le score. Avec Pro, tu vois
-                    tout le radar, le score détaillé, et tu écris jusqu’à 30 scripts par jour.
+                    Avec un abonnement, tu vois tout le radar, le score détaillé, et tu écris tes scripts chaque jour.
                   </p>
-                  <LinkButton href="/app/passer-pro" className="mt-4">
-                    Passer Pro
+                  <LinkButton href="/abonnement" className="mt-4">
+                    Choisir mon abonnement
                   </LinkButton>
                   <ul className="mt-4 grid gap-1 md:grid-cols-2">
                     {radar.items

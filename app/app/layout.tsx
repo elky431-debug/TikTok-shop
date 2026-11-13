@@ -21,7 +21,7 @@ export const dynamic = "force-dynamic";
  * (téléphone), contenu sur fond noir décalé de la barre repliée (64 px).
  */
 export default async function AppLayout({ children }: { children: ReactNode }) {
-  const viewer = await requireOnboardedViewer();
+  const viewer = await requireOnboardedViewer("/app", { abonnement: false });
   const { profile } = viewer;
   const coach = await getCoachForViewer(viewer.user.id);
 
@@ -108,7 +108,9 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     },
     { label: "Compte", items: accountItems },
   ];
-  const shortcuts: NavLink[] = [
+  // Sans abonnement (pages compte et paiement seulement) : rien d'autre à ouvrir que le compte.
+  if (!plan.access) sections.splice(0, sections.length, { label: "Compte", items: accountItems.filter((i) => i.href === "/app/compte" || i.href === "/formateur" || i.href === "/admin") });
+  const shortcuts: NavLink[] = !plan.access ? [{ href: "/app/compte", label: "Compte", icon: "compte" }] : [
     { href: "/app", label: "Accueil", icon: "dashboard" },
     { href: "/app/radar", label: "Radar", icon: "radar" },
     { href: "/app/studio", label: "Studio", icon: "studio" },

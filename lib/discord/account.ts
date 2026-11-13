@@ -1,11 +1,13 @@
 import type { Repo } from '@/lib/db';
 import type { Profile } from '@/lib/db/types';
-import { getPlan } from '@/lib/plans';
+import { env } from '@/lib/env';
+import { cheapestPlanWith, getPlan, isUnlimited } from '@/lib/plans';
 import { parisDate, parisTimeToUtc } from '@/lib/utils';
 
 /**
  * Compte Discord → profil → plan. Les quotas sont ceux de l'appli (lib/plans.ts), appliqués ici, côté serveur.
- * /score et /script comptent dans `discordCommandsPerDay` (3, 30, 100) : une fiche `commande_discord` par commande,
+ * /score et /script comptent dans `discordCommandsPerDay` (10, 40, Elite : plafond de sécurité invisible) : une fiche
+ * `commande_discord` par commande,
  * comptée depuis minuit (heure de Paris), comme les autres quotas quotidiens.
  */
 export const COMMAND_KIND = 'commande_discord';
@@ -36,8 +38,12 @@ export async function remainingCommands(profile: Profile, repo: Repo, now = new 
 }
 
 function quotaMessage(profile: Profile, limit: number): string {
-  const next = profile.plan === 'free' ? ' Avec Pro : 30 par jour.' : profile.plan === 'pro' ? ' Avec Pro+ : 100 par jour.' : '';
-  return `Tu as utilisé tes ${limit} commandes /score et /script du jour (plan ${getPlan(profile.plan).name}).${next} Le compteur repart à minuit.`;
+  const plan = getPlan(profile.plan);
+  if (!plan.access) return `Les commandes /score et /script demandent un abonnement : choisis le tien sur ${env.siteUrl}/abonnement.`;
+  if (isUnlimited(profile.plan, 'discordCommandsPerDay')) return 'Limite de sécurité du jour atteinte. Le compteur repart à minuit.';
+  const better = cheapestPlanWith((p) => p.discordCommandsPerDay > limit);
+  const next = better.id !== plan.id ? ` Avec ${better.name} : ${isUnlimited(better.id, 'discordCommandsPerDay') ? 'illimité' : `${better.discordCommandsPerDay} par jour`}.` : '';
+  return `Tu as utilisé tes ${limit} commandes /score et /script du jour (plan ${plan.name}).${next} Le compteur repart à minuit.`;
 }
 
 /** Réserve une commande (avant de répondre) ; à rendre avec `releaseCommand` si elle échoue. */

@@ -1,11 +1,16 @@
 /**
- * Prépare Stripe (mode test conseillé) :
- *  1. produits « Pro » et « Pro+ » et leurs 4 prix (mensuel, annuel), retrouvés par lookup_key : sans doublon ;
- *  2. configuration du portail client (changement de plan avec prorata, résiliation en fin de période, carte,
+ * Prépare Stripe (mode test conseillé), sans doublon si on le relance :
+ *  1. produits Starter, Pro et Elite et leurs 6 prix (mensuel, annuel) aux montants de lib/plans.ts, retrouvés par
+ *     lookup_key (`tracktout_<plan>_<month|year>`). Si un montant a changé, un nouveau prix reprend la clé
+ *     (transfer_lookup_key) et l'ancien est archivé : les abonnés en cours le gardent. Les prix de l'ancien plan
+ *     « Pro+ » sont archivés ;
+ *  2. le coupon du code formateur (−20 % sur le premier mois, une seule fois) ;
+ *  3. configuration du portail client (changement de plan avec prorata, résiliation en fin de période, carte,
  *     factures), mise à jour si elle existe ;
- *  3. avec --webhook et une adresse publique https : le point de terminaison du webhook et ses événements. Son secret
+ *  4. avec --webhook et une adresse publique https : le point de terminaison du webhook et ses événements. Son secret
  *     (whsec_…) n'est donné qu'à la création : il est écrit dans .env.local, jamais affiché.
- * Puis affiche les identifiants (non secrets) à copier dans .env.local et dans les variables Netlify.
+ * L'appli retrouve les prix par leur lookup_key : aucun identifiant de prix à recopier. Seul
+ * STRIPE_PORTAL_CONFIGURATION (non secret) est affiché, à copier dans .env.local et dans les variables Netlify.
  *
  * Usage : npm run stripe:setup              (STRIPE_SECRET_KEY dans .env.local)
  *         npm run stripe:setup -- --webhook  (NEXT_PUBLIC_SITE_URL = l'adresse publique du site)
@@ -16,10 +21,8 @@ import Stripe from 'stripe';
 
 loadEnvConfig(process.cwd());
 
-const PLANS = [
-  { key: 'pro', name: 'Pro', month: 1990, year: 16700, env: ['STRIPE_PRICE_PRO_MONTHLY', 'STRIPE_PRICE_PRO_YEARLY'] },
-  { key: 'proplus', name: 'Pro+', month: 3990, year: 33500, env: ['STRIPE_PRICE_PROPLUS_MONTHLY', 'STRIPE_PRICE_PROPLUS_YEARLY'] },
-] as const;
+/** Plans de l'ancienne grille dont les prix sont archivés. */
+const RETIRED_PLANS = ['proplus'] as const;
 
 function fail(message: string): never {
   console.error(`✗ ${message}`);
@@ -38,7 +41,10 @@ function writeEnvLocal(name: string, value: string) {
 
 async function main() {
   const { STRIPE_WEBHOOK_EVENTS, STRIPE_SETUP_METADATA, portalConfiguration } = await import('@/lib/billing/stripe-config');
-  const { BRAND_SLUG } = await import('@/lib/brand');
+  const { BRAND, BRAND_SLUG } = await import('@/lib/brand');
+  const { PAID_PLANS, getPlan, COACH_FIRST_MONTH_DISCOUNT } = await import('@/lib/plans');
+  const { priceLookupKey } = await import('@/lib/billing/prices');
+  const { COACH_COUPON_ID } = await import('@/lib/billing/coach-discount');
   const key = (process.env.STRIPE_SECRET_KEY ?? '').trim();
   if (!key) fail('STRIPE_SECRET_KEY manquant (dans .env.local ou en variable). Commence par la clé de test sk_test_….');
   const stripe = new Stripe(key);
@@ -46,36 +52,73 @@ async function main() {
   const lines: string[] = [];
 
   // 1. Produits et prix
+  const allProducts = await stripe.products.list({ active: true, limit: 100 });
   const products: Array<{ product: string; prices: string[] }> = [];
-  for (const plan of PLANS) {
-    const lookups = [`${BRAND_SLUG}_${plan.key}_month`, `${BRAND_SLUG}_${plan.key}_year`];
+  for (const planId of PAID_PLANS) {
+    const plan = getPlan(planId);
+    const name = `${BRAND} ${plan.name}`;
+    const lookups = (['month', 'year'] as const).map((interval) => priceLookupKey(planId, interval));
     const existing = await stripe.prices.list({ lookup_keys: lookups, active: true, limit: 10 });
-    let productId = existing.data[0] ? String(existing.data[0].product) : null;
-    if (!productId) {
-      const product = await stripe.products.create({ name: plan.name, metadata: { plan: plan.key, ...STRIPE_SETUP_METADATA } });
-      productId = product.id;
+    let productId =
+      allProducts.data.find((p) => p.metadata?.app === STRIPE_SETUP_METADATA.app && p.metadata?.plan === planId)?.id ??
+      (existing.data[0] ? String(existing.data[0].product) : null);
+    if (productId) {
+      await stripe.products.update(productId, { name, metadata: { plan: planId, ...STRIPE_SETUP_METADATA } });
+    } else {
+      productId = (await stripe.products.create({ name, metadata: { plan: planId, ...STRIPE_SETUP_METADATA } })).id;
     }
     const prices: string[] = [];
     for (const [i, interval] of (['month', 'year'] as const).entries()) {
+      const amount = plan.prices[interval];
       let price = existing.data.find((p) => p.lookup_key === lookups[i]);
-      if (!price) {
+      if (!price || price.unit_amount !== amount || String(price.product) !== productId) {
+        const previous = price;
         price = await stripe.prices.create({
           product: productId,
           currency: 'eur',
-          unit_amount: plan[interval],
+          unit_amount: amount,
           recurring: { interval },
           lookup_key: lookups[i],
-          metadata: { plan: plan.key },
+          transfer_lookup_key: true,
+          tax_behavior: 'inclusive',
+          metadata: { plan: planId },
         });
+        // Ancien montant : archivé (les abonnés en cours le gardent, plus personne ne peut le choisir).
+        if (previous) await stripe.prices.update(previous.id, { active: false });
       }
       prices.push(price.id);
-      lines.push(`${plan.env[i]}=${price.id}`);
     }
     products.push({ product: productId, prices });
+    console.log(`✓ ${name} : ${(plan.prices.month / 100).toFixed(2)} €/mois, ${(plan.prices.year / 100).toFixed(2)} €/an`);
   }
-  console.log('✓ Produits et prix');
+  // Ancienne grille : prix archivés, produit désactivé.
+  for (const retired of RETIRED_PLANS) {
+    const old = await stripe.prices.list({ lookup_keys: [`${BRAND_SLUG}_${retired}_month`, `${BRAND_SLUG}_${retired}_year`], active: true, limit: 10 });
+    for (const price of old.data) await stripe.prices.update(price.id, { active: false });
+    const product = allProducts.data.find((p) => p.metadata?.plan === retired && p.metadata?.app === STRIPE_SETUP_METADATA.app);
+    if (product) await stripe.products.update(product.id, { active: false });
+    if (old.data.length || product) console.log(`✓ Ancien plan « ${retired} » archivé`);
+  }
 
-  // 2. Portail client
+  // 2. Coupon du code formateur
+  const percent = Math.round(COACH_FIRST_MONTH_DISCOUNT * 100);
+  const coupon = await stripe.coupons.retrieve(COACH_COUPON_ID).catch(() => null);
+  if (!coupon || coupon.deleted) {
+    await stripe.coupons.create({
+      id: COACH_COUPON_ID,
+      name: `Code formateur : −${percent} % sur le premier mois`,
+      percent_off: percent,
+      duration: 'once',
+      metadata: STRIPE_SETUP_METADATA,
+    });
+    console.log(`✓ Coupon formateur créé (−${percent} % le premier mois)`);
+  } else if (coupon.percent_off !== percent || coupon.duration !== 'once') {
+    fail(`Le coupon ${COACH_COUPON_ID} existe avec d'autres conditions : supprime-le dans Stripe puis relance.`);
+  } else {
+    console.log(`✓ Coupon formateur déjà en place (−${percent} % le premier mois)`);
+  }
+
+  // 3. Portail client
   const params = portalConfiguration({ siteUrl: site, products });
   const configurations = await stripe.billingPortal.configurations.list({ active: true, limit: 100 });
   const mine = configurations.data.find((c) => c.metadata?.app === STRIPE_SETUP_METADATA.app);
@@ -85,7 +128,7 @@ async function main() {
   lines.push(`STRIPE_PORTAL_CONFIGURATION=${configuration.id}`);
   console.log(`✓ Portail client ${mine ? 'mis à jour' : 'créé'} (changement de plan, résiliation, carte, factures)`);
 
-  // 3. Webhook
+  // 4. Webhook
   const url = `${site}/api/stripe/webhook`;
   if (process.argv.includes('--webhook')) {
     if (!/^https:\/\//.test(site) || /localhost|127\.0\.0\.1/.test(site)) {
@@ -108,7 +151,10 @@ async function main() {
     }
   }
 
-  console.log(`\nMode : ${key.startsWith('sk_live') ? 'PRODUCTION' : 'test'}. Copie ces lignes dans .env.local (et dans les variables Netlify) :\n`);
+  console.log(
+    `\nMode : ${key.startsWith('sk_live') ? 'PRODUCTION' : 'test'}. Les prix sont retrouvés par leur lookup_key. ` +
+      'Copie cette ligne dans .env.local (et dans les variables Netlify) :\n',
+  );
   console.log(lines.join('\n'));
   if (!process.argv.includes('--webhook')) {
     console.log(

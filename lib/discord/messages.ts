@@ -153,7 +153,7 @@ export function produitsMessage(input: {
   const notes = [
     dataNote(input),
     input.lockedCount > 0
-      ? `${input.lockedCount} autre${input.lockedCount > 1 ? 's' : ''} produit${input.lockedCount > 1 ? 's' : ''} de cette niche ${input.lockedCount > 1 ? 'sont réservés' : 'est réservé'} au plan Pro, avec les scores.`
+      ? `${input.lockedCount} autre${input.lockedCount > 1 ? 's' : ''} produit${input.lockedCount > 1 ? 's' : ''} de cette niche ${input.lockedCount > 1 ? 'sont réservés' : 'est réservé'} aux abonnés, avec les scores.`
       : null,
   ].filter(Boolean);
   return {
@@ -168,7 +168,7 @@ export function produitsMessage(input: {
   };
 }
 
-/** /score : le score d'un produit expliqué en phrases (masqué en Gratuit, comme dans l'appli). */
+/** /score : le score d'un produit expliqué en phrases (masqué sans abonnement, comme dans l'appli). */
 export function scoreMessage(input: { product: Product; plan: PlanId; demo: boolean; stale: boolean; dataDate: string | null; siteUrl: string }): DiscordMessage {
   const { product } = input;
   const plan = getPlan(input.plan);
@@ -179,7 +179,7 @@ export function scoreMessage(input: { product: Product; plan: PlanId; demo: bool
     .join('\n');
   const growthKnown = breakdown ? breakdown.growth_7d !== null : true;
   const fields = [
-    { name: 'Score', value: plan.showScore ? `**${product.latest_score}/100**` : 'Masqué en Gratuit (Pro le montre)', inline: true },
+    { name: 'Score', value: plan.showScore ? `**${product.latest_score}/100**` : 'Réservé aux abonnés', inline: true },
     { name: 'Prix', value: formatEuros(product.price_cents), inline: true },
     { name: 'Par vente', value: formatEuros(commissionPerSale(product.price_cents, product.commission_rate)), inline: true },
     {

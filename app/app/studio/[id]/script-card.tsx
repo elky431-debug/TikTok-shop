@@ -279,7 +279,7 @@ export function ScriptCard({
           <p className="mt-2 text-sm text-muted">
             Adapte ce script pour TikTok Shop en Allemagne, en Italie et en Espagne (texte, légende, hashtags, mention locale) avec{' '}
             <a href="/app/passer-pro" className="font-semibold text-fg underline underline-offset-2">
-              le plan Pro+
+              le plan Elite
             </a>
             .
           </p>

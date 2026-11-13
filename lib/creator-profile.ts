@@ -16,7 +16,7 @@ import { addDays, parisDate } from '@/lib/utils';
  * chiffres : ni photo (adresse signée qui expire), ni bio, ni liste d'abonnés.
  *
  * Relevé automatique une fois par semaine (fiche `profil_tiktok`, essai compté même en cas d'échec) ; bouton
- * « Actualiser » une fois par jour pour les abonnés Pro et Pro+. Jamais sans pseudo ni sans clé. Un champ absent reste
+ * « Actualiser » une fois par jour pour les abonnés Pro et Elite. Jamais sans pseudo ni sans clé. Un champ absent reste
  * null.
  */
 export const CREATOR_PROFILE_KIND = 'profil_tiktok';
@@ -95,7 +95,7 @@ export const AUTO_REFRESH_DAYS = 7;
 export interface CreatorRefreshPolicy {
   /** Relevé lancé tout seul à l'ouverture du dashboard (une fois par semaine, ou nouveau pseudo). */
   auto: boolean;
-  /** Bouton « Actualiser » utilisable maintenant (Pro et Pro+, une fois par jour). */
+  /** Bouton « Actualiser » utilisable maintenant (Pro et Elite, une fois par jour). */
   manual: boolean;
   /** Le plan donne droit au bouton (même s'il a déjà servi aujourd'hui). */
   manualIncluded: boolean;
@@ -154,7 +154,7 @@ export async function refreshCreatorProfile(
   const handle = cleanHandle(rawHandle);
   const [record] = await repo.listRecords<CreatorProfile>(userId, CREATOR_PROFILE_KIND);
   const current = record?.data ?? null;
-  const policy = creatorRefreshPolicy(current, handle, options.plan ?? 'free', now);
+  const policy = creatorRefreshPolicy(current, handle, options.plan ?? 'aucun', now);
   const allowed = options.mode === 'manuel' ? policy.manual : policy.auto;
   if (!allowed || !handle) return current;
 

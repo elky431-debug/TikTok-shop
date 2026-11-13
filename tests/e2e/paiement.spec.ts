@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { newOnboardedUser } from './helpers';
+import { completeOnboarding, signIn, uniqueEmail } from './helpers';
 
 /**
  * Paiement en mode test.
@@ -9,16 +9,16 @@ import { newOnboardedUser } from './helpers';
  */
 const realStripe = process.env.E2E_STRIPE === '1';
 
-test('paiement : passer Pro, voir tout le radar, puis résilier', async ({ page }) => {
-  await newOnboardedUser(page, 'paiement');
-  await page.goto('/app/radar');
-  await expect(page.getByText(/autres produits à vendre aujourd’hui/)).toBeVisible();
+test('paiement : choisir Pro à l’année, ouvrir l’appli, puis résilier', async ({ page }) => {
+  await signIn(page, uniqueEmail('paiement'));
+  await completeOnboarding(page);
 
-  await page.getByRole('link', { name: 'Passer Pro' }).first().click();
-  await expect(page).toHaveURL(/\/app\/passer-pro/);
+  // Pro recommandé, annuel = 10 mois.
   await page.getByRole('radio', { name: /Annuel/ }).click();
-  await expect(page.getByText('167 € / an')).toBeVisible();
-  await page.getByRole('button', { name: 'Passer Pro', exact: true }).click();
+  await expect(page.getByText('599,90 € / an')).toBeVisible();
+  await expect(page.getByRole('radio', { name: /2 mois offerts/ })).toBeVisible();
+  await page.getByRole('checkbox', { name: /démarre tout de suite/ }).check();
+  await page.getByRole('button', { name: 'Choisir Pro', exact: true }).click();
 
   if (realStripe) {
     await page.waitForURL(/checkout\.stripe\.com/);
@@ -27,30 +27,34 @@ test('paiement : passer Pro, voir tout le radar, puis résilier', async ({ page 
     await page.getByLabel(/CVC|Cryptogramme/).fill('123');
     await page.getByLabel(/Nom du titulaire|Cardholder name/).fill('Test E2E');
     await page.getByRole('button', { name: /S’abonner|Subscribe|Payer/ }).click();
-    await page.waitForURL(/\/app\/compte\?paiement=ok/, { timeout: 60_000 });
+    await page.waitForURL(/\/app\?paiement=ok/, { timeout: 60_000 });
   } else {
     await expect(page).toHaveURL(/\/app\/paiement-simule\?plan=pro&periode=year/);
     await expect(page.getByText('Aucune carte, aucun prélèvement')).toBeVisible();
     await page.getByRole('button', { name: 'Simuler le paiement' }).click();
-    await expect(page).toHaveURL(/\/app\/compte\?paiement=ok/);
+    await expect(page).toHaveURL(/\/app\?paiement=ok/);
   }
 
-  await expect(page.getByText('Paiement confirmé : ton plan est actif. Bienvenue !')).toBeVisible();
-  await expect(page.locator('#abonnement').getByText('Pro', { exact: true })).toBeVisible();
+  await expect(page.getByText('Ton abonnement Pro est actif')).toBeVisible();
 
-  // Radar complet : plus de produits verrouillés, scores visibles.
+  // Radar complet, scores visibles.
   await page.goto('/app/radar');
   await expect(page.getByText(/autres produits à vendre aujourd’hui/)).toHaveCount(0);
   await expect(page.getByLabel(/^Score \d+ sur 100$/).first()).toBeVisible();
   expect(await page.locator('a[href^="/app/produit/"]').count()).toBeGreaterThan(3);
 
+  // Changement de plan : Pro est le plan actuel, Elite au-dessus.
+  await page.goto('/app/passer-pro');
+  await expect(page.getByText('Ton plan actuel')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Passer à Elite' })).toBeVisible();
+
   if (realStripe) return; // La résiliation Stripe se teste dans le portail client.
 
-  // Portail (simulé) : résiliation ⇒ retour au plan Gratuit.
+  // Portail (simulé) : résiliation ⇒ l'appli renvoie au choix de l'abonnement.
   await page.goto('/app/compte');
   await page.getByRole('button', { name: 'Gérer mon abonnement' }).click();
   await page.getByRole('button', { name: 'Résilier mon abonnement' }).click();
-  await expect(page.getByText('Abonnement résilié. Tu repasses en Gratuit.')).toBeVisible();
+  await expect(page.getByText('Abonnement résilié. L’appli se ferme à la fin de la période payée.')).toBeVisible();
   await page.goto('/app/radar');
-  await expect(page.getByText(/autres produits à vendre aujourd’hui/)).toBeVisible();
+  await expect(page).toHaveURL(/\/abonnement/);
 });

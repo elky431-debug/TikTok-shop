@@ -8,7 +8,7 @@ import { Callout } from '@/components/ui/surface';
 import { getSessionUser } from '@/lib/auth/session';
 import { safeNextPath } from '@/lib/auth/redirects';
 import { isLocalMode } from '@/lib/env';
-import { COACH_TRIAL_DAYS } from '@/lib/plans';
+import { COACH_FIRST_MONTH_DISCOUNT } from '@/lib/plans';
 import { describeCode } from '@/lib/referral';
 import { signInWithGoogle } from './actions';
 import { LoginForm } from './login-form';
@@ -48,7 +48,7 @@ export default async function ConnexionPage({
           <h1 className="text-3xl font-bold">
             Connecte-<span className="text-gradient">toi</span>
           </h1>
-          <p className="mt-2 text-muted">Ou crée ton compte en 10 secondes. Gratuit, sans carte bancaire.</p>
+          <p className="mt-2 text-muted">Ou crée ton compte en 10 secondes, puis choisis ton abonnement.</p>
 
           <div className="mt-6 space-y-4">
             {error ? (
@@ -58,8 +58,8 @@ export default async function ConnexionPage({
             ) : null}
             {code?.kind === 'coach' ? (
               <Callout tone="cyan" title={`Code formateur ${code.code} appliqué`}>
-                Avec {code.coach.training_name}, tu profites de {Math.round(COACH_TRIAL_DAYS / 30)} mois de Pro offerts
-                après ton inscription.
+                Avec {code.coach.training_name}, tu as −{Math.round(COACH_FIRST_MONTH_DISCOUNT * 100)} % sur ton premier mois
+                d’abonnement mensuel.
               </Callout>
             ) : code?.kind === 'parrain' ? (
               <Callout tone="cyan" title="Invitation enregistrée">

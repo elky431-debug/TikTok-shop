@@ -4,6 +4,7 @@ import { parisDate, parisHour } from '@/lib/utils';
 import type { PersonalDigestContent } from './personal';
 import { normalizeRecapSettings, RECAP_SETTINGS_KIND, type RecapSettings } from './settings';
 import { isSunday, sendWeeklyRecap } from './weekly';
+import { getPlan } from '@/lib/plans';
 
 export interface RecapHourlyResult {
   morningPush: number;
@@ -30,6 +31,8 @@ export async function runRecapHourly(now: Date = new Date(), repo: Repo = getRep
     if (!raw.matin?.push) continue;
     const profile = await repo.getProfile(userId);
     if (!profile?.onboarded_at || hour < profile.digest_hour) continue;
+    // Récap du matin réservé aux abonnés, comme l'e-mail et Discord.
+    if (!getPlan(profile.plan).access) continue;
     const digest = await repo.getDigest(userId, day);
     if (!digest) continue;
     if (!(await repo.claimDailyTask(`recap-matin-push:${userId}`, day))) continue;

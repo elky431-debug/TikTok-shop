@@ -87,8 +87,15 @@ describe('kit de partage', () => {
       expect(findIssues(t.text)).toEqual([]);
       expect(t.text).not.toMatch(/€|%/);
     }
+    // Tout est payant : jamais « gratuit » ni « plan gratuit » dans les textes.
+    for (const t of texts) expect(t.text).not.toMatch(/gratuit/i);
     const coach = shareTexts({ link: 'https://tracktout.com/f/FORM30', code: 'FORM30', coach: true });
-    expect(coach[0].text).toContain('3 mois de Pro offerts');
+    expect(coach[0].id).toBe('eleves');
+    expect(coach[0].text).toContain('avec mon code FORM30, tu as −20 % sur ton premier mois');
+    for (const t of coach) {
+      expect(t.text).not.toMatch(/gratuit|offerts|sans carte/i);
+      expect(findIssues(t.text)).toEqual([]);
+    }
   });
 
   it('génère des visuels PNG aux bonnes dimensions (fond noir, dégradé cyan → rose)', async () => {

@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
 import { newOnboardedUser } from './helpers';
 
-test('génération de scripts : 10 accroches, 3 scripts, régénérer, garder, historique', async ({ page }) => {
-  await newOnboardedUser(page, 'studio');
+test('génération de scripts (Starter) : 5 formats, 10 accroches, 3 scripts, régénérer, garder, historique', async ({ page }) => {
+  await newOnboardedUser(page, 'studio', 'Starter');
 
   // Depuis le radar : fiche produit puis « Écrire mes scripts »
   await page.goto('/app/radar');
@@ -11,7 +11,10 @@ test('génération de scripts : 10 accroches, 3 scripts, régénérer, garder, h
   await firstProduct.click();
   await page.getByRole('link', { name: 'Écrire mes scripts' }).click();
   await expect(page).toHaveURL(/\/app\/studio\?produit=/);
-  await expect(page.getByText('Il te reste 3 écritures aujourd’hui.')).toBeVisible();
+  await expect(page.getByText('Il te reste 10 écritures aujourd’hui.')).toBeVisible();
+  // Starter : 5 formats ouverts, les 3 autres visibles mais fermés (inclus avec Pro).
+  await expect(page.getByRole('radio', { name: /Comparaison/ })).toBeDisabled();
+  await expect(page.getByRole('radio', { name: /Déballage/ })).toBeEnabled();
 
   await page.getByText('Réponse à un commentaire', { exact: true }).click();
   await page.getByRole('button', { name: 'Écrire mes scripts' }).click();
@@ -37,8 +40,8 @@ test('génération de scripts : 10 accroches, 3 scripts, régénérer, garder, h
   await page.getByRole('button', { name: 'Garder ce script' }).click();
   await expect(page.getByRole('button', { name: 'Script gardé' })).toBeVisible();
 
-  // Historique et compteur du plan gratuit
+  // Historique et compteur du plan Starter
   await page.goto('/app/studio?gardes=1');
   await expect(page.getByRole('link', { name: new RegExp(productName) })).toBeVisible();
-  await expect(page.getByText('Il te reste 2 écritures aujourd’hui.')).toBeVisible();
+  await expect(page.getByText('Il te reste 9 écritures aujourd’hui.')).toBeVisible();
 });

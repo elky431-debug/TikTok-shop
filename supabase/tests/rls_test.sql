@@ -54,7 +54,7 @@ end $$;
 
 -- Alice ne peut pas changer son plan
 do $$ begin
-  update public.profiles set plan = 'proplus' where id = auth.uid();
+  update public.profiles set plan = 'elite' where id = auth.uid();
   raise exception 'plan modifiable par le client';
 exception when insufficient_privilege then null;
 end $$;
@@ -113,6 +113,12 @@ do $$ begin
   begin
     insert into public.user_records (user_id, kind, data) values (auth.uid(), 'commande_discord', '{}');
     raise exception 'quota Discord inscriptible depuis le navigateur';
+  exception when insufficient_privilege then null;
+  end;
+  -- Preuve de la demande de démarrage immédiat (délai de rétractation) : écrite par le serveur seul.
+  begin
+    insert into public.user_records (user_id, kind, data) values (auth.uid(), 'consentement_paiement', '{}');
+    raise exception 'consentement de paiement inscriptible depuis le navigateur';
   exception when insufficient_privilege then null;
   end;
   insert into public.user_records (user_id, kind, data) values (auth.uid(), 'consentement_formateur', '{"detail": true}');

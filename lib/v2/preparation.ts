@@ -16,8 +16,8 @@ import { clamp, formatPercent } from '@/lib/utils';
  */
 export const PREPARATION_KIND = 'preparation';
 export const CONTENT_PLAN_KIND = 'plan_preparation';
-/** Plans de 30 jours générés par jour (IA) : 1 en Gratuit, 3 en Pro et Pro+. */
-export const CONTENT_PLANS_PER_DAY = { free: 1, paid: 3 } as const;
+/** Plans de 30 jours générés par jour (IA) : 3 pour les abonnés (mode préparation inclus dès Starter), 0 sans abonnement. */
+export const CONTENT_PLANS_PER_DAY = { free: 0, paid: 3 } as const;
 export const contentPlansPerDay = (profile: Pick<Profile, 'plan'>) => (isPaidPlan(profile.plan) ? CONTENT_PLANS_PER_DAY.paid : CONTENT_PLANS_PER_DAY.free);
 
 export interface FollowerEntry {

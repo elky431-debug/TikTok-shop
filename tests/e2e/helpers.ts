@@ -23,15 +23,20 @@ export async function signUpWithPassword(page: Page, email: string, password = '
 
 /**
  * Onboarding complet : 10 questions, une par écran (pseudo, objectif et code passés), puis « On prépare ton radar » et
- * le dashboard.
+ * le choix de l'abonnement (tout est payant : l'appli s'ouvre après).
  */
 export async function completeOnboarding(
   page: Page,
   opts: { firstName?: string; range?: string; affiliate?: string; niches?: string[]; style?: RegExp; code?: string } = {},
 ) {
   await expect(page).toHaveURL(/\/bienvenue/);
-  await page.getByLabel('Ton prénom').fill(opts.firstName ?? 'Léa');
+  // Attendre que la page soit interactive : un champ rempli avant l'hydratation est remis à zéro.
+  await page.waitForLoadState('networkidle');
+  const firstName = page.getByLabel('Ton prénom');
+  await firstName.fill(opts.firstName ?? 'Léa');
+  await expect(firstName).toHaveValue(opts.firstName ?? 'Léa');
   await page.getByRole('button', { name: 'Continuer' }).click();
+  await expect(page.getByText('Question 2 sur 10')).toBeVisible();
   await page.getByRole('button', { name: 'Passer' }).click();
   await page.getByRole('radio', { name: opts.range ?? 'Entre 5 000 et 20 000' }).click();
   await page.getByRole('radio', { name: opts.affiliate ?? 'Oui' }).click();
@@ -50,10 +55,24 @@ export async function completeOnboarding(
   } else {
     await page.getByRole('button', { name: 'Préparer mon radar' }).click();
   }
-  await expect(page).toHaveURL(/\/app\?bienvenue=/, { timeout: 30_000 });
+  await expect(page).toHaveURL(/\/abonnement\?bienvenue=1/, { timeout: 30_000 });
 }
 
-export async function newOnboardedUser(page: Page, prefix: string) {
+/**
+ * Choix de l'abonnement (page /abonnement ou /app/passer-pro) : case de démarrage immédiat, plan, puis paiement simulé
+ * (mode local) jusqu'au dashboard.
+ */
+export async function subscribe(page: Page, plan: 'Starter' | 'Pro' | 'Elite' = 'Pro', interval: 'Mensuel' | 'Annuel' = 'Mensuel') {
+  if (interval === 'Annuel') await page.getByRole('radio', { name: /Annuel/ }).click();
+  await page.getByRole('checkbox', { name: /démarre tout de suite/ }).check();
+  await page.getByRole('button', { name: new RegExp(`^(Choisir|Passer à|Revenir à) ${plan}$`) }).click();
+  await expect(page).toHaveURL(/\/app\/paiement-simule\?plan=/);
+  await page.getByRole('button', { name: 'Simuler le paiement' }).click();
+  await expect(page).toHaveURL(/\/app\?paiement=ok/);
+}
+
+export async function newOnboardedUser(page: Page, prefix: string, plan: 'Starter' | 'Pro' | 'Elite' = 'Pro') {
   await signIn(page, uniqueEmail(prefix));
   await completeOnboarding(page);
+  await subscribe(page, plan);
 }

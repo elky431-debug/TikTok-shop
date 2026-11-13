@@ -6,6 +6,7 @@ import { REFERRAL_COOKIE } from '@/lib/auth/constants';
 import { requireViewer } from '@/lib/auth/session';
 import { cleanHandle, refreshCreatorProfile } from '@/lib/creator-profile';
 import { getRepo } from '@/lib/db';
+import { getPlan } from '@/lib/plans';
 import { env } from '@/lib/env';
 import {
   ONBOARDING_STEPS,
@@ -43,7 +44,6 @@ export async function completeOnboardingAction(raw: Partial<Record<keyof Onboard
     if (message) return { ok: false, step, message };
   }
 
-  let trial = false;
   if (steps.includes('code')) {
     const code = normalizeCode(answers.code);
     if (code && !profile.coach_id && !profile.referred_by) {
@@ -72,9 +72,11 @@ export async function completeOnboardingAction(raw: Partial<Record<keyof Onboard
   if (weekly) await setWeeklyGoal(repo, userId, weekly);
   if (answers.monthly_goal_euros) await setEarningsGoal(repo, userId, answers.monthly_goal_euros * 100);
 
-  if (firstTime) trial = (await onOnboardingCompleted(userId)).trialStarted;
+  if (firstTime) await onOnboardingCompleted(userId);
   revalidatePath('/app', 'layout');
-  return { ok: true, redirect: firstTime ? `/app?bienvenue=${trial ? 'essai' : '1'}` : '/app' };
+  // Sans abonnement, l'étape suivante est le choix de l'abonnement (l'appli n'est ouverte qu'aux abonnés).
+  if (!getPlan(profile.plan).access) return { ok: true, redirect: '/abonnement?bienvenue=1' };
+  return { ok: true, redirect: firstTime ? '/app?bienvenue=1' : '/app' };
 }
 
 export type CreatorPreview =

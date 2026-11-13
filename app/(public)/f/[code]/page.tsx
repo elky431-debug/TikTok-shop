@@ -6,7 +6,8 @@ import { LinkButton } from '@/components/ui/button';
 import { AnnouncementPill } from '@/components/ui/announcement-pill';
 import { FeatureCard } from '@/components/ui/feature-card';
 import { BRAND } from '@/lib/brand';
-import { COACH_TRIAL_DAYS, getPlan } from '@/lib/plans';
+import { COACH_FIRST_MONTH_DISCOUNT, getPlan } from '@/lib/plans';
+import { discountedFirstMonth } from '@/lib/billing/coach-discount';
 import { describeCode, normalizeCode } from '@/lib/referral';
 import { formatEuros } from '@/lib/utils';
 
@@ -26,11 +27,11 @@ async function coachFor(rawCode: string) {
 export async function generateMetadata({ params }: { params: { code: string } }): Promise<Metadata> {
   const found = await coachFor(params.code);
   if (!found) return { title: 'Code introuvable', robots: { index: false, follow: false } };
-  const months = Math.round(COACH_TRIAL_DAYS / 30);
-  const title = `${found.coach.training_name} t’offre ${months} mois de ${BRAND} Pro`;
+  const percent = Math.round(COACH_FIRST_MONTH_DISCOUNT * 100);
+  const title = `${found.coach.training_name} : −${percent} % sur ton premier mois de ${BRAND}`;
   return {
     title,
-    description: `Avec le code ${found.code}, ${months} mois de Pro offerts, sans carte bancaire : les produits TikTok Shop qui montent chaque matin et des scripts vidéo prêts à tourner.`,
+    description: `Avec le code ${found.code}, −${percent} % sur ton premier mois : les produits TikTok Shop qui montent chaque matin et des scripts vidéo prêts à tourner.`,
     robots: { index: false, follow: true },
     openGraph: { title, type: 'website' },
   };
@@ -40,14 +41,14 @@ export default async function CoachLandingPage({ params }: { params: { code: str
   const found = await coachFor(params.code);
   if (!found) notFound();
   const { coach, code } = found;
-  const months = Math.round(COACH_TRIAL_DAYS / 30);
+  const percent = Math.round(COACH_FIRST_MONTH_DISCOUNT * 100);
   const pro = getPlan('pro');
   const signup = `/r/${encodeURIComponent(code)}`;
 
   const features = [
     { icon: Radar, title: 'Le radar complet', text: 'Chaque matin, les produits TikTok Shop qui montent dans tes niches, classés par score.' },
     { icon: Gauge, title: 'Un score expliqué', text: 'Croissance, commission, concurrence, prix : le pourquoi de chaque score, en phrases.' },
-    { icon: Clapperboard, title: 'Tes scripts écrits', text: `${pro.scriptsPerDay} scripts par jour, accroches comprises, dans ton style.` },
+    { icon: Clapperboard, title: 'Tes scripts écrits', text: `Jusqu’à ${pro.scriptsPerDay} scripts par jour en Pro, accroches comprises, dans ton style.` },
     { icon: Sunrise, title: 'Ton récap du matin', text: 'Par e-mail ou sur Discord, à l’heure que tu choisis.' },
   ];
 
@@ -61,21 +62,21 @@ export default async function CoachLandingPage({ params }: { params: { code: str
       <div className="relative mx-auto max-w-3xl text-center">
         <AnnouncementPill>Proposé par {coach.training_name}</AnnouncementPill>
         <h1 className="mt-6 text-4xl/tight font-bold tracking-tight sm:text-6xl/tight">
-          {months} mois de Pro
+          −{percent} % sur ton
           <br />
-          <span className="text-gradient-live italic">offerts avec {code}.</span>
+          <span className="text-gradient-live italic">premier mois avec {code}.</span>
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-muted">
           {coach.training_name} te propose {BRAND} : chaque matin, les produits TikTok Shop à vendre dans tes niches, et des scripts vidéo
-          prêts à tourner. Sans carte bancaire. À la fin des {months} mois, tu choisis de continuer ({formatEuros(pro.prices.month)} par mois)
-          ou de rester en Gratuit.
+          prêts à tourner. Avec son code, ton premier mois d’abonnement mensuel est à −{percent} %, quel que soit le plan (Pro :{' '}
+          {formatEuros(discountedFirstMonth('pro'))} au lieu de {formatEuros(pro.prices.month)}). Sans engagement.
         </p>
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <LinkButton href={signup} size="lg" arrow>
-            Activer mes {months} mois offerts
+            Profiter de −{percent} %
           </LinkButton>
           <LinkButton href="/prix" variant="secondary" size="lg">
-            Voir ce que contient Pro
+            Voir les plans
           </LinkButton>
         </div>
         <p className="mt-4 text-xs text-muted">Le code {code} est appliqué automatiquement à ton inscription.</p>

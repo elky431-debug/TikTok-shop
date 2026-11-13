@@ -534,3 +534,60 @@ nuit (découverte, vidéos, détails) est un coût fixe partagé, suivi dans l'a
 - **Génération réelle vérifiée** : inscription → 10 questions → dashboard → « Écrire mes scripts » → page d'attente
   (environ 25 s, tâche en arrière-plan) → 10 accroches et 3 scripts écrits par OpenAI. Déconnexion vers l'accueil.
   Comptes de test supprimés.
+
+## Nouvelle grille de prix : tout est payant (13 novembre 2026, décisions 188 à 194)
+
+**Ce qui change pour l'utilisateur**
+- Trois plans, sans plan gratuit ni essai : **Starter** 34,99 €/mois (349,90 €/an), **Pro** 59,99 € (599,90 €/an),
+  **Elite** 99,99 € (999,90 €/an). L'annuel vaut 10 mois (« 2 mois offerts »). Pro est marqué « Recommandé ».
+- Parcours : inscription → onboarding (10 questions) → **choix de l'abonnement** (`/abonnement`) → paiement → appli.
+  Sans abonnement, toute page de l'appli renvoie au choix du plan ; le compte (suppression, export) reste ouvert.
+- Au paiement, une **case obligatoire** : « Je demande que mon abonnement démarre tout de suite, avant la fin du délai
+  de rétractation de 14 jours. J'ai bien noté que si je me rétracte pendant ce délai, je paierai le service fourni
+  jusqu'à ma rétractation, au prorata du prix (article L221-25 du Code de la consommation). » Elle est enregistrée
+  côté serveur et confirmée par e-mail avec le récapitulatif de l'abonnement.
+- **Formateurs** : plus de 3 mois offerts ; leur code donne **−20 % sur le premier mois** (abonnement mensuel, une fois
+  par compte) et ils gardent **30 % de commission récurrente** sur ce qui est payé.
+- « Illimité » (Elite, produits suivis en Pro) : un plafond de sécurité invisible protège les coûts Nexscope et OpenAI.
+
+**⚠️ À faire relire par un juriste avant d'encaisser**
+- les CGV (`/cgv`) : sections 2 (« ni plan gratuit ni essai »), 3 (plans, « illimité » et sa limite de sécurité), 5
+  (droit de rétractation, démarrage immédiat, montant proportionnel, formulaire type de l'annexe R221-1, modalités de
+  remboursement) et 6 (remise du code formateur, qui ne vaut pas pour l'annuel) ;
+- le texte exact de la case (`lib/billing/consent.ts`) et sa qualification : l'abonnement est traité comme une
+  **prestation de services** (art. L221-25 : paiement au prorata en cas de rétractation), pas comme un contenu numérique
+  (L221-28 13°, qui ferait perdre le droit) ;
+- l'e-mail de confirmation (`emails/subscription-confirmed.tsx`, support durable de l'art. L221-13) ;
+- la politique de confidentialité (conservation de la preuve du consentement : durée à compléter) ;
+- les `[À COMPLÉTER]` restants : raison sociale, adresses postale et e-mail de rétractation, régime de TVA.
+
+**Choix business supposés (à confirmer)**
+1. ✅ **Validé** : la remise formateur ne vaut que pour le **premier mois de l'abonnement mensuel**, une seule fois par
+   compte.
+2. **Plafonds de sécurité** (jamais affichés) : 150 scripts/jour, 500 produits suivis, 50 alertes, 300 analyses de vidéo
+   et 300 propositions par mois, 50 analyses d'accroches et 150 commandes Discord par jour, 20 séries par jour.
+3. Fonctions absentes de la grille : ✅ **validé** : export des scripts en PDF et texte → Elite (avec l'export CSV),
+   analyse des accroches d'un produit → Pro (10/jour), Elite illimité. Encore supposé : commandes Discord /score et
+   /script → 10, 40, illimité ; retouches de script → 10, 20, illimité ; plans de contenu du mode préparation → 3 par
+   jour pour tous.
+4. Les 5 formats de Starter : démo face caméra, avant-après, histoire perso, réponse à un commentaire, déballage.
+5. Prix affichés **TTC** (le régime de TVA reste à compléter dans les CGV).
+6. Le récap du matin (e-mail et Discord) est inclus dès Starter ; le récap de la semaine à partir de Pro.
+
+**Coût maximal par abonné et par mois** (mêmes hypothèses que la section « Coût par utilisateur ») : Starter ≈ 2 $
+(10 scripts et 3 recherches par jour), Pro ≈ 8 $ (40 scripts, 15 recherches), Elite au plafond ≈ 25 à 30 $ (150
+scripts, 50 recherches par jour). Usage courant : bien en dessous.
+
+**À faire de ton côté**
+0. **Migration de la base** (autorisée le 13 novembre, appliquée par la session après le push, voir plus bas) :
+   `npm run db:setup -- --sans-seed` applique `20261117000100_nouvelle_grille.sql` (renomme `free` → `aucun`,
+   `proplus` → `elite`, ajoute `starter`, protège la preuve du consentement). Sans elle, le site marche (tout le monde
+   est envoyé au choix de l'abonnement) mais aucun plan ne peut être enregistré : ni paiement, ni plan offert par l'admin
+   (message clair dans `/admin/utilisateurs`).
+1. **Stripe** : mettre `STRIPE_SECRET_KEY` (test d'abord), lancer `npm run stripe:setup` (3 produits, 6 prix retrouvés
+   par `lookup_key`, coupon formateur, portail), puis `npm run stripe:setup -- --webhook` une fois en ligne. Plus aucune
+   variable `STRIPE_PRICE_…` à recopier ; tu peux retirer les anciennes de Netlify.
+2. **En attendant Stripe**, le site en ligne affiche « Paiement bientôt disponible » sur le choix de l'abonnement :
+   personne ne peut entrer dans l'appli. Pour tester ou ouvrir un compte : `/admin/utilisateurs` → « Changer le plan »
+   (plan offert, sans facture ni commission, exclu du MRR).
+3. Relire les textes juridiques ci-dessus.

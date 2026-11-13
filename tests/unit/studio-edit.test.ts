@@ -5,7 +5,9 @@ import { setRepoForTests } from '@/lib/db';
 import { LocalRepo } from '@/lib/db/local';
 import type { PlanId, Product } from '@/lib/db/types';
 import { refreshCatalog } from '@/lib/jobs/refresh';
+import { SAFETY_CAPS } from '@/lib/plans';
 import { createScripts } from '@/lib/studio';
+import { KIND_DOC } from '@/lib/studio/types';
 import { editLine, editsLeft, rewriteScript, translateDocScript, undoScript } from '@/lib/studio/edit';
 import { parisDate } from '@/lib/utils';
 
@@ -71,22 +73,40 @@ describe('point 6 · édition fine', () => {
     expect(out.simulated_edits).toBe(0);
   });
 
-  it('limite les retouches par génération selon le plan', async () => {
-    const free = await user('edit-limite', 'free');
+  it('limite les retouches par génération selon le plan (Starter 10, Pro 20)', async () => {
+    const starter = await user('edit-limite', 'starter');
     const [first] = await repo.listProducts({ niches: ['beaute'] });
-    const doc = await createScripts(free, first.id, 'demo');
-    for (let i = 0; i < 5; i++) await editLine(free, doc.id, 0, 1);
-    const last = await repo.getRecord<{ edit_count: number }>(free.id, doc.id);
-    expect(editsLeft(free, last!.data)).toBe(0);
-    await expect(rewriteScript(free, doc.id, 0, 'percutant')).rejects.toMatchObject({ code: 'retouches' });
+    const doc = await createScripts(starter, first.id, 'demo');
+    expect(editsLeft(starter, doc)).toBe(10);
+    expect(editsLeft(await user('edit-limite-pro', 'pro'), doc)).toBe(20);
+    for (let i = 0; i < 10; i++) await editLine(starter, doc.id, 0, 1);
+    const last = await repo.getRecord<{ edit_count: number }>(starter.id, doc.id);
+    expect(editsLeft(starter, last!.data)).toBe(0);
+    await expect(rewriteScript(starter, doc.id, 0, 'percutant')).rejects.toMatchObject({
+      code: 'retouches',
+      message: expect.stringContaining('Tu as fait les 10 retouches possibles'),
+    });
   });
 
-  it('traduit pour l’Allemagne, l’Italie, l’Espagne en Pro+ seulement, avec la mention locale', async () => {
-    const pro = await user('trad-pro', 'pro');
-    const proDoc = await createScripts(pro, product.id, 'demo');
-    await expect(translateDocScript(pro, proDoc.id, 0, 'de')).rejects.toMatchObject({ code: 'plan' });
+  // Corrigé après le signalement de la mise à jour des tests (nouvelle grille).
+  it('Elite : la limite de sécurité des retouches n’est jamais chiffrée', async () => {
+    const elite = await user('edit-elite', 'elite');
+    const doc = await createScripts(elite, product.id, 'demo');
+    const record = await repo.getRecord<Record<string, unknown>>(elite.id, doc.id);
+    await repo.saveRecord(elite.id, KIND_DOC, { ...record!.data, edit_count: SAFETY_CAPS.editsPerGeneration }, doc.id);
+    const refused = await rewriteScript(elite, doc.id, 0, 'percutant').catch((e: unknown) => e);
+    expect(refused).toMatchObject({ code: 'retouches' });
+    expect((refused as Error).message).not.toContain(String(SAFETY_CAPS.editsPerGeneration));
+  });
 
-    const plus = await user('trad-plus', 'proplus');
+  it('traduit pour l’Allemagne, l’Italie, l’Espagne en Elite seulement, avec la mention locale', async () => {
+    for (const plan of ['starter', 'pro'] as const) {
+      const member = await user(`trad-${plan}`, plan);
+      const memberDoc = await createScripts(member, product.id, 'demo');
+      await expect(translateDocScript(member, memberDoc.id, 0, 'de')).rejects.toMatchObject({ code: 'plan' });
+    }
+
+    const plus = await user('trad-elite', 'elite');
     const doc = await createScripts(plus, product.id, 'demo');
     setStructuredRunnerForTests(async () => ({
       title: 'Die schnelle Demo',

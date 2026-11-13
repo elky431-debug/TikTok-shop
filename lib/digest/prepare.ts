@@ -6,6 +6,7 @@ import { regionFor } from '@/lib/regions';
 import { parisDate } from '@/lib/utils';
 import { buildDigestContent, type DigestExtras } from './build';
 import { buildPersonal, type PersonalDigestContent } from './personal';
+import { getPlan } from '@/lib/plans';
 
 /** Accroche et script du récap, générés une fois par produit et par nuit (cache), sans coût d'API. */
 export function defaultDigestExtras(day: string): DigestExtras {
@@ -40,10 +41,12 @@ export async function prepareDigests(
   const [profiles, catalog] = await Promise.all([repo.listOnboardedProfiles(), getLiveCatalog(repo)]);
   // Pas de récap « du matin » avec des données de plus de 36 heures : mieux vaut rien qu'un récap trompeur.
   if (catalog.stale) return { prepared: 0, skipped: 'données de plus de 36 heures' };
-  // Chacun reçoit les produits de son pays (Pro+ hors France), si ce pays a un relevé frais ; sinon la France.
+  // Chacun reçoit les produits de son pays (Elite hors France), si ce pays a un relevé frais ; sinon la France.
   const byRegion = new Map<RegionId, Product[]>([['FR', catalog.products]]);
   let prepared = 0;
   for (const profile of profiles) {
+    // Sans abonnement, pas de récap du matin : rien à préparer.
+    if (!getPlan(profile.plan).access) continue;
     const region = regionFor(profile);
     if (!byRegion.has(region)) {
       const other = await getLiveCatalog(repo, new Date(), region);

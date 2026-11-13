@@ -10,7 +10,7 @@ export function LegalPage({ title, updated, children }: { title: string; updated
     <article className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:py-16">
       <h1 className="text-4xl">{title}</h1>
       <p className="mt-2 text-sm text-muted">Dernière mise à jour : {updated}</p>
-      <div className="legal mt-10 space-y-8 leading-relaxed [&_h2]:mb-3 [&_h2]:text-xl [&_li]:mt-1 [&_p+p]:mt-3 [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-5">
+      <div className="legal mt-10 space-y-8 leading-relaxed [&_h2]:mb-3 [&_h2]:text-xl [&_li]:mt-1 [&_p+p]:mt-3 [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-5 [&_blockquote]:my-3 [&_blockquote]:rounded-xl [&_blockquote]:border-l-4 [&_blockquote]:border-line-strong [&_blockquote]:bg-surface [&_blockquote]:px-4 [&_blockquote]:py-3 [&_blockquote]:text-sm">
         {children}
       </div>
     </article>

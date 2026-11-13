@@ -73,7 +73,7 @@ describe('bloc 2.2 · évolution du score sur 30 jours', () => {
   });
 });
 
-describe('bloc 2.3 · poids réglables (Pro+)', () => {
+describe('bloc 2.3 · poids réglables (Elite)', () => {
   it('nettoie les poids, reconnaît le réglage par défaut', () => {
     expect(sanitizeWeights({ croissance: '50', commission: 30, saturation: '200', prix: -4 })).toEqual({ croissance: 50, commission: 30, saturation: 100, prix: 0 });
     expect(sanitizeWeights({ croissance: 0, commission: 0, saturation: 0, prix: 0 })).toBeNull();
@@ -92,16 +92,16 @@ describe('bloc 2.3 · poids réglables (Pro+)', () => {
     expect(pointsWith(partial, { croissance: 100, commission: 10, saturation: 10, prix: 10 })).toBe(100);
   });
 
-  it('seul Pro+ applique ses poids (côté serveur), et peut revenir au réglage par défaut', async () => {
+  it('seul Elite applique ses poids (côté serveur), et peut revenir au réglage par défaut', async () => {
     const repo = new LocalRepo(null);
     setRepoForTests(repo);
     await repo.upsertProducts([a, b].map((p) => ({ ...p, updated_at: NOW })));
     await repo.ensureProfile({ id: 'w', email: 'w@exemple.fr' });
-    let user = await repo.updateProfile('w', { plan: 'proplus', niches: ['beaute'], onboarded_at: NOW, follower_range: '1500-5000' });
+    let user = await repo.updateProfile('w', { plan: 'elite', niches: ['beaute'], onboarded_at: NOW, follower_range: '1500-5000' });
     await saveRadarSettings('w', { poids: WEIGHT_PRESETS.commission.weights }, repo);
     const settings = await getRadarSettings('w', repo);
     expect(effectiveWeights(user, settings)).toEqual(WEIGHT_PRESETS.commission.weights);
-    expect(effectiveWeights({ plan: 'pro' }, settings)).toBeNull();
+    for (const plan of ['aucun', 'starter', 'pro'] as const) expect(effectiveWeights({ plan }, settings)).toBeNull();
     const radar = await getRadar(user, {});
     const first = radar.items[0];
     expect(first.kind === 'visible' && first.product.id).toBe('b');
@@ -115,8 +115,8 @@ describe('bloc 2.3 · poids réglables (Pro+)', () => {
 });
 
 describe('bloc 2.4 · l’explication reste visible', () => {
-  it('en Gratuit, les phrases restent, seuls les points et le score sont retirés', () => {
-    const view = toProductView(a, 'free');
+  it('sans abonnement, les phrases restent, seuls les points et le score sont retirés', () => {
+    const view = toProductView(a, 'aucun');
     expect(view.score).toBeNull();
     expect(view.personal_score).toBeNull();
     expect(view.breakdown?.summary).toBe('Résumé.');

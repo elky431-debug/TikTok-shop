@@ -5,7 +5,7 @@ import { getPlan } from '@/lib/plans';
 
 /**
  * Pays du catalogue. La France reste le pays par défaut et l'interface reste en français ; l'Allemagne, l'Italie et
- * l'Espagne s'ouvrent avec Pro+. La collecte nocturne ne couvre que les pays de ENABLED_REGIONS (FR par défaut) : un
+ * l'Espagne s'ouvrent avec Elite. La collecte nocturne ne couvre que les pays de ENABLED_REGIONS (FR par défaut) : un
  * pays non collecté s'affiche vide, avec l'explication, jamais avec des produits d'un autre pays.
  */
 export const REGIONS: Record<RegionId, { label: string; language: 'fr' | 'de' | 'it' | 'es' }> = {
@@ -37,7 +37,7 @@ export function enabledRegions(): RegionId[] {
   return ['FR', ...asked.filter((r) => r !== 'FR')];
 }
 
-/** Pays du catalogue montré à cet utilisateur : le sien s'il a Pro+, sinon la France. */
+/** Pays du catalogue montré à cet utilisateur : le sien s'il a Elite, sinon la France. */
 export function regionFor(profile: Pick<Profile, 'plan' | 'region'>): RegionId {
   return getPlan(profile.plan).europe && isRegionId(profile.region) ? profile.region : 'FR';
 }

@@ -121,7 +121,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Record
             <Stat label="Abonnés payants" value={formatInt(metrics.mrr.paying)} hint={`${formatInt(metrics.mrr.trialing)} en essai`} />
             <Stat label="Inscriptions" value={formatInt(metrics.signups.last7)} hint={`7 jours · ${formatInt(metrics.signups.last30)} sur 30 jours`} />
             <Stat
-              label="Conversion gratuit → payant"
+              label="Conversion inscrits → abonnés"
               value={metrics.conversion.rate === null ? '—' : formatPercent(metrics.conversion.rate, 1)}
               hint={`${metrics.conversion.paying} sur ${metrics.conversion.onboarded} inscrits`}
             />
@@ -134,8 +134,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Record
           </dl>
           <p className="mt-2 text-xs text-muted">
             MRR : abonnements actifs ou en nouvel essai de paiement × prix du plan, l’annuel divisé par 12 ; hors taxes avec une TVA de{' '}
-            {formatPercent(adminSettings.vatRate)}. Pro : {metrics.mrr.byPlan.pro.month} mensuel, {metrics.mrr.byPlan.pro.year} annuel · Pro+ :{' '}
-            {metrics.mrr.byPlan.proplus.month} mensuel, {metrics.mrr.byPlan.proplus.year} annuel. Conversion sur les 30 derniers jours :{' '}
+            {formatPercent(adminSettings.vatRate)}. Starter : {metrics.mrr.byPlan.starter.month} mensuel, {metrics.mrr.byPlan.starter.year} annuel · Pro :{' '}
+            {metrics.mrr.byPlan.pro.month} mensuel, {metrics.mrr.byPlan.pro.year} annuel · Elite : {metrics.mrr.byPlan.elite.month} mensuel,{' '}
+            {metrics.mrr.byPlan.elite.year} annuel. Conversion sur les 30 derniers jours :{' '}
             {metrics.conversion.cohort30.paying} sur {metrics.conversion.cohort30.signups} inscrits.
           </p>
           <div className="mt-4 grid gap-3 lg:grid-cols-2">

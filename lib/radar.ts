@@ -32,7 +32,7 @@ export interface ProductFigures {
   subcategory: string | null;
 }
 
-/** Vue d'un produit adaptée au plan : le score et ses points sont retirés en gratuit. */
+/** Vue d'un produit adaptée au plan : le score et ses points sont retirés sans abonnement. */
 export interface ProductView {
   id: string;
   name: string;
@@ -55,7 +55,7 @@ export interface ProductView {
   demo: boolean;
   sales_7d: number[];
   sales_30d: number[];
-  /** Score général (poids par défaut, ou poids réglés en Pro+). */
+  /** Score général (poids par défaut, ou poids réglés en Elite). */
   score: number | null;
   /** Score pour toi (niches, tranche d'abonnés, style). */
   personal_score: number | null;
@@ -88,6 +88,8 @@ export interface ViewExtras {
 
 export function toProductView(product: Product, plan: PlanId, saved = false, extras: ViewExtras = {}): ProductView {
   const showScore = getPlan(plan).showScore;
+  // Score « pour toi » : à partir de Pro (retiré côté serveur en Starter).
+  const showPersonal = showScore && getPlan(plan).personalScore;
   const breakdown = product.latest_breakdown;
   const metrics = productMetrics(product);
   return {
@@ -109,7 +111,7 @@ export function toProductView(product: Product, plan: PlanId, saved = false, ext
     sales_7d: product.sales_30d.slice(-7),
     sales_30d: product.sales_30d,
     score: showScore ? (extras.scores?.score ?? product.latest_score) : null,
-    personal_score: showScore ? (extras.scores?.personal ?? null) : null,
+    personal_score: showPersonal ? (extras.scores?.personal ?? null) : null,
     breakdown: breakdown
       ? {
           growth_7d: breakdown.growth_7d,
@@ -170,7 +172,7 @@ export interface Radar {
   sort: SortKey;
   order: SortOrder;
   settings: RadarSettings;
-  /** Poids appliqués (Pro+), null = réglage par défaut. */
+  /** Poids appliqués (Elite), null = réglage par défaut. */
   weights: Weights | null;
 }
 
@@ -213,15 +215,14 @@ export function sortValue(view: ProductView, key: SortKey): number | string | nu
   }
 }
 
-/** Scores du catalogue du jour pour cet utilisateur (poids Pro+ et score pour toi). */
+/** Scores du catalogue du jour pour cet utilisateur (poids Elite et score pour toi). */
 export function scoresFor(products: Product[], profile: Profile, settings: RadarSettings): Map<string, ScoreSet> {
   return computeScores(products, profile, effectiveWeights(profile, settings));
 }
 
 /**
- * Radar de l'utilisateur. La limite du plan gratuit est appliquée ici, côté serveur :
- * les produits verrouillés ne transportent ni nom, ni identifiant, ni chiffre. En Gratuit, le tri ne s'applique qu'à
- * ses produits visibles (les verrouillés gardent leur place, sans rien révéler de leurs chiffres).
+ * Radar de l'utilisateur. La visibilité du plan est appliquée ici, côté serveur : les produits verrouillés (sans
+ * abonnement) ne transportent ni nom, ni identifiant, ni chiffre. Tous les plans payants voient le radar complet.
  */
 export async function getRadar(profile: Profile, filters: RadarFilters, options: RadarOptions = {}): Promise<Radar> {
   await ensureCatalog();
@@ -250,12 +251,14 @@ export async function getRadar(profile: Profile, filters: RadarFilters, options:
 
   let sort = options.sort ?? settings.tri;
   if (!plan.showScore && SCORE_SORTS.includes(sort)) sort = 'score';
+  // Score « pour toi » à partir de Pro : en Starter, ce tri retombe sur le score général.
+  if (sort === 'pourtoi' && !plan.personalScore) sort = 'score';
   const order = options.order ?? (options.sort ? defaultOrder(sort) : settings.ordre);
 
   const views = visibleProducts.map((p) =>
     toProductView(p, profile.plan, savedIds.has(p.id), { scores: scores.get(p.id), whyNow: whyNow[p.id] ?? null, favorite: favoriteIds.has(p.id) }),
   );
-  // Par défaut (score décroissant), le classement du jour est gardé tel quel en Gratuit (score masqué).
+  // Par défaut (score décroissant), le classement du jour est gardé tel quel sans abonnement (score masqué).
   const sortedViews = !plan.showScore && sort === 'score' ? views : sortBy(views, order, (v) => sortValue(v, sort));
   const lockedProducts = filtered.filter((p) => !visible.has(p.id));
 
@@ -290,7 +293,7 @@ export async function getRadar(profile: Profile, filters: RadarFilters, options:
 }
 
 /**
- * Un compte gratuit n'ouvre que ses 3 produits du jour et ceux qu'il suit déjà.
+ * Un compte sans abonnement n'ouvre que ses 3 produits du jour et ceux qu'il suit déjà.
  * Les plans payants ouvrent tout le catalogue.
  */
 export async function canAccessProduct(profile: Profile, productId: string): Promise<boolean> {
@@ -301,7 +304,7 @@ export async function canAccessProduct(profile: Profile, productId: string): Pro
   return visibleProductIds(ranked, profile.plan).has(productId);
 }
 
-/** Identifiants ouverts à ce compte aujourd'hui (Gratuit : ses 3 produits du jour et ceux qu'il suit). null = tout. */
+/** Identifiants ouverts à ce compte aujourd'hui (sans abonnement : ses 3 produits du jour et ceux qu'il suit). null = tout. */
 export async function accessibleIds(profile: Profile, products: Product[]): Promise<Set<string> | null> {
   if (isPaidPlan(profile.plan)) return null;
   const saved = await getRepo().listSavedProducts(profile.id);

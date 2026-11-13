@@ -9,6 +9,7 @@ import { studioRights } from './limits';
 import { getDoc, updateDoc } from './store';
 import { activeStyle } from './style';
 import type { StudioDocView, StudioRating } from './types';
+import { isUnlimited } from '@/lib/plans';
 
 /**
  * Retouches et notes d'un script d'une génération. Chaque retouche IA compte dans la limite de retouches de la
@@ -42,7 +43,9 @@ function assertEditsLeft(profile: Profile, doc: StudioDocView) {
   if (editsLeft(profile, doc) <= 0) {
     throw new StudioError(
       'retouches',
-      `Tu as fait les ${studioRights(profile.plan).editsPerGeneration} retouches possibles sur cette génération. Écris de nouveaux scripts pour continuer.`,
+      isUnlimited(profile.plan, 'editsPerGeneration')
+        ? 'Limite de sécurité des retouches atteinte sur cette génération. Écris de nouveaux scripts pour continuer.'
+        : `Tu as fait les ${studioRights(profile.plan).editsPerGeneration} retouches possibles sur cette génération. Écris de nouveaux scripts pour continuer.`,
     );
   }
 }
@@ -104,10 +107,10 @@ export async function undoScript(profile: Profile, docId: string, scriptIndex: n
   });
 }
 
-/** Adapte un script pour l'Allemagne, l'Italie ou l'Espagne (Pro+). Compte comme une retouche. */
+/** Adapte un script pour l'Allemagne, l'Italie ou l'Espagne (Elite). Compte comme une retouche. */
 export async function translateDocScript(profile: Profile, docId: string, scriptIndex: number, lang: TranslationLang): Promise<StudioDocView> {
   if (!studioRights(profile.plan).translation) {
-    throw new StudioError('plan', 'La traduction pour les marchés européens est disponible avec le plan Pro+.');
+    throw new StudioError('plan', 'La traduction pour les marchés européens est disponible avec le plan Elite.');
   }
   const { doc, script } = await load(profile, docId, scriptIndex);
   const existing = doc.translations[scriptIndex]?.[lang];

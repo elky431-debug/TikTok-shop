@@ -9,4 +9,4 @@ export const THEME_COOKIE = `${BRAND_SLUG}_theme`;
 /** Page demandée avant un lien de connexion par e-mail (le lien lui-même ne la transporte pas). */
 export const NEXT_PATH_COOKIE = `${BRAND_SLUG}_suite`;
 
-export const PROTECTED_PREFIXES = ['/app', '/formateur', '/admin', '/bienvenue'];
+export const PROTECTED_PREFIXES = ['/app', '/formateur', '/admin', '/bienvenue', '/abonnement'];

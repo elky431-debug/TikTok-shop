@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { completeOnboarding, signIn, signUpWithPassword, uniqueEmail } from './helpers';
+import { completeOnboarding, signIn, signUpWithPassword, subscribe, uniqueEmail } from './helpers';
 
-test('inscription : de l’accueil au radar, en mode préparation', async ({ page }) => {
+test('inscription : de l’accueil au radar, abonnement choisi avant l’appli, en mode préparation', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Automatise ton business TikTok Shop de A à Z.');
-  await page.getByRole('link', { name: 'Démarrer gratuitement' }).first().click();
+  await page.getByRole('link', { name: 'Commencer', exact: true }).first().click();
   await expect(page).toHaveURL(/\/connexion/);
 
   // Inscription par e-mail et mot de passe : aucun e-mail n'est nécessaire.
@@ -41,27 +41,36 @@ test('inscription : de l’accueil au radar, en mode préparation', async ({ pag
   await page.getByRole('button', { name: 'Passer' }).click(); // objectif
   await page.getByRole('button', { name: 'Passer' }).click(); // code formateur
   await expect(page.getByText('On prépare')).toBeVisible();
-  await expect(page).toHaveURL(/\/app\?bienvenue=1/, { timeout: 30_000 });
+  await expect(page).toHaveURL(/\/abonnement\?bienvenue=1/, { timeout: 30_000 });
   expect(Date.now() - start).toBeLessThan(120_000);
 
-  // Dashboard, puis radar du plan gratuit
-  await expect(page).toHaveURL(/\/app\?bienvenue=1/);
+  // Choix de l'abonnement, obligatoire : l'appli renvoie ici tant qu'il n'y en a pas.
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Inès, choisis ton abonnement');
+  await expect(page.getByText('Recommandé')).toBeVisible();
+  await page.goto('/app/radar');
+  await expect(page).toHaveURL(/\/abonnement/);
+  // Sans la case de démarrage immédiat, rien n'est lancé.
+  await page.getByRole('button', { name: 'Choisir Pro' }).click();
+  await expect(page.getByText('Coche cette case pour démarrer ton abonnement tout de suite.')).toBeVisible();
+  await expect(page).toHaveURL(/\/abonnement/);
+  await subscribe(page, 'Pro');
+
+  // Dashboard, puis radar complet en mode préparation
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Dashboard de Inès');
-  await expect(page.getByText('Ton radar est prêt')).toBeVisible();
+  await expect(page.getByText('Ton abonnement Pro est actif')).toBeVisible();
   await page.getByRole('link', { name: 'Ouvrir le radar' }).first().click();
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Inès, voici tes produits du jour');
   await expect(page.getByText('Mode préparation', { exact: true })).toBeVisible();
-  await expect(page.locator('a[href^="/app/produit/"]')).toHaveCount(3);
-  await expect(page.getByText(/autres produits à vendre aujourd’hui/)).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Passer Pro' }).first()).toBeVisible();
+  await expect(page.getByText(/autres produits à vendre aujourd’hui/)).toHaveCount(0);
+  expect(await page.locator('a[href^="/app/produit/"]').count()).toBeGreaterThan(3);
+  await expect(page.getByLabel(/^Score \d+ sur 100$/).first()).toBeVisible();
 
-  // Fiche produit accessible, score masqué
+  // Fiche produit avec le score détaillé
   await page.locator('a[href^="/app/produit/"]').first().click();
   await expect(page.getByRole('heading', { name: 'Pourquoi ce score' })).toBeVisible();
-  await expect(page.getByText('Score Pro').first()).toBeVisible();
 });
 
-test('inscription avec un lien formateur : 3 mois de Pro offerts, sans carte', async ({ browser }) => {
+test('inscription avec un lien formateur : −20 % sur le premier mois', async ({ browser }) => {
   const code = `T${Date.now().toString(36).toUpperCase()}`;
   const coachEmail = uniqueEmail('formateur');
 
@@ -91,8 +100,13 @@ test('inscription avec un lien formateur : 3 mois de Pro offerts, sans carte', a
   await expect(page.getByText(`Code formateur ${code} appliqué`)).toBeVisible();
   await signIn(page, uniqueEmail('eleve'));
   await completeOnboarding(page, { firstName: 'Nora' });
-  await expect(page).toHaveURL(/bienvenue=essai/);
-  await expect(page.getByText('Tes 3 mois de Pro sont activés')).toBeVisible();
+  await expect(page.getByText('Code formateur : −20 % sur ton premier mois')).toBeVisible();
+  await expect(page.getByText('47,99 € le premier mois')).toBeVisible();
+  await page.getByRole('checkbox', { name: /démarre tout de suite/ }).check();
+  await page.getByRole('button', { name: 'Choisir Pro' }).click();
+  await expect(page.getByText('Code formateur : 47,99 € le premier mois (−20 %).')).toBeVisible();
+  await page.getByRole('button', { name: 'Simuler le paiement' }).click();
+  await expect(page).toHaveURL(/\/app\?paiement=ok/);
   // Radar complet, score visible.
   await page.goto('/app/radar');
   await expect(page.getByText(/autres produits à vendre aujourd’hui/)).toHaveCount(0);

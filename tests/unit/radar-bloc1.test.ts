@@ -8,7 +8,7 @@ import { setRepoForTests } from '@/lib/db';
 import { LocalRepo } from '@/lib/db/local';
 import type { Profile } from '@/lib/db/types';
 import { refreshCatalog } from '@/lib/jobs/refresh';
-import { getPlan } from '@/lib/plans';
+import { getPlan, isUnlimited, SAFETY_CAPS } from '@/lib/plans';
 import { getRadar } from '@/lib/radar';
 import {
   applyFilters,
@@ -245,7 +245,7 @@ describe('bloc 1.4 · recherche par mot-clé (Nexscope)', () => {
     expect(normalizeKeyword('a')).toBeNull();
   });
 
-  it('quota par plan côté serveur, même mot-clé gratuit dans la journée, cache partagé de 24 h', async () => {
+  it('quota par plan côté serveur, même mot-clé non recompté dans la journée, cache partagé de 24 h', async () => {
     const repo = new LocalRepo(null);
     setRepoForTests(repo);
     let calls = 0;
@@ -255,21 +255,23 @@ describe('bloc 1.4 · recherche par mot-clé (Nexscope)', () => {
         return raw;
       },
     };
-    const free = await makeUser(repo, 'r-free', 'free');
-    const pro = await makeUser(repo, 'r-pro', 'pro');
-    const other = await makeUser(repo, 'r-pro2', 'pro');
-    expect(await runKeywordSearch(free, 'sérum', { repo, source })).toEqual({ ok: false, reason: 'plan' });
-    const first = await runKeywordSearch(pro, 'Sérum', { repo, source });
+    const none = await makeUser(repo, 'r-aucun', 'aucun');
+    const starter = await makeUser(repo, 'r-starter', 'starter');
+    const other = await makeUser(repo, 'r-pro', 'pro');
+    expect([getPlan('starter'), getPlan('pro'), getPlan('elite')].map((p) => p.keywordSearchesPerDay)).toEqual([3, 15, 50]);
+    expect(await runKeywordSearch(none, 'sérum', { repo, source })).toEqual({ ok: false, reason: 'plan' });
+    const first = await runKeywordSearch(starter, 'Sérum', { repo, source });
     expect(first).toMatchObject({ ok: true, reused: false });
-    expect(await runKeywordSearch(pro, 'sérum ', { repo, source })).toMatchObject({ ok: true, reused: true });
-    for (const word of ['gourde', 'lisseur', 'chargeur', 'robe']) expect((await runKeywordSearch(pro, word, { repo, source })).ok).toBe(true);
-    expect(getPlan('pro').keywordSearchesPerDay).toBe(5);
-    expect(await runKeywordSearch(pro, 'tapis', { repo, source })).toEqual({ ok: false, reason: 'quota' });
+    expect(await runKeywordSearch(starter, 'sérum ', { repo, source })).toMatchObject({ ok: true, reused: true });
+    for (const word of ['gourde', 'lisseur']) expect((await runKeywordSearch(starter, word, { repo, source })).ok).toBe(true);
+    expect(await runKeywordSearch(starter, 'tapis', { repo, source })).toEqual({ ok: false, reason: 'quota' });
+    // Le mot-clé déjà cherché aujourd'hui reste ouvert, même quota épuisé.
+    expect(await runKeywordSearch(starter, 'gourde', { repo, source })).toMatchObject({ ok: true, reused: true });
     // Un autre utilisateur, même mot-clé : servi par le cache, sans nouvel appel.
-    expect(calls).toBe(5);
+    expect(calls).toBe(3);
     await runKeywordSearch(other, 'sérum', { repo, source });
-    expect(calls).toBe(5);
-    const record = await repo.getRecord<{ results: unknown[]; skipped: number }>(pro.id, (first as { id: string }).id);
+    expect(calls).toBe(3);
+    const record = await repo.getRecord<{ results: unknown[]; skipped: number }>(starter.id, (first as { id: string }).id);
     expect(record?.data.results).toHaveLength(2);
     expect(record?.data.skipped).toBe(2);
     setRepoForTests(null);
@@ -298,8 +300,10 @@ describe('bloc 1.5 · favoris et comparateur', () => {
   });
 
   it('compare 2 à 4 produits (Pro), marque le meilleur de chaque ligne', () => {
-    expect(getPlan('free').compare).toBe(false);
+    expect(getPlan('aucun').compare).toBe(false);
+    expect(getPlan('starter').compare).toBe(false);
     expect(getPlan('pro').compare).toBe(true);
+    expect(getPlan('elite').compare).toBe(true);
     expect(parseCompareIds(['a,b', 'b', 'c d', 'e'])).toEqual(['a', 'b', 'e']);
     expect(bestValue([3, null, 7])).toBe(7);
     expect(bestValue([30, 12], true)).toBe(12);
@@ -319,22 +323,40 @@ describe('bloc 1.6 · alertes personnalisées', () => {
   });
   afterAll(() => setRepoForTests(null));
 
-  it('limite côté serveur : Gratuit 0, Pro 3, et une règle sans critère est refusée', async () => {
-    const free = await makeUser(repo, 'al-free', 'free');
-    const pro = await makeUser(repo, 'al-pro', 'pro');
+  it('limite côté serveur : sans abonnement 0, Starter 3, Pro 15, et une règle sans critère est refusée', async () => {
+    expect([getPlan('aucun'), getPlan('starter'), getPlan('pro')].map((p) => p.alerts)).toEqual([0, 3, 15]);
+    const none = await makeUser(repo, 'al-aucun', 'aucun');
+    const starter = await makeUser(repo, 'al-starter', 'starter');
     const channels = { push: true, email: true, discord: true };
-    expect(await createAlert(free, { criteria: { commission: 20 }, channels }, repo)).toEqual({ ok: false, error: 'plan' });
-    expect(await createAlert(pro, { criteria: {}, channels }, repo)).toEqual({ ok: false, error: 'criteres' });
-    const created = await createAlert(pro, { criteria: { niche: 'beaute', commission: 20 }, channels }, repo);
+    expect(await createAlert(none, { criteria: { commission: 20 }, channels }, repo)).toEqual({ ok: false, error: 'plan' });
+    expect(await createAlert(starter, { criteria: {}, channels }, repo)).toEqual({ ok: false, error: 'criteres' });
+    const created = await createAlert(starter, { criteria: { niche: 'beaute', commission: 20 }, channels }, repo);
     expect(created).toMatchObject({ ok: true, matches: 1 });
     if (created.ok) expect(created.alert.data.known_ids).toEqual(['nx-a1']);
-    await createAlert(pro, { criteria: { commission: 25 }, channels }, repo);
-    await createAlert(pro, { criteria: { niche: 'maison' }, channels }, repo);
-    expect(await createAlert(pro, { criteria: { niche: 'tech' }, channels }, repo)).toEqual({ ok: false, error: 'limite' });
+    await createAlert(starter, { criteria: { commission: 25 }, channels }, repo);
+    await createAlert(starter, { criteria: { niche: 'maison' }, channels }, repo);
+    expect(await createAlert(starter, { criteria: { niche: 'tech' }, channels }, repo)).toEqual({ ok: false, error: 'limite' });
+    // Le même compte passé en Pro peut en créer d'autres.
+    await repo.updateProfile(starter.id, { plan: 'pro' });
+    expect(await createAlert({ ...starter, plan: 'pro' }, { criteria: { niche: 'tech' }, channels }, repo)).toMatchObject({ ok: true });
+  });
+
+  it('Elite : « illimité » à l’écran, plafond de sécurité côté serveur', async () => {
+    expect(isUnlimited('elite', 'alerts')).toBe(true);
+    expect(isUnlimited('pro', 'alerts')).toBe(false);
+    expect(getPlan('elite').alerts).toBe(SAFETY_CAPS.alerts);
+    const elite = await makeUser(repo, 'al-elite', 'elite');
+    const channels = { push: true, email: false, discord: false };
+    for (let i = 0; i < SAFETY_CAPS.alerts; i++) {
+      await repo.saveRecord<AlertData>(elite.id, ALERT_KIND, {
+        name: `a${i}`, criteria: { commission: i + 1 }, active: true, channels, region: 'FR', known_ids: [], last_checked: null, last_sent: null, last_count: 0,
+      } as unknown as AlertData);
+    }
+    expect(await createAlert(elite, { criteria: { niche: 'tech' }, channels }, repo)).toEqual({ ok: false, error: 'limite' });
   });
 
   it('chaque nuit : notifie les nouveaux produits, une fois par alerte et par jour', async () => {
-    const user = await makeUser(repo, 'al-nuit', 'proplus');
+    const user = await makeUser(repo, 'al-nuit', 'elite');
     const created = await createAlert(user, { name: 'Beauté généreuse', criteria: { niche: 'beaute', commission: 20 }, channels: { push: true, email: true, discord: false } }, repo);
     expect(created.ok).toBe(true);
     // Un nouveau produit remplit la règle.
@@ -356,10 +378,10 @@ describe('bloc 1.6 · alertes personnalisées', () => {
     expect(alert.data.last_count).toBe(3);
   });
 
-  it('après un passage en Gratuit, les alertes ne sont plus vérifiées', async () => {
+  it('après une résiliation (sans abonnement), les alertes ne sont plus vérifiées', async () => {
     const user = await makeUser(repo, 'al-bas', 'pro');
     await createAlert(user, { criteria: { niche: 'beaute' }, channels: { push: true, email: false, discord: false } }, repo);
-    await repo.updateProfile(user.id, { plan: 'free' });
+    await repo.updateProfile(user.id, { plan: 'aucun' });
     const summary = await checkAlerts(TODAY, repo);
     expect(summary.ignorees).toBeGreaterThanOrEqual(1);
     expect(await repo.listRecords(user.id, 'notification')).toHaveLength(0);
@@ -393,20 +415,35 @@ describe('bloc 1.7 · vues et tri mémorisés', () => {
     expect(radar.items[0].rank).toBe(1);
   });
 
-  it('en Gratuit, le tri ne touche que ses produits visibles, sans le score', async () => {
-    const free = await makeUser(repo, 'v-free', 'free');
-    const radar = await getRadar(free, {}, { sort: 'pourtoi' });
+  it('sans abonnement : aucun produit visible, et un tri par score retombe sur le classement du jour', async () => {
+    const none = await makeUser(repo, 'v-aucun', 'aucun');
+    const radar = await getRadar(none, {}, { sort: 'pourtoi' });
     expect(radar.sort).toBe('score');
-    const sorted = await getRadar(free, {}, { sort: 'prix', order: 'desc' });
-    const visible = sorted.items.filter((i) => i.kind === 'visible');
-    expect(visible).toHaveLength(3);
-    expect(sorted.items.slice(0, 3).every((i) => i.kind === 'visible')).toBe(true);
-    const prices = visible.map((i) => (i.kind === 'visible' ? i.product.price_cents : 0));
+    expect(radar.visibleCount).toBe(0);
+    expect(radar.lockedCount).toBeGreaterThan(0);
+    expect(radar.items.every((i) => i.kind === 'locked')).toBe(true);
+    // Un produit verrouillé ne transporte ni nom, ni identifiant, ni chiffre.
+    for (const item of radar.items) expect(Object.keys(item).sort()).toEqual(['key', 'kind', 'niche', 'rank']);
+  });
+
+  it('Starter : tri sur tout le radar avec le score, sans le score « pour toi » (à partir de Pro)', async () => {
+    const starter = await makeUser(repo, 'v-starter', 'starter');
+    const sorted = await getRadar(starter, {}, { sort: 'prix', order: 'desc' });
+    expect(sorted.lockedCount).toBe(0);
+    const visible = sorted.items.flatMap((i) => (i.kind === 'visible' ? [i.product] : []));
+    expect(visible.length).toBe(sorted.totalToday);
+    const prices = visible.map((p) => p.price_cents);
     expect(prices).toEqual([...prices].sort((a, b) => b - a));
+    expect(visible.every((p) => p.score !== null)).toBe(true);
+    expect(visible.every((p) => p.personal_score === null)).toBe(true);
+
+    const pro = await makeUser(repo, 'v-pro2', 'pro');
+    const proRadar = await getRadar(pro, {});
+    expect(proRadar.items.every((i) => i.kind === 'visible' && i.product.personal_score !== null)).toBe(true);
   });
 });
 
-describe('bloc 1.8 · export CSV (Pro+)', () => {
+describe('bloc 1.8 · export CSV (Elite)', () => {
   const repo = new LocalRepo(null);
   beforeAll(async () => {
     setRepoForTests(repo);
@@ -415,22 +452,30 @@ describe('bloc 1.8 · export CSV (Pro+)', () => {
   afterAll(() => setRepoForTests(null));
 
   it('format Excel français, cellules neutralisées, jamais de produit verrouillé', async () => {
+    expect(getPlan('starter').radarExport).toBe(false);
     expect(getPlan('pro').radarExport).toBe(false);
-    expect(getPlan('proplus').radarExport).toBe(true);
+    expect(getPlan('elite').radarExport).toBe(true);
     expect(csvCell('=HYPERLINK("x")')).toBe(`"'=HYPERLINK(""x"")"`);
     expect(csvCell(-25)).toBe('-25');
     expect(csvCell(12.5)).toBe('12,5');
     expect(csvCell(null)).toBe('');
-    const free = await makeUser(repo, 'x-free', 'free');
-    const radar = await getRadar(free, {});
-    expect(radar.lockedCount).toBeGreaterThan(0);
+
+    // Sans abonnement : tout est verrouillé, le fichier n'a que l'en-tête.
+    const none = await makeUser(repo, 'x-aucun', 'aucun');
+    const locked = await getRadar(none, {});
+    expect(locked.lockedCount).toBeGreaterThan(0);
+    const empty = radarToCsv(locked.items, 'https://exemple.fr');
+    expect(empty.trim().split('\r\n')).toHaveLength(1);
+    expect(empty).not.toContain('/app/produit/');
+
+    const elite = await makeUser(repo, 'x-elite', 'elite');
+    const radar = await getRadar(elite, {});
     const csv = radarToCsv(radar.items, 'https://exemple.fr');
-    expect(csv.startsWith('﻿Rang;Produit;Niche;')).toBe(true);
+    expect(csv.startsWith('\uFEFFRang;Produit;Niche;')).toBe(true);
     const lines = csv.trim().split('\r\n');
-    expect(lines).toHaveLength(1 + 3);
+    expect(lines).toHaveLength(1 + radar.visibleCount);
     expect(lines[1]).toContain('https://exemple.fr/app/produit/');
-    // Le score est masqué en Gratuit : colonne vide.
-    const header = lines[0].replace('﻿', '').split(';');
-    expect(lines[1].split(';')[header.indexOf('Score')]).toBe('');
+    const header = lines[0].replace('\uFEFF', '').split(';');
+    expect(lines[1].split(';')[header.indexOf('Score')]).toMatch(/^\d+$/);
   });
 });

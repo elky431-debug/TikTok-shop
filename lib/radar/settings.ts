@@ -16,7 +16,7 @@ export interface RadarSettings {
   vue: RadarView;
   tri: SortKey;
   ordre: SortOrder;
-  /** Poids réglés (Pro+) ; null = réglage par défaut. */
+  /** Poids réglés (Elite) ; null = réglage par défaut. */
   poids: Weights | null;
 }
 
@@ -48,7 +48,7 @@ export async function saveRadarSettings(userId: string, patch: Partial<RadarSett
   return next;
 }
 
-/** Poids appliqués : seulement en Pro+ (vérifié côté serveur), sinon le réglage par défaut. */
+/** Poids appliqués : seulement en Elite (vérifié côté serveur), sinon le réglage par défaut. */
 export function effectiveWeights(profile: Pick<Profile, 'plan'>, settings: RadarSettings): Weights | null {
   return getPlan(profile.plan).customWeights && settings.poids && !isDefaultWeights(settings.poids) ? settings.poids : null;
 }

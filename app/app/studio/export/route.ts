@@ -5,12 +5,12 @@ import { getRepo } from '@/lib/db';
 import { getPlan } from '@/lib/plans';
 import { parisDate } from '@/lib/utils';
 
-/** Export texte de tous les scripts (plan Pro+ uniquement, vérifié côté serveur). */
+/** Export texte de tous les scripts (plan Elite uniquement, vérifié côté serveur). */
 export async function GET(request: Request) {
   const viewer = await getViewer();
   if (!viewer) return relativeRedirect('/connexion?suite=/app/studio');
   if (!getPlan(viewer.profile.plan).export) {
-    return NextResponse.json({ error: 'L’export est réservé au plan Pro+.' }, { status: 403 });
+    return NextResponse.json({ error: 'L’export est réservé au plan Elite.' }, { status: 403 });
   }
   const scripts = await getRepo().listScripts(viewer.profile.id, { limit: 500 });
   const body = scripts

@@ -44,11 +44,14 @@ Ouvre http://localhost:3000. Sans clé, l’appli tourne en **mode local** :
 
 Comptes utiles (créés par `npm run seed`) — connecte-toi avec ces adresses, le lien s’affiche à l’écran :
 
-- `admin@tracktout.local` → `/admin` (passer un compte en formateur, lancer la tâche nocturne, voir les e-mails) ;
-- `formateur@tracktout.local` → `/formateur` (code `DEMO30`, deux élèves de démonstration) ;
-- n’importe quelle autre adresse → nouveau compte, onboarding puis radar.
+- `admin@tracktout.local` → `/admin` (plan Elite offert : passer un compte en formateur, donner un plan à la main,
+  lancer la tâche nocturne, voir les e-mails) ;
+- `formateur@tracktout.local` → `/formateur` (plan Elite offert, code `DEMO30`, deux élèves de démonstration) ;
+- n’importe quelle autre adresse → nouveau compte, onboarding, choix de l’abonnement (paiement simulé en local) puis
+  radar. Tout est payant : sans abonnement, l’appli renvoie au choix du plan.
 
-Pour tester l’essai formateur : ouvre http://localhost:3000/r/DEMO30 puis inscris-toi avec une nouvelle adresse.
+Pour tester le code formateur (−20 % sur le premier mois) : ouvre http://localhost:3000/r/DEMO30 puis inscris-toi avec
+une nouvelle adresse.
 
 ### Commandes
 
@@ -176,10 +179,16 @@ npm run ai:sample
 
 1. Mets ta clé `STRIPE_SECRET_KEY` (commence par `sk_test_` en test : tout ce qui suit se fait d’abord en test).
 2. Lance `npm run stripe:setup`. Il crée, sans doublon si tu le relances :
-   - les produits « Pro » et « Pro+ » et leurs 4 prix (19,90 €/mois, 167 €/an, 39,90 €/mois, 335 €/an) ;
+   - les produits « Starter », « Pro » et « Elite » et leurs 6 prix, aux montants de `lib/plans.ts` (34,99 €/mois,
+     349,90 €/an ; 59,99 €/mois, 599,90 €/an ; 99,99 €/mois, 999,90 €/an), chacun avec sa `lookup_key`
+     (`tracktout_<plan>_<month|year>`) : l’appli retrouve les prix par cette clé, **aucun identifiant de prix à
+     recopier**. Si un montant change dans `lib/plans.ts`, relance la commande : un nouveau prix reprend la clé et
+     l’ancien est archivé (les abonnés en cours le gardent). Les prix de l’ancien « Pro+ » sont archivés ;
+   - le **coupon du code formateur** (−20 % sur le premier mois, une seule fois), appliqué d’office au paiement
+     mensuel d’un élève arrivé avec un code formateur ;
    - la **configuration du portail client** : changement de plan et de période (prorata), résiliation en fin de
      période avec un motif, changement de carte, factures.
-   Il affiche les 4 `STRIPE_PRICE_…` et `STRIPE_PORTAL_CONFIGURATION` à copier dans `.env.local` et sur Netlify.
+   Il affiche `STRIPE_PORTAL_CONFIGURATION` à copier dans `.env.local` et sur Netlify.
 3. **Webhook**, une fois le site en ligne : `npm run stripe:setup -- --webhook` (avec `NEXT_PUBLIC_SITE_URL` = l’adresse
    publique) crée le point de terminaison `<NEXT_PUBLIC_SITE_URL>/api/stripe/webhook` avec ses 9 événements et écrit
    son secret dans `.env.local` (`STRIPE_WEBHOOK_SECRET`, jamais affiché) : copie-le sur Netlify. À la main, c’est
@@ -191,14 +200,16 @@ npm run ai:sample
    automatiques (« Smart Retries ») et choisis d’annuler l’abonnement si tous échouent. Pendant les essais, l’abonné
    garde son accès (statut « past_due »), reçoit notre e-mail « Ton paiement n’est pas passé » et voit un bandeau avec
    le bouton « Mettre à jour ma carte » dans son compte.
-5. Vérifie tout en mode test : `npm run test:integration` (avec `STRIPE_SECRET_KEY` en `sk_test_` et les 4 prix) crée
-   de vrais abonnements de test (Pro mensuel, passage à Pro+ annuel, remboursement, résiliation, carte refusée, essai
-   formateur de 3 mois), vérifie le plan et les commissions, puis supprime ses clients de test.
+5. Vérifie tout en mode test : `npm run test:integration` (avec `STRIPE_SECRET_KEY` en `sk_test_`, après
+   `npm run stripe:setup`) crée de vrais abonnements de test (changement de plan, remboursement, résiliation, carte
+   refusée), vérifie le plan et les commissions, puis supprime ses clients de test.
 6. (Facultatif) Stripe Tax si tu factures la TVA.
 
 Ce que font les webhooks : le plan suit l’abonnement (le meilleur des abonnements actifs), chaque facture payée par
 un filleul crée la commission du parrain ou du formateur (30 %, une seule fois par facture), un remboursement annule
-cette commission au prorata du montant remboursé, et une résiliation repasse le compte en Gratuit.
+cette commission au prorata du montant remboursé, et une résiliation ferme l’appli (retour au choix de l’abonnement)
+à la fin de la période payée. Un nouvel abonnement actif déclenche l’e-mail de confirmation (support durable : plan,
+prix, demande de démarrage immédiat, rétractation).
 
 ### Resend (e-mails)
 
@@ -274,7 +285,7 @@ laisse les portées (*scopes*) par défaut : elles doivent inclure **Builds** et
 | `ADMIN_EMAILS` | ton adresse (plusieurs : séparées par des virgules) |
 | `AI_PROVIDER` + `OPENAI_API_KEY` (ou `ANTHROPIC_API_KEY`) | ta clé du fournisseur d’IA |
 | `NEXSCOPE_API_KEY` | ta clé Nexscope (sinon, produits fictifs signalés comme tels) |
-| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, 4 × `STRIPE_PRICE_…`, `STRIPE_PORTAL_CONFIGURATION` | étape 5 |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PORTAL_CONFIGURATION` | étape 5 |
 | `RESEND_API_KEY`, `EMAIL_FROM`, `FOUNDER_EMAIL` | étape 6 |
 | `DISCORD_…`, `NEXT_PUBLIC_DISCORD_INVITE_URL` | section 4 (Discord) |
 
@@ -294,8 +305,8 @@ project*) : chaque déploiement garde les valeurs du moment où il a été const
 **5. Stripe en production**
 - en local, mets ta clé `sk_live_…` et `NEXT_PUBLIC_SITE_URL` = l’adresse publique, puis
   `npm run stripe:setup -- --webhook` : produits, prix, portail client et webhook sont créés ;
-- copie dans les variables Netlify les 4 `STRIPE_PRICE_…`, `STRIPE_PORTAL_CONFIGURATION` (affichés) et
-  `STRIPE_WEBHOOK_SECRET` (écrit dans `.env.local`), puis redéploie ;
+- copie dans les variables Netlify `STRIPE_PORTAL_CONFIGURATION` (affiché) et `STRIPE_WEBHOOK_SECRET` (écrit dans
+  `.env.local`), puis redéploie (les anciennes variables `STRIPE_PRICE_…` ne servent plus : tu peux les retirer) ;
 - règle les relances de paiement (section 2, Stripe, point 4), puis fais un vrai paiement, un remboursement depuis
   le tableau de bord Stripe et une résiliation, et vérifie le plan dans `/app/compte`.
 
@@ -325,7 +336,7 @@ chère (0 € de plus que le site).
 Ce qu’il fait :
 - `/lier CODE` : lie un compte Discord à un compte de l’appli (code obtenu sur la page **Récap**, valable 15 minutes,
   une seule fois) ; `/delier` retire la liaison ;
-- chaque matin, à l’heure choisie par chacun : le récap en **message privé** (Pro et Pro+, si « Discord » est coché
+- chaque matin, à l’heure choisie par chacun : le récap en **message privé** (tous les abonnés, si « Discord » est coché
   dans les réglages du récap), une seule fois par jour ;
 - chaque jour à `DISCORD_PUBLIC_POST_HOUR` (8 h, heure de Paris, par défaut) : 3 produits **masqués** dans le salon
   public, le radar complet dans le salon Pro ;

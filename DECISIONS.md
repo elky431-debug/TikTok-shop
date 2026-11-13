@@ -1042,3 +1042,43 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      écrits par la vraie IA si la clé est là) avec des gains modestes (≈ 40 € sur le mois, objectif 150 €), puis
      capture chaque page avec Playwright et écrit deux tailles en WebP (640 et 320 px de large, 288 Ko pour les 24
      fichiers). Le navigateur choisit la taille par `srcset`. `RadarShowcase` et `lib/public-demo.ts` sont supprimés.
+188. **Nouvelle grille : tout est payant** (13 novembre). Starter 34,99 €/mois · 349,90 €/an, Pro 59,99 € · 599,90 €,
+     Elite 99,99 € · 999,90 € (l'annuel vaut 10 mois : « 2 mois offerts », calculé depuis les prix). Plus de plan
+     gratuit ni d'essai. Identifiants : `free` → `aucun` (compte sans abonnement, toutes limites à 0), `proplus` →
+     `elite`, `starter` ajouté ; la migration `nouvelle_grille` renomme les valeurs de l'enum (lignes et valeur par
+     défaut suivent) et la base locale fait le même renommage à la lecture. Pro est « Recommandé » partout.
+189. **Abonnement obligatoire avant l'appli** : après l'onboarding, `/abonnement` (hors coque, avec « Me déconnecter » et
+     « Mon compte »). `requireOnboardedViewer` renvoie tout compte sans abonnement vers cette page ; seules les pages
+     compte, paiement simulé et consentement formateur, et la coque (réduite au compte), passent `{ abonnement: false }`.
+     Les limites restent la vraie barrière : avec le plan `aucun`, chaque action serveur refuse. Un abonné qui ouvre
+     `/abonnement` est envoyé sur `/app/passer-pro` (changement de plan).
+190. **« Illimité » = plafond de sécurité invisible** (`SAFETY_CAPS` dans `lib/plans.ts`) : 150 écritures de scripts par
+     jour, 500 produits suivis, 50 alertes, 20 séries et 20 analyses de style par jour, 300 analyses de vidéo et 300
+     propositions par mois, 50 analyses d'accroches et 150 commandes Discord par jour, 60 retouches par génération.
+     `isUnlimited()` : l'interface affiche « Illimité » sans plafond ni reste ; si le plafond est atteint, « Limite de
+     sécurité du jour atteinte » (jamais de chiffre). Les recherches Elite (50 par jour) restent un vrai quota affiché.
+191. **Répartition des fonctions** (grille de l'utilisateur, appliquée côté serveur) : formats 5 en Starter (démo,
+     avant-après, histoire, réponse à un commentaire, déballage), les 8 ensuite, contrôlés dans `createScripts` ; score
+     « pour toi » retiré dès `toProductView` en Starter ; analyses de vidéo et propositions passent à un quota **mensuel**
+     (`remainingThisMonth`) ; récap de la semaine à partir de Pro ; export des scripts (PDF, texte) rangé avec l'export
+     CSV en Elite. Non cités par la grille, donc choisis : analyse des accroches d'un produit (Pro 10/jour, Elite
+     illimité), commandes Discord (10, 40, illimité), retouches (10, 20, illimité), plans de contenu de préparation
+     (3/jour pour tous les abonnés). Voir RAPPORT.
+192. **Code formateur : −20 % sur le premier mois** (plus de 3 mois offerts). Un « premier mois » n'existe que dans
+     l'abonnement mensuel : la remise vaut pour le premier paiement mensuel, une fois par compte (aucun abonnement
+     avant). Stripe : coupon `tracktout_formateur_20` (20 %, `duration: once`) mis d'office dans la session Checkout,
+     qui retire alors le champ « code promotionnel » (Stripe n'accepte pas les deux). Simulation : même montant
+     facturé. Le formateur garde 30 % de ce qui est vraiment payé. Les essais ouverts avant la grille vont à leur terme.
+193. **Démarrage immédiat et rétractation** : case obligatoire au-dessus des cartes de prix, avec le texte de
+     `WITHDRAWAL_CONSENT_TEXT` (art. L221-25 : montant proportionnel au service fourni en cas de rétractation). Sans
+     elle, le formulaire est bloqué dans le navigateur et refusé par l'action serveur. La demande est enregistrée par le
+     serveur (fiche `consentement_paiement`, non modifiable depuis le navigateur, ajoutée à `is_server_record_kind` et
+     vérifiée par le test RLS), recopiée dans les métadonnées Stripe de la session et de l'abonnement, rappelée sous le
+     bouton de Stripe Checkout, puis confirmée par e-mail au premier abonnement actif (support durable, L221-13). CGV :
+     section « Droit de rétractation » avec le texte exact et le formulaire type de l'annexe R221-1.
+194. **Prix Stripe par `lookup_key`** (`tracktout_<plan>_<month|year>`) au lieu des 4 variables `STRIPE_PRICE_…` : plus
+     rien à recopier sur Netlify pour une nouvelle grille. `stripe:setup` crée produits, 6 prix et coupon ; si un
+     montant change, un nouveau prix reprend la clé (`transfer_lookup_key`) et l'ancien est archivé. Un abonnement est
+     relié à son plan par la clé, sinon par `metadata.plan` du prix (les anciens `proplus` deviennent `elite`).
+     L'admin peut aussi offrir un plan (`grantPlan` : abonnement `admin_…` sans facture, exclu du MRR), ce qui permet
+     d'ouvrir l'appli en production tant que Stripe n'a pas de clé.

@@ -72,9 +72,10 @@ async function send(type: number, name: string, userId: string, options: Opt[] =
   return (await response.json()) as { type: number; data: Record<string, any> };
 }
 
-const FREE = '100000000000000011';
+const NONE = '100000000000000011';
 const PRO = '100000000000000012';
 const UNLINKED = '100000000000000013';
+const STARTER = '100000000000000014';
 
 beforeAll(() => {
   Object.assign(process.env, {
@@ -102,7 +103,8 @@ beforeEach(async () => {
   setRepoForTests(repo);
   await refreshCatalog({ repo, provider: new MockProvider(), date: DAY });
   for (const [id, plan, discord] of [
-    ['gratuit', 'free', FREE],
+    ['sans-abo', 'aucun', NONE],
+    ['starter', 'starter', STARTER],
     ['pro', 'pro', PRO],
   ] as const) {
     await repo.ensureProfile({ id, email: `${id}@test.fr` });
@@ -130,43 +132,50 @@ describe('compte lié et plan', () => {
 });
 
 describe('/produits', () => {
-  it('Pro : le top du jour de la niche avec les scores ; Gratuit : seulement ses produits du jour, sans score', async () => {
-    const all = (await repo.listProducts()).filter((p) => p.niche === 'beaute');
-    const pro = await send(2, 'produits', PRO, [{ name: 'niche', type: 3, value: 'beaute' }]);
-    const proText = String(pro.data.embeds[0].description);
-    expect(pro.data.flags).toBe(64);
-    expect(proText).toContain('/100');
-    expect(proText).toContain(all.sort((a, b) => b.latest_score - a.latest_score)[0].name);
+  it('Starter et Pro : tout le top du jour de la niche avec les scores ; sans abonnement : rien, sauf le lien pour s’abonner', async () => {
+    const all = (await repo.listProducts()).filter((p) => p.niche === 'beaute').sort((a, b) => b.latest_score - a.latest_score);
+    for (const discord of [STARTER, PRO]) {
+      const res = await send(2, 'produits', discord, [{ name: 'niche', type: 3, value: 'beaute' }]);
+      const text = String(res.data.embeds[0].description);
+      expect(res.data.flags).toBe(64);
+      expect(text).toContain('/100');
+      expect(text).toContain(all[0].name);
+      expect(JSON.stringify(res.data)).not.toContain('réservés aux abonnés');
+    }
+    // Hors de ses niches aussi : un abonné voit tout le radar.
+    const elsewhere = await send(2, 'produits', STARTER, [{ name: 'niche', type: 3, value: 'tech' }]);
+    expect(String(elsewhere.data.embeds[0].description)).toContain('/100');
 
-    const free = await send(2, 'produits', FREE, [{ name: 'niche', type: 3, value: 'beaute' }]);
-    const freeText = String(free.data.embeds[0].description);
-    expect(freeText).not.toContain('/100');
-    const visible = rankForUser(await repo.listProducts(), ['beaute']).slice(0, 3);
-    for (const p of visible) expect(freeText).toContain(p.name);
-    const hidden = rankForUser(await repo.listProducts(), ['beaute']).slice(3);
-    for (const p of hidden) expect(freeText).not.toContain(p.name);
-    expect(freeText).toContain('réservés au plan Pro');
-
-    const elsewhere = await send(2, 'produits', FREE, [{ name: 'niche', type: 3, value: 'tech' }]);
-    expect(elsewhere.data.content).toContain('aucun n’est en Tech et accessoires');
+    const none = await send(2, 'produits', NONE, [{ name: 'niche', type: 3, value: 'beaute' }]);
+    expect(none.data.flags).toBe(64);
+    expect(none.data.embeds).toBeUndefined();
+    expect(none.data.content).toContain('demande un abonnement');
+    expect(none.data.content).toContain('https://tracktout.com/abonnement');
+    for (const p of all) expect(none.data.content).not.toContain(p.name);
   });
 });
 
 describe('/score et autocomplétion', () => {
-  it('l’autocomplétion ne propose jamais à un compte gratuit un produit qu’il ne peut pas ouvrir', async () => {
-    const free = await send(4, 'score', FREE, [{ name: 'produit', type: 3, value: '', focused: true }]);
-    expect(free.type).toBe(8);
-    const visibleIds = rankForUser(await repo.listProducts(), ['beaute']).slice(0, 3).map((p) => p.id);
-    expect(free.data.choices.map((c: { value: string }) => c.value).sort()).toEqual([...visibleIds].sort());
-    const pro = await send(4, 'score', PRO, [{ name: 'produit', type: 3, value: '', focused: true }]);
-    expect(pro.data.choices).toHaveLength(25);
-    for (const c of pro.data.choices as Array<{ name: string; value: string }>) {
-      expect(c.name.length).toBeLessThanOrEqual(100);
-      expect(c.value.length).toBeLessThanOrEqual(100);
+  it('l’autocomplétion ne propose jamais à un compte sans abonnement un produit qu’il ne peut pas ouvrir', async () => {
+    const none = await send(4, 'score', NONE, [{ name: 'produit', type: 3, value: '', focused: true }]);
+    expect(none).toEqual({ type: 8, data: { choices: [] } });
+    // Un produit qu'il suivait avant de résilier reste le seul proposé.
+    const [first] = rankForUser(await repo.listProducts(), ['beaute']);
+    await repo.saveProduct('sans-abo', first.id, 20);
+    const saved = await send(4, 'score', NONE, [{ name: 'produit', type: 3, value: '', focused: true }]);
+    expect(saved.data.choices.map((c: { value: string }) => c.value)).toEqual([first.id]);
+
+    for (const discord of [STARTER, PRO]) {
+      const res = await send(4, 'score', discord, [{ name: 'produit', type: 3, value: '', focused: true }]);
+      expect(res.data.choices).toHaveLength(25);
+      for (const c of res.data.choices as Array<{ name: string; value: string }>) {
+        expect(c.name.length).toBeLessThanOrEqual(100);
+        expect(c.value.length).toBeLessThanOrEqual(100);
+      }
     }
   });
 
-  it('répond tout de suite (sans IA), masque le score en Gratuit et applique le quota quotidien côté serveur', async () => {
+  it('répond tout de suite (sans IA), avec le score pour tout abonné, et applique le quota quotidien du plan côté serveur', async () => {
     setStructuredRunnerForTests(async () => {
       throw new Error('/score ne doit jamais appeler l’IA');
     });
@@ -176,21 +185,33 @@ describe('/score et autocomplétion', () => {
     expect(pro.data.embeds[0].fields[0]).toMatchObject({ name: 'Score', value: `**${first.latest_score}/100**` });
     expect(pro.data.embeds[0].fields.at(-1).name).toBe('Pourquoi');
 
-    for (let i = 0; i < 3; i++) {
-      const res = await send(2, 'score', FREE, [{ name: 'produit', type: 3, value: first.name.slice(0, 12) }]);
+    // Starter : 10 commandes par jour, avec le score, puis refus qui indique le plan suivant.
+    for (let i = 0; i < 10; i++) {
+      const res = await send(2, 'score', STARTER, [{ name: 'produit', type: 3, value: first.name.slice(0, 12) }]);
       expect(res.data.embeds[0].title).toBe(first.name);
-      expect(res.data.embeds[0].fields[0].value).toContain('Masqué');
+      expect(res.data.embeds[0].fields[0].value).toBe(`**${first.latest_score}/100**`);
     }
-    const blocked = await send(2, 'score', FREE, [{ name: 'produit', type: 3, value: first.id }]);
-    expect(blocked.data.content).toContain('Tu as utilisé tes 3 commandes');
-    expect(await repo.countRecordsSince('gratuit', COMMAND_KIND, '2000-01-01')).toBe(3);
+    const blocked = await send(2, 'score', STARTER, [{ name: 'produit', type: 3, value: first.id }]);
+    expect(blocked.data.embeds).toBeUndefined();
+    expect(blocked.data.content).toContain('Tu as utilisé tes 10 commandes /score et /script du jour (plan Starter). Avec Pro : 40 par jour.');
+    expect(await repo.countRecordsSince('starter', COMMAND_KIND, '2000-01-01')).toBe(10);
   });
 
-  it('un compte gratuit ne peut pas viser un produit verrouillé, même avec son identifiant', async () => {
-    const locked = rankForUser(await repo.listProducts(), ['beaute'])[5];
-    const res = await send(2, 'score', FREE, [{ name: 'produit', type: 3, value: locked.id }]);
-    expect(res.data.content).toContain('n’est pas dans tes produits du jour');
-    expect(await repo.countRecordsSince('gratuit', COMMAND_KIND, '2000-01-01')).toBe(0);
+  it('sans abonnement, aucune commande ne passe, même avec l’identifiant d’un produit ou un produit suivi', async () => {
+    const [first, , , , , locked] = rankForUser(await repo.listProducts(), ['beaute']);
+    const res = await send(2, 'score', NONE, [{ name: 'produit', type: 3, value: locked.id }]);
+    expect(res.data.embeds).toBeUndefined();
+    expect(res.data.content).toContain('n’est pas dans le radar du jour');
+    expect(res.data.content).not.toContain(locked.name);
+
+    await repo.saveProduct('sans-abo', first.id, 20);
+    for (const name of ['score', 'script']) {
+      const saved = await send(2, name, NONE, [{ name: 'produit', type: 3, value: first.id }]);
+      expect(saved.data.embeds).toBeUndefined();
+      expect(saved.data.content).toContain('demandent un abonnement');
+      expect(saved.data.content).toContain('/abonnement');
+    }
+    expect(await repo.countRecordsSince('sans-abo', COMMAND_KIND, '2000-01-01')).toBe(0);
   });
 });
 
@@ -264,29 +285,38 @@ describe('/script (réponse différée)', () => {
 });
 
 describe('/alerte (fiche `alerte`)', () => {
-  it('fermée en Gratuit ; en Pro, 3 alertes actives au plus, au format commun', async () => {
-    const free = await send(2, 'alerte', FREE, [
+  it('fermée sans abonnement ; en Starter, 3 alertes actives au plus, au format commun ; Pro en a 15', async () => {
+    const none = await send(2, 'alerte', NONE, [
       { name: 'niche', type: 3, value: 'beaute' },
       { name: 'commission', type: 10, value: 15 },
     ]);
-    expect(free.data.content).toContain('plan Pro');
+    expect(none.data.content).toContain('demandent un abonnement');
+    expect(await repo.listRecords('sans-abo', ALERT_KIND)).toHaveLength(0);
     for (let i = 0; i < 3; i++) {
-      const ok = await send(2, 'alerte', PRO, [
+      const ok = await send(2, 'alerte', STARTER, [
         { name: 'niche', type: 3, value: i === 0 ? 'toutes' : 'beaute' },
         { name: 'commission', type: 10, value: 12.5 },
         { name: 'ventes_7j', type: 4, value: 50 },
         { name: 'croissance', type: 4, value: 20 },
       ]);
-      expect(ok.data.content).toContain('✅ Alerte créée');
+      expect(ok.data.content).toContain(`✅ Alerte créée (${i + 1} sur 3)`);
     }
-    const records = await repo.listRecords<AlerteData>('pro', ALERT_KIND);
+    const records = await repo.listRecords<AlerteData>('starter', ALERT_KIND);
     expect(records.map((r) => r.data)).toContainEqual({ niche: null, minCommissionPercent: 12.5, minSales7d: 50, minGrowth: 0.2, active: true });
     expect(records.every((r) => parseAlerte(r.data))).toBe(true);
-    const fourth = await send(2, 'alerte', PRO, [
+    const fourth = await send(2, 'alerte', STARTER, [
       { name: 'niche', type: 3, value: 'beaute' },
       { name: 'commission', type: 10, value: 10 },
     ]);
     expect(fourth.data.content).toContain('déjà 3 alertes actives');
+    expect(fourth.data.content).toContain('passe à Pro');
+    expect(await repo.listRecords('starter', ALERT_KIND)).toHaveLength(3);
+
+    const pro = await send(2, 'alerte', PRO, [
+      { name: 'niche', type: 3, value: 'beaute' },
+      { name: 'commission', type: 10, value: 10 },
+    ]);
+    expect(pro.data.content).toContain('✅ Alerte créée (1 sur 15)');
   });
 
   it('valide le format et dit si un produit remplit l’alerte', () => {
@@ -332,7 +362,8 @@ describe('/classement et classement hebdomadaire', () => {
       expect(post.body!.allowed_mentions).toEqual({ parse: [] });
       const text = String((post.body!.embeds as Array<{ description: string }>)[0].description);
       expect(text).toContain(`<@${PRO}> · 4 jours d’affilée`);
-      expect(text).not.toContain(FREE);
+      expect(text).not.toContain(NONE);
+      expect(text).not.toContain(STARTER);
       expect(await postWeeklyLeaderboard(repo, new Date('2026-11-16T15:00:00Z'))).toBe('deja');
 
       await send(2, 'classement', PRO, [{ name: 'choix', type: 3, value: 'quitter' }]);

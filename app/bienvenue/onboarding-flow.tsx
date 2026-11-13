@@ -157,7 +157,7 @@ const QUESTIONS: Record<OnboardingStep, { title: string; hint?: string }> = {
     title: 'Ton objectif de gains par mois ?',
     hint: 'Un repère personnel pour te motiver, pas une promesse : tes gains dépendent de tes vidéos et des produits.',
   },
-  code: { title: 'Un code formateur ?', hint: 'Ton formateur t’a donné un code ? Il t’offre 3 mois de Pro.' },
+  code: { title: 'Un code formateur ?', hint: 'Ton formateur t’a donné un code ? Il te donne −20 % sur ton premier mois.' },
 };
 
 export function OnboardingFlow({
@@ -526,8 +526,8 @@ export function OnboardingFlow({
       case 'code':
         return coachCode ? (
           <p className="rounded-2xl border border-gain/30 bg-gain/10 p-4 text-sm leading-relaxed">
-            <span className="font-semibold">Code {coachCode} enregistré.</span> Tes 3 mois de Pro offerts démarrent dès que tu
-            valides.
+            <span className="font-semibold">Code {coachCode} enregistré.</span> Tu auras −20 % sur ton premier mois d’abonnement
+            mensuel.
           </p>
         ) : (
           <div>

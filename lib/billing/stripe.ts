@@ -1,13 +1,21 @@
 import Stripe from 'stripe';
 import { getRepo } from '@/lib/db';
-import type { BillingInterval, PlanId, Profile } from '@/lib/db/types';
+import type { BillingInterval, Profile } from '@/lib/db/types';
 import { env } from '@/lib/env';
-import { handleBillingEvent } from './events';
-import { missingPriceIds, planFromPriceId, priceIdFor } from './prices';
-import { BillingUnavailableError, type BillingEvent, type BillingProvider, type SubscriptionChanged } from './types';
+import type { PaidPlanId } from '@/lib/plans';
+import { COACH_COUPON_ID } from './coach-discount';
+import { WITHDRAWAL_CONSENT_VERSION } from './consent';
+import { planFromPrice, priceLookupKey } from './prices';
+import {
+  BillingUnavailableError,
+  type BillingEvent,
+  type BillingProvider,
+  type CheckoutInput,
+  type SubscriptionChanged,
+} from './types';
 
 /**
- * Implémentation Stripe : Checkout, portail client, essai sans carte, webhooks.
+ * Implémentation Stripe : Checkout, portail client, webhooks.
  * Tout le code Stripe vit ici ; le reste de l'appli ne connaît que BillingProvider.
  */
 
@@ -35,7 +43,12 @@ export function normalizeStripeSubscription(sub: Loose, eventId: string): Subscr
   const firstItem = items[0] ?? {};
   const price = (firstItem.price as Loose | undefined) ?? {};
   const priceId = str(price.id) ?? str(price);
-  const mapped = planFromPriceId(priceId);
+  const mapped = planFromPrice({
+    id: priceId,
+    lookup_key: (price.lookup_key as string | null | undefined) ?? null,
+    metadata: (price.metadata as Record<string, string> | undefined) ?? null,
+    recurring: (price.recurring as { interval?: string } | undefined) ?? null,
+  });
   const metadata = (sub.metadata as Record<string, string> | undefined) ?? {};
   const periodEnd = (firstItem.current_period_end as number | undefined) ?? (sub.current_period_end as number | undefined);
   return {
@@ -180,6 +193,25 @@ function portalBase(customer: string) {
   };
 }
 
+/** Identifiants de prix déjà retrouvés (par clé de recherche), pour ne pas interroger Stripe à chaque paiement. */
+const priceCache = new Map<string, string>();
+
+/** Prix actif d'un plan, retrouvé par sa `lookup_key` (posée par « npm run stripe:setup »). */
+export async function stripePriceId(plan: PaidPlanId, interval: BillingInterval): Promise<string> {
+  const key = priceLookupKey(plan, interval);
+  const cached = priceCache.get(key);
+  if (cached) return cached;
+  const found = await getStripe().prices.list({ lookup_keys: [key], active: true, limit: 1 });
+  const id = found.data[0]?.id;
+  if (!id) throw new BillingUnavailableError(`Prix Stripe introuvable (${key}) : lance « npm run stripe:setup ».`);
+  priceCache.set(key, id);
+  return id;
+}
+
+export function clearPriceCacheForTests() {
+  priceCache.clear();
+}
+
 async function ensureCustomer(profile: Profile): Promise<string> {
   if (profile.stripe_customer_id) return profile.stripe_customer_id;
   const customer = await getStripe().customers.create({
@@ -193,38 +225,56 @@ async function ensureCustomer(profile: Profile): Promise<string> {
 }
 
 /**
- * Session Checkout d'un nouvel abonnement. `allow_promotion_codes` affiche le champ « code promotionnel » de la page de
- * paiement Stripe : les codes se créent dans le tableau de bord Stripe (coupon + code promotionnel), sans code ici.
+ * Session Checkout d'un nouvel abonnement. Avec le code formateur, le coupon « −20 % sur le premier mois » est appliqué
+ * d'office (Stripe interdit alors le champ « code promotionnel ») ; sinon ce champ reste affiché. La demande de
+ * démarrage immédiat (case cochée avant d'arriver ici) est rappelée sous le bouton de paiement et gardée dans les
+ * métadonnées de la session et de l'abonnement.
  */
-export function checkoutSessionParams(input: { customer: string; userId: string; price: string; siteUrl: string }): Stripe.Checkout.SessionCreateParams {
+export function checkoutSessionParams(input: {
+  customer: string;
+  userId: string;
+  price: string;
+  siteUrl: string;
+  coachDiscount?: boolean;
+  consentAt?: string;
+}): Stripe.Checkout.SessionCreateParams {
+  const consent: Record<string, string> = input.consentAt
+    ? { demarrage_immediat: input.consentAt, demarrage_immediat_version: WITHDRAWAL_CONSENT_VERSION }
+    : {};
   return {
     mode: 'subscription',
     customer: input.customer,
     client_reference_id: input.userId,
     line_items: [{ price: input.price, quantity: 1 }],
-    subscription_data: { metadata: { user_id: input.userId } },
-    allow_promotion_codes: true,
+    subscription_data: { metadata: { user_id: input.userId, ...consent } },
+    metadata: { user_id: input.userId, ...consent },
+    ...(input.coachDiscount ? { discounts: [{ coupon: COACH_COUPON_ID }] } : { allow_promotion_codes: true }),
+    custom_text: {
+      submit: {
+        message:
+          'Tu as demandé que ton abonnement démarre tout de suite. Si tu te rétractes dans les 14 jours, tu paieras le service fourni jusque-là, au prorata.',
+      },
+    },
     locale: 'fr',
-    success_url: `${input.siteUrl}/app/compte?paiement=ok`,
-    cancel_url: `${input.siteUrl}/app/passer-pro?paiement=annule`,
+    success_url: `${input.siteUrl}/app?paiement=ok`,
+    cancel_url: `${input.siteUrl}/abonnement?paiement=annule`,
   };
 }
 
 export class StripeBilling implements BillingProvider {
   readonly name = 'stripe' as const;
 
-  async createCheckout({ profile, plan, interval }: { profile: Profile; plan: Exclude<PlanId, 'free'>; interval: BillingInterval }) {
-    const price = priceIdFor(plan, interval);
-    if (!price) {
-      throw new BillingUnavailableError(`Prix Stripe manquant pour ce plan (${missingPriceIds().join(', ')}).`);
-    }
-    // Déjà abonné (y compris pendant l'essai formateur) : changement de plan dans le portail, directement sur l'écran
-    // de confirmation du nouveau prix (prorata calculé et affiché par Stripe), pas de second abonnement.
+  async createCheckout({ profile, plan, interval, coachDiscount, consentAt }: CheckoutInput) {
+    const price = await stripePriceId(plan, interval);
+    // Déjà abonné : changement de plan dans le portail, directement sur l'écran de confirmation du nouveau prix
+    // (prorata calculé et affiché par Stripe), pas de second abonnement.
     const active = await getRepo().getActiveSubscription(profile.id);
     if (active?.provider === 'stripe') return this.changePlan({ profile, subscriptionId: active.id, price });
 
     const customer = await ensureCustomer(profile);
-    const session = await getStripe().checkout.sessions.create(checkoutSessionParams({ customer, userId: profile.id, price, siteUrl: env.siteUrl }));
+    const session = await getStripe().checkout.sessions.create(
+      checkoutSessionParams({ customer, userId: profile.id, price, siteUrl: env.siteUrl, coachDiscount, consentAt }),
+    );
     if (!session.url) throw new Error('Stripe n’a pas renvoyé d’URL de paiement.');
     return session.url;
   }
@@ -262,22 +312,5 @@ export class StripeBilling implements BillingProvider {
         await getStripe().subscriptions.cancel(sub.id);
       }
     }
-  }
-
-  /** Essai sans carte : l'abonnement s'annule tout seul à la fin si aucun moyen de paiement n'a été ajouté. */
-  async startTrial({ profile, days }: { profile: Profile; days: number }) {
-    const price = priceIdFor('pro', 'month');
-    if (!price) throw new BillingUnavailableError('STRIPE_PRICE_PRO_MONTHLY manquant : essai impossible.');
-    const customer = await ensureCustomer(profile);
-    const sub = await getStripe().subscriptions.create({
-      customer,
-      items: [{ price }],
-      trial_period_days: days,
-      trial_settings: { end_behavior: { missing_payment_method: 'cancel' } },
-      payment_settings: { save_default_payment_method: 'on_subscription' },
-      metadata: { user_id: profile.id, origine: 'formateur' },
-    });
-    // Application immédiate (le webhook confirmera ensuite, sans effet de bord).
-    await handleBillingEvent({ ...normalizeStripeSubscription(sub as unknown as Loose, `essai-${sub.id}`), userId: profile.id });
   }
 }

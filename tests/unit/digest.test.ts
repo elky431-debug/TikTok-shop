@@ -28,19 +28,22 @@ describe('heure de Paris', () => {
 });
 
 describe('récap du matin par e-mail', () => {
-  it('programme l’e-mail à l’heure choisie, ignore ceux qui l’ont désactivé', async () => {
-    for (const [id, hour, email] of [
-      ['matin', 9, true],
-      ['sans-mail', 8, false],
+  it('programme l’e-mail à l’heure choisie, ignore ceux qui l’ont désactivé ou n’ont pas d’abonnement', async () => {
+    for (const [id, hour, email, plan] of [
+      ['matin', 9, true, 'starter'],
+      ['sans-mail', 8, false, 'pro'],
+      ['sans-abonnement', 8, true, 'aucun'],
     ] as const) {
       await repo.ensureProfile({ id, email: `${id}@test.fr` });
-      await repo.updateProfile(id, { niches: ['maison'], onboarded_at: new Date().toISOString(), digest_hour: hour, digest_email: email });
+      await repo.updateProfile(id, { niches: ['maison'], onboarded_at: new Date().toISOString(), digest_hour: hour, digest_email: email, plan });
     }
     await prepareDigests(DAY, repo);
     const stats = await scheduleDigestEmails(DAY, repo, new Date('2026-11-12T03:00:00Z'));
     expect(stats.scheduled).toBe(1);
     expect((await repo.getDigest('matin', DAY))?.email_status).toBe('scheduled');
     expect((await repo.getDigest('sans-mail', DAY))?.email_status).toBe('skipped');
+    // Sans abonnement, aucun récap n'est préparé (ni e-mail, ni Discord, ni notification).
+    expect(await repo.getDigest('sans-abonnement', DAY)).toBeFalsy();
     const [mail] = await repo.listLocalEmails!(5);
     expect(mail.to).toBe('matin@test.fr');
     expect(mail.scheduled_at).toBe('2026-11-12T08:00:00.000Z');

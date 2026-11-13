@@ -1,9 +1,11 @@
 'use client';
 
-import { Check, Minus } from 'lucide-react';
-import { useState } from 'react';
+import Link from 'next/link';
+import { Check } from 'lucide-react';
+import { useRef, useState } from 'react';
 import { buttonClasses, LinkButton } from '@/components/ui/button';
 import { SubmitButton } from '@/components/ui/submit-button';
+import { WITHDRAWAL_CONSENT_FIELD, WITHDRAWAL_CONSENT_TEXT } from '@/lib/billing/consent';
 import type { BillingInterval, PlanId } from '@/lib/db/types';
 import { cn } from '@/lib/utils';
 
@@ -11,17 +13,25 @@ export interface PlanCard {
   id: PlanId;
   name: string;
   tagline: string;
+  /** « Tout le Starter, plus : » au-dessus de la liste. */
+  intro?: string;
+  recommended?: boolean;
   monthly: string;
   yearly: string;
   yearlyMonthly: string;
   yearlySavings: string;
+  /** Premier mois avec le code formateur (−20 %), ou null. */
+  firstMonth?: string | null;
   features: Array<{ text: string; included: boolean }>;
 }
+
+const RANK: Record<PlanId, number> = { aucun: 0, starter: 1, pro: 2, elite: 3 };
 
 /**
  * Cartes de prix avec bascule mensuel / annuel.
  * - mode « public » : boutons vers l'inscription ;
- * - mode « app » : formulaires qui lancent le paiement (action serveur).
+ * - mode « app » : formulaires qui lancent le paiement (action serveur), après la case de démarrage immédiat
+ *   (délai de rétractation de 14 jours), obligatoire et revérifiée côté serveur.
  */
 export function PricingCards({
   plans,
@@ -29,14 +39,21 @@ export function PricingCards({
   currentPlan,
   action,
   defaultInterval = 'month',
+  yearlyBadge,
 }: {
   plans: PlanCard[];
   mode: 'public' | 'app';
   currentPlan?: PlanId;
   action?: (formData: FormData) => void | Promise<void>;
   defaultInterval?: BillingInterval;
+  /** Économie de l'annuel, affichée sur la bascule (« 2 mois offerts »). */
+  yearlyBadge?: string;
 }) {
   const [interval, setInterval] = useState<BillingInterval>(defaultInterval);
+  const [consent, setConsent] = useState(false);
+  const [consentError, setConsentError] = useState(false);
+  const consentRef = useRef<HTMLInputElement>(null);
+  const subscribed = currentPlan && currentPlan !== 'aucun';
 
   return (
     <div>
@@ -60,18 +77,53 @@ export function PricingCards({
               )}
             >
               {label}
-              {value === 'year' ? (
-                <span className={cn('ml-1.5', interval === value ? 'text-bg/60' : 'text-gain')}>−30&nbsp;%</span>
+              {value === 'year' && yearlyBadge ? (
+                <span className={cn('ml-1.5', interval === value ? 'text-bg/70' : 'text-positive')}>{yearlyBadge}</span>
               ) : null}
             </button>
           ))}
         </div>
       </div>
 
+      {mode === 'app' ? (
+        <div className="mx-auto mb-8 max-w-3xl">
+          <label
+            className={cn(
+              'flex cursor-pointer gap-3 rounded-2xl border bg-raised p-4 text-sm leading-relaxed text-fg',
+              consentError && !consent ? 'border-rose' : 'border-line',
+            )}
+          >
+            <input
+              ref={consentRef}
+              type="checkbox"
+              checked={consent}
+              onChange={(e) => {
+                setConsent(e.target.checked);
+                if (e.target.checked) setConsentError(false);
+              }}
+              aria-describedby="demarrage-aide"
+              aria-invalid={consentError && !consent ? true : undefined}
+              className="mt-1 h-4 w-4 shrink-0 accent-[rgb(var(--rose-fill))]"
+            />
+            <span>{WITHDRAWAL_CONSENT_TEXT}</span>
+          </label>
+          <p id="demarrage-aide" className={cn('mt-2 text-xs', consentError && !consent ? 'font-semibold text-rose-ink' : 'text-muted')} role={consentError && !consent ? 'alert' : undefined}>
+            {consentError && !consent
+              ? 'Coche cette case pour démarrer ton abonnement tout de suite.'
+              : 'Obligatoire pour démarrer tout de suite. '}
+            {consentError && !consent ? ' ' : null}
+            <Link href="/cgv#retractation" className="font-semibold text-fg underline decoration-fg/30 underline-offset-2 hover:decoration-fg">
+              Ton droit de rétractation
+            </Link>
+          </p>
+        </div>
+      ) : null}
+
       <div className="grid gap-4 lg:grid-cols-3">
         {plans.map((plan) => {
-          const highlighted = plan.id === 'pro';
+          const highlighted = Boolean(plan.recommended);
           const current = currentPlan === plan.id;
+          const verb = !subscribed ? 'Choisir' : RANK[plan.id] > RANK[currentPlan ?? 'aucun'] ? 'Passer à' : 'Revenir à';
           return (
             <div
               key={plan.id}
@@ -90,39 +142,35 @@ export function PricingCards({
               <h3 className="text-lg font-semibold text-fg">{plan.name}</h3>
               <p className="mt-1 text-xs text-muted">{plan.tagline}</p>
               <div className="mt-5 min-h-[4.25rem]">
-                {plan.id === 'free' ? (
-                  <p className="num text-3xl font-bold text-fg">0&nbsp;€</p>
-                ) : interval === 'month' ? (
-                  <p className="num flex items-baseline gap-1.5 text-3xl font-bold text-fg">
-                    {plan.monthly}{' '}
-                    <span className="text-sm font-medium text-muted">/ mois</span>
-                  </p>
+                {interval === 'month' ? (
+                  <>
+                    <p className="num flex items-baseline gap-1.5 text-3xl font-bold text-fg">
+                      {plan.monthly} <span className="text-sm font-medium text-muted">/ mois</span>
+                    </p>
+                    {plan.firstMonth ? (
+                      <p className="num mt-1 text-xs text-muted">
+                        <span className="font-semibold text-positive">{plan.firstMonth} le premier mois</span> avec ton code formateur
+                      </p>
+                    ) : null}
+                  </>
                 ) : (
                   <>
                     <p className="num flex items-baseline gap-1.5 text-3xl font-bold text-fg">
-                      {plan.yearly}{' '}
-                      <span className="text-sm font-medium text-muted">/ an</span>
+                      {plan.yearly} <span className="text-sm font-medium text-muted">/ an</span>
                     </p>
                     <p className="num mt-1 text-xs text-muted">
-                      soit {plan.yearlyMonthly} par mois ·{' '}
-                      <span className="font-semibold text-gain">{plan.yearlySavings} économisés</span>
+                      soit {plan.yearlyMonthly} par mois · <span className="font-semibold text-positive">{plan.yearlySavings} économisés</span>
                     </p>
                   </>
                 )}
               </div>
 
-              <ul className="mt-5 flex-1 space-y-2.5 text-sm text-fg/85">
+              {plan.intro ? <p className="mt-5 text-sm font-semibold text-fg">{plan.intro}</p> : null}
+              <ul className={cn('flex-1 space-y-2.5 text-sm text-fg/85', plan.intro ? 'mt-3' : 'mt-5')}>
                 {plan.features.map((f) => (
-                  <li key={f.text} className={cn('flex gap-2.5', !f.included && 'text-muted')}>
-                    {f.included ? (
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-cyan-ink" aria-hidden="true" />
-                    ) : (
-                      <Minus className="mt-0.5 h-4 w-4 shrink-0 text-subtle" aria-hidden="true" />
-                    )}
-                    <span>
-                      {f.included ? null : <span className="sr-only">Non inclus : </span>}
-                      {f.text}
-                    </span>
+                  <li key={f.text} className="flex gap-2.5">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-cyan-ink" aria-hidden="true" />
+                    <span>{f.text}</span>
                   </li>
                 ))}
               </ul>
@@ -130,25 +178,30 @@ export function PricingCards({
               <div className="mt-6">
                 {mode === 'public' ? (
                   <LinkButton
-                    href="/connexion"
+                    href={`/connexion?plan=${plan.id}`}
                     variant={highlighted ? 'primary' : 'outline'}
                     size="lg"
                     className="w-full"
                   >
-                    {plan.id === 'free' ? 'Commencer gratuitement' : `Essayer ${plan.name}`}
+                    Choisir {plan.name}
                   </LinkButton>
-                ) : plan.id === 'free' ? (
-                  <p className={buttonClasses('secondary', 'lg', 'pointer-events-none w-full text-muted')}>
-                    {current ? 'Ton plan actuel' : 'Inclus'}
-                  </p>
                 ) : current ? (
                   <p className={buttonClasses('outline', 'lg', 'pointer-events-none w-full')}>Ton plan actuel</p>
                 ) : (
-                  <form action={action}>
+                  <form
+                    action={action}
+                    onSubmit={(e) => {
+                      if (consent) return;
+                      e.preventDefault();
+                      setConsentError(true);
+                      consentRef.current?.focus();
+                    }}
+                  >
                     <input type="hidden" name="plan" value={plan.id} />
                     <input type="hidden" name="periode" value={interval} />
+                    <input type="hidden" name={WITHDRAWAL_CONSENT_FIELD} value={consent ? 'oui' : ''} />
                     <SubmitButton variant={highlighted ? 'primary' : 'ink'} size="lg" className="w-full" pendingLabel="Ouverture du paiement…">
-                      Passer {plan.name}
+                      {verb} {plan.name}
                     </SubmitButton>
                   </form>
                 )}

@@ -18,7 +18,7 @@ describe.skipIf(!supabaseReady)('Authentification Supabase', () => {
     expect(data.user?.email).toBe(email);
     created.push(data.user!.id);
     const profile = await client.from('profiles').select('email, plan').single();
-    expect(profile.data).toEqual({ email, plan: 'free' });
+    expect(profile.data).toEqual({ email, plan: 'aucun' });
   });
 
   it('un lien magique ne sert qu’une fois', async () => {

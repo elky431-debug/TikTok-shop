@@ -12,7 +12,7 @@ export const LIFECYCLE_INFO: Record<LifecycleType, { label: string; description:
   astuce_j1: { label: 'Astuce du lendemain', description: 'Le lendemain : la méthode des 20 vidéos sur un même produit.', group: 'conseils' },
   rappel_j3: { label: 'Rappel du 3e jour', description: 'Seulement si tu n’as encore écrit aucun script.', group: 'conseils' },
   reactivation: { label: 'Nouvelles après une absence', description: 'Après 14 jours sans ouvrir l’appli : tes produits du moment.', group: 'conseils' },
-  fin_essai: { label: 'Fin de l’essai offert', description: 'Trois jours avant la fin de l’essai Pro offert par ton formateur.', group: 'abonnement' },
+  fin_essai: { label: 'Fin de l’essai offert', description: 'Trois jours avant la fin d’un essai offert avant la nouvelle grille de prix.', group: 'abonnement' },
   relance_paiement: {
     label: 'Relance de paiement',
     description: 'Si un prélèvement reste refusé trois jours, en plus de l’e-mail envoyé à chaque essai de la banque.',

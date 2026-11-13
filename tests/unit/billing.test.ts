@@ -1,12 +1,19 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import Stripe from 'stripe';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { coachDiscountApplies, discountedFirstMonth } from '@/lib/billing/coach-discount';
+import { consentGiven, latestConsent, recordConsent, WITHDRAWAL_CONSENT_TEXT } from '@/lib/billing/consent';
 import { handleBillingEvent } from '@/lib/billing/events';
+import { grantPlan } from '@/lib/billing/grant';
+import { planFromPrice, priceLookupKey } from '@/lib/billing/prices';
 import { expireSimulatedTrials, simulateSubscription } from '@/lib/billing/simulated';
 import { normalizeStripeEvent, parseStripeWebhook } from '@/lib/billing/stripe';
-import { startCoachTrial } from '@/lib/billing/trial';
 import type { SubscriptionChanged } from '@/lib/billing/types';
 import { setRepoForTests } from '@/lib/db';
 import { LocalRepo } from '@/lib/db/local';
+import { getPlan } from '@/lib/plans';
 import { applyReferralCode } from '@/lib/referral';
 
 let repo: LocalRepo;
@@ -14,10 +21,6 @@ let repo: LocalRepo;
 beforeEach(() => {
   repo = new LocalRepo(null);
   setRepoForTests(repo);
-  process.env.STRIPE_PRICE_PRO_MONTHLY = 'price_pro_m';
-  process.env.STRIPE_PRICE_PRO_YEARLY = 'price_pro_y';
-  process.env.STRIPE_PRICE_PROPLUS_MONTHLY = 'price_plus_m';
-  process.env.STRIPE_PRICE_PROPLUS_YEARLY = 'price_plus_y';
 });
 
 afterEach(() => {
@@ -55,8 +58,44 @@ function subEvent(overrides: Partial<SubscriptionChanged> = {}): SubscriptionCha
   };
 }
 
+const mailsTo = async (to: string) => (await repo.listLocalEmails!(50)).filter((m) => m.to === to);
+
+describe('prix : clé de recherche Stripe et plan d’un prix', () => {
+  it('nomme chaque prix tracktout_<plan>_<période>', () => {
+    expect(priceLookupKey('starter', 'month')).toBe('tracktout_starter_month');
+    expect(priceLookupKey('pro', 'year')).toBe('tracktout_pro_year');
+    expect(priceLookupKey('elite', 'month')).toBe('tracktout_elite_month');
+  });
+
+  it('retrouve plan et période : prix simulé, clé de recherche, sinon métadonnées ; « proplus » devient Elite', () => {
+    expect(planFromPrice('sim_starter_month')).toEqual({ plan: 'starter', interval: 'month' });
+    expect(planFromPrice('sim_proplus_year')).toEqual({ plan: 'elite', interval: 'year' });
+    expect(planFromPrice({ id: 'price_x', lookup_key: 'tracktout_pro_year' })).toEqual({ plan: 'pro', interval: 'year' });
+    expect(planFromPrice({ id: 'price_x', lookup_key: 'tracktout_proplus_month' })).toEqual({ plan: 'elite', interval: 'month' });
+    // Ancien prix (sans clé, transférée au nouveau) : reconnu par ses métadonnées et sa périodicité.
+    expect(planFromPrice({ id: 'price_old', lookup_key: null, metadata: { plan: 'proplus' }, recurring: { interval: 'year' } })).toEqual({
+      plan: 'elite',
+      interval: 'year',
+    });
+    expect(planFromPrice({ id: 'price_old', metadata: { plan: 'starter' }, recurring: { interval: 'month' } })).toEqual({
+      plan: 'starter',
+      interval: 'month',
+    });
+  });
+
+  it('ne devine jamais un plan inconnu ni le plan « sans abonnement »', () => {
+    expect(planFromPrice(null)).toBeNull();
+    expect(planFromPrice('price_inconnu')).toBeNull();
+    expect(planFromPrice('sim_free_month')).toBeNull();
+    expect(planFromPrice('sim_aucun_month')).toBeNull();
+    expect(planFromPrice({ id: 'p', lookup_key: 'autre_pro_month' })).toBeNull();
+    expect(planFromPrice({ id: 'p', metadata: { plan: 'pro' }, recurring: { interval: 'week' } })).toBeNull();
+    expect(planFromPrice({ id: 'p', metadata: { plan: 'free' }, recurring: { interval: 'month' } })).toBeNull();
+  });
+});
+
 describe('normalisation des événements Stripe', () => {
-  it('lit un abonnement au format actuel de l’API (période sur la ligne)', () => {
+  it('lit un abonnement au format actuel de l’API (période sur la ligne, plan par la clé du prix)', () => {
     const event = normalizeStripeEvent({
       id: 'evt_1',
       type: 'customer.subscription.updated',
@@ -64,11 +103,18 @@ describe('normalisation des événements Stripe', () => {
         object: {
           id: 'sub_9',
           customer: 'cus_9',
-          status: 'trialing',
+          status: 'active',
           cancel_at_period_end: false,
-          trial_end: 1_900_000_000,
+          trial_end: null,
           metadata: { user_id: 'u9' },
-          items: { data: [{ current_period_end: 1_900_000_000, price: { id: 'price_plus_y', recurring: { interval: 'year' } } }] },
+          items: {
+            data: [
+              {
+                current_period_end: 1_900_000_000,
+                price: { id: 'price_elite_y', lookup_key: 'tracktout_elite_year', recurring: { interval: 'year' } },
+              },
+            ],
+          },
         },
       },
     });
@@ -77,11 +123,29 @@ describe('normalisation des événements Stripe', () => {
       subscriptionId: 'sub_9',
       customerId: 'cus_9',
       userId: 'u9',
-      status: 'trialing',
-      plan: 'proplus',
+      status: 'active',
+      plan: 'elite',
       interval: 'year',
+      priceId: 'price_elite_y',
       currentPeriodEnd: new Date(1_900_000_000_000).toISOString(),
     });
+  });
+
+  it('reconnaît un abonné de l’ancienne grille (prix Pro+ sans clé, plan en métadonnées) comme Elite', () => {
+    const event = normalizeStripeEvent({
+      id: 'evt_old',
+      type: 'customer.subscription.updated',
+      data: {
+        object: {
+          id: 'sub_old',
+          customer: 'cus_old',
+          status: 'active',
+          metadata: { user_id: 'u_old' },
+          items: { data: [{ current_period_end: 1_900_000_000, price: { id: 'price_plus_m', metadata: { plan: 'proplus' }, recurring: { interval: 'month' } } }] },
+        },
+      },
+    });
+    expect(event).toMatchObject({ kind: 'subscription', plan: 'elite', interval: 'month' });
   });
 
   it('lit une facture payée (abonnement dans parent, taxes déduites)', () => {
@@ -92,14 +156,14 @@ describe('normalisation des événements Stripe', () => {
         object: {
           id: 'in_1',
           customer: 'cus_1',
-          amount_paid: 1990,
-          total_taxes: [{ amount: 332 }],
+          amount_paid: 5999,
+          total_taxes: [{ amount: 1000 }],
           status_transitions: { paid_at: 1_800_000_000 },
           parent: { subscription_details: { subscription: 'sub_1', metadata: { user_id: 'u1' } } },
         },
       },
     });
-    expect(event).toMatchObject({ kind: 'invoice_paid', invoiceId: 'in_1', subscriptionId: 'sub_1', userId: 'u1', amountCents: 1658 });
+    expect(event).toMatchObject({ kind: 'invoice_paid', invoiceId: 'in_1', subscriptionId: 'sub_1', userId: 'u1', amountCents: 4999 });
   });
 
   it('ignore les événements non gérés', () => {
@@ -130,6 +194,12 @@ describe('signature des webhooks', () => {
 });
 
 describe('traitement des événements', () => {
+  it('un compte neuf n’a aucun abonnement, donc aucun accès', async () => {
+    const user = await makeUser('neuf');
+    expect(user.plan).toBe('aucun');
+    expect(getPlan(user.plan).access).toBe(false);
+  });
+
   it('active le plan, compte 30 % de commission au formateur, une seule fois par facture', async () => {
     await makeCoach();
     const eleve = await makeUser('eleve');
@@ -148,32 +218,38 @@ describe('traitement des événements', () => {
       customerId: 'cus_1',
       subscriptionId: 'sub_1',
       userId: null,
-      amountCents: 1990,
+      amountCents: 4999,
       paidAt: '2026-11-12T08:00:00.000Z',
     };
-    expect(await handleBillingEvent(invoice)).toMatchObject({ status: 'ok', commissionCents: 597 });
+    expect(await handleBillingEvent(invoice)).toMatchObject({ status: 'ok', commissionCents: 1500 });
     // Même événement rejoué, puis même facture via un autre événement : pas de double commission.
     expect(await handleBillingEvent(invoice)).toMatchObject({ status: 'duplicate' });
     await handleBillingEvent({ ...invoice, eventId: 'evt_inv_1_bis' });
     const commissions = await repo.listCommissions('coach');
     expect(commissions).toHaveLength(1);
-    expect(commissions[0]).toMatchObject({ amount_cents: 597, month: '2026-11' });
+    expect(commissions[0]).toMatchObject({ amount_cents: 1500, month: '2026-11' });
     const [referral] = await repo.listReferralsByReferrer('coach');
-    expect(referral).toMatchObject({ status: 'abonne', commission_due_cents: 597 });
+    expect(referral).toMatchObject({ status: 'abonne', commission_due_cents: 1500 });
   });
 
-  it('repasse en gratuit à la résiliation', async () => {
+  it('repasse sans abonnement (sans accès) à la résiliation', async () => {
     await makeUser('eleve');
     await handleBillingEvent(subEvent());
     await handleBillingEvent(subEvent({ status: 'canceled' }));
-    expect((await repo.getProfile('eleve'))?.plan).toBe('free');
+    const profile = await repo.getProfile('eleve');
+    expect(profile?.plan).toBe('aucun');
+    expect(getPlan(profile?.plan).access).toBe(false);
   });
 
-  it('garde le meilleur plan si plusieurs abonnements', async () => {
+  it('garde le meilleur plan si plusieurs abonnements (Elite > Pro > Starter)', async () => {
     await makeUser('eleve');
-    await handleBillingEvent(subEvent({ subscriptionId: 'sub_a', plan: 'proplus', priceId: 'price_plus_m' }));
-    await handleBillingEvent(subEvent({ subscriptionId: 'sub_b', plan: 'pro' }));
-    expect((await repo.getProfile('eleve'))?.plan).toBe('proplus');
+    await handleBillingEvent(subEvent({ subscriptionId: 'sub_a', plan: 'starter', priceId: 'price_s_m' }));
+    expect((await repo.getProfile('eleve'))?.plan).toBe('starter');
+    await handleBillingEvent(subEvent({ subscriptionId: 'sub_b', plan: 'elite', priceId: 'price_e_m' }));
+    await handleBillingEvent(subEvent({ subscriptionId: 'sub_c', plan: 'pro' }));
+    expect((await repo.getProfile('eleve'))?.plan).toBe('elite');
+    await handleBillingEvent(subEvent({ subscriptionId: 'sub_b', plan: 'elite', status: 'canceled' }));
+    expect((await repo.getProfile('eleve'))?.plan).toBe('pro');
   });
 
   it('retrouve l’utilisateur par son identifiant client', async () => {
@@ -186,44 +262,186 @@ describe('traitement des événements', () => {
   it('signale un utilisateur inconnu sans planter', async () => {
     expect(await handleBillingEvent(subEvent({ userId: 'personne', customerId: 'cus_x' }))).toMatchObject({ status: 'unknown_user' });
   });
+
+  it('confirme un nouvel abonnement par e-mail, une seule fois par abonnement, avec le texte de démarrage immédiat', async () => {
+    const eleve = await makeUser('eleve');
+    await recordConsent(repo, eleve, { plan: 'pro', interval: 'month', coachDiscount: false }, new Date('2026-11-13T10:00:00Z'));
+    await handleBillingEvent(subEvent());
+    // Mise à jour du même abonnement (renouvellement, changement de carte) : pas de deuxième confirmation.
+    await handleBillingEvent(subEvent({ currentPeriodEnd: new Date(Date.now() + 60 * 86_400_000).toISOString() }));
+    const mails = await mailsTo('eleve@test.fr');
+    expect(mails.map((m) => m.subject)).toEqual(['Ton abonnement Pro a démarré']);
+    expect(mails[0].html).toContain('59,99');
+    expect(mails[0].html).toContain('démarre tout de suite');
+    expect(mails[0].html).toContain('14 jours');
+    expect(mails[0].html).not.toContain('premier mois');
+  });
+
+  it('pas d’e-mail de confirmation pour une résiliation ni un abonnement en impayé', async () => {
+    await makeUser('eleve');
+    await handleBillingEvent(subEvent({ subscriptionId: 'sub_x', status: 'past_due' }));
+    await handleBillingEvent(subEvent({ subscriptionId: 'sub_y', status: 'canceled' }));
+    expect(await mailsTo('eleve@test.fr')).toHaveLength(0);
+  });
 });
 
-describe('essai de 3 mois avec un code formateur', () => {
-  it('active Pro sans carte, une seule fois, puis expire', async () => {
+describe('demande de démarrage immédiat (rétractation)', () => {
+  it('la case doit valoir « oui » ; la demande est enregistrée avec son texte exact, la dernière fait foi', async () => {
+    const yes = new FormData();
+    yes.set('demarrage_immediat', 'oui');
+    expect(consentGiven(yes)).toBe(true);
+    const other = new FormData();
+    other.set('demarrage_immediat', 'on');
+    expect(consentGiven(other)).toBe(false);
+    expect(consentGiven(new FormData())).toBe(false);
+
+    const user = await makeUser('client');
+    expect(await latestConsent(repo, user.id)).toBeNull();
+    await recordConsent(repo, user, { plan: 'starter', interval: 'year', coachDiscount: false }, new Date('2026-11-12T09:00:00Z'));
+    await recordConsent(repo, user, { plan: 'pro', interval: 'month', coachDiscount: true }, new Date('2026-11-13T09:00:00Z'));
+    expect(await latestConsent(repo, user.id)).toMatchObject({
+      text: WITHDRAWAL_CONSENT_TEXT,
+      plan: 'pro',
+      interval: 'month',
+      coach_discount: true,
+      accepted_at: '2026-11-13T09:00:00.000Z',
+    });
+  });
+});
+
+describe('code formateur : −20 % sur le premier mois', () => {
+  it('s’applique au premier abonnement mensuel d’un élève, jamais à l’annuel ni sans formateur', async () => {
     await makeCoach();
-    const eleve = await makeUser('eleve');
-    await applyReferralCode(eleve, 'TEST30');
-    const fresh = (await repo.getProfile('eleve'))!;
-    expect(await startCoachTrial(fresh)).toBe(true);
-    const after = (await repo.getProfile('eleve'))!;
-    expect(after.plan).toBe('pro');
-    expect(after.trial_used).toBe(true);
-    const sub = await repo.getActiveSubscription('eleve');
-    expect(sub?.status).toBe('trialing');
-    expect(new Date(sub!.trial_end!).getTime() - Date.now()).toBeGreaterThan(89 * 86_400_000);
-    const [referral] = await repo.listReferralsByReferrer('coach');
-    expect(referral.status).toBe('essai');
+    await makeUser('eleve');
+    await applyReferralCode((await repo.getProfile('eleve'))!, 'TEST30');
+    const eleve = (await repo.getProfile('eleve'))!;
+    expect(await coachDiscountApplies(repo, eleve, 'month')).toBe(true);
+    expect(await coachDiscountApplies(repo, eleve, 'year')).toBe(false);
 
-    // Pas de deuxième essai.
-    expect(await startCoachTrial(after)).toBe(false);
+    const solo = await makeUser('solo');
+    expect(await coachDiscountApplies(repo, solo, 'month')).toBe(false);
 
-    // À l'échéance, sans paiement : retour au gratuit.
-    expect(await expireSimulatedTrials(repo, new Date(Date.now() + 91 * 86_400_000))).toBe(1);
-    expect((await repo.getProfile('eleve'))?.plan).toBe('free');
+    expect(discountedFirstMonth('starter')).toBe(Math.round(3499 * 0.8));
+    expect(discountedFirstMonth('pro')).toBe(4799);
+    expect(discountedFirstMonth('elite')).toBe(Math.round(9999 * 0.8));
   });
 
-  it('pas d’essai sans formateur', async () => {
-    const user = await makeUser('solo');
-    expect(await startCoachTrial(user)).toBe(false);
+  it('facture le premier mois remisé, commission de 30 % sur ce qui est payé, une seule fois par compte', async () => {
+    await makeCoach();
+    await makeUser('eleve');
+    await applyReferralCode((await repo.getProfile('eleve'))!, 'TEST30');
+    let eleve = (await repo.getProfile('eleve'))!;
+
+    const coachDiscount = await coachDiscountApplies(repo, eleve, 'month');
+    await simulateSubscription(eleve, 'pro', 'month', repo, { coachDiscount });
+    expect((await repo.getProfile('eleve'))?.plan).toBe('pro');
+    const [commission] = await repo.listCommissions('coach');
+    expect(commission.amount_cents).toBe(Math.round(4799 * 0.3));
+
+    // Déjà abonné une fois : plus de remise sur un abonnement suivant.
+    eleve = (await repo.getProfile('eleve'))!;
+    expect(await coachDiscountApplies(repo, eleve, 'month')).toBe(false);
   });
 
+  it('l’annuel est toujours au plein prix, même si la remise est demandée', async () => {
+    await makeCoach();
+    await makeUser('eleve');
+    await applyReferralCode((await repo.getProfile('eleve'))!, 'TEST30');
+    await simulateSubscription((await repo.getProfile('eleve'))!, 'elite', 'year', repo, { coachDiscount: true });
+    const [commission] = await repo.listCommissions('coach');
+    expect(commission.amount_cents).toBe(Math.round(99990 * 0.3));
+  });
+
+  it('l’e-mail de confirmation annonce le premier mois remisé', async () => {
+    await makeCoach();
+    await makeUser('eleve');
+    await applyReferralCode((await repo.getProfile('eleve'))!, 'TEST30');
+    const eleve = (await repo.getProfile('eleve'))!;
+    await recordConsent(repo, eleve, { plan: 'pro', interval: 'month', coachDiscount: true });
+    await simulateSubscription(eleve, 'pro', 'month', repo, { coachDiscount: true });
+    const [mail] = await mailsTo('eleve@test.fr');
+    expect(mail.subject).toBe('Ton abonnement Pro a démarré');
+    expect(mail.html).toContain('premier mois est à');
+    expect(mail.html).toContain('47,99');
+  });
+});
+
+describe('paiement simulé et abonnements hors paiement', () => {
   it('le paiement simulé passe par le même traitement (plan + commission parrain)', async () => {
     const parrain = await makeUser('parrain');
     const filleul = await makeUser('filleul');
     await applyReferralCode(filleul, parrain.referral_code);
-    await simulateSubscription((await repo.getProfile('filleul'))!, 'proplus', 'year', repo);
-    expect((await repo.getProfile('filleul'))?.plan).toBe('proplus');
+    await simulateSubscription((await repo.getProfile('filleul'))!, 'elite', 'year', repo);
+    expect((await repo.getProfile('filleul'))?.plan).toBe('elite');
     const [commission] = await repo.listCommissions('parrain');
-    expect(commission.amount_cents).toBe(Math.round(33500 * 0.3));
+    expect(commission.amount_cents).toBe(Math.round(99990 * 0.3));
+  });
+
+  it('un essai ouvert avant la nouvelle grille se termine à son échéance, sans accès ensuite', async () => {
+    await makeUser('ancien');
+    await handleBillingEvent(
+      subEvent({
+        provider: 'simulation',
+        subscriptionId: 'sim_ancien',
+        customerId: null,
+        userId: 'ancien',
+        status: 'trialing',
+        priceId: 'sim_pro_month',
+        trialEnd: new Date(Date.now() + 10 * 86_400_000).toISOString(),
+      }),
+      repo,
+    );
+    expect((await repo.getProfile('ancien'))?.plan).toBe('pro');
+    expect(await expireSimulatedTrials(repo, new Date(Date.now() + 5 * 86_400_000))).toBe(0);
+    expect(await expireSimulatedTrials(repo, new Date(Date.now() + 11 * 86_400_000))).toBe(1);
+    expect((await repo.getProfile('ancien'))?.plan).toBe('aucun');
+  });
+
+  it('un plan offert par l’admin donne l’accès sans facture ni commission, et se retire', async () => {
+    const parrain = await makeUser('parrain');
+    const filleul = await makeUser('filleul');
+    await applyReferralCode(filleul, parrain.referral_code);
+    await grantPlan('filleul', 'elite', repo);
+    expect((await repo.getProfile('filleul'))?.plan).toBe('elite');
+    expect(await repo.listCommissions('parrain')).toHaveLength(0);
+    await grantPlan('filleul', null, repo);
+    expect((await repo.getProfile('filleul'))?.plan).toBe('aucun');
+  });
+
+  // Corrigé après le signalement de la mise à jour des tests (nouvelle grille).
+  it('un plan offert n’envoie pas d’e-mail de confirmation d’abonnement payant', async () => {
+    await makeUser('offert');
+    await grantPlan('offert', 'elite', repo);
+    expect(await mailsTo('offert@test.fr')).toHaveLength(0);
+  });
+});
+
+describe('base locale : fichier écrit avec l’ancienne grille', () => {
+  it('relit « free » comme « aucun » et « proplus » comme « elite » (profils et abonnements)', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tracktout-grille-'));
+    const file = path.join(dir, 'local-db.json');
+    try {
+      fs.writeFileSync(
+        file,
+        JSON.stringify({
+          version: 1,
+          profiles: [
+            { id: 'ancien-gratuit', email: 'g@test.fr', plan: 'free', niches: [] },
+            { id: 'ancien-plus', email: 'p@test.fr', plan: 'proplus', niches: [] },
+            { id: 'pro', email: 'pro@test.fr', plan: 'pro', niches: [] },
+          ],
+          subscriptions: [
+            { id: 'sim_ancien-plus', user_id: 'ancien-plus', provider: 'simulation', status: 'active', plan: 'proplus', billing_interval: 'year' },
+          ],
+        }),
+      );
+      const legacy = new LocalRepo(file);
+      expect((await legacy.getProfile('ancien-gratuit'))?.plan).toBe('aucun');
+      expect((await legacy.getProfile('ancien-plus'))?.plan).toBe('elite');
+      expect((await legacy.getProfile('pro'))?.plan).toBe('pro');
+      expect((await legacy.getSubscription('sim_ancien-plus'))?.plan).toBe('elite');
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

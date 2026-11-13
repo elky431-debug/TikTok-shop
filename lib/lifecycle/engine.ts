@@ -11,7 +11,7 @@ import { LIFECYCLE_INFO, type LifecycleType } from './types';
  * - astuce_j1        : 1 à 3 jours après l'inscription ;
  * - rappel_j3        : 3 à 6 jours après, et seulement si aucun script n'a été écrit ;
  * - reactivation     : 14 à 45 jours sans ouvrir l'appli (une fois par absence) ;
- * - fin_essai        : essai Pro offert par un formateur qui finit dans 3 jours ou moins (une fois par essai) ;
+ * - fin_essai        : essai offert avant la nouvelle grille (il n'y en a plus) qui finit dans 3 jours ou moins ;
  * - relance_paiement : abonnement « en retard de paiement » depuis 3 jours ou plus (une fois par incident), en plus de
  *                      l'e-mail envoyé par le webhook à chaque essai refusé, qui reste le seul e-mail le jour de l'échec.
  */

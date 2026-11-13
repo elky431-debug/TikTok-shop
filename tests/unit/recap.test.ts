@@ -156,8 +156,8 @@ describe('récap du dimanche', () => {
     expect(lea.plan).toBe('pro');
   });
 
-  it('en Gratuit : pas de gains (fonction Pro), le meilleur produit vient des vidéos', async () => {
-    await member('max');
+  it('en Starter : pas de gains (fonction Pro), le meilleur produit vient des vidéos', async () => {
+    await member('max', { plan: 'starter' });
     const [product] = await repo.listProducts();
     await repo.saveProduct('max', product.id);
     await buildWeeklyRecap((await repo.getProfile('max'))!, repo, new Date('2026-11-10T10:00:00Z'));
@@ -191,7 +191,7 @@ describe('récap du dimanche', () => {
 
   it('push du récap du matin à l’heure choisie, une fois par jour', async () => {
     vi.useFakeTimers({ now: new Date('2026-11-12T03:00:00Z'), toFake: ['Date'] });
-    const lea = await member('lea', { digest_hour: 8 });
+    const lea = await member('lea', { digest_hour: 8, plan: 'starter' });
     await saveRecapSettings(lea, { matin: { push: true } }, repo);
     await prepareDigests(DAY, repo);
     const pushes: string[] = [];
@@ -200,6 +200,18 @@ describe('récap du dimanche', () => {
     expect((await runRecapHourly(new Date('2026-11-12T07:00:00Z'), repo)).morningPush).toBe(1); // 8 h
     expect((await runRecapHourly(new Date('2026-11-12T08:00:00Z'), repo)).morningPush).toBe(0);
     expect(pushes).toEqual(['Ton récap du matin est prêt']);
+  });
+
+  // Corrigé après le signalement de la mise à jour des tests (nouvelle grille).
+  it('sans abonnement : pas de push du récap du matin', async () => {
+    vi.useFakeTimers({ now: new Date('2026-11-12T03:00:00Z'), toFake: ['Date'] });
+    const ex = await member('ex-abonne', { digest_hour: 8, plan: 'aucun' });
+    await saveRecapSettings(ex, { matin: { push: true } }, repo);
+    await prepareDigests(DAY, repo);
+    const pushes: string[] = [];
+    registerPushSender(async (_u, payload) => (pushes.push(payload.title), true));
+    expect((await runRecapHourly(new Date('2026-11-12T07:00:00Z'), repo)).morningPush).toBe(0);
+    expect(pushes).toEqual([]);
   });
 });
 

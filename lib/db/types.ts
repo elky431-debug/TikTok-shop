@@ -1,6 +1,6 @@
 import type { NicheId } from '@/lib/niches';
 
-export type PlanId = 'free' | 'pro' | 'proplus';
+export type PlanId = 'aucun' | 'starter' | 'pro' | 'elite';
 export type Eligibility = 'preparation' | 'affilie';
 /** Tranches proposées depuis l'onboarding 2, puis anciennes tranches (comptes existants, jusqu'à leur nouvelle réponse). */
 export type FollowerRange =
@@ -55,7 +55,7 @@ export interface Profile {
   digest_email: boolean;
   digest_discord: boolean;
   digest_hour: number;
-  /** Pays du catalogue affiché (FR par défaut ; DE, IT, ES avec Pro+). L'interface reste en français. */
+  /** Pays du catalogue affiché (FR par défaut ; DE, IT, ES avec Elite). L'interface reste en français. */
   region: RegionId;
   discord_user_id: string | null;
   theme: Theme;

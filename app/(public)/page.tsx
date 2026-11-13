@@ -20,8 +20,8 @@ import { SectionHeading } from '@/components/public/section-heading';
 import { LinkButton } from '@/components/ui/button';
 import { FeatureCard } from '@/components/ui/feature-card';
 import { BRAND, BRAND_DESCRIPTION, BRAND_TAGLINE } from '@/lib/brand';
-import { COACH_TRIAL_DAYS, getPlan, REFERRAL_COMMISSION_RATE } from '@/lib/plans';
-import { pricingCards } from '@/lib/pricing';
+import { COACH_FIRST_MONTH_DISCOUNT, getPlan, REFERRAL_COMMISSION_RATE } from '@/lib/plans';
+import { pricingCards, yearlyBadge } from '@/lib/pricing';
 import { MARKET_FIGURES } from '@/lib/market';
 import { formatEuros } from '@/lib/utils';
 
@@ -122,7 +122,7 @@ const FAQ = [
 ];
 
 export default function HomePage() {
-  const proPrice = formatEuros(getPlan('pro').prices.month);
+  const starterPrice = formatEuros(getPlan('starter').prices.month);
 
   return (
     <>
@@ -137,14 +137,14 @@ export default function HomePage() {
           actions={
             <>
               <LinkButton href="/connexion" size="lg" arrow>
-                Démarrer gratuitement
+                Commencer
               </LinkButton>
               <LinkButton href="#comment" variant="outline" size="lg">
                 Voir comment ça marche
               </LinkButton>
             </>
           }
-          footnote={`Gratuit sans carte bancaire · Pro dès ${proPrice}/mois`}
+          footnote={`Dès ${starterPrice}/mois · Sans engagement`}
         />
       </section>
 
@@ -255,7 +255,7 @@ export default function HomePage() {
             </ol>
             <Reveal className="mt-14 text-center">
               <LinkButton href="/connexion" size="lg" arrow className="shadow-lg shadow-rose/15">
-                Démarrer gratuitement
+                Commencer
               </LinkButton>
             </Reveal>
           </div>
@@ -267,12 +267,12 @@ export default function HomePage() {
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <SectionHeading
             eyebrow="Tarifs"
-            title="Commence gratuitement,"
-            accent="passe Pro quand tu publies."
-            subtitle="Sans engagement, résiliable en deux clics."
+            title="Trois plans,"
+            accent="Pro pour publier chaque jour."
+            subtitle="Sans engagement, résiliable en deux clics. À l’année, 2 mois offerts."
           />
           <Reveal>
-            <PricingCards plans={pricingCards()} mode="public" />
+            <PricingCards plans={pricingCards()} mode="public" yearlyBadge={yearlyBadge()} />
           </Reveal>
         </div>
       </section>
@@ -304,7 +304,7 @@ export default function HomePage() {
                   <ul className="space-y-3">
                     {[
                       `${Math.round(REFERRAL_COMMISSION_RATE * 100)} % de commission récurrente sur tes élèves`,
-                      `${Math.round(COACH_TRIAL_DAYS / 30)} mois de Pro offerts à chacun de tes élèves`,
+                      `−${Math.round(COACH_FIRST_MONTH_DISCOUNT * 100)} % sur le premier mois pour chacun de tes élèves`,
                       'Un espace pour suivre leur progression',
                     ].map((item) => (
                       <li key={item} className="flex items-start gap-3 rounded-xl border border-line bg-bg/40 px-4 py-3 text-sm text-fg/90">

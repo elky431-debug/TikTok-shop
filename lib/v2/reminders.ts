@@ -44,7 +44,7 @@ const bodyFor = (items: Due) =>
 
 /**
  * Tâche horaire : rappel par `notify` quand l'heure du récap de la personne est arrivée, une seule fois par jour
- * (clé d'idempotence). Plans avec calendrier seulement (Pro et Pro+).
+ * (clé d'idempotence). Plans avec calendrier seulement (Pro et Elite).
  */
 export async function sendPublicationReminders(day: string, repo: Repo, now = new Date()): Promise<number> {
   let sent = 0;

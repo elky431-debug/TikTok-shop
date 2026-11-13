@@ -9,13 +9,13 @@ import { getDoc } from '@/lib/studio/store';
 
 /**
  * Export d'une génération : `format=pdf` (défaut) ou `txt`, `script=0..2` pour un seul script (sinon tout),
- * `langue=de|it|es` pour sa traduction. Plan Pro+ (droit `export`), vérifié côté serveur.
+ * `langue=de|it|es` pour sa traduction. Plan Elite (droit `export`), vérifié côté serveur.
  */
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   const viewer = await getViewer();
   if (!viewer) return relativeRedirect(`/connexion?suite=/app/studio/${params.id}`);
   if (!studioRights(viewer.profile.plan).export) {
-    return NextResponse.json({ error: 'L’export en PDF et en texte est réservé au plan Pro+.' }, { status: 403 });
+    return NextResponse.json({ error: 'L’export en PDF et en texte est réservé au plan Elite.' }, { status: 403 });
   }
   const doc = await getDoc(viewer.profile.id, params.id);
   if (!doc) return NextResponse.json({ error: 'Script introuvable.' }, { status: 404 });

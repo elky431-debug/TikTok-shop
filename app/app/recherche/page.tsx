@@ -10,7 +10,7 @@ import { getLiveCatalog } from '@/lib/catalog';
 import { getRepo } from '@/lib/db';
 import { env } from '@/lib/env';
 import { nicheShort } from '@/lib/niches';
-import { getPlan } from '@/lib/plans';
+import { type PlanLimits, cheapestPlanWith, getPlan } from '@/lib/plans';
 import { remainingSearches, SEARCH_KIND, type SearchRecord } from '@/lib/radar/keyword-search';
 import { fallbackImageUrl } from '@/lib/product-image';
 import { regionFor } from '@/lib/regions';
@@ -19,10 +19,16 @@ import { formatCompact, formatEuros, formatRelative } from '@/lib/utils';
 export const metadata: Metadata = { title: 'Recherche par mot-clé' };
 
 const ERRORS: Record<string, string> = {
-  quota: 'Tes recherches du jour sont faites : reviens demain, ou passe Pro+ pour en faire 30 par jour.',
   mot: 'Écris au moins 2 lettres.',
   source: 'La recherche n’a pas abouti chez la source de données. Réessaie dans un moment : rien n’a été décompté.',
 };
+
+/** Recherches du jour faites : le plan suivant et son quota (Starter 3, Pro 15, Elite 50). */
+function quotaMessage(plan: PlanLimits): string {
+  const next = cheapestPlanWith((p) => p.keywordSearchesPerDay > plan.keywordSearchesPerDay);
+  const upgrade = next.keywordSearchesPerDay > plan.keywordSearchesPerDay ? `, ou passe à ${next.name} pour en faire ${next.keywordSearchesPerDay} par jour` : '';
+  return `Tes ${plan.keywordSearchesPerDay} recherches du jour sont faites : reviens demain${upgrade}.`;
+}
 
 export default async function SearchPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
   const { profile } = await requireOnboardedViewer('/app/recherche');
@@ -31,7 +37,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
     return (
       <div>
         <PageHeader eyebrow="Trouver" title="Recherche par mot-clé"  description="Les produits de TikTok Shop France qui contiennent ce mot, triés par ventes sur 7 jours. Chaque chiffre vient de la source ; ce qu’elle ne donne pas n’est pas affiché." />
-        <PlanGate plan="Pro" title="Cherche n’importe quel produit de TikTok Shop">
+        <PlanGate plan="starter" title="Cherche n’importe quel produit de TikTok Shop">
           Tape un mot-clé (« sérum », « gourde »…) et vois les produits qui se vendent le plus en France sur 7 jours, avec leur
           commission et leur nombre d’affiliés.
         </PlanGate>
@@ -57,7 +63,11 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
         description="Les produits de TikTok Shop France qui contiennent ce mot, triés par ventes sur 7 jours. Chaque chiffre vient de la source ; ce qu’elle ne donne pas n’est pas affiché."
       />
       <KeywordSearchForm remaining={remaining} limit={plan.keywordSearchesPerDay} defaultValue={current?.data.keyword} catalogOnly={!env.nexscopeApiKey} />
-      {searchParams.erreur && ERRORS[searchParams.erreur] ? <Callout tone="rose" className="mt-4" title={ERRORS[searchParams.erreur]} /> : null}
+      {searchParams.erreur === 'quota' ? (
+        <Callout tone="rose" className="mt-4" title={quotaMessage(plan)} />
+      ) : searchParams.erreur && ERRORS[searchParams.erreur] ? (
+        <Callout tone="rose" className="mt-4" title={ERRORS[searchParams.erreur]} />
+      ) : null}
 
       {current ? (
         <section className="mt-6" aria-labelledby="resultats">

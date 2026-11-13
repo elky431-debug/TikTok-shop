@@ -12,6 +12,7 @@ export function OptionChip({
   children,
   hint,
   className,
+  disabled,
 }: {
   name: string;
   value: string;
@@ -19,15 +20,18 @@ export function OptionChip({
   children: ReactNode;
   hint?: ReactNode;
   className?: string;
+  /** Option fermée par le plan : visible, non sélectionnable. */
+  disabled?: boolean;
 }) {
   return (
     <label
       className={cn(
+        disabled && 'cursor-not-allowed opacity-60 hover:border-line',
         'relative flex min-h-11 cursor-pointer flex-col justify-center rounded-xl border border-line bg-raised px-3.5 py-2.5 transition-colors hover:border-line-strong has-[:checked]:border-cyan-ink/60 has-[:checked]:bg-cyan-ink/[0.07] has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-cyan',
         className,
       )}
     >
-      <input type="radio" name={name} value={value} defaultChecked={defaultChecked} className="peer sr-only" />
+      <input type="radio" name={name} value={value} defaultChecked={defaultChecked} disabled={disabled} className="peer sr-only" />
       <span className="text-sm font-semibold leading-snug peer-checked:text-fg">{children}</span>
       {hint ? <span className="mt-0.5 hidden text-xs leading-snug text-muted sm:block">{hint}</span> : null}
     </label>

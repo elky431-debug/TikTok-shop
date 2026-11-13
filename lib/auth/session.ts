@@ -4,6 +4,7 @@ import { cache } from 'react';
 import { getRepo } from '@/lib/db';
 import type { Coach, Profile } from '@/lib/db/types';
 import { isAdminEmail, isLocalMode } from '@/lib/env';
+import { getPlan } from '@/lib/plans';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { LOCAL_SESSION_COOKIE } from './constants';
 import { verifyLocalSessionToken } from './local-session';
@@ -46,11 +47,16 @@ export async function requireViewer(next = '/app'): Promise<Viewer> {
   return viewer;
 }
 
-/** Exige un compte dont l'onboarding est terminé. */
-export async function requireOnboardedViewer(next = '/app'): Promise<Viewer> {
+/**
+ * Exige un compte dont l'onboarding est terminé et, par défaut, un abonnement : tout est payant, un compte sans
+ * abonnement choisit d'abord son plan (/abonnement). `{ abonnement: false }` pour les rares pages ouvertes sans
+ * abonnement : compte (résiliation, suppression), paiement, consentement formateur, et la coque de l'appli.
+ */
+export async function requireOnboardedViewer(next = '/app', options: { abonnement?: boolean } = {}): Promise<Viewer> {
   const viewer = await requireViewer(next);
   // Pas encore d'onboarding, ou ancien onboarding : les nouvelles questions sont posées une fois.
   if (!viewer.profile.onboarded_at || (viewer.profile.onboarding_version ?? 1) < 2) redirect('/bienvenue');
+  if (options.abonnement !== false && !getPlan(viewer.profile.plan).access) redirect('/abonnement');
   return viewer;
 }
 

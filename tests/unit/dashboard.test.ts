@@ -106,10 +106,11 @@ describe('profil TikTok (Nexscope)', () => {
     await refreshCreatorProfile(repo, 'u1', '@lea.teste', { now: day(13), fetcher });
     await refreshCreatorProfile(repo, 'u1', '@lea.teste', { now: day(19), fetcher });
     expect(calls).toBe(1);
-    expect(creatorRefreshPolicy(current() as never, 'lea.teste', 'free', day(19))).toMatchObject({ auto: false, manual: false, manualIncluded: false, nextAuto: '2026-11-20' });
+    expect(creatorRefreshPolicy(current() as never, 'lea.teste', 'aucun', day(19))).toMatchObject({ auto: false, manual: false, manualIncluded: false, nextAuto: '2026-11-20' });
+    expect(creatorRefreshPolicy(current() as never, 'lea.teste', 'starter', day(19))).toMatchObject({ manualIncluded: true });
 
-    // Gratuit : « Actualiser » refusé côté serveur.
-    await refreshCreatorProfile(repo, 'u1', '@lea.teste', { now: day(19), fetcher, plan: 'free', mode: 'manuel' });
+    // Sans abonnement : « Actualiser » refusé côté serveur.
+    await refreshCreatorProfile(repo, 'u1', '@lea.teste', { now: day(19), fetcher, plan: 'aucun', mode: 'manuel' });
     expect(calls).toBe(1);
     // Pro : une fois par jour, pas deux.
     await refreshCreatorProfile(repo, 'u1', '@lea.teste', { now: day(19), fetcher, plan: 'pro', mode: 'manuel' });

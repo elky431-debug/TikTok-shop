@@ -1,4 +1,5 @@
-import type { BillingInterval, PlanId, Profile } from '@/lib/db/types';
+import type { BillingInterval, Profile } from '@/lib/db/types';
+import type { PaidPlanId } from '@/lib/plans';
 
 /**
  * Interface de paiement indépendante du prestataire. Changer de prestataire (Lemon Squeezy, Paddle…)
@@ -10,17 +11,26 @@ export type ProviderName = 'stripe' | 'simulation' | 'disabled';
 
 export interface BillingProvider {
   readonly name: ProviderName;
-  /** URL où envoyer l'utilisateur pour payer. */
-  createCheckout(input: { profile: Profile; plan: Exclude<PlanId, 'free'>; interval: BillingInterval }): Promise<string>;
+  /**
+   * URL où envoyer l'utilisateur pour payer. `coachDiscount` : −20 % sur le premier mois (code formateur) ;
+   * `consentAt` : date de la demande de démarrage immédiat (case obligatoire, voir lib/billing/consent.ts).
+   */
+  createCheckout(input: CheckoutInput): Promise<string>;
   /**
    * URL du portail client (moyen de paiement, factures, résiliation). `flow` ouvre directement une étape :
    * changer de moyen de paiement (après un échec de paiement).
    */
   createPortal(input: { profile: Profile; flow?: 'payment_method_update' }): Promise<string>;
-  /** Démarre l'essai Pro offert aux élèves d'un formateur. */
-  startTrial(input: { profile: Profile; days: number }): Promise<void>;
   /** Résilie immédiatement tout abonnement (suppression du compte). */
   cancelAll(input: { profile: Profile }): Promise<void>;
+}
+
+export interface CheckoutInput {
+  profile: Profile;
+  plan: PaidPlanId;
+  interval: BillingInterval;
+  coachDiscount: boolean;
+  consentAt: string;
 }
 
 export class BillingUnavailableError extends Error {
@@ -39,7 +49,7 @@ export interface SubscriptionChanged {
   customerId: string | null;
   userId: string | null;
   status: string;
-  plan: Exclude<PlanId, 'free'> | null;
+  plan: PaidPlanId | null;
   interval: BillingInterval | null;
   priceId: string | null;
   currentPeriodEnd: string | null;

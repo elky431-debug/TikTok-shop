@@ -9,7 +9,7 @@ import { requireAdmin } from '@/lib/auth/session';
 import { getRepo } from '@/lib/db';
 import { getPlan, isPaidPlan, isPlanId } from '@/lib/plans';
 import { formatRelative } from '@/lib/utils';
-import { makeCoachAction } from '../actions';
+import { grantPlanAction, makeCoachAction } from '../actions';
 import { AdminNav } from '../admin-ui';
 
 export const metadata: Metadata = { title: 'Utilisateurs · Administration' };
@@ -19,6 +19,8 @@ const ERRORS: Record<string, string> = {
   formation: 'Indique le nom de la formation.',
   code: 'Le code promo doit faire 3 à 24 caractères (lettres, chiffres, tirets).',
   'code-pris': 'Ce code est déjà utilisé (formateur, code supplémentaire ou parrainage).',
+  plan: 'Ce plan n’existe pas, ou le compte est introuvable.',
+  base: 'La base n’a pas encore la nouvelle grille de prix : lance « npm run db:setup » (migration nouvelle_grille), puis réessaie.',
 };
 const SHOWN = 100;
 
@@ -41,6 +43,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: R
         <AdminNav current="utilisateurs" />
       </div>
       {error ? <Callout tone="rose" className="mb-4" title={error} /> : null}
+      {searchParams.ok === 'plan' ? <Callout tone="gain" className="mb-4" title="Plan changé. Un plan offert ne crée ni facture ni commission." /> : null}
 
       <form className="grid gap-3 sm:grid-cols-[1fr_12rem_auto] sm:items-end" role="search">
         <div>
@@ -51,9 +54,10 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: R
           <Label htmlFor="plan">Plan</Label>
           <Select id="plan" name="plan" defaultValue={plan}>
             <option value="tous">Tous les plans</option>
-            <option value="free">Gratuit</option>
+            <option value="aucun">Sans abonnement</option>
+            <option value="starter">Starter</option>
             <option value="pro">Pro</option>
-            <option value="proplus">Pro+</option>
+            <option value="elite">Elite</option>
           </Select>
         </div>
         <SubmitButton variant="outline">Rechercher</SubmitButton>
@@ -113,6 +117,18 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: R
                       <dd>{p.follower_range ?? '—'}</dd>
                     </div>
                   </dl>
+                  <form action={grantPlanAction} className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <input type="hidden" name="utilisateur" value={p.id} />
+                    <Select name="plan" aria-label={`Plan offert à ${p.email}`} defaultValue={p.plan} className="sm:max-w-[14rem]">
+                      <option value="aucun">Sans abonnement</option>
+                      <option value="starter">Starter offert</option>
+                      <option value="pro">Pro offert</option>
+                      <option value="elite">Elite offert</option>
+                    </Select>
+                    <SubmitButton size="sm" variant="outline" pendingLabel="Changement…">
+                      Changer le plan
+                    </SubmitButton>
+                  </form>
                   {!coach ? (
                     <form action={makeCoachAction} className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
                       <input type="hidden" name="utilisateur" value={p.id} />

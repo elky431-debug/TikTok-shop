@@ -192,7 +192,7 @@ export async function sendOfferFollowUps(date: string, repo: Repo): Promise<numb
     if (!offer.follow_up_on || offer.follow_up_on > date || offer.follow_up_sent === offer.follow_up_on) continue;
     if (offer.status === 'acceptee' || offer.status === 'refusee') continue;
     const profile = await repo.getProfile(record.user_id);
-    if (!profile || !getPlan(profile.plan).offersPerDay) continue;
+    if (!profile || !getPlan(profile.plan).offersPerMonth) continue;
     const brand = offer.extracted.brand ?? 'la marque';
     const done = await notify(
       record.user_id,

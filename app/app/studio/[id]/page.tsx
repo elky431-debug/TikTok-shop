@@ -111,7 +111,7 @@ export default async function ScriptPage({
         <p className="mb-6 text-sm text-muted">
           Copie tes scripts avec les boutons « Copier ». L’export en PDF et en texte est inclus dans{' '}
           <Link href="/app/passer-pro" className="font-semibold text-fg underline underline-offset-2">
-            le plan Pro+
+            le plan Elite
           </Link>
           .
         </p>

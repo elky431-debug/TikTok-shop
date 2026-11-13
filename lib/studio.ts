@@ -6,7 +6,8 @@ import type { ScriptInput } from '@/lib/ai/types';
 import { getRepo } from '@/lib/db';
 import type { Product, Profile } from '@/lib/db/types';
 import { ensureCatalog } from '@/lib/jobs/nightly';
-import { getPlan, isPaidPlan, MAX_HOOK_REGENERATIONS, remainingScripts, scriptLimitForUsage } from '@/lib/plans';
+import { cheapestPlanWith, getPlan, isPaidPlan, isUnlimited, MAX_HOOK_REGENERATIONS, remainingScripts, scriptLimitForUsage } from '@/lib/plans';
+import { allowedFormats } from './studio/limits';
 import { canAccessProduct } from '@/lib/radar';
 import { rankForUser, visibleProductIds } from '@/lib/radar-rules';
 import { parisDate } from '@/lib/utils';
@@ -18,7 +19,7 @@ import type { StudioDocView } from './studio/types';
 import { draftAsPromptContext, type StudioDraft } from '@/lib/v2/studio-draft';
 
 export { StudioError, type StudioErrorCode } from './studio/errors';
-export { studioRights, type StudioRights } from './studio/limits';
+export { allowedFormats, studioRights, type StudioRights } from './studio/limits';
 export type { StudioDoc, StudioDocView } from './studio/types';
 
 export interface UsageToday {
@@ -92,7 +93,11 @@ export async function createScripts(profile: Profile, productId: string, format:
   const product = await repo.getProduct(productId);
   if (!product) throw new StudioError('produit', 'Ce produit n’existe plus. Choisis-en un autre.');
   if (!(await canAccessProduct(profile, productId))) {
-    throw new StudioError('acces', 'Ce produit est réservé au plan Pro. Choisis un de tes produits du jour.');
+    throw new StudioError('acces', 'Ce produit est réservé aux abonnés. Choisis ton abonnement pour l’ouvrir.');
+  }
+  // Formats : 5 en Starter, les 8 à partir de Pro (vérifié ici, côté serveur).
+  if (!allowedFormats(profile.plan).includes(format)) {
+    throw new StudioError('plan', `Ce format est inclus à partir du plan ${cheapestPlanWith((p) => p.scriptFormats > getPlan(profile.plan).scriptFormats).name}.`);
   }
 
   const day = parisDate();
@@ -101,7 +106,9 @@ export async function createScripts(profile: Profile, productId: string, format:
     const plan = getPlan(profile.plan);
     throw new StudioError(
       'limite',
-      `Tu as écrit tes ${plan.scriptsPerDay} scripts du jour (plan ${plan.name}). Ton compteur repart à zéro demain matin.`,
+      isUnlimited(profile.plan, 'scriptsPerDay')
+        ? 'Limite de sécurité du jour atteinte. Ton compteur repart à zéro demain matin.'
+        : `Tu as écrit tes ${plan.scriptsPerDay} scripts du jour (plan ${plan.name}). Ton compteur repart à zéro demain matin.`,
     );
   }
 

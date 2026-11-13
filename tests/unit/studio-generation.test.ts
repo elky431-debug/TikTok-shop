@@ -152,11 +152,14 @@ describe('point 4 · script complet et mention de collaboration commerciale', ()
     expect((await getUsageToday(profile)).used).toBe(1);
   });
 
-  it('applique toujours la limite de scripts du plan gratuit, côté serveur', async () => {
-    const profile = await user('gen-gratuit', 'free');
+  it('applique toujours la limite de scripts du plan Starter, côté serveur, quels que soient les réglages', async () => {
+    const profile = await user('gen-starter', 'starter');
     const { today } = await listStudioProducts(profile);
-    for (let i = 0; i < 3; i++) await createScripts(profile, today[0].id, 'top3');
-    await expect(createScripts(profile, today[0].id, 'top3')).rejects.toMatchObject({ code: 'limite' });
+    expect(today.length).toBeGreaterThan(3);
+    const settings = { duration: 60, tone: 'humour', angle: 'prix' } as const;
+    for (let i = 0; i < 10; i++) await createScripts(profile, today[i % today.length].id, 'unboxing', { settings });
+    await expect(createScripts(profile, today[0].id, 'unboxing', { settings })).rejects.toMatchObject({ code: 'limite' });
+    expect((await getUsageToday(profile)).used).toBe(10);
   });
 });
 

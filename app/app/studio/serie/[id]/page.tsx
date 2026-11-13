@@ -11,6 +11,7 @@ import { getUsageToday } from '@/lib/studio';
 import { getSeries, writtenAngles } from '@/lib/studio/series';
 import { cn, formatRelative } from '@/lib/utils';
 import { writeAngleAction } from '../actions';
+import { isUnlimited } from '@/lib/plans';
 
 export const metadata: Metadata = { title: 'Série de 20 vidéos' };
 
@@ -65,9 +66,9 @@ export default async function SeriesDetailPage({ params, searchParams }: { param
         </Callout>
       ) : null}
       <p className="mb-4 text-sm text-muted">
-        {Number.isFinite(usage.remaining)
-          ? `Écrire un angle utilise une de tes écritures du jour : il t’en reste ${usage.remaining}.`
-          : 'Écritures illimitées avec Pro+ : écris tous les angles qui te parlent.'}
+        {isUnlimited(profile.plan, 'scriptsPerDay')
+          ? 'Écritures illimitées : écris tous les angles qui te parlent.'
+          : `Écrire un angle utilise une de tes écritures du jour : il t’en reste ${usage.remaining}.`}
       </p>
 
       <ol className="grid gap-3 md:grid-cols-2">

@@ -29,9 +29,9 @@ const MESSAGES: Record<string, { tone: 'gain' | 'rose'; text: string }> = {
   'ok=preferences': { tone: 'gain', text: 'Préférences enregistrées.' },
   'ok=pays': { tone: 'gain', text: 'Pays du catalogue enregistré.' },
   'ok=emails': { tone: 'gain', text: 'Choix des e-mails enregistré.' },
-  'erreur=pays': { tone: 'rose', text: 'Le choix du pays est réservé au plan Pro+.' },
+  'erreur=pays': { tone: 'rose', text: 'Le choix du pays est réservé au plan Elite.' },
   'paiement=ok': { tone: 'gain', text: 'Paiement confirmé : ton plan est actif. Bienvenue !' },
-  'resiliation=ok': { tone: 'gain', text: 'Abonnement résilié. Tu repasses en Gratuit.' },
+  'resiliation=ok': { tone: 'gain', text: 'Abonnement résilié. L’appli se ferme à la fin de la période payée.' },
   'erreur=prenom': { tone: 'rose', text: 'Indique ton prénom.' },
   'erreur=pseudo': { tone: 'rose', text: 'Ton pseudo TikTok ne peut contenir que des lettres, chiffres, points et tirets bas.' },
   'erreur=abonnes': { tone: 'rose', text: 'Choisis ta tranche d’abonnés.' },
@@ -45,7 +45,7 @@ const MESSAGES: Record<string, { tone: 'gain' | 'rose'; text: string }> = {
 };
 
 export default async function ComptePage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
-  const { profile, user } = await requireOnboardedViewer('/app/compte');
+  const { profile, user } = await requireOnboardedViewer('/app/compte', { abonnement: false });
   const repo = getRepo();
   const [subscription, coach, disabledEmails, goal] = await Promise.all([
     repo.getActiveSubscription(profile.id),
@@ -82,8 +82,8 @@ export default async function ComptePage({ searchParams }: { searchParams: Recor
               {subscription?.status === 'trialing' && subscription.trial_end ? (
                 <p className="mt-2 text-sm">
                   Essai jusqu’au {formatLongDate(subscription.trial_end.slice(0, 10))}
-                  {coach ? `, offert par ${coach.training_name}` : ''}. Sans moyen de paiement, tu repasses en Gratuit à cette date,
-                  sans frais.
+                  {coach ? `, offert par ${coach.training_name}` : ''}. Sans moyen de paiement, l’appli se ferme à cette date, sans
+                  frais.
                 </p>
               ) : subscription?.current_period_end ? (
                 <p className="mt-2 text-sm">
@@ -100,7 +100,7 @@ export default async function ComptePage({ searchParams }: { searchParams: Recor
                   </SubmitButton>
                 </form>
               ) : (
-                <LinkButton href="/app/passer-pro">Passer Pro</LinkButton>
+                <LinkButton href={plan.access ? '/app/passer-pro' : '/abonnement'}>{plan.access ? 'Changer de plan' : 'Choisir mon abonnement'}</LinkButton>
               )}
             </div>
           </div>
@@ -117,7 +117,7 @@ export default async function ComptePage({ searchParams }: { searchParams: Recor
               }
             >
               Ton accès reste ouvert pendant les nouveaux essais de prélèvement. Mets à jour ta carte pour garder ton plan ;
-              sans paiement, tu repasseras en Gratuit.
+              sans paiement, l’appli se fermera.
             </Callout>
           ) : null}
           {subscription ? (
@@ -133,7 +133,7 @@ export default async function ComptePage({ searchParams }: { searchParams: Recor
         <Card id="pays">
           <h2 className="text-lg">Pays du catalogue</h2>
           <p className="mt-1 text-sm text-muted">
-            La France par défaut. Avec Pro+, ouvre aussi les produits d’Allemagne, d’Italie et d’Espagne (l’appli reste en
+            La France par défaut. Avec Elite, ouvre aussi les produits d’Allemagne, d’Italie et d’Espagne (l’appli reste en
             français).
           </p>
           {plan.europe ? (
@@ -152,7 +152,7 @@ export default async function ComptePage({ searchParams }: { searchParams: Recor
             </form>
           ) : (
             <LinkButton href="/app/passer-pro" variant="outline" size="sm" className="mt-4">
-              Passer Pro+
+              Passer à Elite
             </LinkButton>
           )}
         </Card>

@@ -6,7 +6,7 @@ Référence de travail pour tout le projet. À relire avant chaque jalon.
 
 Outil **en français** qui dit chaque matin aux affiliés TikTok Shop quels produits vont exploser,
 leur écrit les scripts vidéo pour les vendre, et que les formateurs TikTok Shop français proposent à
-leurs élèves (commission de 30 % récurrente, 3 mois de Pro offerts aux élèves).
+leurs élèves (commission de 30 % récurrente, −20 % sur le premier mois des élèves).
 
 - Le nom « Tracktout » vit dans **une seule constante** : `lib/brand.ts`.
 - Marché : TikTok Shop France ≈ 133 M€ / trimestre (T2 2026), ≈ 70 % via les affiliés, beauté n°1.
@@ -42,7 +42,8 @@ leurs élèves (commission de 30 % récurrente, 3 mois de Pro offerts aux élèv
 - Tailwind + composants maison (`components/ui`), Motion (`motion/react`) pour les animations.
   Recharts pour les graphiques détaillés, sparklines en SVG maison.
 - Stripe isolé dans `lib/billing/` (interface `BillingProvider`). Sans clé : paiement désactivé avec
-  message clair ; en mode local uniquement, paiement **simulé** qui passe par le même code de webhook.
+  message clair ; en mode local uniquement, paiement **simulé** qui passe par le même code de webhook. Plan offert à la
+  main par l'admin (`lib/billing/grant.ts`, abonnement `admin_…` sans facture ni commission).
 - IA des scripts : `lib/ai/scripts.ts` (commun : validation Zod, 1 nouvel essai si invalide, interdits de
   `lib/ai/guard.ts`) + un adaptateur par fournisseur dans `lib/ai/providers/` : `AI_PROVIDER=openai` (SDK `openai`,
   Responses API, `OPENAI_MODEL`, défaut `gpt-6-luna`, le moins cher avec sorties structurées) ou `anthropic` (SDK `@anthropic-ai/sdk`, `ANTHROPIC_MODEL`,
@@ -76,11 +77,19 @@ Tendances : explose ≥ +40 % (et ≥ 5 ventes/j), monte ≥ +10 %, baisse ≤ �
 
 ## Plans (`lib/plans.ts`)
 
-| Plan | Prix | Limites |
+Tout est payant, sans plan gratuit ni essai (grille du 13 novembre, `DECISIONS.md` 188-194). Sans abonnement (`aucun`),
+l'appli renvoie à `/abonnement` (`requireOnboardedViewer`, `{ abonnement: false }` pour compte et paiement). Pro est
+« Recommandé ». « Illimité » = plafond de sécurité invisible côté serveur (`SAFETY_CAPS`, `isUnlimited`, jamais affiché).
+
+| Plan | Prix | Contenu |
 | --- | --- | --- |
-| free | 0 € | 3 produits du jour, score masqué, 3 scripts/jour, pas de récap Discord |
-| pro | 19,90 €/mois · 167 €/an | radar complet, 30 scripts/jour, récap Discord + e-mail |
-| proplus | 39,90 €/mois · 335 €/an | illimité, export, priorité nouveautés |
+| starter | 34,99 €/mois · 349,90 €/an | radar France complet, score expliqué, fiche produit, 10 scripts/jour en 5 formats, téléprompteur, 10 produits suivis, plan de publication, récap du matin, 3 alertes, 3 recherches/jour, mode préparation, parrainage |
+| pro | 59,99 €/mois · 599,90 €/an | Starter + 40 scripts/jour en 8 formats, style personnel, série de 20 vidéos, score « pour toi », produits suivis illimités, gains et import CSV, 20 analyses de vidéo et 20 propositions de marques par mois, comparateur, 15 alertes, 15 recherches/jour, récap de la semaine |
+| elite | 99,99 €/mois · 999,90 €/an | tout le Pro en illimité + Allemagne, Italie, Espagne, traduction des scripts, poids du score réglables, export CSV, 50 recherches/jour |
+
+Code formateur : −20 % sur le premier mois d'un abonnement mensuel, une fois par compte (`lib/billing/coach-discount.ts`,
+coupon Stripe `tracktout_formateur_20`). Au paiement, case obligatoire de démarrage immédiat (rétractation de 14 jours,
+`lib/billing/consent.ts`), enregistrée côté serveur et confirmée par e-mail. Prix Stripe retrouvés par `lookup_key`.
 
 ## Design (refonte : style EtSmart, couleurs TikTok, fond blanc)
 

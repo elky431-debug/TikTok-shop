@@ -86,7 +86,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Reco
     return (
       <div>
         <PageHeader eyebrow="Trouver" title="Comparer des produits"  description="Choisis 2 à 4 produits parmi tes favoris et tes produits suivis. Le meilleur chiffre de chaque ligne est marqué ; une donnée que la source ne donne pas reste vide." />
-        <PlanGate plan="Pro" title="Compare 2 à 4 produits côte à côte">
+        <PlanGate plan="pro" title="Compare 2 à 4 produits côte à côte">
           Score, commission, ventes, affiliés, note : tout sur une seule page pour choisir le produit de tes 20 prochaines vidéos.
         </PlanGate>
       </div>

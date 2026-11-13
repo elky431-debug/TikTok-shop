@@ -101,6 +101,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Re
   const product = top?.kind === 'visible' ? top.product : null;
   const welcome = searchParams.bienvenue;
   const access = searchParams.acces;
+  const paid = searchParams.paiement === 'ok';
   const handle = cleanHandle(profile.tiktok_handle);
   const creator = data.creator && handle && data.creator.handle.toLowerCase() === handle.toLowerCase() ? data.creator : null;
   const refresh = creatorRefreshPolicy(data.creator, handle, profile.plan);
@@ -130,13 +131,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: Re
         </LinkButton>
       </header>
 
-      {welcome || access || radar.demo ? (
+      {welcome || access || paid || radar.demo ? (
         <div className="space-y-3">
-          {welcome === 'essai' ? (
-            <Callout tone="gain" title="Tes 3 mois de Pro sont activés">
-              Merci à ton formateur : radar complet, score, 30 scripts par jour et récap Discord. Aucune carte n’a été demandée.
+          {paid ? (
+            <Callout tone="gain" title={`Ton abonnement ${plan.name} est actif`}>
+              Bienvenue ! Une confirmation t’a été envoyée par e-mail. Commence par ton produit du jour, puis écris tes scripts.
             </Callout>
-          ) : welcome ? (
+          ) : null}
+          {welcome && !paid ? (
             <Callout tone="cyan" title="Ton radar est prêt">
               Voici ton produit du jour : ouvre sa fiche, puis écris tes scripts. Objectif : 20 vidéos sur un même produit.
             </Callout>
@@ -170,7 +172,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Re
             </h2>
             <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted">
               {handle ? <span>@{handle}</span> : <Link href="/app/compte#profil" className="font-semibold text-cyan-ink hover:underline">Ajouter mon pseudo TikTok</Link>}
-              <Badge tone={plan.id === 'free' ? 'neutral' : 'cyan'}>{plan.name}</Badge>
+              <Badge tone={plan.access ? 'cyan' : 'neutral'}>{plan.name}</Badge>
               <Badge tone={profile.eligibility === 'affilie' ? 'gain' : 'warn'}>{profile.eligibility === 'affilie' ? 'Affilié' : 'En préparation'}</Badge>
               <span className="inline-flex items-center gap-1 font-semibold text-fg" title="Jours d’affilée avec au moins une vidéo postée">
                 <Flame className={cn('h-4 w-4', data.streak > 0 ? 'text-rose-ink' : 'text-muted')} aria-hidden="true" />
@@ -289,7 +291,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Re
               className="mt-6"
               icon={<Euro className="h-5 w-5" strokeWidth={1.75} />}
               title="Suis tes commissions jour après jour"
-              action={<LinkButton href="/app/passer-pro" arrow>Passer Pro</LinkButton>}
+              action={<LinkButton href="/app/passer-pro" arrow>Passer à Pro</LinkButton>}
             >
               Le suivi des gains (saisie ou import du relevé TikTok Shop) est inclus dans Pro.
             </EmptyState>

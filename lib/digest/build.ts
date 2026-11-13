@@ -16,7 +16,7 @@ function reason(product: Product): string {
   return bits.join(' · ');
 }
 
-/** Contenu du récap du matin pour un utilisateur : 5 produits (3 en gratuit), une accroche, un script. */
+/** Contenu du récap du matin pour un abonné : 5 produits, une accroche, un script. */
 export async function buildDigestContent(
   profile: Profile,
   products: Product[],

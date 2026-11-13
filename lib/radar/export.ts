@@ -4,7 +4,7 @@ import { TREND_LABELS } from '@/lib/score';
 import { BADGES } from './badges';
 
 /**
- * Export CSV du radar filtré (Pro+). Format pensé pour Excel en français : séparateur « ; », virgule décimale,
+ * Export CSV du radar filtré (Elite). Format pensé pour Excel en français : séparateur « ; », virgule décimale,
  * UTF-8 avec BOM, fins de ligne CRLF (RFC 4180). Une cellule qui commence par =, +, -, @ est préfixée d'une apostrophe
  * (un nom de produit ne doit jamais devenir une formule). Une donnée inconnue reste une cellule vide.
  */

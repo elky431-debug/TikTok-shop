@@ -7,7 +7,7 @@ import { clamp } from '@/lib/utils';
 /**
  * Score « pour toi » et poids réglables (bloc 2). Module pur.
  *
- * - Poids de base : ceux du score général (35 / 25 / 20 / 10), ou ceux que l'utilisateur Pro+ a réglés.
+ * - Poids de base : ceux du score général (35 / 25 / 20 / 10), ou ceux que l'utilisateur Elite a réglés.
  * - Score général : le score du jour (poids par défaut) ; avec des poids réglés, les points de chaque critère sont
  *   recombinés avec ces poids puis replacés sur l'échelle du jour (15 à 90), comme le score enregistré.
  * - Score pour toi : mêmes points, poids ajustés selon la tranche d'abonnés, plus un petit bonus si le style vidéo
@@ -27,7 +27,7 @@ export const WEIGHT_LABELS: Record<ScorePartKey, string> = {
   prix: 'Prix',
 };
 
-/** Réglages tout prêts proposés en Pro+. */
+/** Réglages tout prêts proposés en Elite. */
 export const WEIGHT_PRESETS: Record<'commission' | 'croissance', { label: string; weights: Weights }> = {
   commission: { label: 'Plus de commission', weights: { croissance: 25, commission: 45, saturation: 20, prix: 10 } },
   croissance: { label: 'Plus de croissance', weights: { croissance: 55, commission: 15, saturation: 20, prix: 10 } },
@@ -148,7 +148,7 @@ export function personalPoints(product: Pick<Product, 'niche' | 'latest_breakdow
 }
 
 export interface ScoreSet {
-  /** Score général affiché (poids par défaut, ou poids réglés en Pro+). */
+  /** Score général affiché (poids par défaut, ou poids réglés en Elite). */
   score: number;
   /** Score pour toi. */
   personal: number;

@@ -160,7 +160,7 @@ async function buildDemo(): Promise<{ docId: string; seriesId: string; analysisI
   const picks = [...ranked.filter((p) => p.niche === niches[0]).slice(0, 3), ...ranked.filter((p) => p.niche === niches[1]).slice(0, 2)];
   if (picks.length < 4) throw new Error('Pas assez de produits pour le compte de démo.');
 
-  // Compte de démo, onboarding fait, Pro+ (toutes les pages ouvertes).
+  // Compte de démo, onboarding fait, Elite (toutes les pages ouvertes).
   const id = randomUUID();
   await repo.ensureProfile({ id, email: EMAIL });
   await repo.updateProfile(id, {
@@ -173,7 +173,7 @@ async function buildDemo(): Promise<{ docId: string; seriesId: string; analysisI
     niches,
     video_styles: ['face_camera', 'mains'],
     video_style: 'face_camera',
-    plan: 'proplus',
+    plan: 'elite',
     onboarding_version: 2,
     onboarded_at: new Date(Date.now() - 24 * 86_400_000).toISOString(),
   });

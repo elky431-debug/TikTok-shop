@@ -1,7 +1,8 @@
 import Stripe from 'stripe';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { COACH_COUPON_ID, discountedFirstMonth } from '@/lib/billing/coach-discount';
 import { handleBillingEvent } from '@/lib/billing/events';
-import { enrichStripeEvent, normalizeStripeEvent, StripeBilling } from '@/lib/billing/stripe';
+import { enrichStripeEvent, normalizeStripeEvent, StripeBilling, stripePriceId } from '@/lib/billing/stripe';
 import { STRIPE_WEBHOOK_EVENTS } from '@/lib/billing/stripe-config';
 import { setRepoForTests } from '@/lib/db';
 import { LocalRepo } from '@/lib/db/local';
@@ -9,13 +10,15 @@ import { env } from '@/lib/env';
 import { applyReferralCode } from '@/lib/referral';
 
 /**
- * Stripe en vrai mode test (clé sk_test_… et prix créés par « npm run stripe:setup »). Pas d'adresse publique pour
+ * Stripe en vrai mode test (clé sk_test_…, prix et coupon formateur créés par « npm run stripe:setup », retrouvés par
+ * leur clé de recherche). Pas d'adresse publique pour
  * recevoir les webhooks : les événements produits par Stripe sont relus par l'API (GET /v1/events) et passés au même
  * traitement que la route du webhook. La base est locale ici : le dépôt Supabase est testé à part (repo.test.ts).
  * Tout ce qui est créé chez Stripe (clients, abonnements) est supprimé à la fin.
  */
 const key = env.stripeSecretKey;
-const ready = key.startsWith('sk_test_') && Object.values(env.stripePrices).every(Boolean);
+const ready = key.startsWith('sk_test_');
+const consentAt = new Date().toISOString();
 
 describe.skipIf(!ready)('Stripe (mode test réel)', () => {
   // Le corps d'un describe ignoré est quand même lu par Vitest : pas de client sans clé.
@@ -56,7 +59,7 @@ describe.skipIf(!ready)('Stripe (mode test réel)', () => {
     setRepoForTests(repo);
     await repo.ensureProfile({ id: 'coach', email: 'coach@example.com' });
     await repo.createCoach({ user_id: 'coach', training_name: 'Formation test', promo_code: 'ITEST30', commission_rate: 0.3 });
-    for (const id of ['eleve', 'echec', 'essai']) {
+    for (const id of ['eleve', 'echec', 'remise']) {
       const p = await repo.ensureProfile({ id, email: `${id}@example.com` });
       await applyReferralCode(await repo.updateProfile(p.id, { onboarded_at: null }), 'ITEST30');
     }
@@ -67,34 +70,35 @@ describe.skipIf(!ready)('Stripe (mode test réel)', () => {
     for (const id of customers) await stripe.customers.del(id).catch(() => undefined);
   });
 
-  it('Checkout mensuel et annuel, et portail client, renvoient une page Stripe', async () => {
+  it('Checkout mensuel et annuel (avec ou sans code formateur), et portail client, renvoient une page Stripe', async () => {
     const profile = (await repo.getProfile('eleve'))!;
     const billing = new StripeBilling();
-    expect(await billing.createCheckout({ profile, plan: 'pro', interval: 'month' })).toMatch(/^https:\/\/checkout\.stripe\.com\//);
-    expect(await billing.createCheckout({ profile, plan: 'pro', interval: 'year' })).toMatch(/^https:\/\/checkout\.stripe\.com\//);
+    expect(await billing.createCheckout({ profile, plan: 'pro', interval: 'month', coachDiscount: true, consentAt })).toMatch(/^https:\/\/checkout\.stripe\.com\//);
+    expect(await billing.createCheckout({ profile, plan: 'pro', interval: 'year', coachDiscount: false, consentAt })).toMatch(/^https:\/\/checkout\.stripe\.com\//);
+    expect(await billing.createCheckout({ profile, plan: 'starter', interval: 'month', coachDiscount: false, consentAt })).toMatch(/^https:\/\/checkout\.stripe\.com\//);
     const fresh = (await repo.getProfile('eleve'))!;
     customers.push(fresh.stripe_customer_id!);
     expect(await billing.createPortal({ profile: fresh })).toMatch(/^https:\/\/billing\.stripe\.com\//);
   });
 
-  it('Pro → Pro+ annuel → remboursement → résiliation', async () => {
+  it('Pro → Elite annuel → remboursement → résiliation', async () => {
     const customer = await customerWithCard('eleve', 'pm_card_visa');
     const sub = await stripe.subscriptions.create({
       customer,
-      items: [{ price: env.stripePrices.pro_month }],
+      items: [{ price: await stripePriceId('pro', 'month') }],
       metadata: { user_id: 'eleve' },
     });
     await sync(customer, 'invoice.paid');
     expect((await repo.getProfile('eleve'))?.plan).toBe('pro');
     const [first] = await repo.listCommissions('coach');
-    expect(first.amount_cents).toBe(Math.round(1990 * 0.3));
+    expect(first.amount_cents).toBe(Math.round(5999 * 0.3));
 
     await stripe.subscriptions.update(sub.id, {
-      items: [{ id: sub.items.data[0].id, price: env.stripePrices.proplus_year }],
+      items: [{ id: sub.items.data[0].id, price: await stripePriceId('elite', 'year') }],
       proration_behavior: 'always_invoice',
     });
     await sync(customer, 'customer.subscription.updated');
-    expect((await repo.getProfile('eleve'))?.plan).toBe('proplus');
+    expect((await repo.getProfile('eleve'))?.plan).toBe('elite');
     expect((await repo.getSubscription(sub.id))?.billing_interval).toBe('year');
 
     const payments = await stripe.invoicePayments.list({ invoice: String(sub.latest_invoice), limit: 1 });
@@ -107,14 +111,14 @@ describe.skipIf(!ready)('Stripe (mode test réel)', () => {
 
     await stripe.subscriptions.cancel(sub.id);
     await sync(customer, 'customer.subscription.deleted');
-    expect((await repo.getProfile('eleve'))?.plan).toBe('free');
+    expect((await repo.getProfile('eleve'))?.plan).toBe('aucun');
   });
 
   it('un paiement refusé prévient l’abonné', async () => {
     const customer = await customerWithCard('echec', 'pm_card_chargeCustomerFail');
     await stripe.subscriptions.create({
       customer,
-      items: [{ price: env.stripePrices.pro_month }],
+      items: [{ price: await stripePriceId('pro', 'month') }],
       payment_behavior: 'allow_incomplete',
       metadata: { user_id: 'echec' },
     });
@@ -124,15 +128,22 @@ describe.skipIf(!ready)('Stripe (mode test réel)', () => {
     expect(mails.some((m) => m.subject.includes('n’est pas passé'))).toBe(true);
   });
 
-  it('essai formateur de 3 mois, sans carte', async () => {
-    const profile = (await repo.getProfile('essai'))!;
-    await new StripeBilling().startTrial({ profile, days: 90 });
-    const fresh = (await repo.getProfile('essai'))!;
-    customers.push(fresh.stripe_customer_id!);
-    expect(fresh).toMatchObject({ plan: 'pro', trial_used: true });
-    const sub = await repo.getActiveSubscription('essai');
-    expect(sub?.status).toBe('trialing');
-    const days = (new Date(sub!.trial_end!).getTime() - Date.now()) / 86_400_000;
-    expect(days).toBeGreaterThan(89);
+  it('code formateur : −20 % sur le premier mois seulement, commission de 30 % sur ce qui est payé', async () => {
+    const customer = await customerWithCard('remise', 'pm_card_visa');
+    const sub = await stripe.subscriptions.create({
+      customer,
+      items: [{ price: await stripePriceId('starter', 'month') }],
+      discounts: [{ coupon: COACH_COUPON_ID }],
+      metadata: { user_id: 'remise' },
+    });
+    await sync(customer, 'invoice.paid');
+    expect((await repo.getProfile('remise'))?.plan).toBe('starter');
+    const invoice = await stripe.invoices.retrieve(String(sub.latest_invoice));
+    expect(invoice.amount_paid).toBe(discountedFirstMonth('starter'));
+    const commission = (await repo.listCommissions('coach')).find((c) => c.invoice_id === invoice.id);
+    expect(commission?.amount_cents).toBe(Math.round(discountedFirstMonth('starter') * 0.3));
+    // Coupon « une fois » : la facture suivante est au plein prix.
+    const upcoming = await stripe.invoices.createPreview({ customer, subscription: sub.id });
+    expect(upcoming.total).toBe(3499);
   });
 });

@@ -13,7 +13,7 @@ import { formatCompact, formatInt } from '@/lib/utils';
  * ni regardée. La durée est lue dans la source, jamais devinée.
  *
  * Une analyse par produit et par lot de vidéos, partagée entre utilisateurs (cache serveur 7 jours) : l'afficher ne
- * coûte rien ; seule une nouvelle génération compte dans le quota `hookAnalysesPerDay` (Pro 10, Pro+ 50 par jour).
+ * coûte rien ; seule une nouvelle génération compte dans le quota `hookAnalysesPerDay` (Pro 10, Elite 50 par jour).
  */
 export const HOOK_KIND = 'analyse_accroches';
 const CACHE_PREFIX = 'accroches';

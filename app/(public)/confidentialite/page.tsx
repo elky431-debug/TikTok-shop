@@ -28,7 +28,9 @@ export default function ConfidentialitePage() {
           </li>
           <li>
             <strong>Paiement</strong> : statut d’abonnement et identifiant client Stripe. Les données de carte sont traitées par
-            Stripe uniquement. Les factures sont conservées au titre de nos obligations comptables (obligation légale).
+            Stripe uniquement. Les factures sont conservées au titre de nos obligations comptables (obligation légale). Ta demande
+            de démarrage immédiat de l’abonnement (date et texte coché) est gardée comme preuve, au titre du droit de rétractation
+            (obligation légale), <Todo>durée de conservation, ex. 5 ans</Todo>.
           </li>
           <li>
             <strong>Discord</strong> (si tu lies ton compte) : ton identifiant Discord, pour t’envoyer ton récap et gérer ton rôle.

@@ -1,5 +1,5 @@
 import { isLocalMode, isStripeConfigured } from '@/lib/env';
-import { simulateCancel, simulateTrial, SimulatedBilling } from './simulated';
+import { simulateCancel, SimulatedBilling } from './simulated';
 import { StripeBilling } from './stripe';
 import { BillingUnavailableError, type BillingProvider } from './types';
 
@@ -13,10 +13,6 @@ class DisabledBilling implements BillingProvider {
   }
   async createPortal(): Promise<string> {
     throw new BillingUnavailableError();
-  }
-  /** L'essai formateur reste offert : il est suivi localement jusqu'à l'activation de Stripe. */
-  async startTrial(input: Parameters<BillingProvider['startTrial']>[0]) {
-    await simulateTrial(input.profile, input.days);
   }
   async cancelAll(input: Parameters<BillingProvider['cancelAll']>[0]) {
     await simulateCancel(input.profile);

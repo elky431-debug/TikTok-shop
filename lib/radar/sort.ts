@@ -35,7 +35,7 @@ export const SORT_LABELS: Record<SortKey, string> = {
   nom: 'Nom',
 };
 
-/** Colonnes qui demandent le score (masquées en Gratuit). */
+/** Colonnes qui demandent le score (masquées sans abonnement ; « pour toi » à partir de Pro). */
 export const SCORE_SORTS: SortKey[] = ['score', 'pourtoi'];
 
 export function isSortKey(value: unknown): value is SortKey {

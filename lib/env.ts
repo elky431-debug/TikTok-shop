@@ -100,14 +100,6 @@ export const env = {
   get stripeWebhookSecret() {
     return read('STRIPE_WEBHOOK_SECRET');
   },
-  get stripePrices() {
-    return {
-      pro_month: read('STRIPE_PRICE_PRO_MONTHLY'),
-      pro_year: read('STRIPE_PRICE_PRO_YEARLY'),
-      proplus_month: read('STRIPE_PRICE_PROPLUS_MONTHLY'),
-      proplus_year: read('STRIPE_PRICE_PROPLUS_YEARLY'),
-    };
-  },
   /** Configuration du portail client créée par « npm run stripe:setup » (facultative : sinon celle par défaut). */
   get stripePortalConfiguration() {
     return read('STRIPE_PORTAL_CONFIGURATION');

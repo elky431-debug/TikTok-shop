@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { annualOffer } from '@/lib/billing/annual-offer';
+import { COACH_COUPON_ID } from '@/lib/billing/coach-discount';
+import { WITHDRAWAL_CONSENT_VERSION } from '@/lib/billing/consent';
 import { checkoutSessionParams } from '@/lib/billing/stripe';
 import { MockProvider } from '@/lib/data/mock';
 import { setRepoForTests } from '@/lib/db';
@@ -42,7 +44,7 @@ describe('e-mails de cycle de vie : quand', () => {
     expect(dueLifecycleEmails(ctx({ onboarded: '2026-09-01T09:00:00Z', seen: '2026-11-12T09:00:00Z' }))).toEqual([]);
   });
 
-  it('réactivation après 14 jours d’absence (une fois par absence), fin d’essai formateur, relance de paiement', () => {
+  it('réactivation après 14 jours d’absence (une fois par absence), fin d’un essai d’avant la nouvelle grille, relance de paiement', () => {
     const away = dueLifecycleEmails(ctx({ onboarded: '2026-09-01T09:00:00Z', seen: '2026-10-25T09:00:00Z' }));
     expect(away).toEqual([{ type: 'reactivation', key: 'reactivation:2026-10-25' }]);
     const trial = { id: 'sub_1', status: 'trialing', trial_end: '2026-11-15T10:00:00Z' } as Subscription;
@@ -109,33 +111,76 @@ describe('e-mails de cycle de vie : envoi', () => {
 });
 
 describe('moment « waouh » de l’inscription', () => {
-  it('en 6 étapes : 3 produits du jour, un premier script simulé sans clé, e-mail de bienvenue immédiat', async () => {
+  it('en 6 étapes, une fois abonné : 3 produits du jour, un premier script simulé sans clé, e-mail de bienvenue immédiat', async () => {
     await refreshCatalog({ repo, provider: new MockProvider(), date: new Date().toISOString().slice(0, 10) });
     await repo.ensureProfile({ id: 'neo', email: 'neo@test.fr' });
-    const profile = await repo.updateProfile('neo', { niches: ['beaute'], first_name: 'Néo', video_style: 'face_camera', onboarded_at: new Date().toISOString() });
+    const profile = await repo.updateProfile('neo', {
+      niches: ['beaute'],
+      first_name: 'Néo',
+      video_style: 'face_camera',
+      onboarded_at: new Date().toISOString(),
+      plan: 'starter',
+    });
     expect(ONBOARDING_STEPS).toHaveLength(10);
     const started = Date.now();
     const { products } = await welcomeProducts(profile);
     expect(products).toHaveLength(3);
+    expect(products.every((p) => p.niche === 'beaute')).toBe(true);
     const script = await createScripts(profile, products[0].id, 'demo');
     expect(script.source).toBe('simulation');
     expect(script.hooks.length).toBeGreaterThan(0);
     expect(Date.now() - started).toBeLessThan(5_000);
-    expect(await onOnboardingCompleted('neo')).toEqual({ trialStarted: false, welcomeSent: true });
-    expect(await onOnboardingCompleted('neo')).toMatchObject({ welcomeSent: false });
+    // Plus d'essai : seulement l'e-mail de bienvenue, une fois.
+    expect(await onOnboardingCompleted('neo')).toEqual({ welcomeSent: true });
+    expect(await onOnboardingCompleted('neo')).toEqual({ welcomeSent: false });
     expect((await repo.listLocalEmails!(5)).filter((m) => m.to === 'neo@test.fr').map((m) => m.subject)).toEqual(['Bienvenue sur Tracktout, Néo']);
+  });
+
+  it('sans abonnement : aucun produit montré, aucun essai lancé, même avec un code formateur', async () => {
+    await refreshCatalog({ repo, provider: new MockProvider(), date: new Date().toISOString().slice(0, 10) });
+    await repo.ensureProfile({ id: 'eva', email: 'eva@test.fr' });
+    const profile = await repo.updateProfile('eva', { niches: ['beaute'], first_name: 'Éva', onboarded_at: new Date().toISOString(), coach_id: 'c1' });
+    expect(profile.plan).toBe('aucun');
+    expect((await welcomeProducts(profile)).products).toEqual([]);
+    expect(await onOnboardingCompleted('eva')).toEqual({ welcomeSent: true });
+    const after = (await repo.getProfile('eva'))!;
+    expect(after.plan).toBe('aucun');
+    expect(await repo.getActiveSubscription('eva')).toBeNull();
   });
 });
 
-describe('passage à Pro : annuel, codes de réduction', () => {
-  it('l’économie annuelle vient des prix des plans, jamais écrite à la main', () => {
-    expect(annualOffer('pro')).toMatchObject({ savingsCents: 1990 * 12 - 16700, percent: 30, monthsFree: 3, badge: 'Plus de 3 mois offerts' });
-    expect(annualOffer('proplus').savingsCents).toBe(3990 * 12 - 33500);
+describe('abonnement : annuel, codes de réduction, code formateur', () => {
+  it('l’économie annuelle vient des prix des plans, jamais écrite à la main : 2 mois offerts sur chaque plan', () => {
+    expect(annualOffer('pro')).toMatchObject({ savingsCents: 5999 * 12 - 59990, percent: 17, monthsFree: 2, badge: '2 mois offerts' });
+    expect(annualOffer('pro').savings).toMatch(/^119,98\s€$/);
+    expect(annualOffer('starter')).toMatchObject({ savingsCents: 3499 * 12 - 34990, monthsFree: 2, badge: '2 mois offerts' });
+    expect(annualOffer('elite')).toMatchObject({ savingsCents: 9999 * 12 - 99990, monthsFree: 2, badge: '2 mois offerts' });
   });
 
-  it('Checkout accepte les codes promotionnels Stripe, en français', () => {
+  it('Checkout accepte les codes promotionnels Stripe, en français, et revient sur l’appli ou le choix d’abonnement', () => {
     const params = checkoutSessionParams({ customer: 'cus_1', userId: 'u1', price: 'price_y', siteUrl: 'https://x.fr' });
     expect(params).toMatchObject({ mode: 'subscription', allow_promotion_codes: true, locale: 'fr', client_reference_id: 'u1' });
-    expect(params.cancel_url).toBe('https://x.fr/app/passer-pro?paiement=annule');
+    expect(params.discounts).toBeUndefined();
+    expect(params.success_url).toBe('https://x.fr/app?paiement=ok');
+    expect(params.cancel_url).toBe('https://x.fr/abonnement?paiement=annule');
+    expect(params.line_items).toEqual([{ price: 'price_y', quantity: 1 }]);
+    expect(JSON.stringify(params.custom_text)).toContain('14 jours');
+    expect(params.metadata).toEqual({ user_id: 'u1' });
+    expect(params.subscription_data?.metadata).toEqual({ user_id: 'u1' });
+  });
+
+  it('avec le code formateur : coupon −20 % appliqué d’office, sans champ de code promotionnel (Stripe interdit les deux)', () => {
+    const params = checkoutSessionParams({ customer: 'cus_1', userId: 'u1', price: 'price_m', siteUrl: 'https://x.fr', coachDiscount: true });
+    expect(params.discounts).toEqual([{ coupon: COACH_COUPON_ID }]);
+    expect(COACH_COUPON_ID).toBe('tracktout_formateur_20');
+    expect(params).not.toHaveProperty('allow_promotion_codes');
+  });
+
+  it('garde la demande de démarrage immédiat dans les métadonnées de la session et de l’abonnement', () => {
+    const at = '2026-11-13T10:00:00.000Z';
+    const params = checkoutSessionParams({ customer: 'cus_1', userId: 'u1', price: 'price_m', siteUrl: 'https://x.fr', consentAt: at });
+    const expected = { user_id: 'u1', demarrage_immediat: at, demarrage_immediat_version: WITHDRAWAL_CONSENT_VERSION };
+    expect(params.metadata).toEqual(expected);
+    expect(params.subscription_data?.metadata).toEqual(expected);
   });
 });

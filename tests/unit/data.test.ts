@@ -61,19 +61,20 @@ describe('tâche nocturne', () => {
 
     const user = await repo.ensureProfile({ id: 'u1', email: 'u1@test.fr' });
     await repo.updateProfile(user.id, { niches: ['beaute'], onboarded_at: new Date().toISOString(), first_name: 'Léa' });
-    const digests = await prepareDigests(DATE, repo);
-    expect(digests.prepared).toBe(1);
-    const digest = await repo.getDigest('u1', DATE);
-    expect(digest?.content.products).toHaveLength(3); // plan gratuit
-    expect(digest?.content.products.every((p) => p.niche === 'beaute')).toBe(true);
-    expect(digest?.content.products[0].score).toBeNull(); // score masqué en gratuit
-    expect(digest?.content.hook?.text.length).toBeGreaterThan(5);
-    expect(digest?.content.locked_count).toBeGreaterThan(0);
+    // Sans abonnement : aucun récap préparé (rien ne fuit, rien n'est calculé).
+    expect((await prepareDigests(DATE, repo)).prepared).toBe(0);
+    expect(await repo.getDigest('u1', DATE)).toBeFalsy();
 
-    await repo.updateProfile('u1', { plan: 'pro' });
-    await prepareDigests(DATE, repo);
-    const pro = await repo.getDigest('u1', DATE);
-    expect(pro?.content.products).toHaveLength(5);
-    expect(pro?.content.products[0].score).toBeGreaterThan(0);
+    // Tous les plans payants : 5 produits de ses niches, avec leur score.
+    for (const plan of ['starter', 'pro', 'elite'] as const) {
+      await repo.updateProfile('u1', { plan });
+      await prepareDigests(DATE, repo);
+      const digest = await repo.getDigest('u1', DATE);
+      expect(digest?.content.products).toHaveLength(5);
+      expect(digest?.content.products.every((p) => p.niche === 'beaute')).toBe(true);
+      expect(digest?.content.products[0].score).toBeGreaterThan(0);
+      expect(digest?.content.hook?.text.length).toBeGreaterThan(5);
+      expect(digest?.content.locked_count).toBe(0);
+    }
   });
 });

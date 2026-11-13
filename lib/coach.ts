@@ -49,7 +49,7 @@ export interface CoachDashboard {
   activeThisWeek: number;
   /** Paient leur abonnement (statut « abonné » du parrainage). */
   subscribed: number;
-  /** En essai (les 3 mois offerts). */
+  /** En essai (ancienne grille : les 3 mois offerts ; plus d'essai depuis la nouvelle grille). */
   trial: number;
   canceled: number;
   plans: Record<PlanId, number>;
@@ -89,7 +89,7 @@ export async function getCoachDashboard(coach: Coach, now = new Date(), repo: Re
   const videosOf = new Map(students.map((s, i) => [s.student_id, videos[i]]));
 
   const weekAgo = now.getTime() - 7 * 86_400_000;
-  const plans: Record<PlanId, number> = { free: 0, pro: 0, proplus: 0 };
+  const plans: Record<PlanId, number> = { aucun: 0, starter: 0, pro: 0, elite: 0 };
   for (const s of students) plans[s.plan]++;
   const status = (s: CoachStudent) => statusOf.get(s.student_id) ?? null;
   const code = (s: CoachStudent) => codeOf.get(s.student_id) ?? coach.promo_code;

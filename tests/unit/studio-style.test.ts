@@ -11,6 +11,7 @@ import { setRepoForTests } from '@/lib/db';
 import { LocalRepo } from '@/lib/db/local';
 import type { PlanId } from '@/lib/db/types';
 import { refreshCatalog } from '@/lib/jobs/refresh';
+import { isUnlimited, SAFETY_CAPS } from '@/lib/plans';
 import { createScripts } from '@/lib/studio';
 import { activeStyle, analyzeAndSaveStyle, deleteStyle, getStyle, setStyleEnabled, styleAnalysesLeft, updateStyleProfile } from '@/lib/studio/style';
 import { KIND_STYLE_LOG } from '@/lib/studio/types';
@@ -57,9 +58,13 @@ describe('point 3 · style personnel', () => {
     expect(style.summary).toMatch(/sans IA/);
   });
 
-  it('réservé à Pro et Pro+, au moins 3 textes, quota d’analyses par jour', async () => {
-    const free = await user('style-gratuit', 'free');
-    await expect(analyzeAndSaveStyle(free, SAMPLES)).rejects.toMatchObject({ code: 'plan' });
+  it('réservé à Pro et Elite, au moins 3 textes, quota d’analyses par jour', async () => {
+    for (const plan of ['aucun', 'starter'] as const) {
+      const closed = await user(`style-${plan}`, plan);
+      await expect(analyzeAndSaveStyle(closed, SAMPLES)).rejects.toMatchObject({ code: 'plan' });
+      expect(await styleAnalysesLeft(closed)).toBe(0);
+      expect(await repo.listRecords(closed.id, KIND_STYLE_LOG)).toHaveLength(0);
+    }
 
     const pro = await user('style-pro', 'pro');
     await expect(analyzeAndSaveStyle(pro, SAMPLES.slice(0, 2))).rejects.toMatchObject({ code: 'invalide' });
@@ -70,6 +75,16 @@ describe('point 3 · style personnel', () => {
     await expect(analyzeAndSaveStyle(pro, SAMPLES)).rejects.toMatchObject({ code: 'quota' });
     // Une seule fiche de style, remplacée à chaque analyse.
     expect(await repo.listRecords(pro.id, 'style_perso')).toHaveLength(1);
+  });
+
+  // Corrigé après le signalement de la mise à jour des tests (nouvelle grille).
+  it('Elite : analyses de style « illimitées », plafond de sécurité appliqué mais jamais chiffré', async () => {
+    const elite = await user('style-elite', 'elite');
+    expect(isUnlimited('elite', 'styleAnalysesPerDay')).toBe(true);
+    for (let i = 0; i < SAFETY_CAPS.styleAnalysesPerDay; i++) await repo.saveRecord(elite.id, KIND_STYLE_LOG, { at: new Date().toISOString() });
+    const refused = await analyzeAndSaveStyle(elite, SAMPLES).catch((e: unknown) => e);
+    expect(refused).toMatchObject({ code: 'quota' });
+    expect((refused as Error).message).not.toContain(String(SAFETY_CAPS.styleAnalysesPerDay));
   });
 
   it('avec l’IA : profil nettoyé (aucun interdit, aucune expression trop longue), marqué comme réel', async () => {

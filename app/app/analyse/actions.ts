@@ -9,19 +9,19 @@ import { getRepo } from '@/lib/db';
 import { isNicheId } from '@/lib/niches';
 import { getPlan } from '@/lib/plans';
 import { normalizeAnalysis, tiktokVideoId, type AnalysisData } from '@/lib/v2/analysis';
-import { remainingToday } from '@/lib/v2/quota';
+import { remainingThisMonth } from '@/lib/v2/quota';
 import { createStudioDraft, studioDraftHref } from '@/lib/v2/studio-draft';
 
 async function viewer() {
   const { profile } = await requireOnboardedViewer('/app/analyse');
   const plan = getPlan(profile.plan);
-  if (!plan.analysesPerDay) redirect('/app/passer-pro');
+  if (!plan.analysesPerMonth) redirect('/app/passer-pro');
   return { profile, plan };
 }
 
 export async function analyzeVideoAction(formData: FormData) {
   const { profile, plan } = await viewer();
-  if ((await remainingToday(profile.id, 'analyse', plan.analysesPerDay)) <= 0) redirect('/app/analyse?erreur=quota');
+  if ((await remainingThisMonth(profile.id, 'analyse', plan.analysesPerMonth)) <= 0) redirect('/app/analyse?erreur=quota');
   const url = String(formData.get('lien') ?? '').trim();
   const text = String(formData.get('texte') ?? '').trim();
   const videoId = url ? tiktokVideoId(url) : null;

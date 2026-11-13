@@ -26,7 +26,7 @@ function back(param: string): never {
 }
 
 export async function updateProfileAction(formData: FormData) {
-  const { profile } = await requireOnboardedViewer('/app/compte');
+  const { profile } = await requireOnboardedViewer('/app/compte', { abonnement: false });
   const firstName = String(formData.get('prenom') ?? '').trim().slice(0, 60);
   const handle = String(formData.get('pseudo') ?? '').trim().replace(/^@+/, '').slice(0, 40);
   const range = formData.get('abonnes');
@@ -67,7 +67,7 @@ export async function updateProfileAction(formData: FormData) {
 }
 
 export async function updatePreferencesAction(formData: FormData) {
-  const { profile } = await requireOnboardedViewer('/app/compte');
+  const { profile } = await requireOnboardedViewer('/app/compte', { abonnement: false });
   const theme = String(formData.get('theme') ?? 'system') as Theme;
   const share = formData.get('partage') === '1';
   // Sombre par défaut ; le clair est une option du compte.
@@ -82,7 +82,7 @@ export async function updatePreferencesAction(formData: FormData) {
 
 /** E-mails de cycle de vie : chaque type coché est reçu, chaque type décoché est coupé. */
 export async function updateEmailPreferencesAction(formData: FormData) {
-  const { profile } = await requireOnboardedViewer('/app/compte');
+  const { profile } = await requireOnboardedViewer('/app/compte', { abonnement: false });
   const wanted = new Set(formData.getAll('emails').filter(isLifecycleType));
   await setDisabledLifecycle(profile.id, LIFECYCLE_TYPES.filter((t) => !wanted.has(t)));
   revalidatePath('/app/compte');
@@ -94,7 +94,7 @@ export async function updateEmailPreferencesAction(formData: FormData) {
  * supprime toutes les données (profil, scripts, produits suivis, récaps, fiches de tous les types, abonnements push…).
  */
 export async function deleteAccountAction(formData: FormData) {
-  const { profile } = await requireOnboardedViewer('/app/compte');
+  const { profile } = await requireOnboardedViewer('/app/compte', { abonnement: false });
   if (String(formData.get('confirmation') ?? '').trim().toUpperCase() !== 'SUPPRIMER') back('erreur=confirmation#suppression');
   try {
     await getBilling().cancelAll({ profile });
@@ -110,9 +110,9 @@ export async function deleteAccountAction(formData: FormData) {
   redirect('/compte-supprime');
 }
 
-/** Pays du catalogue (Pro+). L'interface reste en français. */
+/** Pays du catalogue (Elite). L'interface reste en français. */
 export async function updateRegionAction(formData: FormData) {
-  const { profile } = await requireOnboardedViewer('/app/compte');
+  const { profile } = await requireOnboardedViewer('/app/compte', { abonnement: false });
   const region = formData.get('pays');
   if (!getPlan(profile.plan).europe || !isRegionId(region)) redirect('/app/compte?erreur=pays#pays');
   await getRepo().updateProfile(profile.id, { region });

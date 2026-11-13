@@ -324,7 +324,7 @@ export function UpcomingList({ items }: { items: UpcomingVideo[] }) {
 
 /**
  * Profil TikTok : relevé automatique une fois par semaine, lancé après l'affichage de la page (pas d'attente) ; bouton
- * « Actualiser » une fois par jour en Pro et Pro+. La règle est revérifiée côté serveur.
+ * « Actualiser » une fois par jour en Pro et Elite. La règle est revérifiée côté serveur.
  */
 export function CreatorRefresh({
   auto,

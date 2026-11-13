@@ -18,7 +18,7 @@ export const dynamic = 'force-dynamic';
  * Sans accord, le formateur ne voit que des chiffres d'ensemble sur tous ses élèves, jamais rien d'individuel.
  */
 export default async function ConsentementFormateurPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
-  const { profile } = await requireOnboardedViewer('/app/consentement-formateur');
+  const { profile } = await requireOnboardedViewer('/app/consentement-formateur', { abonnement: false });
   const coach = profile.coach_id ? await getRepo().getCoachById(profile.coach_id) : null;
 
   if (!coach) {

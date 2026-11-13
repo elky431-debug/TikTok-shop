@@ -33,7 +33,7 @@ export default async function StylePage({ searchParams }: { searchParams: { ok?:
     return (
       <div>
         {header}
-        <PlanGate plan="Pro" title="Des scripts qui parlent comme toi">
+        <PlanGate plan="pro" title="Des scripts qui parlent comme toi">
           Tes expressions, ta longueur de phrase, ta façon de commencer et de conclure : tirées de tes propres vidéos, réutilisées dans chaque script.
         </PlanGate>
       </div>

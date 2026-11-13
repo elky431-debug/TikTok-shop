@@ -155,6 +155,8 @@ export async function sendWeeklyRecap(
 ): Promise<{ content: WeeklyRecapContent; sent: WeeklySendResult }> {
   const content = await buildWeeklyRecap(profile, repo, at);
   const sent: WeeklySendResult = { email: false, discord: false, push: false };
+  // Récap de la semaine : à partir de Pro (vérifié ici, pour la tâche du dimanche comme pour l'envoi de test).
+  if (!getPlan(profile.plan).weeklyDigest) return { content, sent };
   const url = `${env.siteUrl}/app/recap#dimanche`;
 
   if (channels.email && profile.email) {

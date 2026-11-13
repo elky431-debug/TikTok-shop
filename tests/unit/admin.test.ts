@@ -41,27 +41,42 @@ const sub = (over: Partial<Subscription>): Subscription => ({
 describe('MRR', () => {
   it('abonnements payants × prix du plan, annuel ÷ 12, essais à part ; Stripe seulement quand il existe', () => {
     const all = [
-      sub({ user_id: 'a', plan: 'pro', billing_interval: 'month' }), // 19,90
-      sub({ user_id: 'b', plan: 'proplus', billing_interval: 'year' }), // 335 / 12 = 27,92
-      sub({ user_id: 'c', plan: 'pro', status: 'past_due' }), // 19,90 (Stripe réessaie)
+      sub({ user_id: 'a', plan: 'pro', billing_interval: 'month' }), // 59,99
+      sub({ user_id: 'b', plan: 'elite', billing_interval: 'year' }), // 999,90 / 12 = 83,33
+      sub({ user_id: 'c', plan: 'starter', status: 'past_due' }), // 34,99 (Stripe réessaie)
       sub({ user_id: 'd', plan: 'pro', status: 'trialing' }),
       sub({ user_id: 'e', plan: 'pro', status: 'canceled' }),
       sub({ user_id: 'a', plan: 'pro', status: 'canceled', updated_at: '2026-01-01T00:00:00Z' }), // ancien abonnement de a
-      sub({ user_id: 'z', provider: 'simulation', plan: 'proplus' }),
+      sub({ user_id: 'z', provider: 'simulation', plan: 'elite' }),
     ];
     const { subscriptions, source } = latestSubscriptions(all);
     expect(source).toBe('stripe');
     expect(subscriptions.map((s) => s.user_id).sort()).toEqual(['a', 'b', 'c', 'd', 'e']);
     const mrr = computeMrr(subscriptions, 0.2);
-    expect(mrr.ttcCents).toBe(1990 + 2792 + 1990);
-    expect(mrr.htCents).toBe(Math.round((1990 + 2792 + 1990) / 1.2));
+    expect(mrr.ttcCents).toBe(5999 + 8333 + 3499);
+    expect(mrr.htCents).toBe(Math.round((5999 + 8333 + 3499) / 1.2));
     expect(mrr).toMatchObject({ paying: 3, trialing: 1 });
-    expect(mrr.byPlan.proplus).toEqual({ month: 0, year: 1, cents: 2792 });
+    expect(mrr.byPlan).toEqual({
+      starter: { month: 1, year: 0, cents: 3499 },
+      pro: { month: 1, year: 0, cents: 5999 },
+      elite: { month: 0, year: 1, cents: 8333 },
+    });
+  });
+
+  it('un plan offert par l’admin (abonnement admin_…) ne compte ni dans le MRR ni dans les payants', () => {
+    const all = [
+      sub({ id: 'sim_x', user_id: 'x', provider: 'simulation', plan: 'pro' }),
+      sub({ id: 'admin_y', user_id: 'y', provider: 'simulation', plan: 'elite' }),
+    ];
+    const { subscriptions, source } = latestSubscriptions(all);
+    expect(source).toBe('simulation');
+    expect(subscriptions.map((s) => s.user_id)).toEqual(['x']);
+    expect(computeMrr(subscriptions, 0.2)).toMatchObject({ ttcCents: 5999, paying: 1 });
   });
 });
 
 describe('indicateurs', () => {
-  it('inscriptions, conversion gratuit → payant, résiliations, actifs', async () => {
+  it('inscriptions, conversion inscrits → abonnés, résiliations, actifs', async () => {
     const now = new Date();
     for (const [id, onboarded, seen] of [
       ['a', true, now.toISOString()],
@@ -167,9 +182,9 @@ describe('coûts', () => {
       nexscope30: [{ day: '2026-11-12', calls: 10, discovery: 10, videos: 0, detailBatches: 0, credits: 220, eur: null, cacheHits: 0 }],
       ai30: [{ scripts: 100, otherAi: 0 }],
     });
-    expect(margin.commissionsCents).toBe(Math.round((1990 / 1.2) * 0.3));
-    const yearlyFee = Math.round((16700 * 0.015 + 25) / 12);
-    expect(margin.stripeFeesCents).toBe(Math.round(1990 * 0.015 + 25) + yearlyFee);
+    expect(margin.commissionsCents).toBe(Math.round((5999 / 1.2) * 0.3));
+    const yearlyFee = Math.round((59990 * 0.015 + 25) / 12);
+    expect(margin.stripeFeesCents).toBe(Math.round(5999 * 0.015 + 25) + yearlyFee);
     expect(margin.nexscopeCents).toBeNull();
     expect(margin.aiCents).toBe(0);
     expect(margin.missing.join(' ')).toContain('NEXSCOPE_EUR_PER_1000_CREDITS');

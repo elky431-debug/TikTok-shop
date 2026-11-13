@@ -8,17 +8,16 @@ import { SubmitButton } from '@/components/ui/submit-button';
 import { Badge, Callout, Card, PageHeader, Panel } from '@/components/ui/surface';
 import { requireOnboardedViewer } from '@/lib/auth/session';
 import { getRepo } from '@/lib/db';
-import { getPlan } from '@/lib/plans';
+import { getPlan, quotaReachedMessage, remainingLabel } from '@/lib/plans';
 import { addDays, cn, formatLongDate, formatShortDate, parisDate } from '@/lib/utils';
 import { OFFER_STATUS_LABELS, offerWarnings, type OfferData, type OfferStatus } from '@/lib/v2/offers';
-import { remainingToday } from '@/lib/v2/quota';
+import { remainingThisMonth } from '@/lib/v2/quota';
 import { analyzeOfferAction, deleteOfferAction, setOfferStatusAction } from './actions';
 
 export const metadata: Metadata = { title: 'Propositions de marques' };
 
 const ERRORS: Record<string, string> = {
   court: 'Colle le message complet de la marque (30 caractères au moins).',
-  quota: 'Tu as atteint le nombre d’analyses du jour. Reviens demain.',
   ia: 'L’analyse n’a pas pu être faite. Réessaie dans un instant.',
   relance: 'Choisis une date de relance entre demain et dans un an.',
 };
@@ -28,11 +27,11 @@ const STATUS_TONE: Record<OfferStatus, 'neutral' | 'cyan' | 'gain' | 'warn'> = {
 export default async function OffresPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
   const { profile } = await requireOnboardedViewer('/app/offres');
   const plan = getPlan(profile.plan);
-  if (!plan.offersPerDay) {
+  if (!plan.offersPerMonth) {
     return (
       <div className="mx-auto max-w-5xl">
         <PageHeader eyebrow="Suivre" title="Propositions de marques"  description="Colle le message d’une marque : on le lit, on le note, et tu réponds en un clic." />
-        <PlanGate plan="Pro+" title="Trie les propositions de marques en 10 secondes">
+        <PlanGate plan="pro" title="Trie les propositions de marques en 10 secondes">
           Colle le message reçu : marque, commission, échantillon et conditions sont extraits, notés sur 100 face aux produits
           du radar, avec les points d’attention, trois réponses prêtes à copier et un rappel pour relancer.
         </PlanGate>
@@ -40,7 +39,7 @@ export default async function OffresPage({ searchParams }: { searchParams: Recor
     );
   }
   const repo = getRepo();
-  const [records, left] = await Promise.all([repo.listRecords<OfferData>(profile.id, 'offre'), remainingToday(profile.id, 'offre', plan.offersPerDay)]);
+  const [records, left] = await Promise.all([repo.listRecords<OfferData>(profile.id, 'offre'), remainingThisMonth(profile.id, 'offre', plan.offersPerMonth)]);
   const current = records.find((r) => r.id === searchParams.offre) ?? null;
   const filter = searchParams.statut && searchParams.statut in OFFER_STATUS_LABELS ? (searchParams.statut as OfferStatus) : null;
   const history = filter ? records.filter((r) => r.data.status === filter) : records;
@@ -52,13 +51,19 @@ export default async function OffresPage({ searchParams }: { searchParams: Recor
   return (
     <div className="mx-auto max-w-5xl">
       <PageHeader eyebrow="Suivre" title="Propositions de marques" description="Colle le message d’une marque : on le lit, on le note, et tu réponds en un clic." />
-      {searchParams.erreur ? <Callout tone="rose" className="mb-6" title={ERRORS[searchParams.erreur] ?? ERRORS.ia} /> : null}
+      {searchParams.erreur ? (
+        <Callout
+          tone="rose"
+          className="mb-6"
+          title={searchParams.erreur === 'quota' ? quotaReachedMessage(profile.plan, 'offersPerMonth', 'analyses de propositions', 'du mois') : (ERRORS[searchParams.erreur] ?? ERRORS.ia)}
+        />
+      ) : null}
       {searchParams.ok === 'statut' ? <Callout tone="gain" className="mb-6" title="Statut et relance enregistrés." /> : null}
       {searchParams.ok === 'suppression' ? <Callout tone="neutral" className="mb-6" title="Proposition supprimée." /> : null}
 
       <Card>
         <form action={analyzeOfferAction} className="space-y-3">
-          <Field label="Message de la marque" htmlFor="message" hint={`${left} analyse${left > 1 ? 's' : ''} restante${left > 1 ? 's' : ''} aujourd’hui.`}>
+          <Field label="Message de la marque" htmlFor="message" hint={remainingLabel(profile.plan, 'offersPerMonth', left, { one: 'analyse', many: 'analyses', feminine: true }, 'ce mois-ci')}>
             <Textarea id="message" name="message" rows={6} required minLength={30} maxLength={6000} />
           </Field>
           <SubmitButton pendingLabel="Analyse…" disabled={left <= 0}>

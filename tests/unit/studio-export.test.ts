@@ -43,10 +43,11 @@ function checkPdf(bytes: Uint8Array): string {
 }
 
 describe('point 9 · historique, favoris, export texte et PDF', () => {
-  it('l’export est réservé à Pro+ (droit vérifié côté serveur)', () => {
-    expect(studioRights('free').export).toBe(false);
+  it('l’export est réservé à Elite (droit vérifié côté serveur)', () => {
+    expect(studioRights('aucun').export).toBe(false);
+    expect(studioRights('starter').export).toBe(false);
     expect(studioRights('pro').export).toBe(false);
-    expect(studioRights('proplus').export).toBe(true);
+    expect(studioRights('elite').export).toBe(true);
   });
 
   it('PDF sans dépendance : accents en WinAnsi, retour à la ligne, plusieurs pages, positions exactes', () => {
@@ -60,7 +61,7 @@ describe('point 9 · historique, favoris, export texte et PDF', () => {
   });
 
   it('exporte une génération entière ou un script, avec toutes ses parties', async () => {
-    const plus = await user('export-plus', 'proplus');
+    const plus = await user('export-elite', 'elite');
     const doc = await createScripts(plus, product.id, 'comparaison');
     const all = docToText(doc);
     for (const part of ['ACCROCHES', 'SCRIPT 3', 'On voit :', 'Dis : «', 'À l’écran :', 'Plans de coupe :', 'Appel à l’action :', 'Légende :', '#publicité', 'Collaboration commerciale']) {

@@ -11,7 +11,7 @@ export function rankForUser(products: Product[], niches: NicheId[]): Product[] {
 
 /**
  * Identifiants visibles en clair aujourd'hui pour ce plan.
- * Gratuit : les 3 meilleurs de ses niches, fixés pour la journée (les filtres ne changent rien).
+ * Sans abonnement : les 3 meilleurs de ses niches, fixés pour la journée (les filtres ne changent rien).
  */
 export function visibleProductIds(ranked: Product[], plan: PlanId): Set<string> {
   const limit = getPlan(plan).visibleProducts;

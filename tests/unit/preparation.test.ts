@@ -88,13 +88,21 @@ describe('bloc 11.2 · plan de contenu de 30 jours, sans vente', () => {
     expect(keepSellingFree(simulateContentPlan('sport'), 'sport').replaced).toBe(0);
   });
 
-  it('quota côté serveur : 1 plan par jour en Gratuit, 3 en Pro', async () => {
-    expect(contentPlansPerDay({ plan: 'free' })).toBe(1);
+  it('quota côté serveur : 3 plans par jour pour tout abonné (dès Starter), aucun sans abonnement', async () => {
+    expect(contentPlansPerDay({ plan: 'aucun' })).toBe(0);
+    expect(contentPlansPerDay({ plan: 'starter' })).toBe(3);
     expect(contentPlansPerDay({ plan: 'pro' })).toBe(3);
-    await makeUser(repo, 'u', 'free');
-    expect(await remainingToday('u', CONTENT_PLAN_KIND, 1)).toBe(1);
-    await repo.saveRecord('u', CONTENT_PLAN_KIND, { niche: 'beaute', plan: simulateContentPlan('beaute'), simulated: true, created_at: '' });
-    expect(await remainingToday('u', CONTENT_PLAN_KIND, 1)).toBe(0);
+    expect(contentPlansPerDay({ plan: 'elite' })).toBe(3);
+    const save = (id: string) =>
+      repo.saveRecord(id, CONTENT_PLAN_KIND, { niche: 'beaute', plan: simulateContentPlan('beaute'), simulated: true, created_at: '' });
+
+    const starter = await makeUser(repo, 'u', 'starter');
+    expect(await remainingToday('u', CONTENT_PLAN_KIND, contentPlansPerDay(starter))).toBe(3);
+    for (let i = 0; i < 3; i++) await save('u');
+    expect(await remainingToday('u', CONTENT_PLAN_KIND, contentPlansPerDay(starter))).toBe(0);
+
+    const none = await makeUser(repo, 'sans-abo', 'aucun');
+    expect(await remainingToday('sans-abo', CONTENT_PLAN_KIND, contentPlansPerDay(none))).toBe(0);
   });
 });
 
@@ -103,7 +111,7 @@ describe('bloc 11.3 · liste de vérification et courbe des abonnés', () => {
     expect(CHECKLIST.some((i) => i.kind === 'condition')).toBe(true);
     expect(CHECKLIST.some((i) => i.kind === 'conseil')).toBe(true);
     expect(checklistProgress({ age: true, compte: true, inconnu: true })).toEqual({ done: 2, total: CHECKLIST.length });
-    await makeUser(repo, 'u', 'free');
+    await makeUser(repo, 'u', 'starter');
     await savePreparation(repo, 'u', { checklist: { age: true } });
     await savePreparation(repo, 'u', { niche: 'beaute' });
     expect((await getPreparation(repo, 'u')).data).toMatchObject({ checklist: { age: true }, niche: 'beaute' });
@@ -125,7 +133,7 @@ describe('bloc 11.3 · liste de vérification et courbe des abonnés', () => {
 
 describe('bloc 11.4 · passage automatique au mode affilié', () => {
   it('au seuil, la tranche d’abonnés et l’éligibilité changent ; une baisse ne retire pas le mode affilié', async () => {
-    await makeUser(repo, 'u', 'free', { follower_range: '0-500' });
+    await makeUser(repo, 'u', 'starter', { follower_range: '0-500' });
     let profile = (await repo.getProfile('u'))!;
     expect(profile.eligibility).toBe('preparation');
 
@@ -147,7 +155,7 @@ describe('bloc 11.4 · passage automatique au mode affilié', () => {
   });
 
   it('« j’ai atteint le seuil » sans chiffre : passage au mode affilié, aucun point inventé sur la courbe', async () => {
-    await makeUser(repo, 'u', 'free', { follower_range: '500-1500' });
+    await makeUser(repo, 'u', 'starter', { follower_range: '500-1500' });
     const profile = (await repo.getProfile('u'))!;
     expect(await declareThresholdReached(repo, profile, '2026-11-12')).toMatchObject({ eligibility: 'affilie', switched: true, range: '1500-5000' });
     expect((await getPreparation(repo, 'u')).data.followers).toEqual([]);

@@ -14,7 +14,7 @@ import { categoryPath, productMetrics } from './metrics';
 
 /**
  * Recherche par mot-clé à la demande (bloc 1). Source : Nexscope `tiktok-product-discovery` avec `keyword` et le pays
- * de l'utilisateur (FR). Quota par plan côté serveur (`keywordSearchesPerDay` : Gratuit 0, Pro 5, Pro+ 30 par jour) ;
+ * de l'utilisateur (FR). Quota par plan côté serveur (`keywordSearchesPerDay` : Starter 3, Pro 15, Elite 50 par jour) ;
  * relancer le même mot-clé le même jour ne compte pas deux fois. Réponses gardées 24 h dans le cache serveur, partagé :
  * le même mot-clé cherché par deux personnes ne coûte qu'un appel.
  * Sans clé Nexscope : recherche dans le catalogue du jour (dit à l'écran), jamais de résultat inventé.

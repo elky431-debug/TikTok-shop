@@ -1,7 +1,7 @@
 import type { Repo } from '@/lib/db';
 import type { Product, Profile } from '@/lib/db/types';
 import { isNicheId, nicheLabel, type NicheId } from '@/lib/niches';
-import { getPlan } from '@/lib/plans';
+import { cheapestPlanWith, getPlan, isUnlimited } from '@/lib/plans';
 import { formatGrowth, formatInt } from '@/lib/utils';
 
 /**
@@ -15,7 +15,7 @@ import { formatGrowth, formatInt } from '@/lib/utils';
  * - minGrowth : croissance minimale sur 7 jours, en ratio comme `Product.growth_7d` (0.2 = +20 %), null = pas de
  *   condition ; un produit dont la croissance n'est pas encore mesurable ne la remplit pas ;
  * - active : false = alerte en pause (ne compte pas dans la limite du plan).
- * Nombre d'alertes actives : `PLANS[plan].alerts` (0 en Gratuit, 3 en Pro, illimité en Pro+).
+ * Nombre d'alertes actives : `PLANS[plan].alerts` (3 en Starter, 15 en Pro, Elite « illimité » avec plafond de sécurité).
  */
 export const ALERT_KIND = 'alerte';
 
@@ -83,7 +83,7 @@ export async function createAlerte(
 ): Promise<{ ok: true; id: string; active: number; limit: number } | { ok: false; message: string }> {
   const limit = getPlan(profile.plan).alerts;
   if (limit <= 0) {
-    return { ok: false, message: 'Les alertes arrivent avec le plan Pro (3 alertes) ou Pro+ (illimitées).' };
+    return { ok: false, message: 'Les alertes demandent un abonnement : 3 en Starter, 15 en Pro, illimitées en Elite.' };
   }
   const alert = parseAlerte(input);
   if (!alert) return { ok: false, message: 'Alerte invalide : vérifie la niche et les nombres.' };
@@ -91,7 +91,9 @@ export async function createAlerte(
   if (existing.length >= limit) {
     return {
       ok: false,
-      message: `Tu as déjà ${existing.length} alertes actives, le maximum du plan ${getPlan(profile.plan).name}. Mets-en une en pause dans l’appli${profile.plan === 'pro' ? ', ou passe Pro+ pour en avoir autant que tu veux' : ''}.`,
+      message: isUnlimited(profile.plan, 'alerts')
+        ? `Tu as déjà ${existing.length} alertes actives : c’est la limite de sécurité. Mets-en une en pause dans l’appli.`
+        : `Tu as déjà ${existing.length} alertes actives, le maximum du plan ${getPlan(profile.plan).name}. Mets-en une en pause dans l’appli, ou passe à ${cheapestPlanWith((p) => p.alerts > limit).name} pour en avoir plus.`,
     };
   }
   const record = await repo.saveRecord<AlerteData>(profile.id, ALERT_KIND, alert);

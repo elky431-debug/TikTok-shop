@@ -8,12 +8,12 @@ import { getRepo } from '@/lib/db';
 import { getPlan } from '@/lib/plans';
 import { parisDate } from '@/lib/utils';
 import { followUpDate, type OfferData, type OfferStatus } from '@/lib/v2/offers';
-import { remainingToday } from '@/lib/v2/quota';
+import { remainingThisMonth } from '@/lib/v2/quota';
 
 async function viewer() {
   const { profile } = await requireOnboardedViewer('/app/offres');
   const plan = getPlan(profile.plan);
-  if (!plan.offersPerDay) redirect('/app/passer-pro');
+  if (!plan.offersPerMonth) redirect('/app/passer-pro');
   return { profile, plan };
 }
 
@@ -21,7 +21,7 @@ export async function analyzeOfferAction(formData: FormData) {
   const { profile, plan } = await viewer();
   const text = String(formData.get('message') ?? '').trim();
   if (text.length < 30) redirect('/app/offres?erreur=court');
-  if ((await remainingToday(profile.id, 'offre', plan.offersPerDay)) <= 0) redirect('/app/offres?erreur=quota');
+  if ((await remainingThisMonth(profile.id, 'offre', plan.offersPerMonth)) <= 0) redirect('/app/offres?erreur=quota');
   const path = await startTask(profile, 'offre', { message: text.slice(0, 6000) }, '/app/offres');
   revalidatePath('/app/offres');
   redirect(path);

@@ -26,6 +26,9 @@ export function StudioForm({
   style,
   feedbackCount,
   draft = null,
+  formats,
+  formatsPlan,
+  unlimited = false,
 }: {
   today: Option[];
   saved: Option[];
@@ -33,11 +36,17 @@ export function StudioForm({
   remaining: number;
   disabled: boolean;
   settings: ScriptSettings;
-  /** « actif », « inactif », « absent » (Pro sans style) ou « verrouillé » (plan gratuit). */
+  /** « actif », « inactif », « absent » (Pro sans style) ou « verrouillé » (Starter). */
   style: 'actif' | 'inactif' | 'absent' | 'verrouille';
   feedbackCount: number;
   /** Brouillon envoyé par l'analyse de vidéo : présélectionne le format et sert d'inspiration. */
   draft?: { id: string; title: string; lines: string[]; format: ScriptFormat | null } | null;
+  /** Formats ouverts par le plan (5 en Starter, 8 ensuite) ; les autres restent visibles, fermés. */
+  formats: string[];
+  /** Plan qui ouvre les formats fermés (« Pro »). */
+  formatsPlan: string;
+  /** Écritures « illimitées » : ni plafond ni reste affichés. */
+  unlimited?: boolean;
 }) {
   const [state, action] = useFormState<StudioState, FormData>(generateAction, {});
   const hasProducts = today.length + saved.length > 0;
@@ -109,11 +118,22 @@ export function StudioForm({
       </div>
 
       <OptionGroup legend="Format de la vidéo" columns="grid-cols-2 lg:grid-cols-4">
-        {SCRIPT_FORMATS.map((format, i) => (
-          <OptionChip key={format.id} name="format" value={format.id} defaultChecked={draft?.format ? draft.format === format.id : i === 0} hint={format.hint}>
-            {format.label}
-          </OptionChip>
-        ))}
+        {SCRIPT_FORMATS.map((format, i) => {
+          const open = formats.includes(format.id);
+          return (
+            <OptionChip
+              key={format.id}
+              name="format"
+              value={format.id}
+              disabled={!open}
+              defaultChecked={open && (draft?.format && formats.includes(draft.format) ? draft.format === format.id : i === 0)}
+              hint={open ? format.hint : `Inclus avec ${formatsPlan}.`}
+            >
+              {format.label}
+              {open ? null : <span className="ml-1.5 rounded-full border border-line px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted">{formatsPlan}</span>}
+            </OptionChip>
+          );
+        })}
       </OptionGroup>
 
       <div className="grid gap-6 lg:grid-cols-[auto_1fr]">
@@ -190,11 +210,13 @@ export function StudioForm({
           Écrire mes scripts
         </SubmitButton>
         <p className="text-sm text-muted">
-          {Number.isFinite(remaining)
+          {unlimited
             ? remaining > 0
+              ? 'Écritures illimitées.'
+              : 'Limite de sécurité du jour atteinte. Ton compteur repart à zéro demain matin.'
+            : remaining > 0
               ? `Il te reste ${remaining} écriture${remaining > 1 ? 's' : ''} aujourd’hui.`
-              : 'Plus d’écriture disponible aujourd’hui.'
-            : 'Écritures illimitées avec Pro+.'}
+              : 'Plus d’écriture disponible aujourd’hui.'}
         </p>
       </div>
     </form>

@@ -24,12 +24,12 @@ export function RadarToolbar({
   view: RadarView;
   sort: SortKey;
   order: SortOrder;
-  /** Colonnes proposées (celles qui ont des données, sans le score en Gratuit). */
+  /** Colonnes proposées (celles qui ont des données ; « pour toi » à partir de Pro). */
   sorts: SortKey[];
   /** Filtres en cours (paramètres d'adresse), gardés au retour. */
   query: string;
   count: number;
-  /** Lien d'export CSV (Pro+), null sinon. */
+  /** Lien d'export CSV (Elite), null sinon. */
   exportHref: string | null;
   /** Libellés propres à ce plan (« Classement du jour » quand le score est masqué). */
   labels?: Partial<Record<SortKey, string>>;

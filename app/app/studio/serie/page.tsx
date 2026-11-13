@@ -12,6 +12,7 @@ import { listSeries, seriesLeft } from '@/lib/studio/series';
 import { listDocs } from '@/lib/studio/store';
 import { formatRelative } from '@/lib/utils';
 import { createSeriesAction } from './actions';
+import { isUnlimited } from '@/lib/plans';
 
 export const metadata: Metadata = { title: 'Série de 20 vidéos' };
 
@@ -31,7 +32,7 @@ export default async function SeriesPage({ searchParams }: { searchParams: { pro
     return (
       <div>
         {header}
-        <PlanGate plan="Pro" title="20 angles différents pour un même produit">
+        <PlanGate plan="pro" title="20 angles différents pour un même produit">
           Démo, avant-après, réponse à un commentaire, top 3… sans jamais répéter le même angle, et chaque angle devient un script complet en un clic.
         </PlanGate>
       </div>
@@ -87,8 +88,12 @@ export default async function SeriesPage({ searchParams }: { searchParams: { pro
           </SubmitButton>
           <p className="text-sm text-muted sm:col-span-2">
             {left > 0
-              ? `Il te reste ${Number.isFinite(left) ? left : 'un nombre illimité de'} série${left > 1 ? 's' : ''} aujourd’hui. Chaque angle écrit compte comme une écriture de scripts.`
-              : 'Plus de série disponible aujourd’hui : ton compteur repart à zéro demain matin.'}
+              ? isUnlimited(profile.plan, 'anglesSeriesPerDay')
+                ? 'Séries illimitées. Chaque angle écrit compte comme une écriture de scripts.'
+                : `Il te reste ${left} série${left > 1 ? 's' : ''} aujourd’hui. Chaque angle écrit compte comme une écriture de scripts.`
+              : isUnlimited(profile.plan, 'anglesSeriesPerDay')
+                ? 'Limite de sécurité du jour atteinte : ton compteur repart à zéro demain matin.'
+                : 'Plus de série disponible aujourd’hui : ton compteur repart à zéro demain matin.'}
           </p>
         </form>
       </Card>

@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { Repo } from './repo';
 import type {
+  PlanId,
   Coach,
   CoachApplication,
   CoachStudent,
@@ -124,7 +125,7 @@ function defaultProfile(user: { id: string; email: string }, referralCode: strin
     videos_per_week: null,
     video_styles: [],
     onboarding_version: 1,
-    plan: 'free',
+    plan: 'aucun',
     eligibility: 'preparation',
     referral_code: referralCode,
     coach_id: null,
@@ -149,6 +150,13 @@ type Store = { data: LocalData; mtimeMs: number };
 declare global {
   // Partagé entre les couches de modules de Next en développement.
   var __tracktoutLocalStores: Map<string, Store> | undefined;
+}
+
+/** Valeurs de l'ancienne grille, renommées comme dans la migration `nouvelle_grille`. */
+function legacyPlan(plan: unknown): PlanId {
+  if (plan === 'proplus') return 'elite';
+  if (plan === 'starter' || plan === 'pro' || plan === 'elite') return plan;
+  return 'aucun';
 }
 
 export class LocalRepo implements Repo {
@@ -195,7 +203,10 @@ export class LocalRepo implements Repo {
           videos_per_week: p.videos_per_week ?? null,
           video_styles: p.video_styles ?? (p.video_style ? [p.video_style] : []),
           onboarding_version: p.onboarding_version ?? 1,
+          plan: legacyPlan(p.plan),
         }));
+        // Ancienne grille (même renommage que la migration nouvelle_grille) : free → aucun, proplus → elite.
+        data.subscriptions = data.subscriptions.map((s) => ({ ...s, plan: legacyPlan(s.plan) }));
       } catch {
         data = emptyLocalData();
       }
@@ -729,7 +740,7 @@ export class LocalRepo implements Repo {
           return {
             ...r,
             referred_first_name: referred?.first_name ?? null,
-            referred_plan: referred?.plan ?? ('free' as const),
+            referred_plan: referred?.plan ?? ('aucun' as const),
           };
         }),
     );

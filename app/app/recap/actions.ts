@@ -76,6 +76,7 @@ export async function sendTestDigestAction() {
 /** Envoie le récap de la semaine en cours tout de suite, par e-mail (pour voir à quoi il ressemble). */
 export async function sendTestWeeklyAction() {
   const { profile } = await requireOnboardedViewer('/app/recap');
+  if (!getPlan(profile.plan).weeklyDigest) redirect('/app/passer-pro');
   const { sent } = await sendWeeklyRecap(profile, { email: true, discord: false, push: false }, undefined, undefined, { test: true });
   revalidatePath('/app/recap');
   redirect(sent.email ? '/app/recap?ok=dimanche-envoye#dimanche' : '/app/recap?erreur=envoi#dimanche');

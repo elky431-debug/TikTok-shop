@@ -105,7 +105,7 @@ describe('envoi par Resend (requête HTTP simulée)', () => {
       return new Response(JSON.stringify({ id: 'email_123' }), { status: 200, headers: { 'content-type': 'application/json' } });
     });
     await repo.ensureProfile({ id: 'resend', email: 'resend@test.fr' });
-    await repo.updateProfile('resend', { niches: ['maison'], onboarded_at: new Date().toISOString(), digest_hour: 9 });
+    await repo.updateProfile('resend', { niches: ['maison'], onboarded_at: new Date().toISOString(), digest_hour: 9, plan: 'starter' });
     await prepareDigests(DAY, repo);
     const profile = (await repo.getProfile('resend'))!;
     const digest = (await repo.getDigest('resend', DAY))!;

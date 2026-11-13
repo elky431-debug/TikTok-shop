@@ -9,9 +9,10 @@ import { leftToday, reserveToday } from './quota';
 import { getDoc, listDocs } from './store';
 import { activeStyle } from './style';
 import { KIND_SERIES, type SeriesData, type StudioDocView } from './types';
+import { isUnlimited } from '@/lib/plans';
 
 /**
- * Séries de 20 vidéos (Pro : 3 par jour, Pro+ : 20). Le quota compte les séries créées depuis minuit ; une série
+ * Séries de 20 vidéos (Pro : 3 par jour, Elite : 20). Le quota compte les séries créées depuis minuit ; une série
  * ne se supprime pas (sinon le quota se contournerait), elle reste dans la liste. Chaque angle s'écrit en un clic
  * (une génération du studio, comptée dans les scripts du jour).
  */
@@ -31,7 +32,7 @@ export async function getSeries(profile: Profile, id: string): Promise<UserRecor
 
 export async function createSeries(profile: Profile, productId: string): Promise<UserRecord<SeriesData>> {
   const rights = studioRights(profile.plan);
-  if (rights.seriesPerDay <= 0) throw new StudioError('plan', 'La série de 20 vidéos est disponible avec les plans Pro et Pro+.');
+  if (rights.seriesPerDay <= 0) throw new StudioError('plan', 'La série de 20 vidéos est incluse à partir du plan Pro.');
   const repo = getRepo();
   const product = await repo.getProduct(productId);
   if (!product) throw new StudioError('produit', 'Ce produit n’existe plus. Choisis-en un autre.');
@@ -41,7 +42,12 @@ export async function createSeries(profile: Profile, productId: string): Promise
   const placeholder: SeriesData = { product_id: product.id, product_name: product.name, angles: [], simulated: false, duplicates_removed: 0, filled: 0 };
   const reserved = await reserveToday(profile.id, KIND_SERIES, rights.seriesPerDay, placeholder);
   if (!reserved) {
-    throw new StudioError('quota', `Tu as créé tes ${rights.seriesPerDay} séries du jour. Ton compteur repart à zéro demain matin.`);
+    throw new StudioError(
+      'quota',
+      isUnlimited(profile.plan, 'anglesSeriesPerDay')
+        ? 'Limite de sécurité du jour atteinte pour les séries. Ton compteur repart à zéro demain matin.'
+        : `Tu as créé tes ${rights.seriesPerDay} séries du jour. Ton compteur repart à zéro demain matin.`,
+    );
   }
   try {
     const result = await generateSeries(product, {

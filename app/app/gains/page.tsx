@@ -67,7 +67,7 @@ export default async function GainsPage({ searchParams }: { searchParams: Record
     return (
       <div className="mx-auto max-w-5xl">
         <PageHeader eyebrow="Suivre" title="Mes gains"  description="Tes commissions, saisies par toi ou importées. Tes chiffres restent privés." />
-        <PlanGate plan="Pro" title="Suis ce que tu gagnes, produit par produit">
+        <PlanGate plan="pro" title="Suis ce que tu gagnes, produit par produit">
           Note tes commissions à la main ou importe ton relevé en CSV : gains par jour, semaine et mois, par produit, par
           format et par niche, objectif du mois et export pour ta comptabilité.
         </PlanGate>

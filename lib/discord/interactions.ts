@@ -1,9 +1,8 @@
 import { getRepo, type Repo } from '@/lib/db';
 import type { Profile } from '@/lib/db/types';
 import { env } from '@/lib/env';
-import { isNicheId, nicheLabel } from '@/lib/niches';
-import { getPlan, isPaidPlan } from '@/lib/plans';
-import { rankForUser, visibleProductIds } from '@/lib/radar-rules';
+import { isNicheId } from '@/lib/niches';
+import { isPaidPlan, isUnlimited } from '@/lib/plans';
 import { regionFor } from '@/lib/regions';
 import { parisDate } from '@/lib/utils';
 import { linkedProfile, NOT_LINKED, releaseCommand, reserveCommand } from './account';
@@ -57,20 +56,13 @@ async function withProfile(interaction: Interaction, repo: Repo, fn: (profile: P
 async function produits(interaction: Interaction, profile: Profile, repo: Repo, now: Date) {
   const niche = String(option(interaction, 'niche') ?? '');
   if (!isNicheId(niche)) return reply('Choisis une niche dans la liste.');
+  if (!isPaidPlan(profile.plan)) {
+    return reply(`Le radar du jour demande un abonnement : choisis le tien sur ${env.siteUrl}/abonnement.`);
+  }
   const catalog = await discordCatalog(repo, regionFor(profile), now);
   if (!catalog.products.length) return reply('Le radar du jour n’est pas encore prêt. Réessaie dans un moment.');
   const inNiche = catalog.products.filter((p) => p.niche === niche).sort((a, b) => b.latest_score - a.latest_score || a.id.localeCompare(b.id));
-  let shown = inNiche;
-  if (!isPaidPlan(profile.plan)) {
-    const visible = visibleProductIds(rankForUser(catalog.products, profile.niches), profile.plan);
-    shown = inNiche.filter((p) => visible.has(p.id));
-    if (!shown.length) {
-      return reply(
-        `En Gratuit, tu vois tes ${getPlan('free').visibleProducts} produits du jour, choisis dans tes niches : aucun n’est en ${nicheLabel(niche)} aujourd’hui. ` +
-          `Ajoute cette niche dans ton compte, ou passe Pro pour voir les ${inNiche.length} produits du jour de ${nicheLabel(niche)} : ${env.siteUrl}/prix`,
-      );
-    }
-  }
+  const shown = inNiche;
   return replyMessage(
     produitsMessage({
       niche,
@@ -96,10 +88,10 @@ const notFound = (profile: Profile, value: string) =>
   reply(
     isPaidPlan(profile.plan)
       ? `Aucun produit du jour ne correspond à « ${value.slice(0, 80)} ». Choisis-le dans la liste qui s’affiche quand tu tapes.`
-      : `« ${value.slice(0, 80)} » n’est pas dans tes produits du jour. En Gratuit, /score et /script marchent sur tes 3 produits du jour et ceux que tu suis.`,
+      : `« ${value.slice(0, 80)} » n’est pas dans le radar du jour. /score et /script marchent sur les produits du radar et ceux que tu suis.`,
   );
 
-/** /score produit : compte dans le quota quotidien, score masqué en Gratuit (comme dans l'appli). */
+/** /score produit : compte dans le quota quotidien (comme dans l'appli). */
 async function score(interaction: Interaction, profile: Profile, repo: Repo, now: Date) {
   const { catalog, product, value } = await pickProduct(interaction, profile, repo, now);
   if (!product) return notFound(profile, value);
@@ -141,7 +133,7 @@ async function alerte(interaction: Interaction, profile: Profile, repo: Repo) {
   };
   const created = await createAlerte(profile, input, repo);
   if (!created.ok) return reply(`❌ ${created.message}`);
-  const limit = Number.isFinite(created.limit) ? ` (${created.active} sur ${created.limit})` : '';
+  const limit = isUnlimited(profile.plan, 'alerts') ? '' : ` (${created.active} sur ${created.limit})`;
   return reply(
     `✅ Alerte créée${limit} : ${describeAlerte(input)}.\nElle est enregistrée avec tes alertes de l’appli, où tu peux la mettre en pause : ${env.siteUrl}/app`,
   );
@@ -203,7 +195,7 @@ export async function handleDiscordInteraction(
         return reply(
           result.pro
             ? `✅ C’est lié, ${name} ! Plan ${result.planName} : ton récap arrive en message privé chaque matin, à l’heure choisie dans l’appli.`
-            : `✅ C’est lié, ${name} ! Le récap en message privé et le salon Pro arrivent avec le plan Pro.`,
+            : `✅ C’est lié, ${name} ! Le récap en message privé et le salon des abonnés arrivent avec ton abonnement.`,
         );
       }
       case 'delier':

@@ -1,7 +1,7 @@
 import { getRepo, type Repo } from '@/lib/db';
 import type { PlanId, Profile, Subscription } from '@/lib/db/types';
 import { mapWithConcurrency } from '@/lib/jobs/concurrency';
-import { getPlan, isPaidPlan } from '@/lib/plans';
+import { getPlan, isPaidPlan, type PaidPlanId } from '@/lib/plans';
 import { addDays, parisDate, parisTimeToUtc } from '@/lib/utils';
 import { adminSettings } from './settings';
 
@@ -9,7 +9,7 @@ import { adminSettings } from './settings';
  * Indicateurs de l'admin, calculés depuis la base (jamais inventés) :
  * - MRR : abonnements payants actifs (statuts « active » et « past_due » : Stripe réessaie encore) × prix du plan,
  *   l'annuel ramené au mois (prix annuel ÷ 12). Les essais (« trialing ») ne paient pas encore : comptés à part.
- * - Conversion gratuit → payant : comptes payants ÷ comptes inscrits (onboarding terminé).
+ * - Conversion inscrits → abonnés : comptes payants ÷ comptes inscrits (onboarding terminé).
  * - Résiliations : abonnements passés à « canceled » ou « unpaid » sur 30 jours, plus les résiliations programmées.
  * - Actifs par jour : relevé chaque nuit (`recordDailyMetrics`), gardé dans le cache serveur 400 jours.
  */
@@ -19,7 +19,8 @@ export const ENDED_STATUSES = ['canceled', 'unpaid', 'incomplete_expired'];
 /** Dernier état de l'abonnement de chaque utilisateur (Stripe en priorité ; simulé seulement s'il n'y a rien d'autre). */
 export function latestSubscriptions(all: Subscription[]): { subscriptions: Subscription[]; source: 'stripe' | 'simulation' | 'aucun' } {
   const stripe = all.filter((s) => s.provider === 'stripe');
-  const pool = stripe.length ? stripe : all.filter((s) => s.provider === 'simulation');
+  // Plans offerts par l'admin (`admin_…`) : ni chiffre d'affaires ni abonné payant.
+  const pool = stripe.length ? stripe : all.filter((s) => s.provider === 'simulation' && !s.id.startsWith('admin_'));
   const byUser = new Map<string, Subscription>();
   for (const s of pool) {
     const current = byUser.get(s.user_id);
@@ -40,17 +41,21 @@ export interface Mrr {
   htCents: number;
   paying: number;
   trialing: number;
-  byPlan: Record<'pro' | 'proplus', { month: number; year: number; cents: number }>;
+  byPlan: Record<PaidPlanId, { month: number; year: number; cents: number }>;
 }
 
 export function computeMrr(subscriptions: Subscription[], vatRate = adminSettings.vatRate): Mrr {
-  const byPlan: Mrr['byPlan'] = { pro: { month: 0, year: 0, cents: 0 }, proplus: { month: 0, year: 0, cents: 0 } };
+  const byPlan: Mrr['byPlan'] = {
+    starter: { month: 0, year: 0, cents: 0 },
+    pro: { month: 0, year: 0, cents: 0 },
+    elite: { month: 0, year: 0, cents: 0 },
+  };
   let ttcCents = 0;
   let paying = 0;
   for (const s of subscriptions) {
     if (!PAYING_STATUSES.includes(s.status) || !isPaidPlan(s.plan)) continue;
     const cents = monthlyCents(s);
-    const bucket = byPlan[s.plan as 'pro' | 'proplus'];
+    const bucket = byPlan[s.plan as PaidPlanId];
     bucket[s.billing_interval === 'year' ? 'year' : 'month']++;
     bucket.cents += cents;
     ttcCents += cents;
@@ -147,7 +152,7 @@ export async function getBusinessMetrics(repo: Repo = getRepo(), now = new Date(
   const payingUsers = new Set(subscriptions.filter((s) => PAYING_STATUSES.includes(s.status) && isPaidPlan(s.plan)).map((s) => s.user_id));
   const recent = onboarded.filter((p) => p.created_at >= since(30));
   const ended30 = subscriptions.filter((s) => ENDED_STATUSES.includes(s.status) && s.updated_at >= since(30)).length;
-  const plans: Record<PlanId, number> = { free: 0, pro: 0, proplus: 0 };
+  const plans: Record<PlanId, number> = { aucun: 0, starter: 0, pro: 0, elite: 0 };
   for (const p of profiles) plans[p.plan]++;
   const rate = (a: number, b: number) => (b > 0 ? a / b : null);
   return {

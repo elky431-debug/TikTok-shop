@@ -6,7 +6,8 @@ import { Callout, Card, PageHeader } from '@/components/ui/surface';
 import { requireOnboardedViewer } from '@/lib/auth/session';
 import { billingMode } from '@/lib/billing';
 import { getRepo } from '@/lib/db';
-import { getPlan, isBillingInterval } from '@/lib/plans';
+import { coachDiscountApplies, discountedFirstMonth } from '@/lib/billing/coach-discount';
+import { getPlan, isBillingInterval, parsePaidPlan } from '@/lib/plans';
 import { formatEuros, formatLongDate } from '@/lib/utils';
 import { cancelSimulatedSubscription, confirmSimulatedPayment } from './actions';
 
@@ -18,7 +19,7 @@ export default async function PaiementSimulePage({
   searchParams: { plan?: string; periode?: string; mode?: string };
 }) {
   if (billingMode() !== 'simulation') redirect('/app/passer-pro');
-  const { profile } = await requireOnboardedViewer('/app/passer-pro');
+  const { profile } = await requireOnboardedViewer('/app/passer-pro', { abonnement: false });
 
   if (searchParams.mode === 'portail') {
     const sub = await getRepo().getActiveSubscription(profile.id);
@@ -49,9 +50,11 @@ export default async function PaiementSimulePage({
     );
   }
 
-  const plan = searchParams.plan === 'proplus' ? 'proplus' : 'pro';
+  const plan = parsePaidPlan(searchParams.plan) ?? 'pro';
   const interval = isBillingInterval(searchParams.periode) ? searchParams.periode : 'month';
   const details = getPlan(plan);
+  const discount = await coachDiscountApplies(getRepo(), profile, interval);
+  const back = getPlan(profile.plan).access ? '/app/passer-pro' : '/abonnement';
 
   return (
     <div className="mx-auto max-w-lg">
@@ -66,6 +69,11 @@ export default async function PaiementSimulePage({
           {details.name} · <span className="num">{formatEuros(details.prices[interval])}</span>
           <span className="text-base font-medium text-muted"> / {interval === 'year' ? 'an' : 'mois'}</span>
         </p>
+        {discount ? (
+          <p className="num mt-1 text-sm text-positive">
+            Code formateur : {formatEuros(discountedFirstMonth(plan))} le premier mois (−20 %).
+          </p>
+        ) : null}
         <form action={confirmSimulatedPayment} className="mt-6">
           <input type="hidden" name="plan" value={plan} />
           <input type="hidden" name="periode" value={interval} />
@@ -73,7 +81,7 @@ export default async function PaiementSimulePage({
             Simuler le paiement
           </SubmitButton>
         </form>
-        <LinkButton href="/app/passer-pro" variant="ghost" className="mt-2 w-full">
+        <LinkButton href={back} variant="ghost" className="mt-2 w-full">
           Annuler
         </LinkButton>
       </Card>

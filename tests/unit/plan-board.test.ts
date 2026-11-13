@@ -40,7 +40,7 @@ describe('bloc 5.1 · tableau des vidéos (à tourner, tourné, posté)', () => 
   });
 
   it('déplace une vidéo, date la publication du jour, et tient à jour le compteur de Mes produits', async () => {
-    await makeUser(repo, 'u', 'free');
+    await makeUser(repo, 'u', 'starter');
     await repo.upsertProducts([makeProduct({ id: 'p', name: 'Sérum' })]);
     const saved = await repo.saveProduct('u', 'p');
     const record = await ensureBoard(repo, 'u', saved, { id: 'p', name: 'Sérum' });
@@ -119,18 +119,20 @@ describe('bloc 5.3 · calendrier', () => {
 });
 
 describe('bloc 5.4 · rappels par notify', () => {
-  it('rappel une fois par jour, à l’heure du récap, Pro seulement, sur les canaux choisis', async () => {
+  it('rappel une fois par jour, à l’heure du récap, pour les abonnés (dès Starter), sur les canaux choisis', async () => {
     await makeUser(repo, 'pro', 'pro', { digest_hour: 9 });
-    await makeUser(repo, 'gratuit', 'free', { digest_hour: 9 });
-    for (const id of ['pro', 'gratuit']) await repo.saveRecord(id, 'publication', buildPlan({ productId: 'p', productName: 'Sérum', rhythm: 7, start: '2026-11-12' }));
+    await makeUser(repo, 'starter', 'starter', { digest_hour: 9 });
+    await makeUser(repo, 'sans-abo', 'aucun', { digest_hour: 9 });
+    for (const id of ['pro', 'starter', 'sans-abo']) await repo.saveRecord(id, 'publication', buildPlan({ productId: 'p', productName: 'Sérum', rhythm: 7, start: '2026-11-12' }));
     // 7 h à Paris : trop tôt.
     expect(await sendPublicationReminders('2026-11-12', repo, new Date('2026-11-12T06:00:00Z'))).toBe(0);
-    expect(await sendPublicationReminders('2026-11-12', repo, new Date('2026-11-12T08:30:00Z'))).toBe(1);
+    expect(await sendPublicationReminders('2026-11-12', repo, new Date('2026-11-12T08:30:00Z'))).toBe(2);
     expect(await sendPublicationReminders('2026-11-12', repo, new Date('2026-11-12T09:30:00Z'))).toBe(0);
     const [notification] = await listNotifications('pro', repo);
     // Récap du matin par e-mail actif (par défaut) : il porte déjà le défi du jour, donc pas de second e-mail.
     expect(notification.data).toMatchObject({ type: 'rappel', title: 'Aujourd’hui : ta vidéo n°1 sur Sérum', path: '/app/plan', channels: { email: false } });
-    expect(await listNotifications('gratuit', repo)).toHaveLength(0);
+    expect(await listNotifications('starter', repo)).toHaveLength(1);
+    expect(await listNotifications('sans-abo', repo)).toHaveLength(0);
     // Sans récap e-mail, le rappel part par e-mail.
     await makeUser(repo, 'sans-recap', 'pro', { digest_hour: 9, digest_email: false });
     await repo.saveRecord('sans-recap', 'publication', buildPlan({ productId: 'p', productName: 'Sérum', rhythm: 7, start: '2026-11-12' }));
@@ -189,24 +191,25 @@ describe('bloc 5.6 · alerte quand un produit suivi baisse', () => {
     expect(findReplacements(product, catalog, new Set(['suivi'])).map((p) => p.id)).toEqual(['r1', 'r2']);
   });
 
-  it('tâche nocturne : une notification « baisse » par produit, remplaçants nommés en Pro, pas de relance avant 14 jours', async () => {
-    await makeUser(repo, 'pro', 'pro');
-    await makeUser(repo, 'gratuit', 'free');
+  it('tâche nocturne : une notification « baisse » par produit, remplaçants nommés pour les abonnés, pas de relance avant 14 jours', async () => {
+    await makeUser(repo, 'abonne', 'starter');
+    await makeUser(repo, 'sans-abo', 'aucun');
     await repo.upsertProducts([
       makeProduct({ id: 'p', name: 'Sérum en baisse', trend: 'baisse', growth_7d: -0.3, latest_score: 40 }),
       makeProduct({ id: 'r1', name: 'Crème qui monte', latest_score: 75 }),
       makeProduct({ id: 'ok', name: 'Gourde', niche: 'maison', latest_score: 60 }),
     ]);
-    for (const id of ['pro', 'gratuit']) {
+    for (const id of ['abonne', 'sans-abo']) {
       await repo.saveProduct(id, 'p');
       await repo.saveProduct(id, 'ok');
     }
     const now = new Date('2026-11-12T03:30:00Z');
     expect(await alertDecliningProducts('2026-11-12', repo, now)).toEqual({ alerts: 2, checked: 4 });
-    const [pro] = await listNotifications('pro', repo);
+    const [pro] = await listNotifications('abonne', repo);
     expect(pro.data).toMatchObject({ type: 'baisse', title: 'Sérum en baisse commence à baisser', path: '/app/mes-produits/p' });
     expect(pro.data.body).toContain('Crème qui monte (score 75)');
-    const [free] = await listNotifications('gratuit', repo);
+    // Sans abonnement (produits suivis avant une résiliation) : aucun produit du radar nommé.
+    const [free] = await listNotifications('sans-abo', repo);
     expect(free.data.body).not.toContain('Crème qui monte');
     expect(free.data.body).toContain('Ouvre le radar');
     // Le lendemain et dans 13 jours : rien. Dans 14 jours : nouvelle alerte si ça baisse toujours.

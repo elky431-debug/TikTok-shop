@@ -49,7 +49,7 @@ export default async function TendancesPage() {
           <p className="mt-2 text-sm text-muted">Les catégories apparaissent ici dès qu’elles comptent assez de vrais produits.</p>
           <div className="mt-5 flex justify-center">
             <LinkButton href="/connexion" arrow>
-              Créer mon compte gratuit
+              Créer mon compte
             </LinkButton>
           </div>
         </div>

@@ -8,7 +8,9 @@ import { LocalRepo } from '@/lib/db/local';
 import type { PlanId, Product } from '@/lib/db/types';
 import { refreshCatalog } from '@/lib/jobs/refresh';
 import { getUsageToday } from '@/lib/studio';
+import { isUnlimited, SAFETY_CAPS } from '@/lib/plans';
 import { createSeries, listSeries, seriesLeft, writeFromAngle, writtenAngles } from '@/lib/studio/series';
+import { KIND_SERIES } from '@/lib/studio/types';
 import { parisDate } from '@/lib/utils';
 
 const repo = new LocalRepo(null);
@@ -84,10 +86,13 @@ describe('point 5 · série de 20 vidéos sans répétition', () => {
     expect(dedupeAngles(result.angles).rejected).toBe(0);
   });
 
-  it('réservée à Pro et Pro+, quota de séries par jour appliqué côté serveur', async () => {
-    const free = await user('serie-gratuit', 'free');
-    expect(await seriesLeft(free)).toBe(0);
-    await expect(createSeries(free, product.id)).rejects.toMatchObject({ code: 'plan' });
+  it('réservée à Pro et Elite, quota de séries par jour appliqué côté serveur', async () => {
+    for (const plan of ['aucun', 'starter'] as const) {
+      const closed = await user(`serie-${plan}`, plan);
+      expect(await seriesLeft(closed)).toBe(0);
+      await expect(createSeries(closed, product.id)).rejects.toMatchObject({ code: 'plan' });
+      expect(await repo.listRecords(closed.id, KIND_SERIES)).toHaveLength(0);
+    }
 
     const pro = await user('serie-pro', 'pro');
     for (let i = 0; i < 3; i++) {
@@ -97,6 +102,18 @@ describe('point 5 · série de 20 vidéos sans répétition', () => {
     expect(await seriesLeft(pro)).toBe(0);
     await expect(createSeries(pro, product.id)).rejects.toMatchObject({ code: 'quota' });
     expect(await listSeries(pro)).toHaveLength(3);
+  });
+
+  // Corrigé après le signalement de la mise à jour des tests (nouvelle grille).
+  it('Elite : séries « illimitées », plafond de sécurité appliqué mais jamais chiffré', async () => {
+    const elite = await user('serie-elite', 'elite');
+    expect(isUnlimited('elite', 'anglesSeriesPerDay')).toBe(true);
+    for (let i = 0; i < SAFETY_CAPS.anglesSeriesPerDay; i++) {
+      await repo.saveRecord(elite.id, KIND_SERIES, { product_id: product.id, product_name: product.name, angles: [], simulated: true, duplicates_removed: 0, filled: 0 });
+    }
+    const refused = await createSeries(elite, product.id).catch((e: unknown) => e);
+    expect(refused).toMatchObject({ code: 'quota' });
+    expect((refused as Error).message).not.toContain(String(SAFETY_CAPS.anglesSeriesPerDay));
   });
 
   it('rend la place réservée si l’IA échoue', async () => {

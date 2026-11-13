@@ -14,7 +14,7 @@ import { parisDate } from '@/lib/utils';
  */
 export async function refreshCreatorAction(mode: 'auto' | 'manuel' = 'auto'): Promise<{ ok: boolean; message: string | null }> {
   const { profile } = await requireOnboardedViewer('/app');
-  // Le plan est relu côté serveur : le bouton « Actualiser » n'agit qu'en Pro et Pro+.
+  // Le plan est relu côté serveur : le bouton « Actualiser » n'agit qu'en Pro et Elite.
   const result = await refreshCreatorProfile(getRepo(), profile.id, profile.tiktok_handle, { plan: profile.plan, mode: mode === 'manuel' ? 'manuel' : 'auto' });
   revalidatePath('/app');
   return { ok: Boolean(result?.fetched_at && !result.error), message: result?.error ?? null };

@@ -91,11 +91,11 @@ export default async function TendancesNichePage({ params }: { params: { niche: 
         </h2>
         <p className="mx-auto mt-3 max-w-lg text-muted">
           Chaque matin, {BRAND} classe les produits de tes niches avec un score expliqué en phrases et t’écrit les scripts pour les vendre.
-          Gratuit pour commencer, sans carte bancaire.
+          Sans engagement, résiliable en deux clics.
         </p>
         <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <LinkButton href="/connexion" size="lg" arrow>
-            Créer mon compte gratuit
+            Créer mon compte
           </LinkButton>
           <LinkButton href="/prix" variant="secondary" size="lg">
             Voir les prix

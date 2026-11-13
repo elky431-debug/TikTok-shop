@@ -11,6 +11,7 @@ import { listDocs, listHistory, type HistoryItem } from '@/lib/studio/store';
 import { getStyle } from '@/lib/studio/style';
 import { cn, formatRelative } from '@/lib/utils';
 import { StudioForm } from './studio-form';
+import { cheapestPlanWith, getPlan, isUnlimited } from '@/lib/plans';
 import { getRepo } from '@/lib/db';
 import { readStudioDraft } from '@/lib/v2/studio-draft';
 
@@ -77,6 +78,9 @@ export default async function StudioPage({
           style={!rights.personalStyle ? 'verrouille' : !style ? 'absent' : style.data.enabled ? 'actif' : 'inactif'}
           feedbackCount={feedbackCount}
           draft={draft ? { id: draft.id, title: draft.title, lines: draft.lines, format: draft.format } : null}
+          formats={rights.formats}
+          formatsPlan={cheapestPlanWith((p) => p.scriptFormats > getPlan(profile.plan).scriptFormats).name}
+          unlimited={isUnlimited(profile.plan, 'scriptsPerDay')}
         />
       </Card>
 

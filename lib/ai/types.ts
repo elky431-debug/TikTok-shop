@@ -55,7 +55,7 @@ export interface ScriptInput {
   topVideos: TopVideo[];
   /** Durée, ton, angle (défaut : 30 s, énergique, varié). */
   settings?: ScriptSettings;
-  /** Style personnel tiré de ses propres vidéos (Pro et Pro+). */
+  /** Style personnel tiré de ses propres vidéos (Pro et Elite). */
   personalStyle?: StyleProfile | null;
   /** Ses scripts les mieux notés ou qui ont vendu, et ceux qui lui ont moins plu. */
   feedback?: Feedback | null;
