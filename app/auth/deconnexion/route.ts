@@ -1,3 +1,4 @@
+import { relativeRedirect } from '@/lib/http/redirect';
 import { cookies } from 'next/headers';
 import { NextResponse, type NextRequest } from 'next/server';
 import { LOCAL_SESSION_COOKIE } from '@/lib/auth/constants';
@@ -10,5 +11,5 @@ export async function POST(request: NextRequest) {
   } else {
     await createSupabaseServerClient().auth.signOut();
   }
-  return NextResponse.redirect(new URL('/', request.url), { status: 303 });
+  return relativeRedirect('/');
 }

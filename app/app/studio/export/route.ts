@@ -1,3 +1,4 @@
+import { relativeRedirect } from '@/lib/http/redirect';
 import { NextResponse } from 'next/server';
 import { getViewer } from '@/lib/auth/session';
 import { getRepo } from '@/lib/db';
@@ -7,7 +8,7 @@ import { parisDate } from '@/lib/utils';
 /** Export texte de tous les scripts (plan Pro+ uniquement, vérifié côté serveur). */
 export async function GET(request: Request) {
   const viewer = await getViewer();
-  if (!viewer) return NextResponse.redirect(new URL('/connexion?suite=/app/studio', request.url));
+  if (!viewer) return relativeRedirect('/connexion?suite=/app/studio');
   if (!getPlan(viewer.profile.plan).export) {
     return NextResponse.json({ error: 'L’export est réservé au plan Pro+.' }, { status: 403 });
   }

@@ -966,3 +966,7 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
 176. **Captures** : `npm run screenshots` suit la nouvelle connexion (lien magique en option) et l'onboarding en 10
      questions ; sur téléphone, la barre du bas est masquée dans les captures pleine page. L'appli EtSmart ne peut pas
      être capturée ici (compte et Supabase à elle) : comparaison faite dans le code.
+177. **Redirections relatives** (`lib/http/redirect.ts`) pour la déconnexion, le retour des liens de connexion et les
+     exports : sur Netlify, `request.url` est l'adresse interne du déploiement de branche, ce qui envoyait la personne
+     sur un autre domaine (vu au test en ligne de la déconnexion). Un « Location: /chemin » garde l'adresse du
+     navigateur. Onboarding : un passage automatique en attente (choix au doigt) est annulé dès qu'on navigue autrement.

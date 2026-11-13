@@ -1,3 +1,4 @@
+import { relativeRedirect } from '@/lib/http/redirect';
 import { render } from '@react-email/render';
 import { createElement } from 'react';
 import { MorningDigestEmail } from '@/emails/morning-digest';
@@ -8,7 +9,7 @@ import { env } from '@/lib/env';
 /** Aperçu HTML de l'e-mail du récap du jour (utilisateur connecté). */
 export async function GET(request: Request) {
   const viewer = await getViewer();
-  if (!viewer) return Response.redirect(new URL('/connexion?suite=/app/recap', request.url));
+  if (!viewer) return relativeRedirect('/connexion?suite=/app/recap');
   const digest = await getTodayDigest(viewer.profile);
   const html = await render(createElement(MorningDigestEmail, { content: digest.content, siteUrl: env.siteUrl }));
   return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8' } });

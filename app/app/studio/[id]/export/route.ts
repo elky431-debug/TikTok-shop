@@ -1,3 +1,4 @@
+import { relativeRedirect } from '@/lib/http/redirect';
 import { NextResponse } from 'next/server';
 import { isTranslationLang } from '@/lib/ai/formats';
 import { getViewer } from '@/lib/auth/session';
@@ -12,7 +13,7 @@ import { getDoc } from '@/lib/studio/store';
  */
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   const viewer = await getViewer();
-  if (!viewer) return NextResponse.redirect(new URL(`/connexion?suite=/app/studio/${params.id}`, request.url));
+  if (!viewer) return relativeRedirect(`/connexion?suite=/app/studio/${params.id}`);
   if (!studioRights(viewer.profile.plan).export) {
     return NextResponse.json({ error: 'L’export en PDF et en texte est réservé au plan Pro+.' }, { status: 403 });
   }

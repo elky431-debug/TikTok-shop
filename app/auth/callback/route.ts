@@ -1,3 +1,4 @@
+import { relativeRedirect } from '@/lib/http/redirect';
 import type { EmailOtpType } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { NextResponse, type NextRequest } from 'next/server';
@@ -11,7 +12,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 export const dynamic = 'force-dynamic';
 
 function fail(request: NextRequest, reason: string) {
-  return NextResponse.redirect(new URL(`/connexion?erreur=${reason}`, request.url));
+  return relativeRedirect(`/connexion?erreur=${reason}`);
 }
 
 export async function GET(request: NextRequest) {
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 30,
     });
     const destination = await finishLogin(user, next);
-    return NextResponse.redirect(new URL(destination, request.url));
+    return relativeRedirect(destination);
   }
 
   const supabase = createSupabaseServerClient();
@@ -57,5 +58,5 @@ export async function GET(request: NextRequest) {
   } = await supabase.auth.getUser();
   if (!user) return fail(request, 'session');
   const destination = await finishLogin({ id: user.id, email: user.email ?? '' }, next);
-  return NextResponse.redirect(new URL(destination, request.url));
+  return relativeRedirect(destination);
 }

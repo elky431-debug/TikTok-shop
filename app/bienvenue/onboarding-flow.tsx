@@ -184,6 +184,12 @@ export function OnboardingFlow({
   const [previewing, startPreview] = useTransition();
   const [goalOther, setGoalOther] = useState(initial.monthly_goal_euros !== null && !GOAL_PRESETS.includes(initial.monthly_goal_euros));
   const restored = useRef(false);
+  // Passage automatique en attente après un choix au doigt : annulé si la personne navigue autrement entre-temps.
+  const advance = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelAdvance = () => {
+    if (advance.current) clearTimeout(advance.current);
+    advance.current = null;
+  };
   const step = steps[index];
   const last = index === steps.length - 1;
   const optional = OPTIONAL_STEPS.has(step);
@@ -217,6 +223,7 @@ export function OnboardingFlow({
   };
 
   const go = (to: number) => {
+    cancelAdvance();
     setDirection(to > index ? 1 : -1);
     setError(null);
     setIndex(to);
@@ -244,6 +251,7 @@ export function OnboardingFlow({
   };
 
   const next = (override?: Partial<OnboardingAnswers>) => {
+    cancelAdvance();
     const current = { ...answers, ...override };
     const message = stepError(step, current);
     if (message) {
@@ -258,6 +266,7 @@ export function OnboardingFlow({
   };
 
   const skip = () => {
+    cancelAdvance();
     const cleared: Partial<OnboardingAnswers> =
       step === 'pseudo' ? { tiktok_handle: '' } : step === 'objectif' ? { monthly_goal_euros: null } : step === 'code' ? { code: '' } : {};
     setAnswers((a) => ({ ...a, ...cleared }));
@@ -268,7 +277,8 @@ export function OnboardingFlow({
   /** Choix unique : au doigt ou à la souris, on passe à la question suivante après un court instant. */
   const choose = <K extends keyof OnboardingAnswers>(key: K, value: OnboardingAnswers[K], byPointer: boolean) => {
     set(key, value);
-    if (byPointer) setTimeout(() => next({ [key]: value } as Partial<OnboardingAnswers>), 220);
+    cancelAdvance();
+    if (byPointer) advance.current = setTimeout(() => next({ [key]: value } as Partial<OnboardingAnswers>), 220);
   };
 
   const toggle = <T extends string>(list: T[], value: T, max?: number): T[] =>

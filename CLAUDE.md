@@ -113,9 +113,13 @@ du brief diverge du code EtSmart, la mesure d'EtSmart l'emporte (voir `DECISIONS
   des chiffres, apparitions au défilement (une fois), aperçu du radar qui fait défiler les produits.
   Toujours une version sans mouvement si `prefers-reduced-motion`.
 - **Signature** : le décalage cyan / rose façon logo TikTok reste réservé au logo et au score.
-- **Appli** : mêmes tokens, pas de constellation, seulement un halo très léger en haut ; cartes du
-  radar au style des cartes de fonctionnalités ; barre du bas noire floutée, icône active cyan ;
-  courbes Recharts cyan avec remplissage dégradé.
+- **Appli** (refonte du 13 novembre, `DECISIONS.md` 164-176) : coque copiée d'EtSmart
+  (`components/app/shell.tsx` : barre latérale 64 → 256 px en sections Accueil / Trouver / Créer / Suivre / Compte,
+  en-tête et barre du bas sur téléphone), conteneur `max-w-7xl`, `PageHeader` à étiquette de section, cartes noires
+  bordées, onglets à trait dégradé. **Dashboard sur `/app`** (`lib/dashboard.ts`, chiffres saisis ou mesurés
+  uniquement), **radar sur `/app/radar`**. Onboarding : 10 questions, une par écran (`app/bienvenue`,
+  `lib/onboarding-steps.ts`) ; `onboarding_version` < 2 ⇒ nouvelles questions une fois. Courbes Recharts cyan avec
+  remplissage dégradé. `MotionConfig reducedMotion="user"` dans la coque.
 - **Qualité** : mobile d'abord, focus visible, contraste AA vérifié à l'audit axe, états vides utiles,
   erreurs précises, squelettes. Boutons = verbe exact, réutilisé dans la confirmation.
 
