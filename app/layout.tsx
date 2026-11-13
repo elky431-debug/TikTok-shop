@@ -38,9 +38,9 @@ export const viewport: Viewport = {
 // Le noir est le thème par défaut. Le clair n'est appliqué que s'il a été choisi dans le compte,
 // avant l'affichage et sans rendre les pages dynamiques.
 const themeScript = `try{if(/(?:^|; )${THEME_COOKIE}=light/.test(document.cookie))document.documentElement.setAttribute('data-theme','light')}catch(e){}`;
-// Comparaison des palettes : « ?palette=a » ou « ?palette=b » dans l'adresse, retenu par un cookie technique (un an)
+// Comparaison des palettes : « ?palette=a » à « ?palette=j » dans l'adresse, retenu par un cookie technique (un an)
 // pour la suite de la navigation ; appliqué avant l'affichage, sans flash.
-const paletteScript = `try{var m=location.search.match(/[?&]palette=(a|b)(?:&|$)/);if(m)document.cookie='${PALETTE_COOKIE}='+m[1]+';path=/;max-age=31536000;samesite=lax';var c=m?m[1]:(document.cookie.match(/(?:^|; )${PALETTE_COOKIE}=(a|b)/)||[])[1];if(c==='b')document.documentElement.setAttribute('data-palette','b')}catch(e){}`;
+const paletteScript = `try{var m=location.search.match(/[?&]palette=([a-j])(?:&|$)/);if(m)document.cookie='${PALETTE_COOKIE}='+m[1]+';path=/;max-age=31536000;samesite=lax';var c=m?m[1]:(document.cookie.match(/(?:^|; )${PALETTE_COOKIE}=([a-j])/)||[])[1];if(c&&c!=='a')document.documentElement.setAttribute('data-palette',c)}catch(e){}`;
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

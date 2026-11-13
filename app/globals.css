@@ -65,11 +65,13 @@
   }
 
   /*
-   * Palette B (comparaison, « ?palette=b » dans l'adresse) : orange vif du panier TikTok Shop pour les boutons, les
-   * accents et le logo ; le cyan reste aux courbes et aux chiffres positifs. Fond noir et design inchangés.
-   * Contrastes (WCAG 2.1, sur #000) : accent #FF8A3D 8,6:1 ; bouton #FF6A1F avec texte #140A04 7,1:1 ; erreurs #FF5C5C
-   * 6,9:1 ; cyan 15:1. Le thème clair garde la palette A.
+   * Palettes à comparer (« ?palette=a » à « ?palette=j » dans l'adresse) : seules les couleurs changent, fond noir et
+   * design identiques. A = cyan et rose TikTok (ci-dessus). Pour toutes les autres : couleur de la palette sur les
+   * boutons, les accents, le logo et le dégradé ; cyan gardé aux courbes et aux chiffres positifs ; erreurs en rouge
+   * #FF5C5C. Contrastes calculés (WCAG 2.1) : accent ≥ 7,5:1 sur les cartes, texte des boutons ≥ 4,6:1, texte noir sur
+   * le dégradé ≥ 5,7:1. Le thème clair garde la palette A.
    */
+  /* Palette B : Orange TikTok Shop */
   :root[data-palette='b']:not([data-theme='light']) {
     --cyan-hex: #ff8a3d;
     --pink-hex: #ffb020;
@@ -78,22 +80,212 @@
     --gradient-diag: linear-gradient(135deg, #ff6a1f 0%, #ffb020 100%);
     --glow-cyan: 0 0 40px rgba(255, 138, 61, 0.25);
     --glow-pink: 0 0 40px rgba(255, 106, 31, 0.35);
-
     --rose: 255 106 31;
     --rose-ink: 255 92 92;
     --rose-fill: 255 106 31;
-    --rose-soft: 44 14 10;
+    --rose-soft: 41 17 5;
     --cyan: 255 138 61;
     --cyan-ink: 255 138 61;
-    --cyan-soft: 40 18 6;
+    --cyan-soft: 41 22 10;
     --gain: 37 244 238;
     --gain-soft: 6 36 35;
-
     --on-primary: 20 10 4;
     --positive: 37 244 238;
     --chart-2: #ffb020;
     --logo-halo: radial-gradient(circle, rgba(255, 138, 61, 0.45) 0%, rgba(255, 176, 32, 0.25) 100%);
     --logo-shadow: rgba(255, 106, 31, 0.35);
+  }
+  /* Palette C : Violet électrique */
+  :root[data-palette='c']:not([data-theme='light']) {
+    --cyan-hex: #b197fc;
+    --pink-hex: #e879f9;
+    --pink-fill: #7c3aed;
+    --gradient: linear-gradient(90deg, #9f7aea 0%, #e879f9 100%);
+    --gradient-diag: linear-gradient(135deg, #9f7aea 0%, #e879f9 100%);
+    --glow-cyan: 0 0 40px rgba(177, 151, 252, 0.25);
+    --glow-pink: 0 0 40px rgba(124, 58, 237, 0.35);
+    --rose: 159 122 234;
+    --rose-ink: 255 92 92;
+    --rose-fill: 124 58 237;
+    --rose-soft: 20 9 38;
+    --cyan: 177 151 252;
+    --cyan-ink: 177 151 252;
+    --cyan-soft: 28 24 40;
+    --gain: 37 244 238;
+    --gain-soft: 6 36 35;
+    --on-primary: 255 255 255;
+    --positive: 37 244 238;
+    --chart-2: #e879f9;
+    --logo-halo: radial-gradient(circle, rgba(177, 151, 252, 0.45) 0%, rgba(232, 121, 249, 0.25) 100%);
+    --logo-shadow: rgba(159, 122, 234, 0.35);
+  }
+  /* Palette D : Vert émeraude */
+  :root[data-palette='d']:not([data-theme='light']) {
+    --cyan-hex: #34d399;
+    --pink-hex: #a3e635;
+    --pink-fill: #10b981;
+    --gradient: linear-gradient(90deg, #10b981 0%, #a3e635 100%);
+    --gradient-diag: linear-gradient(135deg, #10b981 0%, #a3e635 100%);
+    --glow-cyan: 0 0 40px rgba(52, 211, 153, 0.25);
+    --glow-pink: 0 0 40px rgba(16, 185, 129, 0.35);
+    --rose: 16 185 129;
+    --rose-ink: 255 92 92;
+    --rose-fill: 16 185 129;
+    --rose-soft: 3 30 21;
+    --cyan: 52 211 153;
+    --cyan-ink: 52 211 153;
+    --cyan-soft: 8 34 24;
+    --gain: 37 244 238;
+    --gain-soft: 6 36 35;
+    --on-primary: 4 20 13;
+    --positive: 37 244 238;
+    --chart-2: #a3e635;
+    --logo-halo: radial-gradient(circle, rgba(52, 211, 153, 0.45) 0%, rgba(163, 230, 53, 0.25) 100%);
+    --logo-shadow: rgba(16, 185, 129, 0.35);
+  }
+  /* Palette E : Bleu électrique */
+  :root[data-palette='e']:not([data-theme='light']) {
+    --cyan-hex: #60a5fa;
+    --pink-hex: #22d3ee;
+    --pink-fill: #2563eb;
+    --gradient: linear-gradient(90deg, #3b82f6 0%, #22d3ee 100%);
+    --gradient-diag: linear-gradient(135deg, #3b82f6 0%, #22d3ee 100%);
+    --glow-cyan: 0 0 40px rgba(96, 165, 250, 0.25);
+    --glow-pink: 0 0 40px rgba(37, 99, 235, 0.35);
+    --rose: 59 130 246;
+    --rose-ink: 255 92 92;
+    --rose-fill: 37 99 235;
+    --rose-soft: 6 16 38;
+    --cyan: 96 165 250;
+    --cyan-ink: 96 165 250;
+    --cyan-soft: 15 26 40;
+    --gain: 37 244 238;
+    --gain-soft: 6 36 35;
+    --on-primary: 255 255 255;
+    --positive: 37 244 238;
+    --chart-2: #22d3ee;
+    --logo-halo: radial-gradient(circle, rgba(96, 165, 250, 0.45) 0%, rgba(34, 211, 238, 0.25) 100%);
+    --logo-shadow: rgba(59, 130, 246, 0.35);
+  }
+  /* Palette F : Jaune or */
+  :root[data-palette='f']:not([data-theme='light']) {
+    --cyan-hex: #facc15;
+    --pink-hex: #fb923c;
+    --pink-fill: #facc15;
+    --gradient: linear-gradient(90deg, #facc15 0%, #fb923c 100%);
+    --gradient-diag: linear-gradient(135deg, #facc15 0%, #fb923c 100%);
+    --glow-cyan: 0 0 40px rgba(250, 204, 21, 0.25);
+    --glow-pink: 0 0 40px rgba(250, 204, 21, 0.35);
+    --rose: 250 204 21;
+    --rose-ink: 255 92 92;
+    --rose-fill: 250 204 21;
+    --rose-soft: 40 33 3;
+    --cyan: 250 204 21;
+    --cyan-ink: 250 204 21;
+    --cyan-soft: 40 33 3;
+    --gain: 37 244 238;
+    --gain-soft: 6 36 35;
+    --on-primary: 26 20 0;
+    --positive: 37 244 238;
+    --chart-2: #fb923c;
+    --logo-halo: radial-gradient(circle, rgba(250, 204, 21, 0.45) 0%, rgba(251, 146, 60, 0.25) 100%);
+    --logo-shadow: rgba(250, 204, 21, 0.35);
+  }
+  /* Palette G : Fuchsia */
+  :root[data-palette='g']:not([data-theme='light']) {
+    --cyan-hex: #f472b6;
+    --pink-hex: #c084fc;
+    --pink-fill: #db2777;
+    --gradient: linear-gradient(90deg, #ec4899 0%, #c084fc 100%);
+    --gradient-diag: linear-gradient(135deg, #ec4899 0%, #c084fc 100%);
+    --glow-cyan: 0 0 40px rgba(244, 114, 182, 0.25);
+    --glow-pink: 0 0 40px rgba(219, 39, 119, 0.35);
+    --rose: 236 72 153;
+    --rose-ink: 255 92 92;
+    --rose-fill: 219 39 119;
+    --rose-soft: 35 6 19;
+    --cyan: 244 114 182;
+    --cyan-ink: 244 114 182;
+    --cyan-soft: 39 18 29;
+    --gain: 37 244 238;
+    --gain-soft: 6 36 35;
+    --on-primary: 255 255 255;
+    --positive: 37 244 238;
+    --chart-2: #c084fc;
+    --logo-halo: radial-gradient(circle, rgba(244, 114, 182, 0.45) 0%, rgba(192, 132, 252, 0.25) 100%);
+    --logo-shadow: rgba(236, 72, 153, 0.35);
+  }
+  /* Palette H : Rouge corail */
+  :root[data-palette='h']:not([data-theme='light']) {
+    --cyan-hex: #ff7a85;
+    --pink-hex: #ffa07a;
+    --pink-fill: #e11d48;
+    --gradient: linear-gradient(90deg, #ff5a5f 0%, #ffa07a 100%);
+    --gradient-diag: linear-gradient(135deg, #ff5a5f 0%, #ffa07a 100%);
+    --glow-cyan: 0 0 40px rgba(255, 122, 133, 0.25);
+    --glow-pink: 0 0 40px rgba(225, 29, 72, 0.35);
+    --rose: 255 90 95;
+    --rose-ink: 255 92 92;
+    --rose-fill: 225 29 72;
+    --rose-soft: 36 5 12;
+    --cyan: 255 122 133;
+    --cyan-ink: 255 122 133;
+    --cyan-soft: 41 20 21;
+    --gain: 37 244 238;
+    --gain-soft: 6 36 35;
+    --on-primary: 255 255 255;
+    --positive: 37 244 238;
+    --chart-2: #ffa07a;
+    --logo-halo: radial-gradient(circle, rgba(255, 122, 133, 0.45) 0%, rgba(255, 160, 122, 0.25) 100%);
+    --logo-shadow: rgba(255, 90, 95, 0.35);
+  }
+  /* Palette I : Citron vert */
+  :root[data-palette='i']:not([data-theme='light']) {
+    --cyan-hex: #bef264;
+    --pink-hex: #4ade80;
+    --pink-fill: #a3e635;
+    --gradient: linear-gradient(90deg, #a3e635 0%, #4ade80 100%);
+    --gradient-diag: linear-gradient(135deg, #a3e635 0%, #4ade80 100%);
+    --glow-cyan: 0 0 40px rgba(190, 242, 100, 0.25);
+    --glow-pink: 0 0 40px rgba(163, 230, 53, 0.35);
+    --rose: 163 230 53;
+    --rose-ink: 255 92 92;
+    --rose-fill: 163 230 53;
+    --rose-soft: 26 37 8;
+    --cyan: 190 242 100;
+    --cyan-ink: 190 242 100;
+    --cyan-soft: 30 39 16;
+    --gain: 37 244 238;
+    --gain-soft: 6 36 35;
+    --on-primary: 15 26 3;
+    --positive: 37 244 238;
+    --chart-2: #4ade80;
+    --logo-halo: radial-gradient(circle, rgba(190, 242, 100, 0.45) 0%, rgba(74, 222, 128, 0.25) 100%);
+    --logo-shadow: rgba(163, 230, 53, 0.35);
+  }
+  /* Palette J : Blanc pur */
+  :root[data-palette='j']:not([data-theme='light']) {
+    --cyan-hex: #f4f4f5;
+    --pink-hex: #a1a1aa;
+    --pink-fill: #ffffff;
+    --gradient: linear-gradient(90deg, #ffffff 0%, #a1a1aa 100%);
+    --gradient-diag: linear-gradient(135deg, #ffffff 0%, #a1a1aa 100%);
+    --glow-cyan: 0 0 40px rgba(244, 244, 245, 0.25);
+    --glow-pink: 0 0 40px rgba(255, 255, 255, 0.35);
+    --rose: 255 255 255;
+    --rose-ink: 255 92 92;
+    --rose-fill: 255 255 255;
+    --rose-soft: 41 41 41;
+    --cyan: 244 244 245;
+    --cyan-ink: 244 244 245;
+    --cyan-soft: 39 39 39;
+    --gain: 37 244 238;
+    --gain-soft: 6 36 35;
+    --on-primary: 0 0 0;
+    --positive: 37 244 238;
+    --chart-2: #a1a1aa;
+    --logo-halo: radial-gradient(circle, rgba(244, 244, 245, 0.45) 0%, rgba(161, 161, 170, 0.25) 100%);
+    --logo-shadow: rgba(255, 255, 255, 0.35);
   }
 
   /* Thème clair : uniquement sur demande, depuis le compte. */
@@ -199,6 +391,10 @@
 
   /* En thème clair, l'opacité réduite ferait passer le texte sous 4,5:1. */
   :root[data-theme='light'] .eyebrow-category {
+    color: var(--cyan-hex);
+  }
+  /* Idem dans les palettes autres que A (bleu, fuchsia, corail tombaient sous 4,5:1 à 70 %). */
+  :root[data-palette]:not([data-palette='a']) .eyebrow-category {
     color: var(--cyan-hex);
   }
 
@@ -310,7 +506,7 @@
     background-color: rgb(var(--rose-soft));
     color: rgb(var(--rose-ink));
   }
-  :root[data-palette='b']:not([data-theme='light']) .trend-explose {
+  :root[data-palette]:not([data-palette='a']):not([data-theme='light']) .trend-explose {
     background-color: rgb(var(--positive) / 0.16);
     color: rgb(var(--positive));
   }

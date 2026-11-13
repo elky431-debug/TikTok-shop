@@ -998,3 +998,9 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      écrites en dur (barre latérale, logo, téléprompteur, cases à cocher, halos) passent par les variables. Nouveaux
      jetons : `--on-primary` (texte des boutons), `--positive`, `--chart-2`, `--logo-halo`. Audit axe : 0 erreur en A
      et en B. Le thème clair garde la palette A.
+182. **Dix palettes à comparer** (`?palette=a` à `?palette=j`, même mécanisme que la décision 181) : A TikTok cyan + rose,
+     B orange TikTok Shop, C violet électrique, D vert émeraude, E bleu électrique, F jaune or, G fuchsia, H rouge corail,
+     I citron vert, J blanc pur. Pour B à J : couleur de la palette sur les boutons, les accents, le logo et le dégradé ;
+     cyan aux courbes et aux chiffres positifs ; erreurs en rouge. Contrastes calculés puis vérifiés à l'audit axe
+     (0 erreur sur l'accueil, le dashboard et le studio, 390 et 1440 px). Captures et planches :
+     `docs/captures/palettes/`. Les palettes non retenues seront retirées une fois le choix fait.
