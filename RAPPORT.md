@@ -193,12 +193,12 @@ Six commits (« Refonte 1 » à « Refonte 6 »), décisions détaillées dans `
 - **Police** : Sora, celle d’EtSmart, auto-hébergée (aucun appel à Google).
 - **Accueil** : en-tête fixe flouté, pastille d’annonce, titre « Sache quoi vendre sur TikTok Shop » avec
   « chaque matin. » en italique et en dégradé vivant, constellation animée sur canvas (dérive, parallaxe,
-  pause hors écran), aperçu du radar qui fait défiler 5 produits, chiffres vrais comptés à l’écran, sections
+  pause hors écran), défilé de captures de l’appli sous le titre (remplace l’aperçu du radar), chiffres vrais comptés à l’écran, sections
   TOUT-EN-UN / Comment ça marche / Tarifs / Formateurs / FAQ qui apparaissent au défilement.
 - **Fidélité** : à 1 440 px, la pastille, les boutons et la mention tombent à moins de 5 px des positions de la
   capture EtSmart ; comparaisons côte à côte dans `docs/captures/refonte-comparaison-haut.jpg` et
   `docs/captures/refonte-comparaison-tout-en-un.jpg`. En mobile 390 px, le titre ne déborde pas et le premier
-  écran montre le titre, les boutons et le début de l’aperçu du radar.
+  écran montre le titre et les boutons ; le défilé de captures suit.
 - **Écarts volontaires avec le brief** (détails dans `DECISIONS.md`) :
   - quand une mesure du brief différait du code EtSmart (taille du titre, padding des cartes…), la mesure
     d’EtSmart a été retenue, puisque le brief demande une copie au pixel près ;

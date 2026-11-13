@@ -325,31 +325,66 @@
   }
 }
 
-/* Effet « glitch » du score à chaque changement (aperçu du radar) */
-@keyframes score-glitch {
-  0% {
-    text-shadow:
-      -0.12em -0.05em 0 rgb(37 244 238 / 0.95),
-      0.12em 0.05em 0 rgb(254 44 85 / 0.95);
-  }
-  60% {
-    text-shadow:
-      0.06em 0.02em 0 rgb(37 244 238 / 0.95),
-      -0.06em -0.02em 0 rgb(254 44 85 / 0.95);
-  }
-  100% {
-    text-shadow:
-      -0.045em -0.03em 0 rgb(37 244 238 / 0.95),
-      0.045em 0.03em 0 rgb(254 44 85 / 0.95);
-  }
-}
-
-.animate-score-glitch {
-  animation: score-glitch 420ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
 .animate-pulse-dot {
   animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* Défilé de captures de l'accueil (repris d'EtSmart) : deux copies de chaque rangée, translation de −50 % en boucle */
+.marquee-row {
+  display: flex;
+  width: 100%;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+}
+.marquee-track {
+  display: flex;
+  width: max-content;
+}
+.marquee-left {
+  animation: marquee-left 65s linear infinite;
+}
+.marquee-right {
+  animation: marquee-right 65s linear infinite;
+}
+.marquee-row:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+@keyframes marquee-left {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+@keyframes marquee-right {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Fixe : plus de défilement automatique, la rangée se fait défiler à la main, sans la copie de boucle. */
+  .marquee-track {
+    animation: none !important;
+    transform: none;
+  }
+  .marquee-row {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(to right, #000 92%, transparent);
+    mask-image: linear-gradient(to right, #000 92%, transparent);
+  }
+  .marquee-row::-webkit-scrollbar {
+    display: none;
+  }
+  .marquee-group[aria-hidden='true'] {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

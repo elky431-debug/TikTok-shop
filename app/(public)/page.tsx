@@ -15,7 +15,7 @@ import { PricingCards } from '@/components/pricing/pricing-cards';
 import { Constellation } from '@/components/public/constellation';
 import { FaqItem } from '@/components/public/faq-item';
 import { HeroIntro } from '@/components/public/hero-intro';
-import { RadarShowcase } from '@/components/public/radar-showcase';
+import { ScreenshotMarquee } from '@/components/public/screenshot-marquee';
 import { SectionHeading } from '@/components/public/section-heading';
 import { LinkButton } from '@/components/ui/button';
 import { FeatureCard } from '@/components/ui/feature-card';
@@ -23,7 +23,6 @@ import { BRAND, BRAND_DESCRIPTION, BRAND_TAGLINE } from '@/lib/brand';
 import { COACH_TRIAL_DAYS, getPlan, REFERRAL_COMMISSION_RATE } from '@/lib/plans';
 import { pricingCards } from '@/lib/pricing';
 import { MARKET_FIGURES } from '@/lib/market';
-import { getShowcase } from '@/lib/public-demo';
 import { formatEuros } from '@/lib/utils';
 
 export const metadata: Metadata = {
@@ -122,8 +121,7 @@ const FAQ = [
   },
 ];
 
-export default async function HomePage() {
-  const showcase = await getShowcase();
+export default function HomePage() {
   const proPrice = formatEuros(getPlan('pro').prices.month);
 
   return (
@@ -147,10 +145,11 @@ export default async function HomePage() {
             </>
           }
           footnote={`Gratuit sans carte bancaire · Pro dès ${proPrice}/mois`}
-        >
-          <RadarShowcase products={showcase.products} demoData={showcase.demoData} />
-        </HeroIntro>
+        />
       </section>
+
+      {/* Défilé de captures de l'appli (vraies pages, compte de démo : npm run screenshots:landing) */}
+      <ScreenshotMarquee />
 
       {/* Bandeau de chiffres */}
       <section className="border-y border-fg/[0.06] bg-fg/[0.01]" aria-label="Tracktout en chiffres">

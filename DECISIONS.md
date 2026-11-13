@@ -1032,3 +1032,13 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      et le masquage des messages d'erreur cache toute suite de 20 caractères de clé ou plus. Le scan reste actif.
      Vérifié sur un build de production local avec le vrai fichier d'environnement : la vraie clé n'apparaît dans aucun
      fichier du build (navigateur comme serveur) ; seule reste la propriété CSS `mask-composite`.
+187. **Défilé de captures sous le titre de l'accueil** (repris d'EtSmart, à la place de l'aperçu du radar) : deux
+     rangées de 12 cartes 320 × 208 qui défilent en sens inverse (65 s par tour, deux copies, translation de −50 %),
+     bords en fondu (`mask-image`), nom de la fonction dans une pastille encre en bas à gauche, badge « Exemple » sur
+     « Mes gains ». Pause au survol ; avec « réduire les animations », rangées fixes qu'on fait défiler à la main
+     (copie de boucle retirée) ; une seule rangée sous 640 px (cartes 270 × 176). Les images viennent de vraies pages :
+     `npm run screenshots:landing` lit le catalogue de la veille (lecture seule), le copie avec des noms courts dans une
+     base locale jetable (`.data/landing-db.json`), crée un compte de démo rempli (plan, alertes, favoris, contenus
+     écrits par la vraie IA si la clé est là) avec des gains modestes (≈ 40 € sur le mois, objectif 150 €), puis
+     capture chaque page avec Playwright et écrit deux tailles en WebP (640 et 320 px de large, 288 Ko pour les 24
+     fichiers). Le navigateur choisit la taille par `srcset`. `RadarShowcase` et `lib/public-demo.ts` sont supprimés.

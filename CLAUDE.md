@@ -112,7 +112,8 @@ d'EtSmart l'emporte (voir `DECISIONS.md`, refonte).
 - **Héros** : titre « Automatise ton business TikTok Shop de A à Z. » (« de A à Z. » en italique et en dégradé
   vivant) ; constellation animée sur canvas (traits à la couleur d'encre du thème, halos cyan et rose), dérive lente, parallaxe à la souris, pause hors onglet, arrêt si `prefers-reduced-motion`.
 - **Animations** (Motion, `motion/react`) : chargement du héros en séquence, dégradé vivant, comptage
-  des chiffres, apparitions au défilement (une fois), aperçu du radar qui fait défiler les produits.
+  des chiffres, apparitions au défilement (une fois), défilé de captures sous le titre (`components/public/screenshot-marquee.tsx`,
+  images de `npm run screenshots:landing`).
   Toujours une version sans mouvement si `prefers-reduced-motion`.
 - **Signature** : le décalage cyan / rose façon logo TikTok reste réservé au logo et au score.
 - **Appli** (refonte du 13 novembre, `DECISIONS.md` 164-176) : coque copiée d'EtSmart
@@ -149,6 +150,7 @@ npm run ai:sample  # 3 scripts de test avec le vrai fournisseur d'IA (docs/exemp
 npm run stripe:setup  # produits, prix, portail client (et webhook avec -- --webhook)
 npm run discord:setup # commandes /lier /delier et adresse des interactions Discord
 npm run screenshots   # captures (voir scripts/screenshots.mjs)
+npm run screenshots:landing  # captures du défilé de l'accueil (public/landing/, compte de démo local)
 ```
 
 ## Où trouver quoi
