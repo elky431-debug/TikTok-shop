@@ -130,7 +130,7 @@ export default async function GainsPage({ searchParams }: { searchParams: Record
         {board.videos ? `, ${plural(board.videos, 'vidéo notée', 'vidéos notées')}` : ''}. Le gain moyen ne compte que les lignes rattachées à une vidéo.
       </p>
 
-      <Card id="objectif" className="mt-6">
+      <Card id="objectif-mois" className="mt-6">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="text-lg">Objectif de {monthName(today.slice(0, 7))}</h2>
           {progress ? (

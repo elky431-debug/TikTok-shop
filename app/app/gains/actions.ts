@@ -137,9 +137,9 @@ export async function setEarningsGoalAction(formData: FormData) {
   const profile = await viewer();
   const raw = String(formData.get('objectif') ?? '').trim();
   const cents = raw ? parseAmount(raw) : 0;
-  if (cents === null || cents < 0) redirect('/app/gains?erreur=objectif#objectif');
+  if (cents === null || cents < 0) redirect('/app/gains?erreur=objectif#objectif-mois');
   await setEarningsGoal(getRepo(), profile.id, cents);
-  done('ok=objectif#objectif');
+  done('ok=objectif#objectif-mois');
 }
 
 export async function deleteEarningAction(formData: FormData) {
