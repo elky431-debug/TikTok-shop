@@ -11,44 +11,44 @@ test('inscription : de l’accueil au radar, en mode préparation', async ({ pag
   await signUpWithPassword(page, uniqueEmail('inscription'));
   await expect(page).toHaveURL(/\/bienvenue/);
 
-  // Écran 1 : prénom, pseudo et abonnés ; moins de 1 500 abonnés ⇒ le mode préparation est expliqué
+  // Onboarding : une question par écran, retour possible, questions facultatives qu'on peut passer
   const start = Date.now();
-  await page.getByLabel('Ton prénom').fill('Inès');
-  await page.getByLabel('Ton pseudo TikTok (facultatif)').fill('ines.teste');
-  await page.getByText('Moins de 500', { exact: true }).click();
-  await expect(page.getByText('Tu démarres en mode préparation')).toBeVisible();
+  await expect(page.getByText('Question 1 sur 10')).toBeVisible();
   await page.getByRole('button', { name: 'Continuer' }).click();
-
-  // Écran 2 : au moins une niche est obligatoire
+  await expect(page.getByText('Indique ton prénom')).toBeVisible();
+  await page.getByLabel('Ton prénom').fill('Inès');
+  await page.getByRole('button', { name: 'Continuer' }).click();
+  await page.getByLabel('Ton pseudo TikTok').fill('ines.teste');
+  await page.getByRole('button', { name: 'Continuer' }).click();
+  await page.getByRole('radio', { name: 'Moins de 1 000' }).click();
+  // Moins de 1 500 abonnés ou « pas encore » ⇒ le mode préparation est expliqué
+  await page.getByRole('radio', { name: 'Pas encore' }).click();
+  await expect(page.getByText('Tu démarres en mode préparation.')).toBeVisible();
+  await page.getByRole('button', { name: 'Retour' }).click();
+  await expect(page.getByRole('radio', { name: 'Moins de 1 000' })).toHaveAttribute('aria-checked', 'true');
+  await page.getByRole('button', { name: 'Continuer' }).click();
+  await page.getByRole('button', { name: 'Continuer' }).click();
+  await page.getByRole('radio', { name: /Je débute/ }).click();
+  // Niches : au moins une, trois au plus (les autres se grisent)
   await page.getByRole('button', { name: 'Continuer' }).click();
   await expect(page.getByText('Choisis au moins une niche.')).toBeVisible();
-  await page.getByText('Beauté et soins', { exact: true }).click();
-  await page.getByText('Animaux', { exact: true }).click();
+  for (const niche of ['Beauté', 'Animaux', 'Maison']) await page.getByRole('checkbox', { name: niche }).click();
+  await expect(page.getByRole('checkbox', { name: 'Mode' })).toHaveAttribute('aria-disabled', 'true');
   await page.getByRole('button', { name: 'Continuer' }).click();
-
-  // Écran 3 : style et phrase
-  await page.getByText('Voix off', { exact: true }).click();
-  await page.getByLabel('Une phrase que tu dirais dans une vidéo (facultatif)').fill('Les amis, regardez ça.');
-  await page.getByRole('button', { name: 'Voir mes 3 produits du jour' }).click();
-
-  // Moment waouh : 3 produits du jour, un script écrit, puis l'offre Pro (annuel mis en avant), en moins de 2 minutes
-  await expect(page).toHaveURL(/\/bienvenue\/produits/);
-  await expect(page.getByRole('button', { name: 'Écrire mon script' })).toHaveCount(3);
-  await page.getByRole('button', { name: 'Écrire mon script' }).first().click();
-  await expect(page).toHaveURL(/\/bienvenue\/script\//);
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Prêt à tourner');
-  await expect(page.getByRole('button', { name: 'Copier le script' })).toBeVisible();
+  await page.getByRole('radio', { name: /1 à 3 vidéos/ }).click();
+  await page.getByRole('checkbox', { name: /Voix off/ }).click();
+  await page.getByRole('button', { name: 'Continuer' }).click();
+  await page.getByRole('button', { name: 'Passer' }).click(); // objectif
+  await page.getByRole('button', { name: 'Passer' }).click(); // code formateur
+  await expect(page.getByText('On prépare')).toBeVisible();
+  await expect(page).toHaveURL(/\/app\?bienvenue=1/, { timeout: 30_000 });
   expect(Date.now() - start).toBeLessThan(120_000);
-  await page.getByRole('link', { name: 'Continuer' }).click();
-  await expect(page).toHaveURL(/\/bienvenue\/pro/);
-  await expect(page.getByRole('button', { name: 'Passer Pro à l’année' })).toBeVisible();
-  await page.getByRole('link', { name: 'Continuer en Gratuit' }).click();
 
   // Dashboard, puis radar du plan gratuit
   await expect(page).toHaveURL(/\/app\?bienvenue=1/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Dashboard de Inès');
   await expect(page.getByText('Ton radar est prêt')).toBeVisible();
-  await page.getByRole('link', { name: 'Ouvrir le radar' }).click();
+  await page.getByRole('link', { name: 'Ouvrir le radar' }).first().click();
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Inès, voici tes produits du jour');
   await expect(page.getByText('Mode préparation', { exact: true })).toBeVisible();
   await expect(page.locator('a[href^="/app/produit/"]')).toHaveCount(3);
@@ -94,6 +94,7 @@ test('inscription avec un lien formateur : 3 mois de Pro offerts, sans carte', a
   await expect(page).toHaveURL(/bienvenue=essai/);
   await expect(page.getByText('Tes 3 mois de Pro sont activés')).toBeVisible();
   // Radar complet, score visible.
+  await page.goto('/app/radar');
   await expect(page.getByText(/autres produits à vendre aujourd’hui/)).toHaveCount(0);
   await expect(page.getByLabel(/^Score \d+ sur 100$/).first()).toBeVisible();
   await studentContext.close();

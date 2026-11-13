@@ -22,28 +22,35 @@ export async function signUpWithPassword(page: Page, email: string, password = '
 }
 
 /**
- * Onboarding complet : 3 écrans de profil, puis les produits du jour (étape passée ici) et l'offre Pro
- * (« Continuer en Gratuit », ou « Ouvrir mon radar » pendant l'essai offert par un formateur).
+ * Onboarding complet : 10 questions, une par écran (pseudo, objectif et code passés), puis « On prépare ton radar » et
+ * le dashboard.
  */
 export async function completeOnboarding(
   page: Page,
-  opts: { firstName?: string; range?: string; niches?: string[]; style?: string } = {},
+  opts: { firstName?: string; range?: string; affiliate?: string; niches?: string[]; style?: RegExp; code?: string } = {},
 ) {
   await expect(page).toHaveURL(/\/bienvenue/);
   await page.getByLabel('Ton prénom').fill(opts.firstName ?? 'Léa');
-  await page.getByText(opts.range ?? 'Entre 1 500 et 5 000', { exact: true }).click();
   await page.getByRole('button', { name: 'Continuer' }).click();
-  await expect(page).toHaveURL(/etape=2/);
-  for (const niche of opts.niches ?? ['Beauté et soins']) await page.getByText(niche, { exact: true }).click();
+  await page.getByRole('button', { name: 'Passer' }).click();
+  await page.getByRole('radio', { name: opts.range ?? 'Entre 5 000 et 20 000' }).click();
+  await page.getByRole('radio', { name: opts.affiliate ?? 'Oui' }).click();
+  await page.getByRole('radio', { name: /Quelques ventes/i }).click();
+  for (const niche of opts.niches ?? ['Beauté']) await page.getByRole('checkbox', { name: niche }).click();
   await page.getByRole('button', { name: 'Continuer' }).click();
-  await expect(page).toHaveURL(/etape=3/);
-  await page.getByText(opts.style ?? 'Face caméra', { exact: true }).click();
-  await page.getByRole('button', { name: 'Voir mes 3 produits du jour' }).click();
-  await expect(page).toHaveURL(/\/bienvenue\/produits/);
-  await page.getByRole('link', { name: 'Passer cette étape' }).click();
-  await expect(page).toHaveURL(/\/bienvenue\/pro/);
-  await page.getByRole('link', { name: /^(Ouvrir mon radar|Continuer en Gratuit)$/ }).click();
-  await expect(page).toHaveURL(/\/app\?bienvenue=/);
+  await page.getByRole('radio', { name: /4 à 7 vidéos/ }).click();
+  await page.getByRole('checkbox', { name: opts.style ?? /Face caméra/ }).click();
+  await page.getByRole('button', { name: 'Continuer' }).click();
+  await page.getByRole('button', { name: 'Passer' }).click();
+  if (opts.code) {
+    await page.getByLabel('Code formateur').fill(opts.code);
+    await page.getByRole('button', { name: 'Préparer mon radar' }).click();
+  } else if (await page.getByRole('button', { name: 'Passer' }).isVisible()) {
+    await page.getByRole('button', { name: 'Passer' }).click();
+  } else {
+    await page.getByRole('button', { name: 'Préparer mon radar' }).click();
+  }
+  await expect(page).toHaveURL(/\/app\?bienvenue=/, { timeout: 30_000 });
 }
 
 export async function newOnboardedUser(page: Page, prefix: string) {

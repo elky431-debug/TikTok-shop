@@ -932,3 +932,26 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      jour au plus (compté avant l'appel, même en cas d'échec), lancé après l'affichage de la page (pas d'attente) ou
      par « Mettre à jour ». On garde abonnés, j'aime, vidéos et pseudo : ni photo (adresse signée qui expire), ni bio.
      Sans clé ou sans pseudo : la tranche déclarée dans le compte, avec un lien pour la changer.
+170. **Onboarding en 10 écrans, une question chacun** (`app/bienvenue/onboarding-flow.tsx`, règles communes dans
+     `lib/onboarding-steps.ts`) : prénom, pseudo (facultatif, aperçu Nexscope), taille du compte, déjà affilié ?,
+     niveau, niches (3 au plus, les autres grisées avec un message), vidéos par semaine, styles (plusieurs), objectif de
+     gains (facultatif, « un repère, pas une promesse »), code formateur (facultatif). Grandes cartes cliquables (un
+     choix unique au doigt passe à la question suivante après 220 ms ; au clavier, « Continuer »), barre de progression
+     animée, glissement de 24 px en 200 ms, « Retour », « Passer » sur les questions facultatives, tout tient dans un
+     écran de 390 × 844 sans défiler (vérifié). Réponses gardées dans l'onglet en cas de rechargement, revérifiées
+     côté serveur à la fin. Écran « On prépare ton radar » (2,4 s au moins), puis le dashboard, produit du jour en
+     avant. Les anciennes étapes (3 produits, premier script, offre Pro) sont retirées : le dashboard les remplace
+     (produit du jour, « Écrire mes scripts », « Passer Pro » dans la barre latérale).
+171. **Nouvelles réponses du profil** (migration `20261116000100_onboarding_v2.sql`, appliquée par l'API de gestion) :
+     `affiliate_status`, `experience_level`, `videos_per_week`, `video_styles[]`, `onboarding_version`. Tranches
+     <1 000, 1 000–5 000, 5 000–20 000, 20 000–100 000, >100 000 ; les anciennes restent valides en base jusqu'à la
+     nouvelle réponse. Un nombre exact connu (préparation, Nexscope) donne la tranche précise « 1 500–5 000 » au-dessus du
+     seuil. Éligibilité (code et déclencheur `sync_eligibility`) : « pas encore » ⇒ préparation ; sous 1 500 ⇒
+     préparation ; 1 000–5 000 ⇒ affilié seulement si « oui ». Franchir le seuil dans « Préparation » efface le
+     « pas encore ». Vidéos par semaine ⇒ objectif hebdomadaire (3, 5 ou 7) et rythme proposé du plan ; objectif de
+     gains ⇒ la fiche `objectif_gains` du suivi des gains. Tout se modifie dans Compte.
+172. **Comptes existants** : `onboarding_version = 1` ⇒ `requireOnboardedViewer` les envoie une fois sur les 6 nouvelles
+     questions (taille, affilié, niveau, rythme, styles, objectif), réponses connues déjà cochées ; puis version 2.
+173. **Score « pour toi »** : facteurs par nouvelle tranche (les petits comptes privilégient faible concurrence et petit
+     prix, les gros la commission), facteur de niveau (débute : concurrence ×1,2 et prix ×1,15 ; vend régulièrement :
+     commission ×1,15), bonus de style si **un** des styles choisis se prête à la niche. Expliqué en phrases.

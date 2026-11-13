@@ -115,10 +115,11 @@ describe('bloc 11.3 · liste de vérification et courbe des abonnés', () => {
     entries = addFollowerEntry(entries, { date: '2026-11-03', count: 210 });
     entries = addFollowerEntry(entries, { date: '2026-11-10', count: 320 });
     expect(entries).toEqual([{ date: '2026-11-03', count: 210 }, { date: '2026-11-10', count: 320 }]);
-    expect(followerRangeFor(499)).toBe('0-500');
-    expect(followerRangeFor(1499)).toBe('500-1500');
+    expect(followerRangeFor(999)).toBe('0-1000');
+    expect(followerRangeFor(1499)).toBe('1000-5000');
     expect(followerRangeFor(1500)).toBe('1500-5000');
-    expect(followerRangeFor(25000)).toBe('20000+');
+    expect(followerRangeFor(25000)).toBe('20000-100000');
+    expect(followerRangeFor(150000)).toBe('100000+');
   });
 });
 
@@ -129,7 +130,7 @@ describe('bloc 11.4 · passage automatique au mode affilié', () => {
     expect(profile.eligibility).toBe('preparation');
 
     const first = await recordFollowers(repo, profile, { date: '2026-11-05', count: 820 }, '2026-11-12');
-    expect(first).toMatchObject({ eligibility: 'preparation', switched: false, range: '500-1500' });
+    expect(first).toMatchObject({ eligibility: 'preparation', switched: false, range: '0-1000' });
     profile = (await repo.getProfile('u'))!;
 
     const second = await recordFollowers(repo, profile, { date: '2026-11-12', count: 1530 }, '2026-11-12');
@@ -151,5 +152,17 @@ describe('bloc 11.4 · passage automatique au mode affilié', () => {
     expect(await declareThresholdReached(repo, profile, '2026-11-12')).toMatchObject({ eligibility: 'affilie', switched: true, range: '1500-5000' });
     expect((await getPreparation(repo, 'u')).data.followers).toEqual([]);
     expect(await declareThresholdReached(repo, (await repo.getProfile('u'))!, '2026-11-13')).toMatchObject({ switched: false });
+  });
+});
+
+describe('onboarding 2 · éligibilité', () => {
+  it('« pas encore » ⇒ préparation ; 1 000–5 000 ⇒ affilié seulement si la personne l’est déjà', async () => {
+    const { eligibilityFor } = await import('@/lib/profile-rules');
+    expect(eligibilityFor('0-1000', 'oui')).toBe('preparation');
+    expect(eligibilityFor('1000-5000', 'oui')).toBe('affilie');
+    expect(eligibilityFor('1000-5000', 'ne_sait_pas')).toBe('preparation');
+    expect(eligibilityFor('20000-100000', 'pas_encore')).toBe('preparation');
+    expect(eligibilityFor('20000-100000', null)).toBe('affilie');
+    expect(eligibilityFor('1500-5000', null)).toBe('affilie');
   });
 });

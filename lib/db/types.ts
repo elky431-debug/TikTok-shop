@@ -2,7 +2,20 @@ import type { NicheId } from '@/lib/niches';
 
 export type PlanId = 'free' | 'pro' | 'proplus';
 export type Eligibility = 'preparation' | 'affilie';
-export type FollowerRange = '0-500' | '500-1500' | '1500-5000' | '5000-20000' | '20000+';
+/** Tranches proposées depuis l'onboarding 2, puis anciennes tranches (comptes existants, jusqu'à leur nouvelle réponse). */
+export type FollowerRange =
+  | '0-1000'
+  | '1000-5000'
+  | '5000-20000'
+  | '20000-100000'
+  | '100000+'
+  | '0-500'
+  | '500-1500'
+  | '1500-5000'
+  | '20000+';
+export type AffiliateStatus = 'oui' | 'pas_encore' | 'ne_sait_pas';
+export type ExperienceLevel = 'debute' | 'quelques_ventes' | 'regulier';
+export type VideosPerWeek = '1-3' | '4-7' | '7+';
 export type Theme = 'system' | 'light' | 'dark';
 export type Trend = 'explose' | 'monte' | 'stable' | 'baisse';
 /** Les 8 formats du studio (contrainte `scripts.format` élargie par la migration 20261115000410). */
@@ -26,6 +39,14 @@ export interface Profile {
   niches: NicheId[];
   video_style: string | null;
   example_phrase: string | null;
+  /** Réponse « déjà affilié ? » de l'onboarding (null = pas répondu). */
+  affiliate_status: AffiliateStatus | null;
+  experience_level: ExperienceLevel | null;
+  videos_per_week: VideosPerWeek | null;
+  /** Styles de vidéo (plusieurs possibles) ; `video_style` garde le premier. */
+  video_styles: string[];
+  /** 1 = ancien onboarding (les nouvelles questions seront posées une fois), 2 = onboarding actuel. */
+  onboarding_version: number;
   plan: PlanId;
   eligibility: Eligibility;
   referral_code: string;
@@ -333,6 +354,11 @@ export type ProfileSelfUpdate = Partial<
     | 'niches'
     | 'video_style'
     | 'example_phrase'
+    | 'affiliate_status'
+    | 'experience_level'
+    | 'videos_per_week'
+    | 'video_styles'
+    | 'onboarding_version'
     | 'digest_email'
     | 'digest_discord'
     | 'digest_hour'

@@ -221,7 +221,11 @@ export default async function DashboardPage({ searchParams }: { searchParams: Re
 
       {/* Zone principale : produit du jour d'abord sur téléphone, gains à gauche sur grand écran */}
       <section className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-start lg:gap-8">
-        <div className="order-1 rounded-2xl border border-l-4 border-line border-l-cyan-ink bg-bg p-6 md:p-7 lg:order-2 lg:col-span-4">
+        <div id="produit-du-jour"
+          className={cn(
+            'order-1 scroll-mt-24 rounded-2xl border border-l-4 border-line border-l-cyan-ink bg-bg p-6 md:p-7 lg:order-2 lg:col-span-4',
+            welcome && product && 'shadow-[0_0_60px_-12px_rgb(var(--cyan)/0.55)] ring-1 ring-cyan-ink/50',
+          )}>
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted">Produit du jour</p>
             {product ? <Badge tone="cyan">n°1 du radar</Badge> : null}

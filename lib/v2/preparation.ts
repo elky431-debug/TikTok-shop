@@ -5,7 +5,7 @@ import type { Repo } from '@/lib/db';
 import type { FollowerRange, Product, Profile } from '@/lib/db/types';
 import { NICHE_IDS, nicheLabel, type NicheId } from '@/lib/niches';
 import { isPaidPlan } from '@/lib/plans';
-import { AFFILIATE_THRESHOLD, eligibilityFor, FOLLOWER_RANGES, videoStyleLabel } from '@/lib/profile-rules';
+import { AFFILIATE_THRESHOLD, eligibilityFor, videoStyleLabel } from '@/lib/profile-rules';
 import { clamp, formatPercent } from '@/lib/utils';
 
 /**
@@ -304,16 +304,32 @@ export function checklistProgress(checked: Record<string, boolean>) {
   return { done, total: CHECKLIST.length };
 }
 
-/** Tranche d'abonnés correspondant à un nombre. */
+/**
+ * Tranche d'abonnés correspondant à un nombre exact. Entre 1 500 et 5 000, la tranche précise « 1500-5000 » (au-dessus
+ * du seuil) plutôt que « 1000-5000 » qui le chevauche : un nombre connu tranche la question de l'éligibilité.
+ */
 export function followerRangeFor(count: number): FollowerRange {
-  if (count < 500) return '0-500';
-  if (count < AFFILIATE_THRESHOLD) return '500-1500';
+  if (count < 1000) return '0-1000';
+  if (count < AFFILIATE_THRESHOLD) return '1000-5000';
   if (count < 5000) return '1500-5000';
   if (count < 20000) return '5000-20000';
-  return '20000+';
+  if (count < 100000) return '20000-100000';
+  return '100000+';
 }
 
-const rangeRank = (range: FollowerRange | null) => FOLLOWER_RANGES.findIndex((r) => r.id === range);
+/** Borne basse de chaque tranche (anciennes comprises), pour les comparer. */
+const RANGE_MIN: Record<FollowerRange, number> = {
+  '0-500': 0,
+  '0-1000': 0,
+  '500-1500': 500,
+  '1000-5000': 1000,
+  '1500-5000': 1500,
+  '5000-20000': 5000,
+  '20000+': 20000,
+  '20000-100000': 20000,
+  '100000+': 100000,
+};
+const rangeRank = (range: FollowerRange | null) => (range ? RANGE_MIN[range] : -1);
 
 /** Ajoute (ou remplace, même jour) une saisie d'abonnés, triée par date, 365 points au plus. */
 export function addFollowerEntry(entries: FollowerEntry[], entry: FollowerEntry): FollowerEntry[] {
@@ -336,12 +352,18 @@ export function nextFollowerRange(current: FollowerRange | null, count: number):
  * Enregistre la saisie et met le profil à jour (tranche d'abonnés ; l'éligibilité suit, par les règles de
  * lib/profile-rules.ts en local et le déclencheur `sync_eligibility` dans Supabase). Renvoie le nouveau statut.
  */
-export async function recordFollowers(repo: Repo, profile: Pick<Profile, 'id' | 'follower_range' | 'eligibility'>, entry: FollowerEntry, today: string) {
+export async function recordFollowers(repo: Repo, profile: Pick<Profile, 'id' | 'follower_range' | 'eligibility'> & Partial<Pick<Profile, 'affiliate_status'>>, entry: FollowerEntry, today: string) {
   const prep = await getPreparation(repo, profile.id);
   const followers = addFollowerEntry(prep.data.followers, entry);
   const latest = followers.at(-1)!;
   const range = nextFollowerRange(profile.follower_range, latest.count);
-  const updated = range ? await repo.updateProfile(profile.id, { follower_range: range }) : null;
+  // Au-dessus du seuil, « pas encore affilié » ne bloque plus le mode affilié : c'est le moment de faire la demande.
+  const updated = range
+    ? await repo.updateProfile(profile.id, {
+        follower_range: range,
+        ...(latest.count >= AFFILIATE_THRESHOLD && profile.affiliate_status === 'pas_encore' ? { affiliate_status: null } : {}),
+      })
+    : null;
   const eligibility = updated?.eligibility ?? profile.eligibility;
   const switched = profile.eligibility === 'preparation' && eligibility === 'affilie';
   await savePreparation(repo, profile.id, { followers, switched_at: switched ? today : prep.data.switched_at });
@@ -352,9 +374,12 @@ export async function recordFollowers(repo: Repo, profile: Pick<Profile, 'id' | 
  * « J'ai atteint le seuil » sans nombre précis : tranche 1 500 – 5 000. Aucun point n'est ajouté à la courbe (on
  * n'invente pas de chiffre).
  */
-export async function declareThresholdReached(repo: Repo, profile: Pick<Profile, 'id' | 'follower_range' | 'eligibility'>, today: string) {
+export async function declareThresholdReached(repo: Repo, profile: Pick<Profile, 'id' | 'follower_range' | 'eligibility'> & Partial<Pick<Profile, 'affiliate_status'>>, today: string) {
   if (profile.eligibility === 'affilie') return { eligibility: profile.eligibility, switched: false, range: profile.follower_range };
-  const updated = await repo.updateProfile(profile.id, { follower_range: '1500-5000' });
+  const updated = await repo.updateProfile(profile.id, {
+    follower_range: '1500-5000',
+    ...(profile.affiliate_status === 'pas_encore' ? { affiliate_status: null } : {}),
+  });
   const switched = updated.eligibility === 'affilie';
   if (switched) await savePreparation(repo, profile.id, { switched_at: today });
   return { eligibility: updated.eligibility, switched, range: updated.follower_range };

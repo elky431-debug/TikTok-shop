@@ -10,7 +10,10 @@ import { getRepo } from '@/lib/db';
 import type { Theme } from '@/lib/db/types';
 import { isLocalMode } from '@/lib/env';
 import { isNicheId, type NicheId } from '@/lib/niches';
-import { isFollowerRange, isVideoStyle } from '@/lib/profile-rules';
+import { MAX_MONTHLY_GOAL_EUROS } from '@/lib/onboarding-steps';
+import { isAffiliateStatus, isExperienceLevel, isFollowerRange, isVideosPerWeek, isVideoStyle, VIDEOS_PER_WEEK } from '@/lib/profile-rules';
+import { setWeeklyGoal } from '@/lib/v2/board';
+import { setEarningsGoal } from '@/lib/v2/earnings-store';
 import { setDisabledLifecycle } from '@/lib/lifecycle/preferences';
 import { cancelScheduledEmails } from '@/lib/lifecycle/scheduled';
 import { isLifecycleType, LIFECYCLE_TYPES } from '@/lib/lifecycle/types';
@@ -28,23 +31,37 @@ export async function updateProfileAction(formData: FormData) {
   const handle = String(formData.get('pseudo') ?? '').trim().replace(/^@+/, '').slice(0, 40);
   const range = formData.get('abonnes');
   const niches = [...new Set(formData.getAll('niches').filter(isNicheId))] as NicheId[];
-  const style = formData.get('style');
+  const styles = [...new Set(formData.getAll('styles').filter(isVideoStyle))];
+  const affiliate = String(formData.get('affilie') ?? '');
+  const level = String(formData.get('niveau') ?? '');
+  const rhythm = String(formData.get('rythme') ?? '');
+  const goalRaw = String(formData.get('objectif') ?? '').replace(/[\s€]/g, '');
+  const goal = goalRaw ? Number(goalRaw.replace(',', '.')) : null;
   const phrase = String(formData.get('phrase') ?? '').trim().slice(0, 240);
 
   if (!firstName) back('erreur=prenom#profil');
   if (handle && !/^[A-Za-z0-9._]{2,24}$/.test(handle)) back('erreur=pseudo#profil');
   if (!isFollowerRange(range)) back('erreur=abonnes#profil');
   if (niches.length === 0 || niches.length > 3) back('erreur=niches#niches');
-  if (!isVideoStyle(style)) back('erreur=style#profil');
+  if (styles.length === 0) back('erreur=style#profil');
+  if (goal !== null && !(Number.isFinite(goal) && goal > 0 && goal <= MAX_MONTHLY_GOAL_EUROS)) back('erreur=objectif#profil');
 
-  await getRepo().updateProfile(profile.id, {
+  const repo = getRepo();
+  await repo.updateProfile(profile.id, {
     first_name: firstName,
     tiktok_handle: handle || null,
     follower_range: range,
+    affiliate_status: isAffiliateStatus(affiliate) ? affiliate : null,
+    experience_level: isExperienceLevel(level) ? level : null,
+    videos_per_week: isVideosPerWeek(rhythm) ? rhythm : null,
     niches,
-    video_style: style,
+    video_styles: styles,
+    video_style: styles[0],
     example_phrase: phrase || null,
   });
+  const weekly = VIDEOS_PER_WEEK.find((v) => v.id === rhythm)?.weekly;
+  if (weekly && rhythm !== profile.videos_per_week) await setWeeklyGoal(repo, profile.id, weekly);
+  await setEarningsGoal(repo, profile.id, goal === null ? null : Math.round(goal * 100));
   revalidatePath('/app', 'layout');
   back('ok=profil#profil');
 }

@@ -10,7 +10,7 @@ import { dueLifecycleEmails, pickTonight, type LifecycleContext } from '@/lib/li
 import { runLifecycleNightly } from '@/lib/lifecycle/nightly';
 import { setDisabledLifecycle } from '@/lib/lifecycle/preferences';
 import { getLifecycleLog } from '@/lib/lifecycle/send';
-import { onOnboardingCompleted, welcomeProducts, WELCOME_STEPS } from '@/lib/onboarding';
+import { ONBOARDING_STEPS, onOnboardingCompleted, welcomeProducts } from '@/lib/onboarding';
 import { createScripts } from '@/lib/studio';
 
 let repo: LocalRepo;
@@ -113,7 +113,7 @@ describe('moment « waouh » de l’inscription', () => {
     await refreshCatalog({ repo, provider: new MockProvider(), date: new Date().toISOString().slice(0, 10) });
     await repo.ensureProfile({ id: 'neo', email: 'neo@test.fr' });
     const profile = await repo.updateProfile('neo', { niches: ['beaute'], first_name: 'Néo', video_style: 'face_camera', onboarded_at: new Date().toISOString() });
-    expect(WELCOME_STEPS).toHaveLength(6);
+    expect(ONBOARDING_STEPS).toHaveLength(10);
     const started = Date.now();
     const { products } = await welcomeProducts(profile);
     expect(products).toHaveLength(3);

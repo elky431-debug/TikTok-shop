@@ -1,4 +1,4 @@
-import type { FollowerRange, Product, Profile, ScoreBreakdown, ScorePartKey } from '@/lib/db/types';
+import type { ExperienceLevel, FollowerRange, Product, Profile, ScoreBreakdown, ScorePartKey } from '@/lib/db/types';
 import { nicheShort, type NicheId } from '@/lib/niches';
 import { followerRangeLabel, videoStyleLabel, type VideoStyleId } from '@/lib/profile-rules';
 import { dailyScale, WEIGHTS } from '@/lib/score';
@@ -78,11 +78,26 @@ export function pointsWith(breakdown: Pick<ScoreBreakdown, 'parts'> | null, weig
  * de la place et un achat facile) ; gros compte : la commission par vente compte plus (l'audience fait le volume).
  */
 export const FOLLOWER_FACTORS: Record<FollowerRange, Partial<Weights>> = {
+  '0-1000': { saturation: 1.5, prix: 1.3, commission: 0.8 },
+  '1000-5000': { saturation: 1.2, prix: 1.1 },
+  '5000-20000': { commission: 1.25, saturation: 0.8 },
+  '20000-100000': { commission: 1.4, saturation: 0.7 },
+  '100000+': { commission: 1.5, saturation: 0.6 },
+  // Anciennes tranches (comptes qui n'ont pas encore répondu au nouvel onboarding).
   '0-500': { saturation: 1.5, prix: 1.3, commission: 0.8 },
   '500-1500': { saturation: 1.4, prix: 1.2, commission: 0.9 },
   '1500-5000': {},
-  '5000-20000': { commission: 1.25, saturation: 0.8 },
   '20000+': { commission: 1.4, saturation: 0.7 },
+};
+
+/**
+ * Niveau → multiplicateur de chaque poids. Qui débute a besoin d'un produit facile à vendre (peu de concurrence, prix
+ * bas) ; qui vend déjà régulièrement peut viser la commission. « Quelques ventes » : les poids du compte suffisent.
+ */
+export const LEVEL_FACTORS: Record<ExperienceLevel, Partial<Weights>> = {
+  debute: { saturation: 1.2, prix: 1.15 },
+  quelques_ventes: {},
+  regulier: { commission: 1.15 },
 };
 
 /** Niches où chaque style vidéo se montre le plus facilement (réglage de départ, voir B9). */
@@ -97,16 +112,28 @@ export const STYLE_NICHES: Record<VideoStyleId, NicheId[]> = {
 export const STYLE_BONUS = 5;
 export const OUTSIDE_NICHES_MALUS = 10;
 
-export type PersonalProfile = Pick<Profile, 'follower_range' | 'video_style' | 'niches'>;
+export type PersonalProfile = Pick<Profile, 'follower_range' | 'video_style' | 'niches'> &
+  Partial<Pick<Profile, 'video_styles' | 'experience_level'>>;
 
-export function personalWeights(base: Weights, range: FollowerRange | null): Weights {
+export function personalWeights(base: Weights, range: FollowerRange | null, level: ExperienceLevel | null = null): Weights {
   const factors = (range && FOLLOWER_FACTORS[range]) || {};
-  return Object.fromEntries(SCORE_KEYS.map((k) => [k, base[k] * (factors[k] ?? 1)])) as Weights;
+  const levelFactors = (level && LEVEL_FACTORS[level]) || {};
+  return Object.fromEntries(SCORE_KEYS.map((k) => [k, base[k] * (factors[k] ?? 1) * (levelFactors[k] ?? 1)])) as Weights;
+}
+
+/** Styles de la personne (plusieurs depuis l'onboarding 2 ; sinon le style unique d'avant). */
+function stylesOf(profile: PersonalProfile): VideoStyleId[] {
+  const styles = profile.video_styles?.length ? profile.video_styles : profile.video_style ? [profile.video_style] : [];
+  return styles.filter((s): s is VideoStyleId => s in STYLE_NICHES);
+}
+
+/** Premier style qui se prête à la niche, ou null. */
+function fittingStyle(profile: PersonalProfile, niche: NicheId): VideoStyleId | null {
+  return stylesOf(profile).find((s) => STYLE_NICHES[s].includes(niche)) ?? null;
 }
 
 function styleFits(profile: PersonalProfile, niche: NicheId): boolean {
-  const niches = STYLE_NICHES[profile.video_style as VideoStyleId];
-  return Boolean(niches?.includes(niche));
+  return fittingStyle(profile, niche) !== null;
 }
 
 function outsideNiches(profile: PersonalProfile, niche: NicheId): boolean {
@@ -114,7 +141,7 @@ function outsideNiches(profile: PersonalProfile, niche: NicheId): boolean {
 }
 
 export function personalPoints(product: Pick<Product, 'niche' | 'latest_breakdown'>, profile: PersonalProfile, base: Weights): number | null {
-  const points = pointsWith(product.latest_breakdown, personalWeights(base, profile.follower_range));
+  const points = pointsWith(product.latest_breakdown, personalWeights(base, profile.follower_range, profile.experience_level ?? null));
   if (points === null) return null;
   const bonus = (styleFits(profile, product.niche) ? STYLE_BONUS : 0) - (outsideNiches(profile, product.niche) ? OUTSIDE_NICHES_MALUS : 0);
   return clamp(points + bonus, 0, 100);
@@ -161,7 +188,7 @@ export function personalReasons(product: Pick<Product, 'niche'>, profile: Person
   const factors = range ? FOLLOWER_FACTORS[range] : null;
   if (range && factors && Object.keys(factors).length) {
     const parts = (Object.entries(factors) as Array<[ScorePartKey, number]>).map(([k, f]) => `${WEIGHT_LABELS[k].toLowerCase()} ${pct(f)}`);
-    const small = range === '0-500' || range === '500-1500';
+    const small = range === '0-500' || range === '500-1500' || range === '0-1000' || range === '1000-5000';
     reasons.push(
       `Ton compte (${followerRangeLabel(range).toLowerCase()} abonnés) : ${parts.join(', ')} sur le poids. ${
         small
@@ -174,8 +201,15 @@ export function personalReasons(product: Pick<Product, 'niche'>, profile: Person
   } else {
     reasons.push('Indique ta tranche d’abonnés dans ton compte pour un score encore plus juste.');
   }
-  if (styleFits(profile, product.niche as NicheId)) {
-    reasons.push(`Ton style « ${videoStyleLabel(profile.video_style)} » se prête bien aux produits ${nicheShort(product.niche).toLowerCase()} : +${STYLE_BONUS} points.`);
+  const level = profile.experience_level ?? null;
+  if (level === 'debute') {
+    reasons.push('Tu débutes : la faible concurrence et un petit prix pèsent un peu plus, pour une première vente plus facile.');
+  } else if (level === 'regulier') {
+    reasons.push('Tu vends déjà régulièrement : la commission pèse un peu plus.');
+  }
+  const fitting = fittingStyle(profile, product.niche as NicheId);
+  if (fitting) {
+    reasons.push(`Ton style « ${videoStyleLabel(fitting)} » se prête bien aux produits ${nicheShort(product.niche).toLowerCase()} : +${STYLE_BONUS} points.`);
   }
   if (outsideNiches(profile, product.niche as NicheId)) {
     reasons.push(`Ce produit n’est pas dans tes niches : −${OUTSIDE_NICHES_MALUS} points.`);

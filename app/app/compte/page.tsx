@@ -14,7 +14,8 @@ import { LIFECYCLE_INFO, LIFECYCLE_TYPES } from '@/lib/lifecycle/types';
 import { NICHES } from '@/lib/niches';
 import { getPlan, isPaidPlan } from '@/lib/plans';
 import { enabledRegions, REGION_IDS, REGIONS } from '@/lib/regions';
-import { FOLLOWER_RANGES, VIDEO_STYLES } from '@/lib/profile-rules';
+import { AFFILIATE_STATUSES, EXPERIENCE_LEVELS, FOLLOWER_RANGES, isVideoStyle, VIDEO_STYLES, VIDEOS_PER_WEEK } from '@/lib/profile-rules';
+import { getEarningsGoal } from '@/lib/v2/earnings-store';
 import { formatLongDate } from '@/lib/utils';
 import { openPortalAction } from '../passer-pro/actions';
 import { deleteAccountAction, updateEmailPreferencesAction, updatePreferencesAction, updateProfileAction, updateRegionAction } from './actions';
@@ -33,7 +34,8 @@ const MESSAGES: Record<string, { tone: 'gain' | 'rose'; text: string }> = {
   'erreur=pseudo': { tone: 'rose', text: 'Ton pseudo TikTok ne peut contenir que des lettres, chiffres, points et tirets bas.' },
   'erreur=abonnes': { tone: 'rose', text: 'Choisis ta tranche d’abonnés.' },
   'erreur=niches': { tone: 'rose', text: 'Choisis entre 1 et 3 niches.' },
-  'erreur=style': { tone: 'rose', text: 'Choisis ton style de vidéo.' },
+  'erreur=style': { tone: 'rose', text: 'Choisis au moins un style de vidéo.' },
+  'erreur=objectif': { tone: 'rose', text: 'Ton objectif doit être un montant entre 1 € et 100 000 €, ou vide.' },
   'erreur=confirmation': { tone: 'rose', text: 'Pour supprimer ton compte, tape SUPPRIMER en majuscules.' },
   'erreur=resiliation': { tone: 'rose', text: 'L’abonnement n’a pas pu être résilié, ton compte n’a pas été supprimé. Réessaie ou écris-nous.' },
   'erreur=paiement-indisponible': { tone: 'rose', text: 'Le paiement n’est pas encore activé sur ce site.' },
@@ -43,11 +45,15 @@ const MESSAGES: Record<string, { tone: 'gain' | 'rose'; text: string }> = {
 export default async function ComptePage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
   const { profile, user } = await requireOnboardedViewer('/app/compte');
   const repo = getRepo();
-  const [subscription, coach, disabledEmails] = await Promise.all([
+  const [subscription, coach, disabledEmails, goal] = await Promise.all([
     repo.getActiveSubscription(profile.id),
     profile.coach_id ? repo.getCoachById(profile.coach_id) : Promise.resolve(null),
     getDisabledLifecycle(profile.id),
+    getEarningsGoal(repo, profile.id),
   ]);
+  // Une ancienne tranche n'est plus proposée : la liste demande de rechoisir.
+  const currentRange = FOLLOWER_RANGES.some((r) => r.id === profile.follower_range) ? (profile.follower_range as string) : '';
+  const currentStyles = (profile.video_styles?.length ? profile.video_styles : profile.video_style ? [profile.video_style] : []).filter(isVideoStyle);
   const plan = getPlan(profile.plan);
   const message = Object.entries(searchParams)
     .map(([k, v]) => MESSAGES[`${k}=${v}`])
@@ -161,15 +167,48 @@ export default async function ComptePage({ searchParams }: { searchParams: Recor
                 <Input id="pseudo" name="pseudo" defaultValue={profile.tiktok_handle ?? ''} maxLength={40} autoCapitalize="none" />
               </Field>
             </div>
-            <Field label="Tranche d’abonnés" htmlFor="abonnes" hint="À partir de 1 500 abonnés, tu sors du mode préparation.">
-              <Select id="abonnes" name="abonnes" defaultValue={profile.follower_range ?? '0-500'} aria-describedby="abonnes-aide">
-                {FOLLOWER_RANGES.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.label}
-                  </option>
-                ))}
-              </Select>
-            </Field>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Taille de mon compte" htmlFor="abonnes" hint="Sous 1 500 abonnés, tu es en mode préparation.">
+                <Select id="abonnes" name="abonnes" defaultValue={currentRange} aria-describedby="abonnes-aide" required>
+                  {currentRange ? null : <option value="">Choisis</option>}
+                  {FOLLOWER_RANGES.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.label}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Déjà affilié TikTok Shop ?" htmlFor="affilie">
+                <Select id="affilie" name="affilie" defaultValue={profile.affiliate_status ?? ''}>
+                  <option value="">Pas répondu</option>
+                  {AFFILIATE_STATUSES.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.label}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Mon niveau" htmlFor="niveau">
+                <Select id="niveau" name="niveau" defaultValue={profile.experience_level ?? ''}>
+                  <option value="">Pas répondu</option>
+                  {EXPERIENCE_LEVELS.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {l.label}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Vidéos par semaine" htmlFor="rythme" hint="Ton objectif de la semaine et le rythme de ton plan.">
+                <Select id="rythme" name="rythme" defaultValue={profile.videos_per_week ?? ''} aria-describedby="rythme-aide">
+                  <option value="">Pas répondu</option>
+                  {VIDEOS_PER_WEEK.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.label}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
             <fieldset id="niches" className="scroll-mt-20">
               <legend className="mb-2 text-sm font-semibold">Mes niches (1 à 3)</legend>
               <div className="grid gap-2 sm:grid-cols-2">
@@ -181,15 +220,26 @@ export default async function ComptePage({ searchParams }: { searchParams: Recor
               </div>
             </fieldset>
             <fieldset>
-              <legend className="mb-2 text-sm font-semibold">Mon style de vidéo</legend>
+              <legend className="mb-2 text-sm font-semibold">Mes styles de vidéo (un ou plusieurs)</legend>
               <div className="grid gap-2 sm:grid-cols-2">
                 {VIDEO_STYLES.map((s) => (
-                  <ChoiceChip key={s.id} type="radio" name="style" value={s.id} defaultChecked={profile.video_style === s.id}>
+                  <ChoiceChip key={s.id} name="styles" value={s.id} defaultChecked={currentStyles.includes(s.id)}>
                     {s.label}
                   </ChoiceChip>
                 ))}
               </div>
             </fieldset>
+            <Field
+              label="Mon objectif de gains par mois (facultatif)"
+              htmlFor="objectif"
+              hint="Un repère personnel, pas une promesse. Laisse vide pour ne pas en avoir."
+              className="scroll-mt-20"
+            >
+              <div id="objectifs" className="relative max-w-xs scroll-mt-20">
+                <Input id="objectif" name="objectif" inputMode="numeric" defaultValue={goal.cents ? String(Math.round(goal.cents / 100)) : ''} className="pr-12" aria-describedby="objectif-aide" />
+                <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm text-muted">€</span>
+              </div>
+            </Field>
             <Field label="Une phrase que je dirais" htmlFor="phrase">
               <Textarea id="phrase" name="phrase" defaultValue={profile.example_phrase ?? ''} maxLength={240} />
             </Field>

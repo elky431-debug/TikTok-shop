@@ -373,6 +373,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          affiliate_status: string | null
           coach_id: string | null
           created_at: string
           digest_discord: boolean
@@ -382,12 +383,14 @@ export type Database = {
           eligibility: Database["public"]["Enums"]["eligibility"]
           email: string
           example_phrase: string | null
+          experience_level: string | null
           first_name: string | null
           follower_range: string | null
           id: string
           last_seen_at: string | null
           niches: string[]
           onboarded_at: string | null
+          onboarding_version: number
           plan: Database["public"]["Enums"]["plan_id"]
           referral_code: string
           referred_by: string | null
@@ -398,8 +401,11 @@ export type Database = {
           tiktok_handle: string | null
           trial_used: boolean
           video_style: string | null
+          video_styles: string[]
+          videos_per_week: string | null
         }
         Insert: {
+          affiliate_status?: string | null
           coach_id?: string | null
           created_at?: string
           digest_discord?: boolean
@@ -409,12 +415,14 @@ export type Database = {
           eligibility?: Database["public"]["Enums"]["eligibility"]
           email: string
           example_phrase?: string | null
+          experience_level?: string | null
           first_name?: string | null
           follower_range?: string | null
           id: string
           last_seen_at?: string | null
           niches?: string[]
           onboarded_at?: string | null
+          onboarding_version?: number
           plan?: Database["public"]["Enums"]["plan_id"]
           referral_code: string
           referred_by?: string | null
@@ -425,8 +433,11 @@ export type Database = {
           tiktok_handle?: string | null
           trial_used?: boolean
           video_style?: string | null
+          video_styles?: string[]
+          videos_per_week?: string | null
         }
         Update: {
+          affiliate_status?: string | null
           coach_id?: string | null
           created_at?: string
           digest_discord?: boolean
@@ -436,12 +447,14 @@ export type Database = {
           eligibility?: Database["public"]["Enums"]["eligibility"]
           email?: string
           example_phrase?: string | null
+          experience_level?: string | null
           first_name?: string | null
           follower_range?: string | null
           id?: string
           last_seen_at?: string | null
           niches?: string[]
           onboarded_at?: string | null
+          onboarding_version?: number
           plan?: Database["public"]["Enums"]["plan_id"]
           referral_code?: string
           referred_by?: string | null
@@ -452,6 +465,8 @@ export type Database = {
           tiktok_handle?: string | null
           trial_used?: boolean
           video_style?: string | null
+          video_styles?: string[]
+          videos_per_week?: string | null
         }
         Relationships: [
           {

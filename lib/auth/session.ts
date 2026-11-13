@@ -49,7 +49,8 @@ export async function requireViewer(next = '/app'): Promise<Viewer> {
 /** Exige un compte dont l'onboarding est terminé. */
 export async function requireOnboardedViewer(next = '/app'): Promise<Viewer> {
   const viewer = await requireViewer(next);
-  if (!viewer.profile.onboarded_at) redirect('/bienvenue');
+  // Pas encore d'onboarding, ou ancien onboarding : les nouvelles questions sont posées une fois.
+  if (!viewer.profile.onboarded_at || (viewer.profile.onboarding_version ?? 1) < 2) redirect('/bienvenue');
   return viewer;
 }
 

@@ -4,11 +4,7 @@ import type { Profile } from '@/lib/db/types';
 import { sendLifecycleEmail } from '@/lib/lifecycle/send';
 import { getRadar, parseFilters, type ProductView } from '@/lib/radar';
 
-/**
- * Parcours de bienvenue, « moment waouh » en moins de 2 minutes : 3 écrans de profil courts (toi, niches, style), puis
- * les 3 produits du jour, un script écrit sur l'un d'eux (simulé sans clé d'IA), et l'offre Pro.
- */
-export const WELCOME_STEPS = ['Toi', 'Niches', 'Style', 'Produits', 'Script', 'Offre'] as const;
+export * from './onboarding-steps';
 
 /** Fin du profil : essai de 3 mois si l'élève vient d'un formateur, e-mail de bienvenue tout de suite. */
 export async function onOnboardingCompleted(userId: string): Promise<{ trialStarted: boolean; welcomeSent: boolean }> {

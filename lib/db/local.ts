@@ -119,6 +119,11 @@ function defaultProfile(user: { id: string; email: string }, referralCode: strin
     niches: [],
     video_style: null,
     example_phrase: null,
+    affiliate_status: null,
+    experience_level: null,
+    videos_per_week: null,
+    video_styles: [],
+    onboarding_version: 1,
     plan: 'free',
     eligibility: 'preparation',
     referral_code: referralCode,
@@ -182,6 +187,15 @@ export class LocalRepo implements Repo {
       try {
         const parsed = JSON.parse(fs.readFileSync(this.file, 'utf8')) as Partial<LocalData>;
         data = { ...emptyLocalData(), ...parsed, version: 1 };
+        // Profils écrits avant l'onboarding 2 : mêmes valeurs par défaut que la migration Supabase.
+        data.profiles = data.profiles.map((p) => ({
+          ...p,
+          affiliate_status: p.affiliate_status ?? null,
+          experience_level: p.experience_level ?? null,
+          videos_per_week: p.videos_per_week ?? null,
+          video_styles: p.video_styles ?? (p.video_style ? [p.video_style] : []),
+          onboarding_version: p.onboarding_version ?? 1,
+        }));
       } catch {
         data = emptyLocalData();
       }
@@ -295,7 +309,9 @@ export class LocalRepo implements Repo {
       const profile = d.profiles.find((p) => p.id === userId);
       if (!profile) throw new Error('Profil introuvable');
       Object.assign(profile, patch);
-      if (patch.follower_range !== undefined) profile.eligibility = eligibilityFor(profile.follower_range);
+      if (patch.follower_range !== undefined || patch.affiliate_status !== undefined) {
+        profile.eligibility = eligibilityFor(profile.follower_range, profile.affiliate_status);
+      }
       return profile;
     });
   }

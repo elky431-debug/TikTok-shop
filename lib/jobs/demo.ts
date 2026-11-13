@@ -12,9 +12,14 @@ export async function seedDemoAccounts(repo: Repo): Promise<string[]> {
   const coachProfile = await repo.ensureProfile(coachUser);
   await repo.updateProfile(coachUser.id, {
     first_name: 'Camille',
-    follower_range: '20000+',
+    follower_range: '20000-100000',
+    affiliate_status: 'oui',
+    experience_level: 'regulier',
+    videos_per_week: '4-7',
     niches: ['beaute', 'maison'],
     video_style: 'face_camera',
+    video_styles: ['face_camera'],
+    onboarding_version: 2,
     onboarded_at: new Date().toISOString(),
   });
   let coach = await repo.getCoachByUserId(coachUser.id);
@@ -26,16 +31,20 @@ export async function seedDemoAccounts(repo: Repo): Promise<string[]> {
   });
 
   const students = [
-    { id: '00000000-0000-4000-8000-0000000000e1', email: 'eleve1@tracktout.local', first_name: 'Inès', range: '500-1500' as const },
-    { id: '00000000-0000-4000-8000-0000000000e2', email: 'eleve2@tracktout.local', first_name: 'Yanis', range: '1500-5000' as const },
+    { id: '00000000-0000-4000-8000-0000000000e1', email: 'eleve1@tracktout.local', first_name: 'Inès', range: '0-1000' as const },
+    { id: '00000000-0000-4000-8000-0000000000e2', email: 'eleve2@tracktout.local', first_name: 'Yanis', range: '5000-20000' as const },
   ];
   for (const s of students) {
     await repo.ensureProfile(s);
     await repo.updateProfile(s.id, {
       first_name: s.first_name,
       follower_range: s.range,
+      experience_level: 'debute',
+      videos_per_week: '1-3',
       niches: ['beaute'],
       video_style: 'voix_off',
+      video_styles: ['voix_off'],
+      onboarding_version: 2,
       onboarded_at: new Date().toISOString(),
       last_seen_at: new Date().toISOString(),
       coach_id: coach.id,

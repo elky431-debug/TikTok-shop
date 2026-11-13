@@ -11,6 +11,7 @@ const realStripe = process.env.E2E_STRIPE === '1';
 
 test('paiement : passer Pro, voir tout le radar, puis résilier', async ({ page }) => {
   await newOnboardedUser(page, 'paiement');
+  await page.goto('/app/radar');
   await expect(page.getByText(/autres produits à vendre aujourd’hui/)).toBeVisible();
 
   await page.getByRole('link', { name: 'Passer Pro' }).first().click();

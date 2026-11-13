@@ -1,3 +1,4 @@
+import { rhythmFor } from '@/lib/profile-rules';
 import type { Metadata } from 'next';
 import { CalendarDays, LayoutGrid } from 'lucide-react';
 import Link from 'next/link';
@@ -67,7 +68,7 @@ export default async function PlanPage({ searchParams }: { searchParams: Record<
               </Select>
             </Field>
             <Field label="Rythme" htmlFor="rythme">
-              <Select id="rythme" name="rythme" defaultValue="5">
+              <Select id="rythme" name="rythme" defaultValue={String(rhythmFor(profile.videos_per_week))}>
                 {RHYTHMS.map((r) => (
                   <option key={r} value={r}>
                     {r} par semaine ({RHYTHM_HINTS[r]})

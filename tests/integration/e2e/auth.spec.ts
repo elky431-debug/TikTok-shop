@@ -39,19 +39,21 @@ test('inscription par mot de passe : accueil → Commencer → compte → onboar
   await expect(page).toHaveURL(/\/bienvenue/);
   created.push(await profileId(email));
 
-  // Onboarding : 3 écrans de profil, les 3 produits du jour, puis l'offre Pro.
+  // Onboarding : 10 questions, une par écran (les facultatives passées).
   await page.getByLabel('Ton prénom').fill('Inès');
-  await page.getByText('Moins de 500', { exact: true }).click();
   await page.getByRole('button', { name: 'Continuer' }).click();
-  await page.getByText('Beauté et soins', { exact: true }).click();
+  await page.getByRole('button', { name: 'Passer' }).click();
+  await page.getByRole('radio', { name: 'Moins de 1 000' }).click();
+  await page.getByRole('radio', { name: 'Je ne sais pas' }).click();
+  await page.getByRole('radio', { name: /Je débute/ }).click();
+  await page.getByRole('checkbox', { name: 'Beauté' }).click();
   await page.getByRole('button', { name: 'Continuer' }).click();
-  await page.getByText('Voix off', { exact: true }).click();
-  await page.getByRole('button', { name: 'Voir mes 3 produits du jour' }).click();
-  await expect(page).toHaveURL(/\/bienvenue\/produits/);
-  await page.getByRole('link', { name: 'Passer cette étape' }).click();
-  await expect(page).toHaveURL(/\/bienvenue\/pro/);
-  await page.getByRole('link', { name: 'Continuer en Gratuit' }).click();
-  await expect(page).toHaveURL(/\/app\?bienvenue=/);
+  await page.getByRole('radio', { name: /1 à 3 vidéos/ }).click();
+  await page.getByRole('checkbox', { name: /Voix off/ }).click();
+  await page.getByRole('button', { name: 'Continuer' }).click();
+  await page.getByRole('button', { name: 'Passer' }).click();
+  await page.getByRole('button', { name: 'Passer' }).click();
+  await expect(page).toHaveURL(/\/app\?bienvenue=/, { timeout: 30_000 });
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Dashboard de Inès');
 
   // Reconnexion par mot de passe dans un navigateur neuf
@@ -77,7 +79,15 @@ test('lien magique : onboarding d’abord, puis la page demandée, puis déconne
   // Onboarding terminé (raccourci côté admin) : la page demandée s'ouvre.
   await adminClient()
     .from('profiles')
-    .update({ first_name: 'Test', niches: ['beaute'], follower_range: '0-500', video_style: 'face_camera', onboarded_at: new Date().toISOString() })
+    .update({
+      first_name: 'Test',
+      niches: ['beaute'],
+      follower_range: '0-1000',
+      video_style: 'face_camera',
+      video_styles: ['face_camera'],
+      onboarding_version: 2,
+      onboarded_at: new Date().toISOString(),
+    })
     .eq('id', id);
   await page.goto('/app/scripts');
   await expect(page).toHaveURL(/\/app\/scripts$/);
