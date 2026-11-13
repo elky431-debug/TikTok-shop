@@ -72,6 +72,14 @@ export interface ProductDetails {
   rating: number | null;
   review_count: number | null;
   fetched_at: string;
+  /**
+   * Prix minimum et maximum des variantes, et chiffre d'affaires par période, en centimes d'euro. Seulement quand la
+   * source déclare des euros : batchProductDetail les annonce en dollars (et la vraie réponse s'écarte du prix en
+   * euros), donc ils restent absents aujourd'hui (docs/session5/blocs1-2-3.md, B19).
+   */
+  price_min_cents?: number | null;
+  price_max_cents?: number | null;
+  revenue_cents?: { d7: number | null; d30: number | null } | null;
 }
 
 export type ScorePartKey = 'croissance' | 'commission' | 'saturation' | 'prix';

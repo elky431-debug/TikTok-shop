@@ -1,14 +1,24 @@
 import type { Metadata } from 'next';
-import { Sprout } from 'lucide-react';
+import { Scale, SlidersVertical, Sprout } from 'lucide-react';
+import Link from 'next/link';
+import { KeywordSearchForm } from '@/components/product/keyword-search-form';
 import { LockedProductCard, FeaturedProductCard, ProductCard } from '@/components/product/product-card';
 import { RadarFilterBar } from '@/components/product/radar-filters';
+import { RadarTable } from '@/components/product/radar-table';
+import { RadarToolbar } from '@/components/product/radar-toolbar';
+import { ScoreWeightsForm } from '@/components/product/score-weights';
 import { LinkButton } from '@/components/ui/button';
 import { Callout, EmptyState } from '@/components/ui/surface';
 import { requireOnboardedViewer } from '@/lib/auth/session';
+import { env } from '@/lib/env';
 import { NICHES, nicheLabel } from '@/lib/niches';
 import { getPlan, isPaidPlan } from '@/lib/plans';
 import { AFFILIATE_THRESHOLD } from '@/lib/profile-rules';
-import { getRadar, parseFilters } from '@/lib/radar';
+import { filtersToParams, getRadar, parseFilters } from '@/lib/radar';
+import { remainingSearches } from '@/lib/radar/keyword-search';
+import { SCORE_KEYS, WEIGHT_LABELS, weightShares } from '@/lib/radar/personal';
+import { getFavorites, getRadarSettings } from '@/lib/radar/settings';
+import { SORT_KEYS, type SortKey } from '@/lib/radar/sort';
 import { formatDayMonth, formatInt, formatLongDate, plural } from '@/lib/utils';
 import { enabledRegions, REGIONS } from '@/lib/regions';
 
@@ -21,16 +31,38 @@ export default async function RadarPage({
 }) {
   const { profile } = await requireOnboardedViewer();
   const filters = parseFilters(searchParams);
-  const radar = await getRadar(profile, filters);
+  const settings = await getRadarSettings(profile.id);
+  const radar = await getRadar(profile, filters, { settings });
   const plan = getPlan(profile.plan);
   const paid = isPaidPlan(profile.plan);
   const welcome = searchParams.bienvenue;
+  const query = filtersToParams(filters).toString();
+  const [searchesLeft, favorites] = await Promise.all([
+    plan.keywordSearchesPerDay ? remainingSearches(profile) : Promise.resolve(0),
+    plan.compare ? getFavorites(profile.id) : Promise.resolve([] as string[]),
+  ]);
 
   const visible = radar.items.filter((i) => i.kind === 'visible');
+  const isDefaultOrder = radar.sort === 'score' && radar.order === 'desc';
   const [first, ...rest] = radar.items;
-  const featured = !radar.filtered && first?.kind === 'visible' ? first : null;
+  const featured = settings.vue === 'cartes' && !radar.filtered && isDefaultOrder && first?.kind === 'visible' ? first : null;
   const list = featured ? rest : radar.items;
   const nicheNames = (radar.niches.length ? radar.niches : NICHES.map((n) => n.id)).map((n) => nicheLabel(n).toLowerCase());
+
+  // Colonnes de tri proposées : celles qui ont des données aujourd'hui ; sans le score en Gratuit.
+  const a = radar.availability;
+  const hasData: Partial<Record<SortKey, boolean>> = {
+    pourtoi: plan.showScore,
+    ventes7: a.sales7,
+    ventes30: a.sales30,
+    croissance: a.growth,
+    affilies: a.affiliates,
+    note: a.rating,
+    avis: a.reviews,
+    nouveaute: a.newProducts,
+  };
+  const sorts = SORT_KEYS.filter((key) => hasData[key] !== false);
+  const sortLabels: Partial<Record<SortKey, string>> = plan.showScore ? {} : { score: 'Classement du jour' };
 
   return (
     <div>
@@ -89,7 +121,64 @@ export default async function RadarPage({
       </div>
 
       <div className="mt-6">
-        <RadarFilterBar key={JSON.stringify(filters)} filters={filters} niches={radar.niches} />
+        <KeywordSearchForm remaining={searchesLeft} limit={plan.keywordSearchesPerDay} catalogOnly={!env.nexscopeApiKey} />
+      </div>
+
+      <div className="mt-5">
+        <RadarFilterBar key={JSON.stringify(filters)} filters={filters} niches={radar.niches} availability={radar.availability} />
+      </div>
+
+      <div className="mt-4 space-y-3">
+        <RadarToolbar
+          view={settings.vue}
+          sort={radar.sort}
+          order={radar.order}
+          sorts={sorts}
+          labels={sortLabels}
+          query={query}
+          count={radar.visibleCount}
+          exportHref={plan.radarExport ? `/api/radar/export${query ? `?${query}` : ''}` : null}
+        />
+        {plan.showScore ? (
+          <details id="poids" className="group rounded-2xl border border-line bg-raised" open={false}>
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold">
+              <span className="inline-flex items-center gap-2">
+                <SlidersVertical className="h-4 w-4 text-cyan-ink" aria-hidden="true" />
+                {radar.weights ? 'Score calculé avec tes poids' : 'Régler le score'}
+              </span>
+              {radar.weights ? (
+                <span className="num text-xs font-normal text-muted">
+                  {SCORE_KEYS.map((k) => `${WEIGHT_LABELS[k]} ${String(weightShares(radar.weights!)[k]).replace('.', ',')}`).join(' · ')}
+                </span>
+              ) : null}
+            </summary>
+            <div className="border-t border-line px-4 py-4">
+              {plan.customWeights ? (
+                <ScoreWeightsForm weights={radar.weights} query={query} />
+              ) : (
+                <p className="text-sm text-muted">
+                  Avec Pro+, donne plus d’importance à la commission ou à la croissance : le score du radar et des fiches suit
+                  tes poids.{' '}
+                  <Link href="/app/passer-pro" className="font-semibold text-rose-ink hover:underline">
+                    Passer Pro+
+                  </Link>
+                </p>
+              )}
+            </div>
+          </details>
+        ) : null}
+        {plan.compare ? (
+          <p className="flex items-center gap-2 text-sm text-muted">
+            <Scale className="h-4 w-4" aria-hidden="true" />
+            {favorites.length >= 2 ? (
+              <Link href="/app/comparer" className="font-semibold text-cyan-ink hover:underline">
+                Comparer mes {favorites.length} favoris
+              </Link>
+            ) : (
+              <span>Mets au moins 2 produits en favori (étoile en vue liste, ou depuis leur fiche) pour les comparer.</span>
+            )}
+          </p>
+        ) : null}
       </div>
 
       <div className="mt-5">
@@ -109,26 +198,38 @@ export default async function RadarPage({
             }
           >
             {radar.filtered
-              ? 'Élargis la fourchette de prix ou baisse la commission minimum.'
+              ? 'Élargis la fourchette de prix, baisse la commission minimum ou retire un filtre avancé.'
               : 'Le radar se remplit chaque nuit. Reviens dans quelques heures.'}
           </EmptyState>
         ) : (
           <>
-            {featured ? (
-              <div className="mb-4">
-                <FeaturedProductCard product={featured.product} />
-              </div>
-            ) : null}
+            {settings.vue === 'liste' ? (
+              <RadarTable
+                products={visible.flatMap((i) => (i.kind === 'visible' ? [{ rank: i.rank, product: i.product }] : []))}
+                sort={radar.sort}
+                order={radar.order}
+                query={query}
+                showScore={plan.showScore}
+              />
+            ) : (
+              <>
+                {featured ? (
+                  <div className="mb-4">
+                    <FeaturedProductCard product={featured.product} />
+                  </div>
+                ) : null}
 
-            <ul className="grid gap-1 md:grid-cols-2">
-              {list.map((item) =>
-                item.kind === 'visible' ? (
-                  <li key={item.product.id}>
-                    <ProductCard product={item.product} rank={item.rank} />
-                  </li>
-                ) : null,
-              )}
-            </ul>
+                <ul className="grid gap-1 md:grid-cols-2">
+                  {list.map((item) =>
+                    item.kind === 'visible' ? (
+                      <li key={item.product.id}>
+                        <ProductCard product={item.product} rank={item.rank} />
+                      </li>
+                    ) : null,
+                  )}
+                </ul>
+              </>
+            )}
 
             {!paid && radar.lockedCount > 0 ? (
               <section className="mt-4" aria-labelledby="verrouilles">
