@@ -48,7 +48,7 @@ export function RatingForm({
               aria-pressed={current !== null && n <= current}
               className="flex h-10 w-9 items-center justify-center rounded-lg text-muted transition-colors hover:text-fg"
             >
-              <Star className={cn('h-6 w-6 transition-colors', n <= shown ? 'fill-[#25F4EE] text-[#25F4EE]' : '')} aria-hidden="true" />
+              <Star className={cn('h-6 w-6 transition-colors', n <= shown ? 'fill-cyan-ink text-cyan-ink' : '')} aria-hidden="true" />
             </button>
           ))}
         </div>

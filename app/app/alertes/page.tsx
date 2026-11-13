@@ -235,7 +235,7 @@ export default async function AlertsPage({ searchParams }: { searchParams: Recor
                 </Field>
                 {availability.newProducts ? (
                   <label className="flex items-center gap-2 text-sm">
-                    <input type="checkbox" name="nouveau" value="1" className="h-4 w-4 accent-[#25F4EE]" />
+                    <input type="checkbox" name="nouveau" value="1" className="h-4 w-4 accent-[color:var(--cyan-hex)]" />
                     Seulement les produits lancés depuis moins de 30 jours
                   </label>
                 ) : null}
@@ -248,7 +248,7 @@ export default async function AlertsPage({ searchParams }: { searchParams: Recor
                       ['discord', 'Discord'],
                     ].map(([name, label]) => (
                       <label key={name} className="flex items-center gap-2">
-                        <input type="checkbox" name={name} value="1" defaultChecked className="h-4 w-4 accent-[#25F4EE]" />
+                        <input type="checkbox" name={name} value="1" defaultChecked className="h-4 w-4 accent-[color:var(--cyan-hex)]" />
                         {label}
                       </label>
                     ))}

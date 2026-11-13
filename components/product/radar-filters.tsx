@@ -218,7 +218,7 @@ export function RadarFilterBar({
           ) : null}
           {availability.newProducts ? (
             <label className="col-span-2 flex items-center gap-2 self-end pb-2 text-sm font-medium sm:col-span-1">
-              <input type="checkbox" name="nouveau" value="1" defaultChecked={filters.nouveau} onChange={autoSubmit} className="h-4 w-4 accent-[#25F4EE]" />
+              <input type="checkbox" name="nouveau" value="1" defaultChecked={filters.nouveau} onChange={autoSubmit} className="h-4 w-4 accent-[color:var(--cyan-hex)]" />
               Lancés depuis moins de 30 jours
             </label>
           ) : null}

@@ -127,8 +127,20 @@ export function Tabs<T extends string | number>({
   );
 }
 
+/** Couleur d'une variable CSS de la palette en cours (lue après l'affichage ; valeur de repli côté serveur). */
+function usePaletteColor(name: string, fallback: string): string {
+  const [color, setColor] = useState(fallback);
+  useEffect(() => {
+    const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    if (value) setColor(value);
+  }, [name]);
+  return color;
+}
+
 export function GainsChart({ series }: { series: DayPoint[] }) {
   const [days, setDays] = useState<7 | 30 | 90>(30);
+  // La courbe des gains reste cyan dans les deux palettes ; la seconde suit la palette (rose ou ambre).
+  const second = usePaletteColor('--chart-2', '#FE2C55');
   const reduce = useReducedMotion();
   const data = series.slice(-days).map((p) => ({ date: p.date, label: formatDayMonth(p.date), gains: p.gains_cents / 100, ventes: p.sales }));
   const total = data.reduce((s, p) => s + p.gains, 0);
@@ -154,8 +166,8 @@ export function GainsChart({ series }: { series: DayPoint[] }) {
                 <stop offset="100%" stopColor="#25F4EE" stopOpacity={0} />
               </linearGradient>
               <linearGradient id="ventesGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#FE2C55" stopOpacity={0.25} />
-                <stop offset="100%" stopColor="#FE2C55" stopOpacity={0} />
+                <stop offset="0%" stopColor={second} stopOpacity={0.25} />
+                <stop offset="100%" stopColor={second} stopOpacity={0} />
               </linearGradient>
             </defs>
             <XAxis dataKey="label" stroke="#8A8B91" fontSize={11} tickLine={false} minTickGap={24} />
@@ -180,7 +192,7 @@ export function GainsChart({ series }: { series: DayPoint[] }) {
               yAxisId="v"
               type="monotone"
               dataKey="ventes"
-              stroke="#FE2C55"
+              stroke={second}
               strokeWidth={1.5}
               fill="url(#ventesGrad)"
               isAnimationActive={!reduce}
@@ -194,7 +206,7 @@ export function GainsChart({ series }: { series: DayPoint[] }) {
           <span className="h-2 w-2 rounded-full bg-cyan" aria-hidden="true" /> Gains
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-rose" aria-hidden="true" /> Ventes
+          <span className="h-2 w-2 rounded-full" style={{ background: second }} aria-hidden="true" /> Ventes
         </span>
       </div>
     </div>
@@ -216,8 +228,8 @@ export function ProgressRing({ ratio, size = 132, children, label }: { ratio: nu
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90" aria-hidden="true">
         <defs>
           <linearGradient id="anneau" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#25F4EE" />
-            <stop offset="100%" stopColor="#FE2C55" />
+            <stop offset="0%" style={{ stopColor: 'var(--cyan-hex)' }} />
+            <stop offset="100%" style={{ stopColor: 'var(--pink-hex)' }} />
           </linearGradient>
         </defs>
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgb(var(--fg) / 0.1)" strokeWidth={stroke} />

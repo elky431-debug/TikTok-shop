@@ -989,3 +989,12 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      percutant, traduire) restent instantanées, sans raisonnement.
 180. **Raisonnement OpenAI « low » par défaut** (`OPENAI_REASONING_EFFORT`, valeurs none, low, medium, high) : génération
      complète 20 s au lieu de 41 s, moins de jetons facturés ; même qualité de forme (schéma, interdits vérifiés).
+181. **Deux palettes à comparer en ligne** (`?palette=a` / `?palette=b`, retenu par le cookie technique
+     `tracktout_palette`, appliqué avant l'affichage par un petit script comme le thème) : A = cyan et rose TikTok
+     (inchangée) ; B = orange vif du panier TikTok Shop pour les boutons (#FF6A1F, texte foncé #140A04 : 7,1:1), les
+     accents (#FF8A3D : 8,6:1), le logo et le dégradé (orange → ambre), le cyan restant aux courbes et aux chiffres
+     positifs (variations à la hausse, gains, tendances « monte » et « explose »), erreurs en rouge #FF5C5C (6,9:1).
+     Seules les variables changent (`:root[data-palette='b']`), le design et le fond noir sont identiques ; les couleurs
+     écrites en dur (barre latérale, logo, téléprompteur, cases à cocher, halos) passent par les variables. Nouveaux
+     jetons : `--on-primary` (texte des boutons), `--positive`, `--chart-2`, `--logo-halo`. Audit axe : 0 erreur en A
+     et en B. Le thème clair garde la palette A.

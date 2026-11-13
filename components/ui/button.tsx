@@ -14,7 +14,7 @@ const base =
   'group/btn inline-flex items-center justify-center gap-2 font-semibold transition-[transform,box-shadow,background-color,border-color,color,opacity] duration-200 ease-out disabled:pointer-events-none disabled:opacity-50 select-none whitespace-nowrap';
 
 const variants: Record<ButtonVariant, string> = {
-  primary: 'bg-rose-fill text-white hover:-translate-y-0.5 hover:shadow-[var(--glow-pink)] active:translate-y-0',
+  primary: 'bg-rose-fill text-on-primary hover:-translate-y-0.5 hover:shadow-[var(--glow-pink)] active:translate-y-0',
   ink: 'bg-fg text-bg hover:-translate-y-0.5 hover:bg-fg/90',
   secondary: 'border border-line-strong bg-transparent text-fg hover:bg-surface',
   outline: 'border border-line-strong bg-transparent text-fg hover:bg-surface',

@@ -40,7 +40,7 @@ export default function FormateursPage() {
     <div className="relative mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-28">
       <div
         className="pointer-events-none absolute -top-10 right-0 h-[28rem] w-[28rem] rounded-full blur-3xl"
-        style={{ background: 'radial-gradient(circle, rgba(254,44,85,0.16) 0%, transparent 65%)' }}
+        style={{ background: 'radial-gradient(circle, rgb(var(--rose) / 0.16) 0%, transparent 65%)' }}
         aria-hidden="true"
       />
       <div className="relative mx-auto max-w-3xl text-center">

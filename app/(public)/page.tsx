@@ -279,7 +279,7 @@ export default async function HomePage() {
             <div className="relative overflow-hidden rounded-3xl border border-line bg-raised p-8 sm:p-12 md:p-16">
               <div
                 className="pointer-events-none absolute -right-24 -top-24 h-[28rem] w-[28rem] rounded-full blur-3xl"
-                style={{ background: 'radial-gradient(circle, rgba(254,44,85,0.22) 0%, transparent 65%)' }}
+                style={{ background: 'radial-gradient(circle, rgb(var(--rose) / 0.22) 0%, transparent 65%)' }}
                 aria-hidden="true"
               />
               <div className="relative grid items-center gap-10 md:grid-cols-2">

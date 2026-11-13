@@ -38,7 +38,7 @@ export function ScoreWeightsForm({ weights, query }: { weights: Weights | null; 
               step={5}
               value={values[key]}
               onChange={(e) => setValues((v) => ({ ...v, [key]: Number(e.target.value) }))}
-              className="mt-2 w-full accent-[#25F4EE]"
+              className="mt-2 w-full accent-[color:var(--cyan-hex)]"
               aria-describedby={`poids-${key}-aide`}
             />
             <p id={`poids-${key}-aide`} className="text-xs text-muted">

@@ -42,6 +42,8 @@ const config: Config = {
           DEFAULT: token('warn'),
           soft: token('warn-soft'),
         },
+        'on-primary': token('on-primary'),
+        positive: token('positive'),
         ink: '#161823',
       },
       fontFamily: {

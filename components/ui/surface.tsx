@@ -61,7 +61,7 @@ export function IconChip({ children, tone = 'cyan', size = 'md', className }: { 
 /** Pastille de variation d'EtSmart (hausse en cyan, baisse en gris, sans comparaison en gris clair). */
 export function TrendPill({ direction, children, className }: { direction: 'up' | 'down' | 'flat'; children: ReactNode; className?: string }) {
   const tones = {
-    up: 'border-cyan-ink/30 bg-cyan-ink/10 text-cyan-ink',
+    up: 'border-positive/30 bg-positive/10 text-positive',
     down: 'border-fg/15 bg-fg/5 text-muted',
     flat: 'border-line bg-fg/[0.04] text-muted',
   };

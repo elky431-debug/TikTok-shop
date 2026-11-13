@@ -65,7 +65,7 @@ export function RadarShowcase({ products, demoData }: { products: ShowcaseProduc
   return (
     <section
       aria-label="Aperçu du radar du jour"
-      className="gradient-border relative mx-auto mt-16 max-w-4xl rounded-3xl bg-raised p-4 text-left shadow-[0_0_80px_-24px_rgba(37,244,238,0.35)] sm:p-6"
+      className="gradient-border relative mx-auto mt-16 max-w-4xl rounded-3xl bg-raised p-4 text-left shadow-[0_0_80px_-24px_rgb(var(--cyan)/0.35)] sm:p-6"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onFocusCapture={() => setHovered(true)}
@@ -79,10 +79,11 @@ export function RadarShowcase({ products, demoData }: { products: ShowcaseProduc
           type="button"
           onClick={() => setPaused((p) => !p)}
           className="inline-flex items-center gap-1.5 rounded-lg border border-line-strong px-2.5 py-1 text-xs font-semibold text-muted transition-colors hover:text-fg"
-          aria-label={autoplay ? 'Mettre le défilement en pause' : 'Reprendre le défilement'}
         >
           {autoplay ? <Pause className="h-3.5 w-3.5" aria-hidden="true" /> : <Play className="h-3.5 w-3.5" aria-hidden="true" />}
+          {/* Le nom lu commence par le mot affiché (WCAG 2.5.3, « label in name »). */}
           {autoplay ? 'Pause' : 'Lecture'}
+          <span className="sr-only">{autoplay ? ' du défilement des produits' : ' du défilement des produits'}</span>
         </button>
       </div>
 

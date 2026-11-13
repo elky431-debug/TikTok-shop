@@ -6,8 +6,8 @@ import { cn, formatGrowth } from '@/lib/utils';
 export { ProductImage } from './product-image';
 
 const TREND_STYLE: Record<Trend, string> = {
-  explose: 'bg-rose-soft text-rose-ink',
-  monte: 'bg-cyan-soft text-cyan-ink',
+  explose: 'trend-explose',
+  monte: 'bg-positive/10 text-positive',
   stable: 'bg-surface text-muted',
   baisse: 'bg-warn-soft text-warn',
 };

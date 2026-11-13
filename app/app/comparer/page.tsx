@@ -144,7 +144,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Reco
               {candidates.map((p) => (
                 <li key={p.id}>
                   <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-line px-3 py-2 hover:border-line-strong has-[:checked]:border-cyan-ink/50">
-                    <input type="checkbox" name="ids" value={p.id} defaultChecked={chosen.includes(p.id)} className="h-4 w-4 accent-[#25F4EE]" />
+                    <input type="checkbox" name="ids" value={p.id} defaultChecked={chosen.includes(p.id)} className="h-4 w-4 accent-[color:var(--cyan-hex)]" />
                     <span className="line-clamp-1 text-sm font-medium">{p.name}</span>
                     {p.favorite ? <Star className="ml-auto h-3.5 w-3.5 shrink-0 fill-current text-cyan-ink" aria-label="Favori" /> : null}
                   </label>

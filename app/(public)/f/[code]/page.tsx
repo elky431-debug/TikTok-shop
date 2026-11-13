@@ -55,7 +55,7 @@ export default async function CoachLandingPage({ params }: { params: { code: str
     <div className="relative mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-28">
       <div
         className="pointer-events-none absolute -top-10 left-1/2 h-[28rem] w-[28rem] -translate-x-1/2 rounded-full blur-3xl"
-        style={{ background: 'radial-gradient(circle, rgba(37,244,238,0.14) 0%, rgba(254,44,85,0.10) 45%, transparent 70%)' }}
+        style={{ background: 'radial-gradient(circle, rgb(var(--cyan) / 0.14) 0%, rgb(var(--rose) / 0.10) 45%, transparent 70%)' }}
         aria-hidden="true"
       />
       <div className="relative mx-auto max-w-3xl text-center">

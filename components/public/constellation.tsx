@@ -225,11 +225,11 @@ export function Constellation() {
       {/* Halos flous derrière le titre : cyan à gauche, rose à droite */}
       <div
         className="absolute left-[8%] top-[14%] h-[34rem] w-[34rem] rounded-full blur-3xl"
-        style={{ background: 'radial-gradient(circle, rgba(37,244,238,0.13) 0%, transparent 65%)' }}
+        style={{ background: 'radial-gradient(circle, rgb(var(--cyan) / 0.13) 0%, transparent 65%)' }}
       />
       <div
         className="absolute right-[6%] top-[22%] h-[34rem] w-[34rem] rounded-full blur-3xl"
-        style={{ background: 'radial-gradient(circle, rgba(254,44,85,0.12) 0%, transparent 65%)' }}
+        style={{ background: 'radial-gradient(circle, rgb(var(--rose) / 0.12) 0%, transparent 65%)' }}
       />
       <canvas ref={canvas} className="absolute inset-0" />
       {/* Ligne de séparation basse, comme EtSmart */}

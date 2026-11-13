@@ -94,7 +94,7 @@ export function isActivePath(pathname: string, href: string): boolean {
 
 const itemBase =
   'relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan';
-const itemActive = 'bg-gradient-to-r from-[#25F4EE] to-[#FE2C55] font-semibold text-black';
+const itemActive = 'bg-[image:var(--gradient)] font-semibold text-black';
 const itemIdle = 'bg-transparent text-fg/70 hover:bg-fg/5 hover:text-fg';
 /** Libellé qui apparaît quand la barre se déplie (survol ou focus clavier), comme sur EtSmart. */
 const reveal =
@@ -146,7 +146,7 @@ export function AppSidebar({ sections, user }: { sections: NavSection[]; user: S
         {/* Bloc utilisateur et abonnement */}
         <div className="shrink-0 space-y-1 border-t border-line-strong bg-bg p-2">
           <Link href="/app/compte" className={cn(itemBase, itemIdle)}>
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#25F4EE] to-[#FE2C55] text-[11px] font-bold text-black" aria-hidden="true">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[image:var(--gradient-diag)] text-[11px] font-bold text-black" aria-hidden="true">
               {user.initial}
             </span>
             <span className={cn(reveal, 'flex min-w-0 items-center gap-2')}>
@@ -199,7 +199,7 @@ function NotificationsLink({ unread }: { unread: number }) {
     >
       <Bell size={18} aria-hidden="true" />
       {unread ? (
-        <span className="num absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-fill px-1 text-[10px] font-bold text-white">
+        <span className="num absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-fill px-1 text-[10px] font-bold text-on-primary">
           {unread > 9 ? '9+' : unread}
         </span>
       ) : null}
@@ -216,7 +216,7 @@ function PlanBadge({ user, compact }: { user: ShellUser; compact?: boolean }) {
     <Link
       href="/app/passer-pro"
       className={cn(
-        'inline-flex items-center rounded-full bg-rose-fill font-semibold text-white transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_-8px_rgba(254,44,85,0.6)]',
+        'inline-flex items-center rounded-full bg-rose-fill font-semibold text-on-primary transition-all hover:-translate-y-0.5 hover:shadow-[var(--glow-pink)]',
         compact ? 'px-3 py-1 text-xs' : 'px-3.5 py-1.5 text-xs',
       )}
     >
@@ -326,7 +326,7 @@ export function AppBottomNav({ items }: { items: NavLink[] }) {
           >
             <Icon size={22} aria-hidden="true" />
             <span className="text-[10px] font-medium leading-none">{item.label}</span>
-            {active ? <span className="absolute left-1/2 top-0 h-0.5 w-8 -translate-x-1/2 rounded-full bg-gradient-to-r from-[#25F4EE] to-[#FE2C55]" /> : null}
+            {active ? <span className="absolute left-1/2 top-0 h-0.5 w-8 -translate-x-1/2 rounded-full bg-[image:var(--gradient)]" /> : null}
           </Link>
         );
       })}

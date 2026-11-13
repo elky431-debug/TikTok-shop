@@ -21,11 +21,11 @@ export function LogoMark({ size = 36, className }: { size?: number; className?: 
     >
       <span
         className="absolute inset-0 scale-150 opacity-40 blur-xl"
-        style={{ background: 'radial-gradient(circle, rgba(37,244,238,0.45) 0%, rgba(254,44,85,0.25) 100%)' }}
+        style={{ background: 'var(--logo-halo)' }}
       />
-      <svg viewBox="0 0 32 32" width={size} height={size} className="relative" style={{ filter: 'drop-shadow(0 0 8px rgba(37,244,238,0.3))' }}>
-        <path d="M16 3.5 27 14 16 28.5 5 14Z" fill="#25F4EE" transform="translate(-1.4 -1)" />
-        <path d="M16 3.5 27 14 16 28.5 5 14Z" fill="#FE2C55" transform="translate(1.4 1)" />
+      <svg viewBox="0 0 32 32" width={size} height={size} className="relative" style={{ filter: 'drop-shadow(0 0 8px var(--logo-shadow))' }}>
+        <path d="M16 3.5 27 14 16 28.5 5 14Z" style={{ fill: 'var(--cyan-hex)' }} transform="translate(-1.4 -1)" />
+        <path d="M16 3.5 27 14 16 28.5 5 14Z" style={{ fill: 'var(--pink-hex)' }} transform="translate(1.4 1)" />
         <path d="M16 3.5 27 14 16 28.5 5 14Z" fill="rgb(var(--fg))" />
         <path d="M11 14h10M16 3.5 13 14l3 14.5M16 3.5 19 14l-3 14.5" stroke="rgb(var(--bg))" strokeOpacity=".55" strokeWidth="1.1" fill="none" />
       </svg>

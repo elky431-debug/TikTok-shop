@@ -78,7 +78,7 @@ export function PricingCards({
               className={cn(
                 'relative flex flex-col rounded-2xl p-6',
                 highlighted
-                  ? 'gradient-border bg-raised bg-[radial-gradient(ellipse_at_top,_rgba(254,44,85,0.12),_transparent_60%)] shadow-[var(--glow-pink)]'
+                  ? 'gradient-border bg-raised bg-[radial-gradient(ellipse_at_top,_rgb(var(--rose)/0.12),_transparent_60%)] shadow-[var(--glow-pink)]'
                   : 'border border-line bg-raised',
               )}
             >

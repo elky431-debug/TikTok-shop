@@ -240,7 +240,7 @@ function PrompterScreen({ title, lines, onClose }: { title: string; lines: strin
           <>
             {/* Repère de lecture : la ligne à dire passe dans cette bande. */}
             <div
-              className="pointer-events-none absolute inset-x-0 z-10 border-y border-[#25F4EE]/40 bg-[#25F4EE]/[0.06]"
+              className="pointer-events-none absolute inset-x-0 z-10 border-y border-cyan/40 bg-cyan/[0.06]"
               style={{ top: GUIDE_TOP, height: size * 1.4 }}
               aria-hidden="true"
             />
@@ -254,7 +254,7 @@ function PrompterScreen({ title, lines, onClose }: { title: string; lines: strin
                 {lines.map((text, i) => (
                   <p key={i}>{text}</p>
                 ))}
-                <p className="text-[#25F4EE]" aria-hidden="true">
+                <p className="text-cyan-ink" aria-hidden="true">
                   ■
                 </p>
               </div>
@@ -274,7 +274,7 @@ function PrompterScreen({ title, lines, onClose }: { title: string; lines: strin
 
         {countdown !== null ? (
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/70" aria-live="assertive">
-            <span className="num text-8xl font-bold text-[#25F4EE]">{countdown}</span>
+            <span className="num text-8xl font-bold text-cyan-ink">{countdown}</span>
           </div>
         ) : null}
         {finished && countdown === null ? (
@@ -309,7 +309,7 @@ function PrompterScreen({ title, lines, onClose }: { title: string; lines: strin
             <button
               type="button"
               onClick={toggle}
-              className="flex h-14 w-14 items-center justify-center rounded-full bg-[#E3174D] text-white shadow-[0_0_24px_rgba(254,44,85,0.35)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#25F4EE]"
+              className="flex h-14 w-14 items-center justify-center rounded-full bg-rose-fill text-on-primary shadow-[var(--glow-pink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan"
               aria-label={playing || countdown !== null ? 'Pause' : 'Lancer'}
             >
               {playing || countdown !== null ? <Pause className="h-6 w-6" aria-hidden="true" /> : <Play className="h-6 w-6 translate-x-0.5" aria-hidden="true" />}
@@ -358,7 +358,7 @@ function RoundButton({ label, onClick, disabled, children }: { label: string; on
       title={label}
       className={cn(
         'flex h-11 w-11 items-center justify-center rounded-full border border-white/15 text-white transition-colors hover:bg-white/10 disabled:opacity-30',
-        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#25F4EE]',
+        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan',
       )}
     >
       {children}

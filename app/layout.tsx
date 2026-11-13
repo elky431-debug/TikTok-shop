@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
 import type { ReactNode } from 'react';
 import { ServiceWorkerRegistration } from '@/components/pwa/service-worker';
-import { THEME_COOKIE } from '@/lib/auth/constants';
+import { PALETTE_COOKIE, THEME_COOKIE } from '@/lib/auth/constants';
 import { BRAND, BRAND_TAGLINE } from '@/lib/brand';
 import { env } from '@/lib/env';
 import { appleWebApp } from '@/lib/pwa';
@@ -38,12 +38,16 @@ export const viewport: Viewport = {
 // Le noir est le thème par défaut. Le clair n'est appliqué que s'il a été choisi dans le compte,
 // avant l'affichage et sans rendre les pages dynamiques.
 const themeScript = `try{if(/(?:^|; )${THEME_COOKIE}=light/.test(document.cookie))document.documentElement.setAttribute('data-theme','light')}catch(e){}`;
+// Comparaison des palettes : « ?palette=a » ou « ?palette=b » dans l'adresse, retenu par un cookie technique (un an)
+// pour la suite de la navigation ; appliqué avant l'affichage, sans flash.
+const paletteScript = `try{var m=location.search.match(/[?&]palette=(a|b)(?:&|$)/);if(m)document.cookie='${PALETTE_COOKIE}='+m[1]+';path=/;max-age=31536000;samesite=lax';var c=m?m[1]:(document.cookie.match(/(?:^|; )${PALETTE_COOKIE}=(a|b)/)||[])[1];if(c==='b')document.documentElement.setAttribute('data-palette','b')}catch(e){}`;
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="fr" className={sans.variable} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script dangerouslySetInnerHTML={{ __html: paletteScript }} />
         {/* Sans JavaScript, les éléments animés à l'apparition restent visibles. */}
         <noscript>
           <style>{`[style*="opacity:0"]{opacity:1!important;transform:none!important;filter:none!important}`}</style>
