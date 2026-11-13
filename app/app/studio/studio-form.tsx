@@ -82,7 +82,7 @@ export function StudioForm({
         ) : (
           <p className="text-sm text-muted">
             Aucun produit disponible.{' '}
-            <Link href="/app" className="font-semibold text-cyan-ink underline underline-offset-2">
+            <Link href="/app/radar" className="font-semibold text-cyan-ink underline underline-offset-2">
               Ouvre le radar
             </Link>{' '}
             pour en choisir un.

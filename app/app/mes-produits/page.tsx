@@ -123,7 +123,7 @@ export default async function MesProduitsPage({ searchParams }: { searchParams: 
       {searchParams.ok === 'objectif' ? <Callout tone="gain" className="mb-6" title="Objectif de la semaine enregistré." /> : null}
 
       {rows.length === 0 ? (
-        <EmptyState title="Tu ne suis encore aucun produit" action={<LinkButton href="/app">Ouvrir le radar</LinkButton>}>
+        <EmptyState title="Tu ne suis encore aucun produit" action={<LinkButton href="/app/radar">Ouvrir le radar</LinkButton>}>
           Ouvre un produit du radar et appuie sur « Ajouter à mes produits » pour suivre tes vidéos ici.
         </EmptyState>
       ) : (

@@ -158,7 +158,7 @@ export async function checkAlerts(date: string, repo: Repo = getRepo(), now: Dat
       if (fresh.length) {
         const names = fresh.slice(0, 3).map((p) => `« ${p.name.slice(0, 60)} »`);
         const more = fresh.length > 3 ? ` et ${fresh.length - 3} autre${fresh.length - 3 > 1 ? 's' : ''}` : '';
-        const path = fresh.length === 1 ? `/app/produit/${encodeURIComponent(fresh[0].id)}` : `/app?${filtersToParams(alert.data.criteria).toString()}`;
+        const path = fresh.length === 1 ? `/app/produit/${encodeURIComponent(fresh[0].id)}` : `/app/radar?${filtersToParams(alert.data.criteria).toString()}`;
         const result = await notify(
           userId,
           {

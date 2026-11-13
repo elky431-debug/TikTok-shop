@@ -124,7 +124,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Reco
 
   return (
     <div>
-      <Link href="/app" className="mb-4 inline-flex items-center gap-1 text-sm text-muted hover:text-fg">
+      <Link href="/app/radar" className="mb-4 inline-flex items-center gap-1 text-sm text-muted hover:text-fg">
         <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Radar
       </Link>
       <PageHeader

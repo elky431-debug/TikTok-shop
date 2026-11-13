@@ -12,7 +12,7 @@ export default function NotFound() {
         <h1 className="mt-4 text-3xl">Cette page n’existe pas</h1>
         <p className="mt-2 text-muted">Le lien est peut-être ancien, ou le produit a quitté le radar.</p>
         <div className="mt-8 flex gap-2">
-          <LinkButton href="/app">Ouvrir mon radar</LinkButton>
+          <LinkButton href="/app/radar">Ouvrir mon radar</LinkButton>
           <LinkButton href="/" variant="ghost">
             Accueil
           </LinkButton>

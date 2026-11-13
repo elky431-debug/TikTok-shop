@@ -44,8 +44,11 @@ test('inscription : de l’accueil au radar, en mode préparation', async ({ pag
   await expect(page.getByRole('button', { name: 'Passer Pro à l’année' })).toBeVisible();
   await page.getByRole('link', { name: 'Continuer en Gratuit' }).click();
 
-  // Radar du plan gratuit
+  // Dashboard, puis radar du plan gratuit
   await expect(page).toHaveURL(/\/app\?bienvenue=1/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Dashboard de Inès');
+  await expect(page.getByText('Ton radar est prêt')).toBeVisible();
+  await page.getByRole('link', { name: 'Ouvrir le radar' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Inès, voici tes produits du jour');
   await expect(page.getByText('Mode préparation', { exact: true })).toBeVisible();
   await expect(page.locator('a[href^="/app/produit/"]')).toHaveCount(3);

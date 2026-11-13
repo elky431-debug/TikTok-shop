@@ -915,3 +915,20 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      du blanc à 45-50 % d'EtSmart (4,4:1, sous le seuil AA pour 10-12 px) ; axes des graphiques en #8A8B91 au lieu de
      #666. `MotionConfig reducedMotion="user"` : avec « moins d'animations », plus aucun déplacement, seulement des fondus,
      et le même rendu côté serveur et navigateur (pas d'erreur d'hydratation).
+167. **Dashboard sur `/app`, radar sur `/app/radar`** : la première page après connexion est le tableau de bord ; tous
+     les liens « radar » (fiche produit, filtres, alertes, états vides, 404) pointent vers `/app/radar`. Les messages
+     de bienvenue et d'accès refusé (`?bienvenue`, `?acces`) s'affichent sur le dashboard.
+168. **Chiffres du dashboard, tous saisis ou mesurés** (`lib/dashboard.ts`) : gains et ventes du mois = fiches de
+     gains saisies ou importées (Pro), comparées au mois dernier à la même date ; vidéos de la semaine = vidéos cochées
+     « posté » dans les tableaux, face à la semaine dernière et à l'objectif hebdomadaire ; produits suivis (ajoutés
+     ces 7 jours) ; alertes du jour = notifications « alerte » et « baisse », face à hier. Variation en % seulement
+     si la période précédente n'est pas nulle (sinon en valeur). Le bloc « favoris » du brief montre les **produits
+     suivis** (vocabulaire de l'appli ; les favoris du radar servent à comparer) : mini-courbe des 7 derniers jours,
+     score (Pro), ceux qui baissent en tête. L'objectif du mois est la fiche `objectif_gains` existante (une seule
+     source, que l'onboarding remplit aussi). « À tourner » : en retard, puis par date jusqu'à dimanche, puis une vidéo
+     sans date par produit ; cocher la passe en « Posté » (action serveur, session revérifiée).
+169. **Profil TikTok par Nexscope** (`lib/creator-profile.ts`) : route documentée `POST /social/tiktok/profile`
+     (`handle`, `cache_max_age: '1d'`), 10 crédits, 0 si Nexscope répond depuis son cache. Un essai par personne et par
+     jour au plus (compté avant l'appel, même en cas d'échec), lancé après l'affichage de la page (pas d'attente) ou
+     par « Mettre à jour ». On garde abonnés, j'aime, vidéos et pseudo : ni photo (adresse signée qui expire), ni bio.
+     Sans clé ou sans pseudo : la tranche déclarée dans le compte, avec un lien pour la changer.

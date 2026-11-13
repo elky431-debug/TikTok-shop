@@ -130,17 +130,17 @@ export default async function ProductPage({
   return (
     <div>
       <nav aria-label="Fil d’Ariane" className="mb-4 text-sm text-muted">
-        <Link href="/app" className="hover:text-fg">
+        <Link href="/app/radar" className="hover:text-fg">
           Radar
         </Link>
         <span aria-hidden="true"> / </span>
-        <Link href={`/app?niche=${view.niche}`} className="hover:text-fg">
+        <Link href={`/app/radar?niche=${view.niche}`} className="hover:text-fg">
           {nicheLabel(view.niche)}
         </Link>
         {figures.subcategory ? (
           <>
             <span aria-hidden="true"> / </span>
-            <Link href={`/app?souscat=${encodeURIComponent(figures.subcategory)}`} className="hover:text-fg">
+            <Link href={`/app/radar?souscat=${encodeURIComponent(figures.subcategory)}`} className="hover:text-fg">
               {figures.subcategory}
             </Link>
           </>
@@ -253,7 +253,7 @@ export default async function ProductPage({
                   <p className="mt-4 border-t border-line pt-4 text-sm leading-relaxed text-muted">
                     Le score <span className="num font-semibold text-fg">{view.score}</span> suit tes poids (réglés dans le radar) : les
                     points de chaque critère ci-dessus sont ceux du réglage par défaut.{' '}
-                    <Link href="/app#poids" className="font-semibold text-cyan-ink hover:underline">
+                    <Link href="/app/radar#poids" className="font-semibold text-cyan-ink hover:underline">
                       Changer mes poids
                     </Link>
                   </p>

@@ -44,7 +44,7 @@ export function DeclineCallout({
         </div>
       ) : (
         <p className="mt-2">
-          <Link href="/app" className="font-semibold underline underline-offset-4">
+          <Link href="/app/radar" className="font-semibold underline underline-offset-4">
             Chercher le suivant dans le radar
           </Link>
         </p>

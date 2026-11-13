@@ -8,7 +8,7 @@ import { RadarTable } from '@/components/product/radar-table';
 import { RadarToolbar } from '@/components/product/radar-toolbar';
 import { ScoreWeightsForm } from '@/components/product/score-weights';
 import { LinkButton } from '@/components/ui/button';
-import { Callout, EmptyState } from '@/components/ui/surface';
+import { Callout, EmptyState, PageHeader } from '@/components/ui/surface';
 import { requireOnboardedViewer } from '@/lib/auth/session';
 import { env } from '@/lib/env';
 import { NICHES, nicheLabel } from '@/lib/niches';
@@ -35,7 +35,6 @@ export default async function RadarPage({
   const radar = await getRadar(profile, filters, { settings });
   const plan = getPlan(profile.plan);
   const paid = isPaidPlan(profile.plan);
-  const welcome = searchParams.bienvenue;
   const query = filtersToParams(filters).toString();
   const [searchesLeft, favorites] = await Promise.all([
     plan.keywordSearchesPerDay ? remainingSearches(profile) : Promise.resolve(0),
@@ -66,24 +65,25 @@ export default async function RadarPage({
 
   return (
     <div>
-      <div className="mb-5">
-        {radar.stale && radar.date ? (
-          <p className="inline-flex rounded-full bg-warn-soft px-2.5 py-0.5 text-sm font-semibold text-warn">
-            Données du {formatDayMonth(radar.date)}
-          </p>
-        ) : (
-          <p className="text-sm font-medium text-muted">{radar.date ? formatLongDate(radar.date) : 'Aujourd’hui'}</p>
-        )}
-        <h1 className="mt-1 text-2xl sm:text-3xl">
-          {profile.first_name ? `${profile.first_name}, voici` : 'Voici'} tes produits du jour
-        </h1>
-        <p className="mt-1.5 text-muted">
-          {formatInt(radar.totalToday)} produits analysés en {nicheNames.join(', ')}, triés par score.{' '}
-          {radar.stale
-            ? 'La mise à jour de cette nuit n’a pas abouti : ce sont les derniers relevés disponibles.'
-            : 'Mis à jour cette nuit.'}
-        </p>
-      </div>
+      <PageHeader
+        eyebrow={<>Trouver · {radar.date ? formatLongDate(radar.date) : 'Aujourd’hui'}</>}
+        title={<>{profile.first_name ? `${profile.first_name}, voici` : 'Voici'} tes produits du jour</>}
+        description={
+          <>
+            {radar.stale && radar.date ? (
+              <span className="mb-2 inline-flex rounded-full border border-warn/30 bg-warn/10 px-2.5 py-0.5 text-xs font-semibold text-warn">
+                Données du {formatDayMonth(radar.date)}
+              </span>
+            ) : null}
+            <span className="block">
+              {formatInt(radar.totalToday)} produits analysés en {nicheNames.join(', ')}, triés par score.{' '}
+              {radar.stale
+                ? 'La mise à jour de cette nuit n’a pas abouti : ce sont les derniers relevés disponibles.'
+                : 'Mis à jour cette nuit.'}
+            </span>
+          </>
+        }
+      />
 
       <div className="space-y-3">
         {radar.region !== 'FR' ? (
@@ -99,16 +99,6 @@ export default async function RadarPage({
           <Callout tone="neutral" title="Produits fictifs : démonstration">
             Ces produits n’existent pas sur TikTok Shop : ils montrent comment marche le radar en attendant le
             branchement des vraies données.
-          </Callout>
-        ) : null}
-
-        {welcome === 'essai' ? (
-          <Callout tone="gain" title="Tes 3 mois de Pro sont activés">
-            Merci à ton formateur : radar complet, score, 30 scripts par jour et récap Discord. Aucune carte n’a été demandée.
-          </Callout>
-        ) : welcome ? (
-          <Callout tone="cyan" title="Ton radar est prêt">
-            Commence par le n°1, ouvre sa fiche, puis écris tes scripts. Objectif : 20 vidéos sur un même produit.
           </Callout>
         ) : null}
 
@@ -196,7 +186,7 @@ export default async function RadarPage({
             title={radar.filtered ? 'Aucun produit ne correspond à ces filtres' : 'Pas encore de produits aujourd’hui'}
             action={
               radar.filtered ? (
-                <LinkButton href="/app" variant="outline">
+                <LinkButton href="/app/radar" variant="outline">
                   Effacer les filtres
                 </LinkButton>
               ) : (

@@ -101,7 +101,7 @@ export function WeeklyPreview({ content }: { content: WeeklyRecapContent }) {
       ) : (
         <p className="mt-5 text-sm text-muted">
           Suis un produit pour voir ta progression vers les 20 vidéos :{' '}
-          <Link href="/app" className="font-semibold text-fg underline underline-offset-2">
+          <Link href="/app/radar" className="font-semibold text-fg underline underline-offset-2">
             choisis-le dans le radar
           </Link>
           .

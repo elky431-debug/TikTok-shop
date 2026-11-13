@@ -92,7 +92,7 @@ export function RadarFilterBar({
     const data = new FormData(event.currentTarget);
     const params = new URLSearchParams();
     for (const [key, value] of data.entries()) if (value) params.set(key, String(value));
-    router.replace(params.size ? `/app?${params.toString()}` : '/app', { scroll: false });
+    router.replace(params.size ? `/app/radar?${params.toString()}` : '/app/radar', { scroll: false });
   }
 
   const autoSubmit = (event: ChangeEvent<HTMLSelectElement | HTMLInputElement>) => event.currentTarget.form?.requestSubmit();
@@ -146,7 +146,7 @@ export function RadarFilterBar({
         </button>
         {active ? (
           <Link
-            href="/app"
+            href="/app/radar"
             scroll={false}
             className="inline-flex h-10 shrink-0 items-center gap-1 rounded-xl px-3 text-sm font-semibold text-muted hover:text-fg"
           >

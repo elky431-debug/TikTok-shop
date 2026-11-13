@@ -25,7 +25,7 @@ export default async function ConsentementFormateurPage({ searchParams }: { sear
     return (
       <div className="max-w-2xl">
         <PageHeader title="Mon formateur" />
-        <EmptyState title="Tu n’es rattaché à aucun formateur" action={<LinkButton href="/app">Retour au radar</LinkButton>}>
+        <EmptyState title="Tu n’es rattaché à aucun formateur" action={<LinkButton href="/app/radar">Retour au radar</LinkButton>}>
           Si ton formateur t’a donné un code, il s’applique à l’inscription. Rien n’est partagé avec personne.
         </EmptyState>
       </div>

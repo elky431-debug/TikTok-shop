@@ -78,13 +78,13 @@ export default async function PreparationPage({ searchParams }: { searchParams: 
           className="mb-6"
           icon={<Sprout className="h-5 w-5 text-gain" aria-hidden="true" />}
           title="Bravo, tu passes en mode affilié"
-          action={<LinkButton href="/app">Ouvrir le radar</LinkButton>}
+          action={<LinkButton href="/app/radar">Ouvrir le radar</LinkButton>}
         >
           Ton compte affiche maintenant le radar comme un affilié. Avant de vendre, active l’affiliation dans l’appli TikTok et
           vérifie les conditions de la liste ci-dessous.
         </Callout>
       ) : affiliate ? (
-        <Callout tone="cyan" className="mb-6" title="Ton compte est en mode affilié" action={<LinkButton href="/app" variant="outline" size="sm">Ouvrir le radar</LinkButton>}>
+        <Callout tone="cyan" className="mb-6" title="Ton compte est en mode affilié" action={<LinkButton href="/app/radar" variant="outline" size="sm">Ouvrir le radar</LinkButton>}>
           Ton suivi d’abonnés et ta liste de vérification restent ici.
         </Callout>
       ) : null}

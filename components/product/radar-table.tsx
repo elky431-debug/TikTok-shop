@@ -79,7 +79,7 @@ export function RadarTable({
   const columns = COLUMNS.filter((c) => (c.key === 'score' || c.key === 'pourtoi' ? showScore : true)).filter(
     (c) => !c.has || products.some(({ product }) => c.has!(product)),
   );
-  const back = query ? `/app?${query}` : '/app';
+  const back = query ? `/app/radar?${query}` : '/app/radar';
   return (
     <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
       <table className="num w-full min-w-[44rem] border-separate border-spacing-0 text-sm">

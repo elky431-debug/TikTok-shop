@@ -15,7 +15,7 @@ export async function saveProductAction(formData: FormData) {
   const productId = String(formData.get('produit') ?? '');
   const repo = getRepo();
   const product = await repo.getProduct(productId);
-  if (!product || !(await canAccessProduct(profile, productId))) redirect('/app');
+  if (!product || !(await canAccessProduct(profile, productId))) redirect('/app/radar');
   await repo.saveProduct(profile.id, productId, DEFAULT_VIDEO_GOAL);
   revalidatePath(`/app/produit/${productId}`);
   revalidatePath('/app/mes-produits');
@@ -31,7 +31,7 @@ export async function analyzeHooksAction(formData: FormData) {
   const productId = String(formData.get('produit') ?? '');
   const back = `/app/produit/${encodeURIComponent(productId)}`;
   const product = await getRepo().getProduct(productId);
-  if (!product || !(await canAccessProduct(profile, productId))) redirect('/app');
+  if (!product || !(await canAccessProduct(profile, productId))) redirect('/app/radar');
   const result = await requestHookAnalysis(profile, product);
   if (!result.ok) {
     if (result.reason === 'plan') redirect('/app/passer-pro');
@@ -51,7 +51,7 @@ export async function loadVideosAction(formData: FormData) {
   const back = `/app/produit/${encodeURIComponent(productId)}`;
   const repo = getRepo();
   const product = await repo.getProduct(productId);
-  if (!product || !(await canAccessProduct(profile, productId))) redirect('/app');
+  if (!product || !(await canAccessProduct(profile, productId))) redirect('/app/radar');
   if (!isPaidPlan(profile.plan)) redirect('/app/passer-pro');
   if (!videosAreFresh(product.videos_fetched_at)) {
     try {

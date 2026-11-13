@@ -38,7 +38,7 @@ test('paiement : passer Pro, voir tout le radar, puis résilier', async ({ page 
   await expect(page.locator('#abonnement').getByText('Pro', { exact: true })).toBeVisible();
 
   // Radar complet : plus de produits verrouillés, scores visibles.
-  await page.goto('/app');
+  await page.goto('/app/radar');
   await expect(page.getByText(/autres produits à vendre aujourd’hui/)).toHaveCount(0);
   await expect(page.getByLabel(/^Score \d+ sur 100$/).first()).toBeVisible();
   expect(await page.locator('a[href^="/app/produit/"]').count()).toBeGreaterThan(3);
@@ -50,6 +50,6 @@ test('paiement : passer Pro, voir tout le radar, puis résilier', async ({ page 
   await page.getByRole('button', { name: 'Gérer mon abonnement' }).click();
   await page.getByRole('button', { name: 'Résilier mon abonnement' }).click();
   await expect(page.getByText('Abonnement résilié. Tu repasses en Gratuit.')).toBeVisible();
-  await page.goto('/app');
+  await page.goto('/app/radar');
   await expect(page.getByText(/autres produits à vendre aujourd’hui/)).toBeVisible();
 });

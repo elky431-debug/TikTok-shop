@@ -20,7 +20,7 @@ import { defaultOrder, isRadarView, isSortKey, isSortOrder } from '@/lib/radar/s
 function radarUrl(query: FormDataEntryValue | null): string {
   const params = filtersToParams(parseFilters(Object.fromEntries(new URLSearchParams(String(query ?? '')))));
   const text = params.toString();
-  return text ? `/app?${text}` : '/app';
+  return text ? `/app/radar?${text}` : '/app/radar';
 }
 
 /** Retour vers une page de l'appli seulement (pas d'adresse externe). */

@@ -5,6 +5,7 @@ test('génération de scripts : 10 accroches, 3 scripts, régénérer, garder, h
   await newOnboardedUser(page, 'studio');
 
   // Depuis le radar : fiche produit puis « Écrire mes scripts »
+  await page.goto('/app/radar');
   const firstProduct = page.locator('a[href^="/app/produit/"]').first();
   const productName = (await firstProduct.locator('h2, h3').first().textContent())?.trim() ?? '';
   await firstProduct.click();

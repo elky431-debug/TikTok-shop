@@ -52,7 +52,7 @@ test('inscription par mot de passe : accueil → Commencer → compte → onboar
   await expect(page).toHaveURL(/\/bienvenue\/pro/);
   await page.getByRole('link', { name: 'Continuer en Gratuit' }).click();
   await expect(page).toHaveURL(/\/app\?bienvenue=/);
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Inès, voici tes produits du jour');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Dashboard de Inès');
 
   // Reconnexion par mot de passe dans un navigateur neuf
   await page.context().clearCookies();
