@@ -1,15 +1,17 @@
 import type { ComponentProps, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
+// Champs d'EtSmart : noirs, bordure 10 %, arrondi 12 px, 14 px ; au focus, bordure et anneau cyan (le contour
+// clavier reste visible).
 const control =
-  'w-full rounded-xl border border-line-strong bg-surface px-3.5 text-[0.95rem] text-fg placeholder:text-subtle transition-colors focus:border-cyan-ink/50 focus:outline-none focus-visible:outline-2 focus-visible:outline-cyan aria-[invalid=true]:border-rose-ink';
+  'w-full rounded-xl border border-line-strong bg-bg px-4 text-sm text-fg placeholder:text-subtle transition-all duration-200 focus:border-cyan-ink/45 focus:outline-none focus:ring-1 focus:ring-cyan-ink/25 focus-visible:outline-2 focus-visible:outline-cyan aria-[invalid=true]:border-rose-ink';
 
 export function Input({ className, ...props }: ComponentProps<'input'>) {
   return <input className={cn(control, 'h-11', className)} {...props} />;
 }
 
 export function Textarea({ className, ...props }: ComponentProps<'textarea'>) {
-  return <textarea className={cn(control, 'min-h-[5.5rem] py-2.5 leading-relaxed', className)} {...props} />;
+  return <textarea className={cn(control, 'min-h-[5.5rem] py-3 leading-relaxed', className)} {...props} />;
 }
 
 export function Select({ className, children, ...props }: ComponentProps<'select'>) {
@@ -79,7 +81,7 @@ export function ChoiceChip({
   return (
     <label
       className={cn(
-        'group relative flex cursor-pointer items-start gap-3 rounded-xl border border-line bg-raised px-4 py-3 transition-colors hover:border-line-strong has-[:checked]:border-cyan-ink/50 has-[:checked]:bg-cyan-ink/[0.06] has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-cyan',
+        'group relative flex cursor-pointer items-start gap-3 rounded-xl border border-line bg-bg px-4 py-3 transition-colors hover:border-line-strong has-[:checked]:border-cyan-ink/50 has-[:checked]:bg-cyan-ink/[0.06] has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-cyan',
         disabled && 'cursor-not-allowed opacity-50',
         className,
       )}

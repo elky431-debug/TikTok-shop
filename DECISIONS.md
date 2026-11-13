@@ -900,3 +900,18 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      garde `gpt-6-luna`. Désormais `env.aiKeyProblem` repère une clé mal formée (OpenAI : `sk-…` sans espace ni accent ;
      Anthropic : `sk-ant-…`), le studio l'écrit en clair sans jamais montrer la clé, et `/api/health` la liste dans
      `problems` (statut « degraded ») avec `ai: { provider, model, keyOk }`.
+165. **Coque copiée d'EtSmart** (`components/app/shell.tsx`, d'après `src/app/dashboard/page.tsx` d'EtSmart) : barre
+     latérale fixe de 64 px qui s'ouvre à 256 px au survol ou au focus clavier (`transition-[width] 300 ms ease-out`),
+     sections Accueil / Trouver / Créer / Suivre / Compte (étiquettes 12 px en capitales révélées à l'ouverture), entrée
+     active en dégradé cyan → rose, bloc utilisateur et « Passer Pro » en bas ; sur téléphone, en-tête de 64 px, menu
+     déroulant animé (200 ms) et barre du bas noire floutée à 5 entrées, onglet actif cyan. Contenu décalé de 64 px,
+     barre haute de 44 px (notifications, plan). Conteneur de page d'EtSmart : `max-w-7xl`, marges 12 → 40 px.
+     Préparation n'apparaît qu'en mode préparation ; Espace formateur et Admin seulement pour qui y a droit.
+166. **Composants d'EtSmart, couleurs TikTok** : cartes noires bordées (`rounded-2xl`, halo cyan au survol), en-tête de
+     page (étiquette 10 px, titre 32 px gras serré, une phrase d'utilité, trait bas), titre de section avec trait qui
+     s'efface, pastilles d'icône 36 px, pastilles de variation, badges bordés, champs noirs (focus cyan), squelettes à
+     pulsation d'opacité (1,5 s), onglets à trait dégradé qui glisse (ressort 500 / 30), entrée de page en 300 ms
+     (montée de 20 px). Écarts gardés pour l'accessibilité : textes secondaires en `--text-muted` (#8A8B91, 6:1) au lieu
+     du blanc à 45-50 % d'EtSmart (4,4:1, sous le seuil AA pour 10-12 px) ; axes des graphiques en #8A8B91 au lieu de
+     #666. `MotionConfig reducedMotion="user"` : avec « moins d'animations », plus aucun déplacement, seulement des fondus,
+     et le même rendu côté serveur et navigateur (pas d'erreur d'hydratation).

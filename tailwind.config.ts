@@ -55,6 +55,10 @@ const config: Config = {
           from: { opacity: '0', transform: 'translateY(8px)' },
           to: { opacity: '1', transform: 'translateY(0)' },
         },
+        skeleton: {
+          '0%, 100%': { opacity: '0.5' },
+          '50%': { opacity: '1' },
+        },
         shimmer: {
           '100%': { transform: 'translateX(100%)' },
         },
@@ -67,6 +71,7 @@ const config: Config = {
       animation: {
         'fade-up': 'fade-up 420ms cubic-bezier(.2,.7,.2,1) both',
         shimmer: 'shimmer 1.4s infinite',
+        skeleton: 'skeleton 1.5s ease-in-out infinite',
         pop: 'pop 260ms ease-out',
       },
     },

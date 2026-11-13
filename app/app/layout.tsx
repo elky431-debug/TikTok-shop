@@ -1,106 +1,147 @@
-import Link from 'next/link';
-import type { ReactNode } from 'react';
-import { Logo } from '@/components/brand/logo';
-import { BottomNav, SidebarNav, type NavItem } from '@/components/app/nav';
-import { LinkButton } from '@/components/ui/button';
-import { Badge } from '@/components/ui/surface';
-import { getCoachForViewer, requireOnboardedViewer } from '@/lib/auth/session';
-import { getRepo } from '@/lib/db';
-import { countUnreadNotifications } from '@/lib/notification-center';
-import { getPlan, isPaidPlan } from '@/lib/plans';
+import type { ReactNode } from "react";
+import { MotionProvider } from "@/components/app/motion-provider";
+import {
+  AppBottomNav,
+  AppMobileHeader,
+  AppSidebar,
+  AppTopBar,
+  type NavLink,
+  type NavSection,
+  type ShellUser,
+} from "@/components/app/shell";
+import { getCoachForViewer, requireOnboardedViewer } from "@/lib/auth/session";
+import { getRepo } from "@/lib/db";
+import { countUnreadNotifications } from "@/lib/notification-center";
+import { getPlan, isPaidPlan } from "@/lib/plans";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
+/**
+ * Coque de l'appli au modèle d'EtSmart : barre latérale repliable en sections (ordinateur), en-tête et barre du bas
+ * (téléphone), contenu sur fond noir décalé de la barre repliée (64 px).
+ */
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const viewer = await requireOnboardedViewer();
   const { profile } = viewer;
   const coach = await getCoachForViewer(viewer.user.id);
 
   // « Dernière connexion » pour l'espace formateur, mise à jour au plus toutes les 30 minutes.
-  const lastSeen = profile.last_seen_at ? new Date(profile.last_seen_at).getTime() : 0;
+  const lastSeen = profile.last_seen_at
+    ? new Date(profile.last_seen_at).getTime()
+    : 0;
   if (Date.now() - lastSeen > 30 * 60_000) {
-    await getRepo().updateProfile(profile.id, { last_seen_at: new Date().toISOString() });
+    await getRepo().updateProfile(profile.id, {
+      last_seen_at: new Date().toISOString(),
+    });
   }
 
   const unread = await countUnreadNotifications(profile.id);
-  const items: NavItem[] = [
-    { href: '/app', label: 'Radar', icon: 'radar', mobile: true },
-    { href: '/app/studio', label: 'Studio', icon: 'studio', mobile: true },
-    { href: '/app/mes-produits', label: 'Mes produits', icon: 'produits', mobile: true },
-    { href: '/app/recherche', label: 'Recherche', icon: 'recherche' },
-    { href: '/app/alertes', label: 'Alertes', icon: 'alertes' },
-    { href: '/app/comparer', label: 'Comparer', icon: 'comparer' },
-    { href: '/app/recap', label: 'Récap', icon: 'recap', mobile: true },
-    ...(profile.eligibility === 'preparation' ? [{ href: '/app/preparation', label: 'Préparation', icon: 'preparation' } as NavItem] : []),
-    { href: '/app/plan', label: 'Plan de publication', icon: 'plan' },
-    { href: '/app/gains', label: 'Mes gains', icon: 'gains' },
-    { href: '/app/offres', label: 'Propositions de marques', icon: 'offres' },
-    { href: '/app/analyse', label: 'Analyse de vidéo', icon: 'analyse' },
-    { href: '/app/parrainage', label: 'Parrainage', icon: 'parrainage' },
-    { href: '/app/notifications', label: unread ? `Notifications (${unread})` : 'Notifications', icon: 'notifications' },
-    ...(profile.coach_id ? [{ href: '/app/consentement-formateur', label: 'Mon formateur', icon: 'formateur' } as NavItem] : []),
-    { href: '/app/compte', label: 'Compte', icon: 'compte', mobile: true },
-  ];
-  if (coach) items.push({ href: '/formateur', label: 'Espace formateur', icon: 'formateur' });
-  if (viewer.isAdmin) items.push({ href: '/admin', label: 'Admin', icon: 'admin' });
-
   const plan = getPlan(profile.plan);
+  const accountItems: NavLink[] = [
+    { href: "/app/recap", label: "Récap", icon: "recap" },
+    { href: "/app/parrainage", label: "Parrainage", icon: "parrainage" },
+    ...(profile.eligibility === "preparation"
+      ? [
+          {
+            href: "/app/preparation",
+            label: "Préparation",
+            icon: "preparation",
+          } as NavLink,
+        ]
+      : []),
+    ...(profile.coach_id
+      ? [
+          {
+            href: "/app/consentement-formateur",
+            label: "Mon formateur",
+            icon: "eleve",
+          } as NavLink,
+        ]
+      : []),
+    { href: "/app/compte", label: "Compte", icon: "compte" },
+    ...(coach
+      ? [
+          {
+            href: "/formateur",
+            label: "Espace formateur",
+            icon: "formateur",
+          } as NavLink,
+        ]
+      : []),
+    ...(viewer.isAdmin
+      ? [{ href: "/admin", label: "Admin", icon: "admin" } as NavLink]
+      : []),
+  ];
+  const sections: NavSection[] = [
+    {
+      label: "Accueil",
+      items: [{ href: "/app", label: "Dashboard", icon: "dashboard" }],
+    },
+    {
+      label: "Trouver",
+      items: [
+        { href: "/app/radar", label: "Radar", icon: "radar" },
+        { href: "/app/recherche", label: "Recherche", icon: "recherche" },
+        { href: "/app/alertes", label: "Alertes", icon: "alertes" },
+        { href: "/app/comparer", label: "Comparer", icon: "comparer" },
+      ],
+    },
+    {
+      label: "Créer",
+      items: [
+        { href: "/app/studio", label: "Studio", icon: "studio" },
+        { href: "/app/analyse", label: "Analyse de vidéo", icon: "analyse" },
+        { href: "/app/plan", label: "Plan de publication", icon: "plan" },
+      ],
+    },
+    {
+      label: "Suivre",
+      items: [
+        { href: "/app/mes-produits", label: "Mes produits", icon: "produits" },
+        { href: "/app/gains", label: "Mes gains", icon: "gains" },
+        {
+          href: "/app/offres",
+          label: "Propositions de marques",
+          icon: "offres",
+        },
+      ],
+    },
+    { label: "Compte", items: accountItems },
+  ];
+  const shortcuts: NavLink[] = [
+    { href: "/app", label: "Accueil", icon: "dashboard" },
+    { href: "/app/radar", label: "Radar", icon: "radar" },
+    { href: "/app/studio", label: "Studio", icon: "studio" },
+    { href: "/app/mes-produits", label: "Produits", icon: "produits" },
+    { href: "/app/gains", label: "Gains", icon: "gains" },
+  ];
+  const user: ShellUser = {
+    firstName: profile.first_name ?? "Mon compte",
+    initial:
+      (profile.first_name ?? profile.email).trim().charAt(0).toUpperCase() ||
+      "?",
+    planName: plan.name,
+    paid: isPaidPlan(profile.plan),
+    unread,
+  };
 
   return (
-    <div className="min-h-dvh lg:grid lg:grid-cols-[15.5rem_1fr]">
-      {/* Halo très léger en haut de page (pas de constellation dans l'appli) */}
-      <div
-        className="pointer-events-none fixed inset-x-0 top-0 z-0 h-72"
-        style={{ background: 'radial-gradient(ellipse 60% 100% at 30% 0%, rgba(37,244,238,0.06), transparent 70%), radial-gradient(ellipse 50% 100% at 80% 0%, rgba(254,44,85,0.05), transparent 70%)' }}
-        aria-hidden="true"
-      />
-      <aside className="sticky top-0 z-10 hidden h-dvh flex-col border-r border-line bg-bg/60 px-4 py-6 backdrop-blur-xl lg:flex">
-        <Logo href="/app" className="px-2" />
-        <div className="mt-8 flex-1">
-          <SidebarNav items={items} />
-        </div>
-        <div className="space-y-3 border-t border-line pt-4">
-          <div className="flex items-center justify-between px-2 text-sm">
-            <span className="truncate font-semibold">{profile.first_name}</span>
-            <Badge tone={isPaidPlan(profile.plan) ? 'ink' : 'neutral'}>{plan.name}</Badge>
+    <MotionProvider>
+      <div className="flex min-h-dvh bg-bg">
+        <AppSidebar sections={sections} user={user} />
+        <AppMobileHeader sections={sections} user={user} />
+        <main
+          id="contenu"
+          className="flex min-h-0 min-w-0 flex-1 flex-col bg-bg pb-16 pt-16 lg:ml-16 lg:pb-0 lg:pt-0"
+        >
+          <AppTopBar user={user} />
+          {/* Conteneur de page d'EtSmart : 1 280 px au plus, marges 12 → 40 px, 16 → 40 px en haut. */}
+          <div className="mx-auto w-full max-w-7xl flex-1 px-3 py-4 sm:px-6 sm:py-6 md:px-8 md:py-10 lg:px-10">
+            {children}
           </div>
-          {!isPaidPlan(profile.plan) ? (
-            <LinkButton href="/app/passer-pro" size="sm" className="w-full">
-              Passer Pro
-            </LinkButton>
-          ) : null}
-          <form action="/auth/deconnexion" method="post">
-            <button type="submit" className="w-full rounded-lg px-2 py-1.5 text-left text-sm text-muted hover:text-fg">
-              Me déconnecter
-            </button>
-          </form>
-        </div>
-      </aside>
-
-      <div className="relative z-10 min-w-0">
-        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-line bg-bg/80 px-4 backdrop-blur-xl lg:hidden">
-          <Logo href="/app" />
-          <div className="flex items-center gap-2">
-            {coach ? (
-              <Link href="/formateur" className="text-sm font-semibold text-muted hover:text-fg">
-                Formateur
-              </Link>
-            ) : null}
-            {isPaidPlan(profile.plan) ? (
-              <Badge tone="ink">{plan.name}</Badge>
-            ) : (
-              <LinkButton href="/app/passer-pro" size="sm" className="h-8 px-3">
-                Passer Pro
-              </LinkButton>
-            )}
-          </div>
-        </header>
-        <main id="contenu" className="mx-auto w-full max-w-5xl px-4 pb-28 pt-5 sm:px-6 lg:px-10 lg:pb-16 lg:pt-10">
-          {children}
         </main>
+        <AppBottomNav items={shortcuts} />
       </div>
-
-      <BottomNav items={items} />
-    </div>
+    </MotionProvider>
   );
 }
