@@ -1004,3 +1004,9 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      cyan aux courbes et aux chiffres positifs ; erreurs en rouge. Contrastes calculés puis vérifiés à l'audit axe
      (0 erreur sur l'accueil, le dashboard et le studio, 390 et 1440 px). Captures et planches :
      `docs/captures/palettes/`. Les palettes non retenues seront retirées une fois le choix fait.
+183. **Palette retenue : J « blanc pur »** (choix de l'utilisateur parmi les 10). Elle devient la palette par défaut et les
+     neuf autres sont retirées avec le sélecteur `?palette=` et son cookie : boutons blancs à texte noir (21:1), accents
+     #F4F4F5, dégradé blanc → #A1A1AA (texte noir dessus ≥ 8,2:1), logo et score en gris clair / gris, erreurs #FF5C5C ;
+     cyan gardé aux courbes et aux chiffres positifs. Thème clair : même logique en noir et gris (#161823, #52525B).
+     Suivent aussi : images de partage (`lib/og.tsx`), icône et icônes de l'appli installable (`scripts/pwa-icons.py`),
+     e-mails (boutons noirs, chiffres positifs en cyan foncé). Captures de comparaison gardées dans `docs/captures/palettes/`.

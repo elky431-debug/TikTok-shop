@@ -10,6 +10,3 @@ export const THEME_COOKIE = `${BRAND_SLUG}_theme`;
 export const NEXT_PATH_COOKIE = `${BRAND_SLUG}_suite`;
 
 export const PROTECTED_PREFIXES = ['/app', '/formateur', '/admin', '/bienvenue'];
-
-/** Palette de couleurs choisie pour la comparaison (« a » ou « b ») : préférence d'affichage, cookie technique. */
-export const PALETTE_COOKIE = 'tracktout_palette';

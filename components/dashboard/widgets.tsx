@@ -139,8 +139,8 @@ function usePaletteColor(name: string, fallback: string): string {
 
 export function GainsChart({ series }: { series: DayPoint[] }) {
   const [days, setDays] = useState<7 | 30 | 90>(30);
-  // La courbe des gains reste cyan dans les deux palettes ; la seconde suit la palette (rose ou ambre).
-  const second = usePaletteColor('--chart-2', '#FE2C55');
+  // La courbe des gains reste cyan ; la seconde suit la palette (gris).
+  const second = usePaletteColor('--chart-2', '#A1A1AA');
   const reduce = useReducedMotion();
   const data = series.slice(-days).map((p) => ({ date: p.date, label: formatDayMonth(p.date), gains: p.gains_cents / 100, ventes: p.sales }));
   const total = data.reduce((s, p) => s + p.gains, 0);

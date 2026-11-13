@@ -30,7 +30,7 @@ export function webManifest(): MetadataRoute.Manifest {
       { src: '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
     ],
     shortcuts: [
-      { name: 'Produits du jour', short_name: 'Radar', url: '/app', icons: [{ src: '/icons/icon-192.png', sizes: '192x192' }] },
+      { name: 'Produits du jour', short_name: 'Radar', url: '/app/radar', icons: [{ src: '/icons/icon-192.png', sizes: '192x192' }] },
       { name: 'Écrire un script', short_name: 'Studio', url: '/app/studio', icons: [{ src: '/icons/icon-192.png', sizes: '192x192' }] },
       { name: 'Récap du matin', short_name: 'Récap', url: '/app/recap', icons: [{ src: '/icons/icon-192.png', sizes: '192x192' }] },
     ],

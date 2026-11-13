@@ -18,8 +18,9 @@ from PIL import Image, ImageDraw, ImageFilter
 ROOT = Path(__file__).resolve().parent.parent
 ICONS = ROOT / "public" / "icons"
 SPLASH = ICONS / "splash"
-CYAN = (37, 244, 238, 255)
-PINK = (254, 44, 85, 255)
+# Palette « blanc pur » : reflets gris clair et gris du logo.
+CYAN = (212, 212, 216, 255)
+PINK = (113, 113, 122, 255)
 WHITE = (255, 255, 255, 255)
 BLACK = (0, 0, 0, 255)
 SCALE = 4  # sur-échantillonnage pour des bords lisses
@@ -39,7 +40,7 @@ def draw_mark(img, cx, cy, size, glow=True):
         halo = Image.new("RGBA", img.size, (0, 0, 0, 0))
         hd = ImageDraw.Draw(halo)
         r = size * 0.62
-        hd.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(37, 244, 238, 60))
+        hd.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(244, 244, 245, 45))
         halo = halo.filter(ImageFilter.GaussianBlur(size * 0.18))
         img.alpha_composite(halo)
     d = ImageDraw.Draw(img)
