@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server';
-import { afterAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import TendancesNichePage, { generateMetadata } from '@/app/(public)/tendances/[niche]/page';
 import robots from '@/app/robots';
 import sitemap from '@/app/sitemap';
@@ -51,6 +51,8 @@ describe('sélection de la veille', () => {
   it('relevé du jour fait : classe les produits par le score de la veille (instantanés), une fois par jour', async () => {
     await makeReal();
     const now = new Date(`${DAY}T10:00:00Z`);
+    // Le cache expire selon l'horloge réelle : on la fige au jour du test pour qu'il ne dépende pas de la date.
+    vi.useFakeTimers({ now, toFake: ['Date'] });
     const selection = await getVeilleSelection(repo, now);
     expect(selection.date).toBe('2026-11-11');
     expect(selection.demo).toBe(false);
@@ -59,6 +61,7 @@ describe('sélection de la veille', () => {
     expect(first.rank_value).toBe(snapshot.score);
     expect(selection.products.map((p) => p.rank_value)).toEqual([...selection.products.map((p) => p.rank_value)].sort((a, b) => b - a));
     expect(await repo.getProviderCache(veilleCacheKey(DAY, false))).toEqual(selection);
+    vi.useRealTimers();
   });
 
   it('relevé du jour pas encore fait : le catalogue affiché est déjà celui de la veille', async () => {

@@ -91,7 +91,12 @@ export class OpenAIScriptModel implements ScriptModel {
     if (error instanceof OpenAI.PermissionDeniedError) return 'Ce compte OpenAI n’a pas accès à ce modèle ou à ce service : vérifie OPENAI_MODEL.';
     if (error instanceof OpenAI.RateLimitError) return 'Le service d’écriture est très sollicité (ou le crédit OpenAI est épuisé). Réessaie dans une minute.';
     if (error instanceof OpenAI.NotFoundError) return `Le modèle « ${env.openaiModel} » est introuvable : vérifie OPENAI_MODEL.`;
-    if (error instanceof OpenAI.BadRequestError) return `Le modèle « ${env.openaiModel} » a refusé la demande (paramètre non pris en charge ?). Vérifie OPENAI_MODEL.`;
+    if (error instanceof OpenAI.BadRequestError) {
+      // Détail renvoyé par l'API (paramètre et code, jamais la clé ni la demande) : la cause exacte se lit à l'écran.
+      const detail = [error.param ? `paramètre « ${error.param} »` : null, error.code ? `code ${error.code}` : null].filter(Boolean).join(', ');
+      console.error('[openai] demande refusée', error.status, error.param, error.code, error.message);
+      return `Le modèle « ${env.openaiModel} » a refusé la demande${detail ? ` (${detail})` : ''}. Réessaie, ou vérifie OPENAI_MODEL.`;
+    }
     if (error instanceof OpenAI.APIConnectionError) return 'Impossible de joindre le service d’écriture. Vérifie la connexion et réessaie.';
     if (error instanceof OpenAI.APIError) return `Le service d’écriture a renvoyé une erreur (${error.status ?? 'inconnue'}). Réessaie.`;
     return 'L’écriture des scripts a échoué. Réessaie.';
