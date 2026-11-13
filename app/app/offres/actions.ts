@@ -2,11 +2,12 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { startTask } from '@/lib/tasks/start';
 import { requireOnboardedViewer } from '@/lib/auth/session';
 import { getRepo } from '@/lib/db';
 import { getPlan } from '@/lib/plans';
 import { parisDate } from '@/lib/utils';
-import { extractOffer, followUpDate, scoreOffer, writeReplies, type OfferData, type OfferStatus } from '@/lib/v2/offers';
+import { followUpDate, type OfferData, type OfferStatus } from '@/lib/v2/offers';
 import { remainingToday } from '@/lib/v2/quota';
 
 async function viewer() {
@@ -21,30 +22,9 @@ export async function analyzeOfferAction(formData: FormData) {
   const text = String(formData.get('message') ?? '').trim();
   if (text.length < 30) redirect('/app/offres?erreur=court');
   if ((await remainingToday(profile.id, 'offre', plan.offersPerDay)) <= 0) redirect('/app/offres?erreur=quota');
-  const repo = getRepo();
-  let id: string;
-  try {
-    const extracted = await extractOffer(text);
-    const radar = await repo.listProducts(extracted.data.niche ? { niches: [extracted.data.niche] } : {});
-    const score = scoreOffer(extracted.data, radar);
-    const replies = await writeReplies(extracted.data, score, profile.first_name);
-    const data: OfferData = {
-      text: text.slice(0, 6000),
-      extracted: extracted.data,
-      score,
-      replies: replies.data,
-      status: 'nouvelle',
-      simulated: extracted.simulated || replies.simulated,
-      follow_up_on: null,
-      follow_up_sent: null,
-    };
-    id = (await repo.saveRecord(profile.id, 'offre', data)).id;
-  } catch (error) {
-    console.error('[propositions]', error instanceof Error ? error.message : error);
-    redirect('/app/offres?erreur=ia');
-  }
+  const path = await startTask(profile, 'offre', { message: text.slice(0, 6000) }, '/app/offres');
   revalidatePath('/app/offres');
-  redirect(`/app/offres?offre=${id}`);
+  redirect(path);
 }
 
 /** Statut de la proposition et date de relance (vide = pas de relance). */

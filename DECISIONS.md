@@ -976,3 +976,16 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      dashboard affiche la date du prochain relevé. Remplace la règle « un relevé par jour » de la décision 169.
      `/api/health` donne aussi des indices non secrets sur la forme de la clé d'IA (`ai.keyHints` : préfixe, espaces,
      guillemets, longueur).
+179. **Tâches d'IA en arrière-plan** (`lib/tasks/`, fonction `netlify/functions/taches-background.mts`) : mesuré le
+     13 novembre, une génération complète prend 41 s (16 s même sans raisonnement), or Netlify coupe une fonction
+     synchrone à 10 s par défaut (26 s au plus sur demande ; forum Netlify, la doc n'étant pas joignable d'ici). Les
+     actions longues (scripts, angle de série, série de 20, mon style, analyse de vidéo, propositions, plan de
+     préparation, accroches de la fiche) gardent leurs vérifications rapides (session, plan, quota), enregistrent une
+     fiche `tache_ia` et la confient à la fonction d'arrière-plan (jusqu'à 15 min), appelée avec un jeton HMAC propre à
+     la tâche et à la personne. La page `/app/attente/<id>` se rafraîchit toutes les 2,5 s puis ouvre le résultat (ou la
+     page de départ avec son message d'erreur, comme avant) ; on peut la quitter. Une tâche jamais démarrée au bout
+     d'une minute est déclarée en échec (rien n'est décompté : le quota l'est dans le travail lui-même). En local et dans
+     les tests, la tâche tourne directement (même code). Les retouches courtes (accroche, ligne, raccourcir, plus
+     percutant, traduire) restent instantanées, sans raisonnement.
+180. **Raisonnement OpenAI « low » par défaut** (`OPENAI_REASONING_EFFORT`, valeurs none, low, medium, high) : génération
+     complète 20 s au lieu de 41 s, moins de jetons facturés ; même qualité de forme (schéma, interdits vérifiés).

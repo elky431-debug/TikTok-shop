@@ -1,5 +1,6 @@
 'use client';
 
+import type { ScriptFormat } from '@/lib/db/types';
 import { Fingerprint, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useFormState } from 'react-dom';
@@ -24,6 +25,7 @@ export function StudioForm({
   settings,
   style,
   feedbackCount,
+  draft = null,
 }: {
   today: Option[];
   saved: Option[];
@@ -34,12 +36,28 @@ export function StudioForm({
   /** « actif », « inactif », « absent » (Pro sans style) ou « verrouillé » (plan gratuit). */
   style: 'actif' | 'inactif' | 'absent' | 'verrouille';
   feedbackCount: number;
+  /** Brouillon envoyé par l'analyse de vidéo : présélectionne le format et sert d'inspiration. */
+  draft?: { id: string; title: string; lines: string[]; format: ScriptFormat | null } | null;
 }) {
   const [state, action] = useFormState<StudioState, FormData>(generateAction, {});
   const hasProducts = today.length + saved.length > 0;
 
   return (
     <form action={action} className="space-y-6">
+      {draft ? (
+        <Callout tone="cyan" title={`Inspiration : ${draft.title}`}>
+          <input type="hidden" name="brouillon" value={draft.id} />
+          <p>Tes scripts reprendront l’idée de cette vidéo, adaptée à ton produit, sans la copier.</p>
+          <details className="mt-2">
+            <summary className="cursor-pointer text-sm font-semibold text-cyan-ink">Voir le texte envoyé</summary>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted">
+              {draft.lines.map((line, i) => (
+                <li key={i}>{line}</li>
+              ))}
+            </ul>
+          </details>
+        </Callout>
+      ) : null}
       {state.error ? (
         <Callout
           tone={state.code === 'limite' ? 'warn' : 'rose'}
@@ -92,7 +110,7 @@ export function StudioForm({
 
       <OptionGroup legend="Format de la vidéo" columns="grid-cols-2 lg:grid-cols-4">
         {SCRIPT_FORMATS.map((format, i) => (
-          <OptionChip key={format.id} name="format" value={format.id} defaultChecked={i === 0} hint={format.hint}>
+          <OptionChip key={format.id} name="format" value={format.id} defaultChecked={draft?.format ? draft.format === format.id : i === 0} hint={format.hint}>
             {format.label}
           </OptionChip>
         ))}

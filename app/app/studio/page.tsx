@@ -11,6 +11,8 @@ import { listDocs, listHistory, type HistoryItem } from '@/lib/studio/store';
 import { getStyle } from '@/lib/studio/style';
 import { cn, formatRelative } from '@/lib/utils';
 import { StudioForm } from './studio-form';
+import { getRepo } from '@/lib/db';
+import { readStudioDraft } from '@/lib/v2/studio-draft';
 
 export const metadata: Metadata = { title: 'Studio de scripts' };
 
@@ -25,17 +27,18 @@ const PAGE = 30;
 export default async function StudioPage({
   searchParams,
 }: {
-  searchParams: { produit?: string; gardes?: string; vendu?: string; supprime?: string; plus?: string };
+  searchParams: { produit?: string; gardes?: string; vendu?: string; supprime?: string; plus?: string; brouillon?: string; erreur?: string };
 }) {
   const { profile } = await requireOnboardedViewer('/app/studio');
   const rights = studioRights(profile.plan);
-  const [products, usage, history, docs, style, settings] = await Promise.all([
+  const [products, usage, history, docs, style, settings, draft] = await Promise.all([
     listStudioProducts(profile),
     getUsageToday(profile),
     listHistory(profile.id),
     listDocs(profile.id),
     rights.personalStyle ? getStyle(profile.id) : Promise.resolve(null),
     latestSettings(profile),
+    readStudioDraft(getRepo(), profile.id, searchParams.brouillon),
   ]);
   const filter = searchParams.gardes === '1' ? 'gardes' : searchParams.vendu === '1' ? 'vendu' : 'tous';
   const filtered = history.filter((h) => (filter === 'gardes' ? h.saved : filter === 'vendu' ? h.sold : true));
@@ -52,6 +55,11 @@ export default async function StudioPage({
       />
       <StudioNav active="ecrire" />
 
+      {searchParams.erreur ? (
+        <Callout tone="rose" className="mb-4" title="Scripts non écrits">
+          {searchParams.erreur.slice(0, 300)}
+        </Callout>
+      ) : null}
       {searchParams.supprime ? (
         <Callout tone="neutral" className="mb-4">
           Script supprimé.
@@ -68,6 +76,7 @@ export default async function StudioPage({
           settings={settings}
           style={!rights.personalStyle ? 'verrouille' : !style ? 'absent' : style.data.enabled ? 'actif' : 'inactif'}
           feedbackCount={feedbackCount}
+          draft={draft ? { id: draft.id, title: draft.title, lines: draft.lines, format: draft.format } : null}
         />
       </Card>
 

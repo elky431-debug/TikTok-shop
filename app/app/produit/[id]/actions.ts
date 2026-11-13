@@ -2,13 +2,13 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { startTask } from '@/lib/tasks/start';
 import { requireOnboardedViewer } from '@/lib/auth/session';
 import { createProvider, type ProviderName } from '@/lib/data';
 import { getRepo } from '@/lib/db';
 import { videosAreFresh } from '@/lib/jobs/refresh';
 import { DEFAULT_VIDEO_GOAL, isPaidPlan } from '@/lib/plans';
 import { canAccessProduct } from '@/lib/radar';
-import { requestHookAnalysis } from '@/lib/radar/hook-analysis';
 
 export async function saveProductAction(formData: FormData) {
   const { profile } = await requireOnboardedViewer();
@@ -32,13 +32,9 @@ export async function analyzeHooksAction(formData: FormData) {
   const back = `/app/produit/${encodeURIComponent(productId)}`;
   const product = await getRepo().getProduct(productId);
   if (!product || !(await canAccessProduct(profile, productId))) redirect('/app/radar');
-  const result = await requestHookAnalysis(profile, product);
-  if (!result.ok) {
-    if (result.reason === 'plan') redirect('/app/passer-pro');
-    redirect(`${back}?accroches=${result.reason}#accroches`);
-  }
+  const path = await startTask(profile, 'accroches', { produit: productId }, `${back}#accroches`);
   revalidatePath(back);
-  redirect(`${back}#accroches`);
+  redirect(path);
 }
 
 /**

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { startTask } from '@/lib/tasks/start';
 import { requireOnboardedViewer } from '@/lib/auth/session';
 import { getRepo } from '@/lib/db';
 import { isNicheId, type NicheId } from '@/lib/niches';
@@ -12,11 +13,9 @@ import {
   CONTENT_PLAN_KIND,
   contentPlansPerDay,
   declareThresholdReached,
-  generateContentPlan,
   getPreparation,
   recordFollowers,
   savePreparation,
-  type ContentPlanData,
 } from '@/lib/v2/preparation';
 import { remainingToday } from '@/lib/v2/quota';
 
@@ -74,19 +73,9 @@ export async function generatePlanAction() {
   const prep = await getPreparation(repo, profile.id);
   if (!prep.data.niche) back('erreur=niche#niche');
   if ((await remainingToday(profile.id, CONTENT_PLAN_KIND, contentPlansPerDay(profile))) <= 0) back('erreur=quota#plan');
-  try {
-    const result = await generateContentPlan(prep.data.niche!, profile, prep.data.tastes.about);
-    await repo.saveRecord<ContentPlanData>(profile.id, CONTENT_PLAN_KIND, {
-      niche: prep.data.niche!,
-      plan: result.plan,
-      simulated: result.simulated,
-      created_at: new Date().toISOString(),
-    });
-  } catch (error) {
-    console.error('[préparation] plan', error instanceof Error ? error.message : error);
-    back('erreur=ia#plan');
-  }
-  back('ok=plan#plan');
+  const path = await startTask(profile, 'preparation', {}, `${PATH}#plan`);
+  revalidatePath(PATH);
+  redirect(path);
 }
 
 export async function saveChecklistAction(formData: FormData) {

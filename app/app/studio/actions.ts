@@ -2,11 +2,13 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { startTask } from '@/lib/tasks/start';
 import { isScriptFormat, isTranslationLang, parseSettings } from '@/lib/ai/formats';
 import { requireOnboardedViewer } from '@/lib/auth/session';
-import { createScripts, deleteGeneration, latestSettings, regenerateHookAt, setScriptSaved, StudioError } from '@/lib/studio';
+import { deleteGeneration, getUsageToday, latestSettings, regenerateHookAt, setScriptSaved, StudioError } from '@/lib/studio';
 import { editLine, rateScript, rewriteScript, translateDocScript, undoScript } from '@/lib/studio/edit';
 import type { StudioDocView } from '@/lib/studio/types';
+import { getPlan } from '@/lib/plans';
 
 export interface StudioState {
   error?: string;
@@ -24,16 +26,15 @@ export async function generateAction(_prev: StudioState, formData: FormData): Pr
     await latestSettings(profile),
   );
 
-  let id: string;
-  try {
-    id = (await createScripts(profile, productId, format, { settings })).id;
-  } catch (error) {
-    if (error instanceof StudioError) return { error: error.message, code: error.code };
-    console.error('[studio] génération', error);
-    return { error: 'L’écriture des scripts a échoué. Réessaie dans un instant.' };
+  // Vérifications rapides ici (quota du jour) ; l'écriture, longue, part en tâche d'arrière-plan.
+  if ((await getUsageToday(profile)).remaining <= 0) {
+    const plan = getPlan(profile.plan);
+    return { error: `Tu as écrit tes ${plan.scriptsPerDay} scripts du jour (plan ${plan.name}). Ton compteur repart à zéro demain matin.`, code: 'limite' };
   }
+  const brouillon = String(formData.get('brouillon') ?? '') || null;
+  const path = await startTask(profile, 'studio', { produit: productId, format, reglages: settings, brouillon }, `/app/studio?produit=${encodeURIComponent(productId)}`);
   revalidatePath('/app/studio');
-  redirect(`/app/studio/${id}`);
+  redirect(path);
 }
 
 function field(formData: FormData, name: string): string {

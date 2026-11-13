@@ -36,6 +36,15 @@ export const env = {
    * Modèle OpenAI des scripts. Défaut : gpt-6-luna, le moins cher des modèles en service qui gèrent les sorties
    * JSON structurées (doc officielle, 12 novembre 2026 ; voir DECISIONS.md, décision 115).
    */
+  /**
+   * Niveau de raisonnement des appels OpenAI (`reasoning.effort`, documenté pour gpt-6-luna). « low » par défaut :
+   * mesuré le 13 novembre, une génération complète passe de 41 s à 20 s, avec beaucoup moins de jetons facturés.
+   * Vide ou « defaut » = celui du modèle.
+   */
+  get openaiReasoningEffort(): 'none' | 'low' | 'medium' | 'high' | null {
+    const value = read('OPENAI_REASONING_EFFORT').toLowerCase() || 'low';
+    return value === 'none' || value === 'low' || value === 'medium' || value === 'high' ? value : null;
+  },
   get openaiModel() {
     return read('OPENAI_MODEL') || 'gpt-6-luna';
   },

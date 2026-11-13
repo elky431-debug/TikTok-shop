@@ -61,6 +61,8 @@ export interface ScriptInput {
   feedback?: Feedback | null;
   /** Angle imposé (série de 20 vidéos). */
   seriesAngle?: SeriesAngleInput | null;
+  /** Inspiration envoyée par le créateur (analyse de vidéo → studio), déjà balisée comme donnée à adapter. */
+  inspiration?: string | null;
 }
 
 export interface ScriptOutput {

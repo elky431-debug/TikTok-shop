@@ -165,6 +165,7 @@ export function buildUserPrompt(input: ScriptInput): string {
     `- Une phrase qu'il dirait : ${input.examplePhrase ? `« ${input.examplePhrase} »` : 'non précisée (ton naturel et direct)'}`,
     '',
     ...(input.personalStyle ? [...describeStyle(input.personalStyle), ''] : []),
+    ...(input.inspiration ? [input.inspiration, ''] : []),
     ...(input.feedback && (input.feedback.best.length || input.feedback.weak.length) ? [...describeFeedback(input.feedback), ''] : []),
     '## Vidéos qui vendent déjà ce produit (pour t’inspirer, sans copier)',
     ...(videos.length ? videos.map((v) => `- ${describeVideo(v)}`) : ['- Aucune donnée disponible.']),

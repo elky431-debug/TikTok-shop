@@ -15,6 +15,7 @@ import { collectFeedback } from './studio/feedback';
 import { deleteDoc, getDoc, insertDoc, listDocs, updateDoc } from './studio/store';
 import { activeStyle } from './studio/style';
 import type { StudioDocView } from './studio/types';
+import { draftAsPromptContext, type StudioDraft } from '@/lib/v2/studio-draft';
 
 export { StudioError, type StudioErrorCode } from './studio/errors';
 export { studioRights, type StudioRights } from './studio/limits';
@@ -56,7 +57,7 @@ export function buildScriptInput(
   profile: Profile,
   product: Product,
   format: StudioFormat,
-  extras: Pick<ScriptInput, 'settings' | 'personalStyle' | 'feedback' | 'seriesAngle'> = {},
+  extras: Pick<ScriptInput, 'settings' | 'personalStyle' | 'feedback' | 'seriesAngle' | 'inspiration'> = {},
 ): ScriptInput {
   return {
     product,
@@ -69,6 +70,7 @@ export function buildScriptInput(
     personalStyle: extras.personalStyle ?? null,
     feedback: extras.feedback ?? null,
     seriesAngle: extras.seriesAngle ?? null,
+    inspiration: extras.inspiration ?? null,
   };
 }
 
@@ -76,6 +78,8 @@ export interface CreateOptions {
   settings?: ScriptSettings;
   /** Génération demandée depuis un angle d'une série de 20 vidéos. */
   series?: { id: string; index: number; angle: SeriesAngle };
+  /** Brouillon envoyé au studio (analyse de vidéo), relu côté serveur ; compte comme une écriture normale. */
+  draft?: StudioDraft | null;
 }
 
 /**
@@ -106,7 +110,13 @@ export async function createScripts(profile: Profile, productId: string, format:
     const [personalStyle, docs] = await Promise.all([activeStyle(profile), listDocs(profile.id)]);
     const feedback = collectFeedback(docs);
     const result = await generateScripts(
-      buildScriptInput(profile, product, format, { settings, personalStyle, feedback, seriesAngle: options.series?.angle ?? null }),
+      buildScriptInput(profile, product, format, {
+        settings,
+        personalStyle,
+        feedback,
+        seriesAngle: options.series?.angle ?? null,
+        inspiration: options.draft ? draftAsPromptContext(options.draft) : null,
+      }),
     );
     const scripts = result.scripts.map((s) => ensureCommercialMention(s));
     return await insertDoc(profile.id, {

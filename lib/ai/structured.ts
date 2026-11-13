@@ -19,6 +19,8 @@ export interface StructuredRequest<T> {
   system: string;
   prompt: string;
   maxTokens?: number;
+  /** Retouche courte, faite pendant le clic : sans raisonnement (OpenAI), pour rester sous la limite de 10 s de Netlify. */
+  quick?: boolean;
   simulate: () => T;
 }
 
@@ -47,6 +49,7 @@ async function runOpenAI<T>(request: StructuredRequest<T>): Promise<T | null> {
       input: request.prompt,
       max_output_tokens: request.maxTokens ?? 6000,
       store: false,
+      ...(request.quick ? { reasoning: { effort: 'none' as const } } : env.openaiReasoningEffort ? { reasoning: { effort: env.openaiReasoningEffort } } : {}),
       text: { format: zodTextFormat(request.schema as never, request.name) },
     });
     if (response.output.some((item) => item.type === 'message' && item.content.some((part) => part.type === 'refusal'))) {

@@ -86,7 +86,7 @@ async function askClean<T extends object>(request: {
   simulate: () => T;
   maxTokens?: number;
 }): Promise<EditResult<T>> {
-  let result = await askStructured({ ...request, system: EDIT_SYSTEM_PROMPT });
+  let result = await askStructured({ ...request, system: EDIT_SYSTEM_PROMPT, quick: true });
   const problems = textsOf(result.data as never).flatMap((t) => findIssues(t).map((i) => `${i.reason} : « ${t} »`));
   if (problems.length && !result.simulated) {
     result = await askStructured({
@@ -302,6 +302,7 @@ export function simulateTranslation(script: StudioScript, lang: TranslationLang)
 
 export async function translateScript(script: StudioScript, lang: TranslationLang, ctx: EditContext): Promise<EditResult<StudioScript>> {
   const result = await askStructured({
+    quick: true,
     name: 'traduction_script',
     schema: TranslationSchema,
     system: EDIT_SYSTEM_PROMPT,

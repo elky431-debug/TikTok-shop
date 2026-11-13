@@ -73,6 +73,7 @@ export class OpenAIScriptModel implements ScriptModel {
         input: withCorrection(buildUserPrompt(input), correction),
         max_output_tokens: 16_000,
         store: false,
+        ...(env.openaiReasoningEffort ? { reasoning: { effort: env.openaiReasoningEffort } } : {}),
         text: { format: zodTextFormat(GenerationSchema, 'scripts_video') },
       }),
     );
@@ -87,6 +88,8 @@ export class OpenAIScriptModel implements ScriptModel {
         input: buildHookPrompt(input, existing),
         max_output_tokens: 4_000,
         store: false,
+        // Une seule accroche, pendant le clic : sans raisonnement, pour rester sous la limite de 10 s de Netlify.
+        reasoning: { effort: 'none' },
         text: { format: zodTextFormat(SingleHookSchema, 'accroche') },
       }),
     );
