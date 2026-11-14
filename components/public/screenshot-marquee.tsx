@@ -62,7 +62,13 @@ function Card({ shot, decorative }: { shot: MarqueeShot; decorative: boolean }) 
 
 function Row({ shots, direction, decorative = false }: { shots: MarqueeShot[]; direction: 'left' | 'right'; decorative?: boolean }) {
   return (
-    <div className="marquee-row">
+    // Animations réduites : la rangée se fait défiler à la main, donc elle doit aussi se prendre au clavier (flèches).
+    <div
+      className={decorative ? 'marquee-row marquee-decorative' : 'marquee-row focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan'}
+      tabIndex={decorative ? undefined : 0}
+      role={decorative ? undefined : 'region'}
+      aria-label={decorative ? undefined : 'Captures de l’appli (fais défiler avec les flèches)'}
+    >
       <div className={`marquee-track marquee-${direction}`}>
         {[0, 1].map((dup) => (
           // Deuxième copie pour une boucle sans couture (translation de −50 %), cachée aux lecteurs d'écran.

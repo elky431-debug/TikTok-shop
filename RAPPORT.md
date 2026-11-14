@@ -657,3 +657,50 @@ Six étapes, un commit chacune, poussées sur `main` (Netlify) et `claude/kind-g
 - Le défilé de captures de l'accueil montre encore l'ancien « Mes gains » : relancer `npm run screenshots:landing` pour
   le mettre à jour.
 - Stripe : toujours en attente de ta clé (voir la section précédente).
+
+## Corrections : recherche, dashboard, récap, parrainage, accueil (14 novembre, décisions 205 à 210)
+
+Six étapes, un commit chacune, toutes en ligne sur https://tracktout.com.
+
+1. **Recherche** : chaque résultat ouvre une vraie fiche produit (créée à la volée à partir du résultat déjà reçu,
+   sans nouvel appel payant), avec score et « pourquoi maintenant ». Sur chaque carte : « Écrire mes scripts »,
+   l'étoile pour suivre, « Comparer » (au survol sur ordinateur, toujours visibles sur téléphone). Nom court et niche
+   en français ; score sur chaque carte ; plus de ligne technique sur la source.
+2. **Dashboard** : dashboard et gestionnaire ne font plus qu'un sur `/app` (onglet « Dashboard » ;
+   `/app/gestionnaire` y renvoie). Profil et période en haut, une ligne de chiffres, produit du jour à côté de la
+   courbe, onglets Produits en cours / Échantillons / Vidéos / Commissions / Calendrier, puis l'activité récente.
+3. **Pleine largeur** : plus de largeur maximale dans l'appli, marges de 16 px (téléphone) et 32 px (ordinateur),
+   colonnes en plus sur grand écran, textes longs à largeur de lecture. Vérifié à 390, 1 440 et 1 920 px.
+4. **Récap** : « Ton récap du matin », l'aperçu de l'e-mail réel dans une boîte de réception à gauche, quatre
+   réglages à droite (récap du matin, heure, bilan du dimanche, « M'envoyer un exemple maintenant »). Discord et
+   notifications cachés tant qu'ils ne marchent pas ; plus de mention technique. E-mail refait : défi du jour, puis
+   5 cartes produits (photo, nom court, score, commission par vente, tendance). Noms courts partout.
+5. **Parrainage retiré côté utilisateur** (page, menus, accueil, CGV, compte, connexion, inscription) ; système
+   formateur intact (codes, 30 %, espace formateur). Tables gardées, plus rien d'affiché ; un ancien code personnel ne
+   rattache plus personne et ne crée plus de commission.
+6. **Accueil** : captures du défilé refaites sur la nouvelle interface (« Récap du matin » à la place de « Mes
+   gains », badge « Exemple » sur le dashboard).
+
+| Vérification | Résultat |
+| --- | --- |
+| `npm run build`, `npm run lint` | ✅ |
+| `npm test` | ✅ 456 tests (dont e-mail du récap, retrait du parrainage, fiches créées depuis une recherche) |
+| Playwright | ✅ 4 tests (inscription, lien formateur, paiement, studio) |
+| axe (WCAG 2.1 AA), 390 et 1 440 px | ✅ 0 violation : 11 pages de l'appli, 6 pages publiques, onglets et fenêtre du dashboard |
+| Captures 390 / 1 440 / 1 920 px | ✅ `docs/captures/corrections/` (dashboard, recherche, récap), relues avant l'envoi |
+| Recherche en ligne, 3 mots-clés (« parfum », « brosse », « calendrier ») | ✅ 10 fiches sur 10 ouvertes, 3 scripts écrits (10 accroches et 3 scripts chacun), suivi et comparateur OK ; compte de test supprimé |
+| Aucune trace de « parrainage » | ✅ site en ligne (7 pages) et appli (16 pages) ; reste seulement dans le code interne et l'admin (« ancien lien d'invitation ») |
+| Clés secrètes dans le code du navigateur | ✅ aucune (OpenAI, Stripe, Supabase) |
+
+À savoir :
+- **Capture de l'analyse de vidéo** : la pièce jointe n'est pas arrivée dans la session. La carte garde une capture
+  de l'appli. Pour mettre la tienne : la poser dans `docs/landing/analyse.png` puis lancer
+  `npm run screenshots:landing -- --sources` (recadrage et WebP 640 et 320 px automatiques), ou me la renvoyer.
+- **Crédits Nexscope épuisés** (code 13011) : la recherche cherche alors dans le radar du jour et l'indique en une
+  ligne. Le dernier relevé de nuit réussi date du 12 novembre : `/api/health` est « down » à cause de ces données de plus
+  de 36 h (et de Stripe pas encore configuré sur Netlify). Recharger les crédits relance le relevé de nuit.
+- Les photos des produits ne s'affichent pas dans les captures de l'accueil (leur hébergeur n'est pas joignable depuis
+  l'environnement de capture) : visuels de repli à la place, comme avant. En ligne, les photos s'affichent.
+- **Stripe** : les 4 variables (STRIPE_SECRET_KEY, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, STRIPE_WEBHOOK_SECRET,
+  STRIPE_PORTAL_CONFIGURATION) sont toujours à poser dans Netlify ; les paiements de test en ligne attendent ça. Après
+  les tests, régénérer la clé secrète de test (elle est passée dans la conversation).

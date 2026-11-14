@@ -378,6 +378,10 @@
   .marquee-row::-webkit-scrollbar {
     display: none;
   }
+  /* La seconde rangée, décorative et cachée aux lecteurs d'écran, ne défile pas (rien à atteindre au clavier). */
+  .marquee-row.marquee-decorative {
+    overflow-x: hidden;
+  }
   .marquee-group[aria-hidden='true'] {
     display: none;
   }
