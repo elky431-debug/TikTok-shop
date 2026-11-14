@@ -4,12 +4,12 @@ import { newOnboardedUser } from './helpers';
 test('génération de scripts (Starter) : 5 formats, 10 accroches, 3 scripts, régénérer, garder, historique', async ({ page }) => {
   await newOnboardedUser(page, 'studio', 'Starter');
 
-  // Depuis le radar : fiche produit puis « Écrire mes scripts »
+  // Le studio, ouvert sur le premier produit du radar (« Écrire mes scripts » passe par le lancement : voir lancement.spec.ts).
   await page.goto('/app/radar');
   const firstProduct = page.locator('a[href^="/app/produit/"]').first();
-  const productName = (await firstProduct.locator('h2, h3').first().textContent())?.trim() ?? '';
-  await firstProduct.click();
-  await page.getByRole('link', { name: 'Écrire mes scripts' }).click();
+  const productName = ((await firstProduct.getAttribute('aria-label')) ?? '').replace('Ouvrir la fiche de ', '').trim();
+  const productId = ((await firstProduct.getAttribute('href')) ?? '').split('/').pop();
+  await page.goto(`/app/studio?produit=${productId}`);
   await expect(page).toHaveURL(/\/app\/studio\?produit=/);
   await expect(page.getByText('Il te reste 10 écritures aujourd’hui.')).toBeVisible();
   // Starter : 5 formats ouverts, les 3 autres visibles mais fermés (inclus avec Pro).

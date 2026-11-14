@@ -1367,3 +1367,13 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      grande. Résultats : vues et ventes par vidéo (saisies ou corrigées), commissions du produit (saisie, ou import du
      relevé dans le dashboard ; Pro et Elite, comme le suivi des gains), totaux, et un conseil sans promesse
      (lib/v2/launch.ts). « Marquer terminé » ou « Abandonner ce lancement » le range dans l'historique.
+218. **Lancer un produit, étape 6 : vérifications et accueil** (14 novembre). Nouveau parcours Playwright
+     (`tests/e2e/lancement.spec.ts`, sur téléphone) : radar → échantillon demandé puis reçu → scripts écrits et gardé →
+     planning et une vidéo déplacée au toucher → vidéo tournée → lien de vidéo TikTok collé → vues, ventes, commission →
+     statut corrigé à la main en « Terminé » ; le statut du dashboard est vérifié à chaque étape. Le parcours du studio
+     ouvre maintenant le studio directement (« Écrire mes scripts » de la fiche passe par le lancement). Sur téléphone,
+     le calendrier tient en 7 colonnes (numéro du jour seul, puces compactes) et les noms des étapes de la frise restent
+     lus par les lecteurs d'écran. L'audit axe exclut le contenu du lecteur officiel de TikTok (cadre tiers, dont nous ne
+     contrôlons ni les images ni les libellés ; le cadre lui-même a son titre). Le défilé de l'accueil gagne une carte
+     « Lancer un produit » (le compte de démo des captures a un lancement planifié) ; les vraies photos des produits
+     apparaissent maintenant dans les captures (hébergeur ouvert dans l'environnement de capture).

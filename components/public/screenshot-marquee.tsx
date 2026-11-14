@@ -17,6 +17,7 @@ export interface MarqueeShot {
 /** Même ordre que `LANDING_SHOTS` dans `scripts/screenshots-landing.ts`. */
 export const MARQUEE_SHOTS: MarqueeShot[] = [
   { slug: 'dashboard', label: 'Dashboard', badge: 'Exemple' },
+  { slug: 'lancer', label: 'Lancer un produit' },
   { slug: 'radar', label: 'Radar' },
   { slug: 'fiche-produit', label: 'Fiche produit' },
   { slug: 'studio', label: 'Studio de scripts' },

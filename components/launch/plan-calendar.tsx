@@ -16,6 +16,8 @@ export interface CalendarVideo {
 const WEEKDAYS = ['Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.', 'Dim.'];
 const dayLabel = (date: string) =>
   new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }).format(new Date(`${date}T12:00:00Z`));
+/** Numéro du jour (avec le mois le 1er) : en-tête de case sur téléphone. */
+const dayNumber = (date: string) => (date.endsWith('-01') ? shortDay(date) : String(Number(date.slice(8))));
 const shortDay = (date: string) => new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(`${date}T12:00:00Z`));
 
 /**
@@ -63,12 +65,13 @@ export function PlanCalendar({ launchId, videos, weeks, today }: { launchId: str
       <p className="sr-only" role="status" aria-live="polite">
         {message}
       </p>
-      <div className={cn('overflow-x-auto', pending && 'opacity-80')}>
-        <table className="w-full min-w-[42rem] table-fixed border-separate border-spacing-1 text-sm">
+      <div className={cn(pending && 'opacity-80')}>
+        {/* 7 colonnes à toutes les tailles : sur téléphone, numéro du jour seul et puces compactes. */}
+        <table className="w-full table-fixed border-separate border-spacing-0.5 text-sm sm:border-spacing-1">
           <thead>
             <tr>
               {WEEKDAYS.map((d) => (
-                <th key={d} scope="col" className="pb-1 text-xs font-medium text-muted">
+                <th key={d} scope="col" className="pb-1 text-[11px] font-medium text-muted sm:text-xs">
                   {d}
                 </th>
               ))}
@@ -98,24 +101,28 @@ export function PlanCalendar({ launchId, videos, weeks, today }: { launchId: str
                         setDragging(null);
                       }}
                       className={cn(
-                        'h-24 rounded-xl border align-top transition-colors',
+                        'h-16 rounded-lg border align-top transition-colors sm:h-24 sm:rounded-xl',
                         past ? 'border-transparent bg-fg/[0.02] text-subtle' : 'border-line bg-raised',
                         day === today && 'border-cyan-ink/60',
                         over === day && 'border-cyan-ink bg-cyan-ink/[0.08]',
                       )}
                     >
-                      <div className="flex h-full flex-col gap-1 p-1.5">
+                      <div className="flex h-full flex-col gap-1 p-0.5 sm:p-1.5">
                         {canDrop && selected !== null ? (
                           <button
                             type="button"
                             onClick={() => move(selected, day)}
-                            className="num rounded-md text-left text-xs font-semibold text-cyan-ink underline-offset-2 hover:underline"
+                            className="num rounded-md text-left text-[11px] font-semibold text-cyan-ink underline-offset-2 hover:underline sm:text-xs"
                             aria-label={`Mettre la vidéo n°${selected} le ${dayLabel(day)}`}
                           >
-                            {shortDay(day)} · ici
+                            <span className="sm:hidden">{dayNumber(day)} ici</span>
+                            <span className="hidden sm:inline">{shortDay(day)} · ici</span>
                           </button>
                         ) : (
-                          <span className={cn('num text-xs font-semibold', day === today ? 'text-cyan-ink' : 'text-muted')}>{shortDay(day)}</span>
+                          <span className={cn('num text-[11px] font-semibold sm:text-xs', day === today ? 'text-cyan-ink' : 'text-muted')}>
+                            <span className="sm:hidden">{dayNumber(day)}</span>
+                            <span className="hidden sm:inline">{shortDay(day)}</span>
+                          </span>
                         )}
                         {items.map((v) => (
                           <button
@@ -132,7 +139,7 @@ export function PlanCalendar({ launchId, videos, weeks, today }: { launchId: str
                             aria-pressed={selected === v.n}
                             aria-label={`Vidéo n°${v.n}${v.script ? ` (${v.script})` : ''}, ${dayLabel(day)}${v.status === 'poste' ? ', en ligne' : ' : la choisir pour la déplacer'}`}
                             className={cn(
-                              'flex w-full cursor-grab items-center gap-1 truncate rounded-lg px-1.5 py-1 text-left text-xs font-semibold active:cursor-grabbing',
+                              'flex w-full cursor-grab items-center gap-1 truncate rounded-md px-1 py-0.5 text-left text-[11px] font-semibold active:cursor-grabbing sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs',
                               v.status === 'poste'
                                 ? 'cursor-default bg-gain-soft text-gain'
                                 : v.status === 'tourne'
@@ -141,7 +148,7 @@ export function PlanCalendar({ launchId, videos, weeks, today }: { launchId: str
                               selected === v.n && 'ring-2 ring-cyan-ink',
                             )}
                           >
-                            {v.status !== 'poste' ? <GripVertical className="h-3 w-3 shrink-0" aria-hidden="true" /> : null}
+                            {v.status !== 'poste' ? <GripVertical className="hidden h-3 w-3 shrink-0 sm:block" aria-hidden="true" /> : null}
                             <span className="truncate">n°{v.n}</span>
                           </button>
                         ))}

@@ -36,6 +36,7 @@ const VIEWPORT = { width: 1100, height: 715 };
 
 export const LANDING_SHOTS = [
   'dashboard',
+  'lancer',
   'radar',
   'fiche-produit',
   'studio',
@@ -128,7 +129,15 @@ const OFFER_TEXT = `Bonjour ! Je m'occupe des partenariats d'une jeune marque de
 ton contenu beauté. On te propose un échantillon gratuit de notre sérum éclat et 15 % de commission sur chaque vente faite avec
 ton lien, pendant 3 mois, pour 2 vidéos par mois. Est-ce que ça t'intéresserait ? Bonne journée, l'équipe partenariats.`;
 
-async function buildDemo(): Promise<{ docId: string; seriesId: string; analysisId: string; offerId: string; productId: string; compare: string[] }> {
+async function buildDemo(): Promise<{
+  docId: string;
+  seriesId: string;
+  analysisId: string;
+  offerId: string;
+  productId: string;
+  compare: string[];
+  launchId: string;
+}> {
   Object.assign(process.env, localEnv(true));
   rmSync(DB_FILE, { force: true });
   const { getRepo } = await import('@/lib/db');
@@ -240,7 +249,27 @@ async function buildDemo(): Promise<{ docId: string; seriesId: string; analysisI
   const seriesId = idOf(await TASK_HANDLERS.serie(profile, { produit: main.id }, repo), /\/app\/studio\/serie\/([\w-]+)$/);
   const analysisId = idOf(await TASK_HANDLERS.analyse(profile, { lien: '', texte: videoText(main.name.toLowerCase()), video: null, produit: main.id }, repo), /analyse=([\w-]+)/);
   const offerId = idOf(await TASK_HANDLERS.offre(profile, { message: OFFER_TEXT }, repo), /offre=([\w-]+)/);
-  return { docId, seriesId, analysisId, offerId, productId: main.id, compare };
+
+  // Lancement du produit principal : produit, échantillon reçu, 3 scripts gardés, vidéos planifiées (calendrier capturé).
+  const { startLaunch, saveLaunch } = await import('@/lib/v2/launch-store');
+  const { completeStep } = await import('@/lib/v2/launch');
+  const { getDoc } = await import('@/lib/studio/store');
+  const { SAMPLE_KIND } = await import('@/lib/v2/manager');
+  const started = await startLaunch(repo, profile, main.id, today);
+  if (!started.ok) throw new Error('Lancement de démo impossible.');
+  const doc = await getDoc(id, docId, repo);
+  const sample = await repo.saveRecord(id, SAMPLE_KIND, {
+    product_id: main.id,
+    product_name: main.name,
+    requested_at: addDays(today, -14),
+    received_at: addDays(today, -11),
+    follow_ups: [],
+    note: null,
+  });
+  let launchData: typeof started.launch.data = { ...started.launch.data, sample: 'recu', sample_id: sample.id, kept: (doc?.scripts ?? []).map((s, i) => ({ doc_id: docId, script: i, title: s.title })) };
+  for (const step of ['echantillon', 'scripts', 'planifier'] as const) launchData = completeStep(launchData, step);
+  await saveLaunch(repo, id, started.launch, launchData);
+  return { docId, seriesId, analysisId, offerId, productId: main.id, compare, launchId: started.launch.id };
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -306,6 +335,7 @@ async function capture(ids: Awaited<ReturnType<typeof buildDemo>>) {
 
   const pages: Record<(typeof LANDING_SHOTS)[number], string> = {
     dashboard: '/app',
+    lancer: `/app/lancer/${ids.launchId}?etape=planifier`,
     radar: '/app/radar',
     'fiche-produit': `/app/produit/${encodeURIComponent(ids.productId)}`,
     studio: `/app/studio/${ids.docId}`,

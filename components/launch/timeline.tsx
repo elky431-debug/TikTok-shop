@@ -35,7 +35,8 @@ export function LaunchTimeline({ id, done, viewing }: { id: string | null; done:
                 <span
                   className={cn(
                     'truncate text-xs font-semibold',
-                    isViewing ? 'text-fg' : 'hidden text-muted group-hover:text-fg sm:block',
+                    // Sur téléphone, seul le nom de l'étape affichée se voit ; les autres restent lus par les lecteurs d'écran.
+                    isViewing ? 'text-fg' : 'sr-only text-muted group-hover:text-fg sm:not-sr-only sm:block',
                   )}
                 >
                   {STEP_LABELS[step]}
