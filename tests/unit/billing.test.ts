@@ -331,14 +331,29 @@ describe('code formateur : remise saisie au paiement (code promo Stripe)', () =>
 });
 
 describe('paiement simulé et abonnements hors paiement', () => {
-  it('le paiement simulé passe par le même traitement (plan + commission parrain)', async () => {
-    const parrain = await makeUser('parrain');
-    const filleul = await makeUser('filleul');
-    await applyReferralCode(filleul, parrain.referral_code);
-    await simulateSubscription((await repo.getProfile('filleul'))!, 'elite', 'year', repo);
-    expect((await repo.getProfile('filleul'))?.plan).toBe('elite');
-    const [commission] = await repo.listCommissions('parrain');
+  it('le paiement simulé passe par le même traitement (plan + commission du formateur)', async () => {
+    await makeCoach();
+    const eleve = await makeUser('eleve');
+    await applyReferralCode(eleve, 'TEST30');
+    await simulateSubscription((await repo.getProfile('eleve'))!, 'elite', 'year', repo);
+    expect((await repo.getProfile('eleve'))?.plan).toBe('elite');
+    const [commission] = await repo.listCommissions('coach');
     expect(commission.amount_cents).toBe(Math.round(77990 * 0.3));
+  });
+
+  it('parrainage entre utilisateurs retiré : un code personnel ne rattache plus, un ancien rattachement ne rapporte plus', async () => {
+    const ancien = await makeUser('ancien-parrain');
+    const nouveau = await makeUser('nouveau');
+    expect(await applyReferralCode(nouveau, ancien.referral_code)).toEqual({ kind: 'none', reason: 'inconnu' });
+    expect((await repo.getProfile('nouveau'))?.referred_by).toBeFalsy();
+    // Rattachement d'avant le retrait : gardé en base, mais plus de commission.
+    const invite = await makeUser('invite');
+    await repo.updateProfile('invite', { referred_by: 'ancien-parrain' });
+    await repo.createReferral({ referrer_id: 'ancien-parrain', referred_id: 'invite', coach_id: null });
+    await simulateSubscription((await repo.getProfile('invite'))!, 'pro', 'month', repo);
+    expect((await repo.getProfile('invite'))?.plan).toBe('pro');
+    expect(await repo.listCommissions('ancien-parrain')).toHaveLength(0);
+    expect(invite.id).toBe('invite');
   });
 
   it('un essai ouvert avant la nouvelle grille se termine à son échéance, sans accès ensuite', async () => {
@@ -362,14 +377,14 @@ describe('paiement simulé et abonnements hors paiement', () => {
   });
 
   it('un plan offert par l’admin donne l’accès sans facture ni commission, et se retire', async () => {
-    const parrain = await makeUser('parrain');
-    const filleul = await makeUser('filleul');
-    await applyReferralCode(filleul, parrain.referral_code);
-    await grantPlan('filleul', 'elite', repo);
-    expect((await repo.getProfile('filleul'))?.plan).toBe('elite');
-    expect(await repo.listCommissions('parrain')).toHaveLength(0);
-    await grantPlan('filleul', null, repo);
-    expect((await repo.getProfile('filleul'))?.plan).toBe('aucun');
+    await makeCoach();
+    const eleve = await makeUser('eleve');
+    await applyReferralCode(eleve, 'TEST30');
+    await grantPlan('eleve', 'elite', repo);
+    expect((await repo.getProfile('eleve'))?.plan).toBe('elite');
+    expect(await repo.listCommissions('coach')).toHaveLength(0);
+    await grantPlan('eleve', null, repo);
+    expect((await repo.getProfile('eleve'))?.plan).toBe('aucun');
   });
 
   // Corrigé après le signalement de la mise à jour des tests (nouvelle grille).

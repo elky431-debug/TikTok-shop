@@ -16,7 +16,6 @@ export function offlinePageLabel(path: string): string {
     '/app/plan': 'Plan de publication',
     '/app/notifications': 'Notifications',
     '/app/compte': 'Mon compte',
-    '/app/parrainage': 'Parrainage',
     '/prix': 'Prix',
   };
   if (fixed[pathname]) return fixed[pathname];

@@ -8,7 +8,7 @@ import type { BillingProvider, CheckoutInput } from './types';
 /**
  * Paiement simulé : uniquement en mode local (aucune clé), pour tester tout le parcours.
  * Il produit les mêmes événements normalisés que Stripe et passe par le même traitement
- * (handleBillingEvent) : plan, parrainage et commissions se comportent comme en vrai. Pas de champ de code promo ici.
+ * (handleBillingEvent) : plan, rattachement au formateur et commissions se comportent comme en vrai. Pas de champ de code promo ici.
  */
 
 type PaidPlan = PaidPlanId;

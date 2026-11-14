@@ -1267,3 +1267,15 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      repli des fiches n'est pas affiché par les messageries, il est remplacé par une vignette colorée de la niche. Noms
      courts partout : objet, aperçu de l'e-mail, notification, défi, Discord, bilan du dimanche (y compris pour les récaps
      déjà enregistrés avec un titre long).
+209. **Corrections, étape 5 : plus de parrainage entre utilisateurs** (14 novembre). Le système formateur reste
+     entier (codes principaux et supplémentaires, page /f/CODE et lien direct /r/CODE, remise par code promo, 30 % de
+     commission, espace formateur, versements). Retirés côté utilisateur : la page Parrainage (son adresse renvoie au
+     dashboard) et ses visuels, l'entrée de la barre latérale et des pages hors ligne, la carte de l'accueil, la mention
+     dans le contenu Starter (CGV, CLAUDE.md), le lien du compte, le message « Invitation enregistrée » de la connexion.
+     CGV : l'article 7 devient « Formateurs partenaires ». Confidentialité : le cookie mémorise le code d'un formateur.
+     Un ancien code personnel ne rattache plus personne (« Ce code ne correspond à aucun formateur ») et un rattachement
+     d'avant le retrait (sans formateur) ne crée plus de commission ; les tables (`referrals`, `commissions`,
+     `profiles.referral_code`, `referred_by`) et leurs lignes restent, sans rien afficher à l'utilisateur. L'admin garde
+     de quoi verser un éventuel solde ancien (libellé « ancien lien d'invitation »). L'export RGPD garde ces données sous
+     « rattachements » (format passé en version 2). Le kit de partage devient le seul message pour les élèves du
+     formateur ; le drapeau `referral` des plans disparaît.

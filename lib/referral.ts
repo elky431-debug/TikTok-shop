@@ -1,12 +1,14 @@
-import { BRAND } from '@/lib/brand';
 import { getRepo, type Repo } from '@/lib/db';
 import type { Coach, Commission, Profile, UserRecord } from '@/lib/db/types';
 import { COACH_FIRST_MONTH_DISCOUNT } from '@/lib/plans';
 import { parisDate } from '@/lib/utils';
 
+/**
+ * Résultat d'un code saisi à l'inscription. Seuls les codes formateur comptent : le parrainage entre utilisateurs a été
+ * retiré le 14 novembre (les anciens codes personnels ne rattachent plus personne ; les lignes existantes restent en base).
+ */
 export type ReferralResult =
   | { kind: 'coach'; coach: Coach; /** Code tapé (principal ou supplémentaire). */ code: string }
-  | { kind: 'parrain'; referrer: Profile }
   | { kind: 'none'; reason?: 'deja' | 'inconnu' | 'soi-meme' };
 
 export function normalizeCode(code: string | null | undefined): string {
@@ -57,7 +59,7 @@ export async function findExtraCoachCode(code: string, repo: Repo = getRepo()): 
   return null;
 }
 
-/** Un code est-il déjà pris (code principal, code de parrainage ou code supplémentaire) ? */
+/** Un code est-il déjà pris (code principal, ancien code personnel ou code supplémentaire) ? */
 export async function isCodeTaken(code: string, repo: Repo = getRepo()): Promise<boolean> {
   const normalized = normalizeCode(code);
   return Boolean(
@@ -97,21 +99,19 @@ export async function setCoachCodeActive(coach: Coach, recordId: string, active:
   return true;
 }
 
-/** Décrit un code (formateur ou parrain) sans rien modifier. */
+/** Décrit un code formateur (principal ou supplémentaire) sans rien modifier. */
 export async function describeCode(code: string | null | undefined, repo: Repo = getRepo()): Promise<ReferralResult> {
   const normalized = normalizeCode(code);
   if (!normalized) return { kind: 'none', reason: 'inconnu' };
   const coach = await repo.getCoachByPromoCode(normalized);
   if (coach) return { kind: 'coach', coach, code: normalized };
-  const referrer = await repo.getProfileByReferralCode(normalized);
-  if (referrer) return { kind: 'parrain', referrer };
   const extra = await findExtraCoachCode(normalized, repo);
   if (extra) return { kind: 'coach', coach: extra.coach, code: normalized };
   return { kind: 'none', reason: 'inconnu' };
 }
 
 /**
- * Rattache un nouvel inscrit à un formateur (code principal ou supplémentaire) ou à un parrain (code de parrainage).
+ * Rattache un nouvel inscrit à un formateur (code principal ou supplémentaire).
  * Uniquement avant la fin de l'onboarding, et une seule fois.
  */
 export async function applyReferralCode(profile: Profile, code: string | null | undefined): Promise<ReferralResult> {
@@ -128,13 +128,6 @@ export async function applyReferralCode(profile: Profile, code: string | null | 
     return found;
   }
 
-  if (found.kind === 'parrain') {
-    if (found.referrer.id === profile.id) return { kind: 'none', reason: 'soi-meme' };
-    await repo.updateProfile(profile.id, { referred_by: found.referrer.id });
-    await repo.createReferral({ referrer_id: found.referrer.id, referred_id: profile.id, coach_id: null });
-    return found;
-  }
-
   return found;
 }
 
@@ -148,7 +141,7 @@ export function coachLandingLink(siteUrl: string, code: string): string {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Gains et versements (parrains et formateurs). Une commission naît à chaque facture payée par un filleul (lib/billing),
+// Gains et versements des formateurs. Une commission naît à chaque facture payée par un élève (lib/billing),
 // elle est réduite au prorata d'un remboursement. Les versements sont manuels en V1 : l'admin marque chaque virement
 // (fiche `versement` du bénéficiaire, écrite par le serveur seul). Solde = commissions − versements ; il peut passer
 // sous zéro si une commission déjà versée est remboursée (retenu sur le versement suivant).
@@ -234,35 +227,9 @@ export async function recordPayout(
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Kit de partage : textes prêts à poster. Aucun chiffre de gains, aucune promesse de résultat.
+// Message prêt à envoyer aux élèves d'un formateur. Aucun chiffre de gains, aucune promesse de résultat.
 // ---------------------------------------------------------------------------------------------------------------------
-export function shareTexts(input: { link: string; code: string; coach?: boolean }): Array<{ id: string; title: string; text: string }> {
+export function coachStudentsMessage(input: { link: string; code: string }): string {
   const percent = Math.round(COACH_FIRST_MONTH_DISCOUNT * 100);
-  const texts = [
-    {
-      id: 'court',
-      title: 'Message court',
-      text: `J’utilise ${BRAND} pour choisir mes produits TikTok Shop chaque matin et écrire mes scripts. En français : ${input.link}`,
-    },
-    {
-      id: 'story',
-      title: 'Légende de story',
-      text: `Mon outil du matin pour TikTok Shop 👀 Les produits qui montent dans mes niches + des scripts prêts à tourner. Lien : ${input.link}`,
-    },
-    {
-      id: 'groupe',
-      title: 'Message pour un groupe de créateurs',
-      text:
-        `Pour celles et ceux qui font du TikTok Shop : ${BRAND} montre chaque matin les produits qui montent, avec un score expliqué, ` +
-        `et écrit des scripts vidéo. Mon lien : ${input.link} (code ${input.code}).`,
-    },
-  ];
-  if (input.coach) {
-    texts.unshift({
-      id: 'eleves',
-      title: 'Message pour tes élèves',
-      text: `Pour choisir tes produits TikTok Shop chaque matin et écrire tes scripts, utilise ${input.link} : avec mon code ${input.code}, tu as −${percent} % sur ton premier mois.`,
-    });
-  }
-  return texts;
+  return `Pour choisir tes produits TikTok Shop chaque matin et écrire tes scripts, utilise ${input.link} : avec mon code ${input.code}, tu as −${percent} % sur ton premier mois.`;
 }

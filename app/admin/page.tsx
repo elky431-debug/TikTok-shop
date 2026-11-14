@@ -206,7 +206,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Record
               {(
                 [
                   ['MRR hors taxes', margin.revenueHtCents],
-                  ['Commissions des parrains et formateurs', -margin.commissionsCents],
+                  ['Commissions des formateurs', -margin.commissionsCents],
                   ['Frais Stripe', -margin.stripeFeesCents],
                   ['Nexscope (30 derniers jours)', margin.nexscopeCents === null ? null : -margin.nexscopeCents],
                   ['IA (30 derniers jours)', margin.aiCents === null ? null : -margin.aiCents],
@@ -246,7 +246,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Record
                   Frais Stripe : {String(adminSettings.stripeFeePercent).replace('.', ',')} % + {formatEuros(adminSettings.stripeFeeFixedCents)} par
                   paiement (tarif standard des cartes européennes, à vérifier sur ton compte) ; l’annuel est payé une fois, frais ramenés au mois.
                 </li>
-                <li>Commissions : 30 % hors taxes (ou le taux du formateur) des abonnés venus par un lien de parrainage ou un code formateur.</li>
+                <li>Commissions : 30 % hors taxes (ou le taux du formateur) des abonnés venus par un code formateur.</li>
                 <li>Coûts fixes : ADMIN_FIXED_COSTS_EUR_MONTH ({formatEuros(margin.fixedCents)} par mois).</li>
               </ul>
             </details>

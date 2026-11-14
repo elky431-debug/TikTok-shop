@@ -46,7 +46,7 @@ export default function CgvPage() {
             {formatEuros(yearlyMonthlyEquivalent('starter'))} par mois). Radar France complet
             avec score expliqué et fiche produit, {starter.scriptsPerDay} scripts par jour dans {starter.scriptFormats} formats,
             téléprompteur, {starter.savedProducts} produits suivis, plan de publication, récap du matin, {starter.alerts} alertes,{' '}
-            {starter.keywordSearchesPerDay} recherches par jour, mode préparation, parrainage.
+            {starter.keywordSearchesPerDay} recherches par jour, mode préparation.
           </li>
           <li>
             Pro : {formatEuros(pro.prices.month)} par mois ou {formatEuros(pro.prices.year)} par an (soit{' '}
@@ -138,13 +138,14 @@ export default function CgvPage() {
         </p>
       </section>
       <section>
-        <h2>7. Parrainage et formateurs partenaires</h2>
+        <h2>7. Formateurs partenaires</h2>
         <p>
-          Chaque utilisateur dispose d’un lien de parrainage. Le parrain ou le formateur perçoit une commission de {rate} % du montant
-          hors taxes de chaque paiement de ses filleuls (après remise éventuelle), tant que ceux-ci restent abonnés. Les commissions sont calculées
+          Un formateur partenaire perçoit une commission de {rate} % du montant hors taxes de chaque paiement de ses élèves inscrits
+          avec son code (après remise éventuelle), tant que ceux-ci restent abonnés. Les commissions sont calculées
           automatiquement à chaque paiement encaissé (les remboursements et impayés ne génèrent pas de commission) et versées par
-          virement <Todo>fréquence et seuil de versement, ex. mensuel dès 50 €</Todo>. Le bénéficiaire est responsable de ses
-          obligations fiscales et sociales. Toute fraude (auto-parrainage, faux comptes) entraîne l’annulation des commissions.
+          virement <Todo>fréquence et seuil de versement, ex. mensuel dès 50 €</Todo>. Le formateur est responsable de ses
+          obligations fiscales et sociales. Toute fraude (inscription de ses propres comptes, faux comptes) entraîne l’annulation
+          des commissions.
         </p>
       </section>
       <section>

@@ -39,7 +39,6 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const plan = getPlan(profile.plan);
   const accountItems: NavLink[] = [
     { href: "/app/recap", label: "Récap", icon: "recap" },
-    { href: "/app/parrainage", label: "Parrainage", icon: "parrainage" },
     ...(profile.eligibility === "preparation"
       ? [
           {

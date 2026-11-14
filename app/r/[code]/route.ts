@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { REFERRAL_COOKIE } from '@/lib/auth/constants';
 import { normalizeCode } from '@/lib/referral';
 
-/** Lien de parrainage ou de formateur : mémorise le code 30 jours puis envoie vers l'inscription. */
+/** Lien direct d'un formateur : mémorise le code 30 jours puis envoie vers l'inscription. */
 export async function GET(request: NextRequest, { params }: { params: { code: string } }) {
   const code = normalizeCode(decodeURIComponent(params.code));
   if (code) {

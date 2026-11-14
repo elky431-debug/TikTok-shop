@@ -3,7 +3,7 @@ import type { Coach, PlanId, Profile } from '@/lib/db/types';
 import { mapWithConcurrency } from '@/lib/jobs/concurrency';
 import { getEarnings, listCoachCodes, type Earnings } from '@/lib/referral';
 
-/** Recherche d'utilisateurs : e-mail, prénom, pseudo TikTok ou code de parrainage ; filtre par plan. */
+/** Recherche d'utilisateurs : e-mail, prénom, pseudo TikTok ou ancien code personnel ; filtre par plan. */
 export function filterProfiles(profiles: Profile[], query: string, plan?: PlanId | 'tous'): Profile[] {
   const q = query.trim().toLowerCase();
   return profiles.filter((p) => {
@@ -20,7 +20,7 @@ export interface Beneficiary {
   earnings: Earnings;
 }
 
-/** Parrains et formateurs qui ont gagné quelque chose (pour marquer les versements). */
+/** Formateurs (et anciens liens d'invitation) qui ont gagné quelque chose (pour marquer les versements). */
 export async function listBeneficiaries(repo: Repo = getRepo(), now = new Date()): Promise<Beneficiary[]> {
   const [profiles, coaches] = await Promise.all([repo.listProfiles({ limit: 1000 }), repo.listCoaches()]);
   const byId = new Map(profiles.map((p) => [p.id, p]));

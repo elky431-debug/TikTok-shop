@@ -98,8 +98,8 @@ export default function ConfidentialitePage() {
       <section>
         <h2>Cookies</h2>
         <p>
-          {BRAND} n’utilise que des cookies strictement nécessaires : ta session de connexion, le code d’invitation d’un parrain ou
-          d’un formateur (30 jours) et ton choix de thème clair ou sombre. Aucun cookie publicitaire ni de mesure d’audience : c’est
+          {BRAND} n’utilise que des cookies strictement nécessaires : ta session de connexion, le code d’un
+          formateur (30 jours) et ton choix de thème clair ou sombre. Aucun cookie publicitaire ni de mesure d’audience : c’est
           pourquoi aucune bannière de consentement ne s’affiche.
         </p>
       </section>

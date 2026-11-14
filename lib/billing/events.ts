@@ -92,7 +92,7 @@ async function onSubscription(repo: Repo, event: SubscriptionChanged): Promise<H
   });
 
   // Plan offert par l'admin (`admin_…`, voir lib/billing/grant.ts) : rien n'est payé, donc ni statut « abonné » chez le
-  // parrain ou le formateur, ni e-mail de confirmation d'un abonnement payant.
+  // formateur, ni e-mail de confirmation d'un abonnement payant.
   const gifted = event.subscriptionId.startsWith('admin_');
   const referral = await repo.getReferralByReferred(profile.id);
   if (referral && !gifted) {
@@ -131,20 +131,18 @@ async function sendConfirmation(repo: Repo, profile: Profile, event: Subscriptio
   }
 }
 
-/** 30 % récurrents (ou le taux du formateur) sur chaque facture payée par un filleul. */
+/** 30 % récurrents (ou le taux du formateur) sur chaque facture payée par un élève de formateur. */
 async function onInvoicePaid(repo: Repo, event: InvoicePaid): Promise<HandleResult> {
   const profile = await resolveProfile(repo, event.userId, event.customerId);
   if (!profile) return { status: 'unknown_user', userId: event.userId };
   if (event.amountCents <= 0) return { status: 'ok', userId: profile.id, commissionCents: 0 };
 
   const referral = await repo.getReferralByReferred(profile.id);
-  if (!referral) return { status: 'ok', userId: profile.id, commissionCents: 0 };
+  // Seuls les élèves de formateurs rapportent une commission : le parrainage entre utilisateurs est retiré (14 novembre).
+  if (!referral?.coach_id) return { status: 'ok', userId: profile.id, commissionCents: 0 };
 
-  let rate = REFERRAL_COMMISSION_RATE;
-  if (referral.coach_id) {
-    const coach = await repo.getCoachById(referral.coach_id);
-    if (coach) rate = coach.commission_rate;
-  }
+  const coach = await repo.getCoachById(referral.coach_id);
+  const rate = coach?.commission_rate ?? REFERRAL_COMMISSION_RATE;
   const amount = Math.round(event.amountCents * rate);
   const added = await repo.addCommission({
     referral_id: referral.id,

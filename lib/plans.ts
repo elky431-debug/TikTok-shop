@@ -38,8 +38,6 @@ export interface PlanLimits {
   keywordSearchesPerDay: number;
   /** Mode préparation (sous 1 500 abonnés). */
   preparation: boolean;
-  /** Parrainage (lien, commission). */
-  referral: boolean;
   /** Style personnel tiré de ses vidéos. */
   personalStyle: boolean;
   /** Analyses de style par jour. */
@@ -121,7 +119,6 @@ const NONE: PlanLimits = {
   alerts: 0,
   keywordSearchesPerDay: 0,
   preparation: false,
-  referral: false,
   personalStyle: false,
   styleAnalysesPerDay: 0,
   anglesSeriesPerDay: 0,
@@ -160,7 +157,6 @@ const STARTER: PlanLimits = {
   alerts: 3,
   keywordSearchesPerDay: 3,
   preparation: true,
-  referral: true,
   editsPerGeneration: 10,
   discordCommandsPerDay: 10,
   prices: { month: 3499, year: 27990 },
@@ -325,7 +321,7 @@ export function yearlyMonthlyEquivalent(plan: PlanId): number {
 
 /** Remise du code formateur : −20 % sur le premier mois (abonnement mensuel). */
 export const COACH_FIRST_MONTH_DISCOUNT = 0.2;
-/** Commission récurrente des parrains et formateurs. */
+/** Commission récurrente des formateurs partenaires (taux par défaut, réglable par formateur). */
 export const REFERRAL_COMMISSION_RATE = 0.3;
 /** Objectif de vidéos par produit suivi. */
 export const DEFAULT_VIDEO_GOAL = 20;

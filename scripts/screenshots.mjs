@@ -22,7 +22,7 @@ const args = Object.fromEntries(
 const BASE = args.base ?? 'http://localhost:3000';
 const EMAIL = args.email ?? 'captures@tracktout.local';
 const OUT = args.out ?? 'screenshots';
-const PAGES = (args.pages ?? '/,/prix,/formateurs,/connexion,/app,/app/studio,/app/mes-produits,/app/recap,/app/parrainage,/app/compte').split(',');
+const PAGES = (args.pages ?? '/,/prix,/formateurs,/connexion,/app,/app/studio,/app/mes-produits,/app/recap,/app/compte').split(',');
 // Le noir est le thème par défaut ; --theme light pose le cookie du thème clair (option du compte).
 const THEME = args.theme === 'light' ? 'light' : 'dark';
 const FORMAT = args.format === 'jpeg' ? 'jpeg' : 'png';

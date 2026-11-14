@@ -10,7 +10,7 @@ import type { UserRecord } from '@/lib/db/types';
  * Seule exception : les clés de chiffrement des abonnements push (secret propre au navigateur, inutile hors de lui)
  * sont masquées ; l'adresse d'abonnement et l'appareil restent.
  */
-export const EXPORT_VERSION = 1;
+export const EXPORT_VERSION = 2;
 const MASKED = '[clé technique masquée]';
 
 function redact(record: UserRecord): UserRecord {
@@ -31,8 +31,8 @@ export async function buildDataExport(userId: string, repo: Repo = getRepo(), no
     genere_le: now.toISOString(),
     service: BRAND,
     a_savoir: [
-      'Ce fichier contient toutes les données liées à ton compte dans notre base : profil, scripts, produits suivis, récaps, abonnements, parrainages et fiches (gains, plans de publication, notifications, réglages…).',
-      'Les données des autres personnes (filleuls, élèves) n’y figurent pas : seuls le statut et les montants des parrainages sont donnés.',
+      'Ce fichier contient toutes les données liées à ton compte dans notre base : profil, scripts, produits suivis, récaps, abonnements, rattachements (formateur) et fiches (gains, plans de publication, notifications, réglages…).',
+      'Les données des autres personnes (élèves, personnes invitées) n’y figurent pas : seuls le statut et les montants des rattachements sont donnés.',
       'Les factures et moyens de paiement sont chez Stripe : retrouve-les depuis « Gérer mon abonnement » (portail Stripe).',
       'Les produits du catalogue ne sont pas des données personnelles : seuls leurs identifiants apparaissent dans tes fiches.',
     ],
@@ -43,7 +43,7 @@ export async function buildDataExport(userId: string, repo: Repo = getRepo(), no
     scripts_par_jour: data.usage,
     recaps_du_matin: data.digests,
     fiches: records,
-    parrainage: { faits: data.referrals_made, recu: data.referral_received, commissions: data.commissions },
+    rattachements: { faits: data.referrals_made, recu: data.referral_received, commissions: data.commissions },
     formateur: data.coach,
     demandes_de_partenariat: data.coach_applications,
   };

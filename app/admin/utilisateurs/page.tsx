@@ -18,7 +18,7 @@ export const dynamic = 'force-dynamic';
 const ERRORS: Record<string, string> = {
   formation: 'Indique le nom de la formation.',
   code: 'Le code promo doit faire 3 à 24 caractères (lettres, chiffres, tirets).',
-  'code-pris': 'Ce code est déjà utilisé (formateur, code supplémentaire ou parrainage).',
+  'code-pris': 'Ce code est déjà utilisé (formateur ou code supplémentaire).',
   plan: 'Ce plan n’existe pas, ou le compte est introuvable.',
   base: 'La base n’a pas encore la nouvelle grille de prix : lance « npm run db:setup » (migration nouvelle_grille), puis réessaie.',
 };
@@ -95,13 +95,9 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: R
                       <dd>{formatRelative(p.last_seen_at)}</dd>
                     </div>
                     <div className="flex gap-2">
-                      <dt className="text-muted">Code de parrainage</dt>
-                      <dd className="num">{p.referral_code}</dd>
-                    </div>
-                    <div className="flex gap-2">
                       <dt className="text-muted">Venu par</dt>
                       <dd>
-                        {studentOf ? `formateur ${studentOf.training_name}` : p.referred_by ? `parrain ${emailById.get(p.referred_by) ?? p.referred_by}` : '—'}
+                        {studentOf ? `formateur ${studentOf.training_name}` : p.referred_by ? `ancien lien d’invitation (${emailById.get(p.referred_by) ?? p.referred_by})` : '—'}
                       </dd>
                     </div>
                     <div className="flex gap-2">

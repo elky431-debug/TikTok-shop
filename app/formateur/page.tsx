@@ -11,7 +11,7 @@ import { ANNOUNCES_PER_DAY, getCoachDashboard, listAnnouncements } from '@/lib/c
 import type { ReferralStatus } from '@/lib/db/types';
 import { env } from '@/lib/env';
 import { COACH_FIRST_MONTH_DISCOUNT, getPlan, isPaidPlan } from '@/lib/plans';
-import { coachLandingLink, MAX_EXTRA_CODES, monthName, PAYOUT_THRESHOLD_CENTS, referralLink, shareTexts } from '@/lib/referral';
+import { coachLandingLink, coachStudentsMessage, MAX_EXTRA_CODES, monthName, PAYOUT_THRESHOLD_CENTS, referralLink } from '@/lib/referral';
 import { cn, formatEuros, formatInt, formatRelative } from '@/lib/utils';
 import { addCodeAction, announceAction, toggleCodeAction } from './actions';
 
@@ -32,7 +32,7 @@ function message(searchParams: Record<string, string | undefined>): { tone: 'gai
   if (searchParams.ok === 'annonce') return { tone: 'gain', text: `Annonce publiée à ${searchParams.n ?? 'tes'} élève(s).` };
   const errors: Record<string, string> = {
     'code-format': 'Le code doit faire 3 à 24 caractères : lettres, chiffres, tirets.',
-    'code-pris': 'Ce code est déjà utilisé (par toi, un autre formateur ou un parrain). Choisis-en un autre.',
+    'code-pris': 'Ce code est déjà utilisé (par toi ou un autre formateur). Choisis-en un autre.',
     'code-limite': `Tu as déjà ${MAX_EXTRA_CODES} codes supplémentaires : mets-en un en pause ou écris-nous.`,
     'annonce-vide': 'Écris un titre et un message (3 caractères au moins).',
     'annonce-limite': `Tu as déjà publié ${ANNOUNCES_PER_DAY} annonces aujourd’hui. Réessaie demain.`,
@@ -57,7 +57,7 @@ export default async function FormateurPage({ searchParams }: { searchParams: Re
   const percent = Math.round(COACH_FIRST_MONTH_DISCOUNT * 100);
   const rate = Math.round(coach.commission_rate * 100);
   const landing = coachLandingLink(env.siteUrl, coach.promo_code);
-  const [studentsMessage] = shareTexts({ link: landing, code: coach.promo_code, coach: true });
+  const studentsMessage = coachStudentsMessage({ link: landing, code: coach.promo_code });
   const consentPage = `${env.siteUrl}/app/consentement-formateur`;
   const notice = message(searchParams);
   const { earnings } = data;
@@ -146,8 +146,8 @@ export default async function FormateurPage({ searchParams }: { searchParams: Re
           </Card>
           <Panel className="mt-3">
             <p className="text-sm font-semibold">Message prêt pour tes élèves</p>
-            <p className="mt-1 text-sm text-muted">{studentsMessage.text}</p>
-            <CopyButton text={studentsMessage.text} label="Copier le message" copiedLabel="Message copié" className="mt-3" />
+            <p className="mt-1 text-sm text-muted">{studentsMessage}</p>
+            <CopyButton text={studentsMessage} label="Copier le message" copiedLabel="Message copié" className="mt-3" />
           </Panel>
         </section>
 
@@ -296,8 +296,8 @@ export default async function FormateurPage({ searchParams }: { searchParams: Re
                 : `Versement dès ${formatEuros(PAYOUT_THRESHOLD_CENTS)} de solde : il manque ${formatEuros(earnings.next.missingCents)}`
             }
           >
-            Versements par virement, une fois par mois, dès {formatEuros(PAYOUT_THRESHOLD_CENTS)} cumulés. Une commission remboursée au
-            filleul est retirée du solde (au prorata), même après un versement.
+            Versements par virement, une fois par mois, dès {formatEuros(PAYOUT_THRESHOLD_CENTS)} cumulés. Une commission remboursée à
+            l’élève est retirée du solde (au prorata), même après un versement.
           </Callout>
           <dl className="mt-3 flex flex-wrap gap-px overflow-hidden rounded-2xl border border-line bg-line">
             <Stat label="Gagné au total" value={formatEuros(earnings.earnedCents)} />

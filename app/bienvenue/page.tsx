@@ -27,7 +27,7 @@ export default async function BienvenuePage() {
     profile.coach_id ? repo.getCoachById(profile.coach_id) : Promise.resolve(null),
   ]);
   const pendingCode = cookies().get(REFERRAL_COOKIE)?.value ?? '';
-  // Code déjà rattaché (lien d'invitation) ou parrain : la question du code ne sert plus.
+  // Déjà rattaché à un formateur (lien d'invitation) : la question du code ne sert plus.
   const steps = update ? UPDATE_STEPS : ONBOARDING_STEPS.filter((s) => s !== 'code' || !profile.referred_by || Boolean(coach));
 
   return (

@@ -7,14 +7,7 @@ import { LOCAL_SESSION_COOKIE } from '@/lib/auth/constants';
 import { setRepoForTests } from '@/lib/db';
 import { LocalRepo } from '@/lib/db/local';
 import { SHARE_FORMATS, ShareVisual } from '@/lib/og';
-import {
-  getEarnings,
-  nextMonthStart,
-  PAYOUT_KIND,
-  PAYOUT_THRESHOLD_CENTS,
-  recordPayout,
-  shareTexts,
-} from '@/lib/referral';
+import { coachStudentsMessage, getEarnings, nextMonthStart, PAYOUT_KIND, PAYOUT_THRESHOLD_CENTS, recordPayout } from '@/lib/referral';
 
 // Session simulée (mode local) : le cookie de session est lu par next/headers.
 let sessionCookie: string | undefined;
@@ -78,24 +71,13 @@ describe('gains, solde et prochains versements', () => {
   });
 });
 
-describe('kit de partage', () => {
-  it('des textes prêts à poster avec le lien, sans promesse de gains ni chiffre de commission', () => {
-    const texts = shareTexts({ link: 'https://tracktout.com/r/ABC123', code: 'ABC123' });
-    expect(texts.length).toBeGreaterThanOrEqual(3);
-    for (const t of texts) {
-      expect(t.text).toContain('https://tracktout.com/r/ABC123');
-      expect(findIssues(t.text)).toEqual([]);
-      expect(t.text).not.toMatch(/€|%/);
-    }
-    // Tout est payant : jamais « gratuit » ni « plan gratuit » dans les textes.
-    for (const t of texts) expect(t.text).not.toMatch(/gratuit/i);
-    const coach = shareTexts({ link: 'https://tracktout.com/f/FORM30', code: 'FORM30', coach: true });
-    expect(coach[0].id).toBe('eleves');
-    expect(coach[0].text).toContain('avec mon code FORM30, tu as −20 % sur ton premier mois');
-    for (const t of coach) {
-      expect(t.text).not.toMatch(/gratuit|offerts|sans carte/i);
-      expect(findIssues(t.text)).toEqual([]);
-    }
+describe('message pour les élèves et visuels', () => {
+  it('un message prêt à envoyer avec le lien et le code, sans promesse de gains', () => {
+    const text = coachStudentsMessage({ link: 'https://tracktout.com/f/FORM30', code: 'FORM30' });
+    expect(text).toContain('https://tracktout.com/f/FORM30');
+    expect(text).toContain('avec mon code FORM30, tu as −20 % sur ton premier mois');
+    expect(text).not.toMatch(/gratuit|offerts|sans carte/i);
+    expect(findIssues(text)).toEqual([]);
   });
 
   it('génère des visuels PNG aux bonnes dimensions (fond noir, dégradé cyan → rose)', async () => {
@@ -106,20 +88,5 @@ describe('kit de partage', () => {
       const size = pngSize(new Uint8Array(await image.arrayBuffer()));
       expect(size).toEqual({ signature: 'PNG', ...SHARE_FORMATS[format] });
     }
-  }, 30_000);
-
-  it('la route des visuels exige une session et utilise le code de la personne connectée', async () => {
-    const { GET } = await import('@/app/app/parrainage/visuel/[format]/route');
-    const refused = await GET(new Request('https://tracktout.com/app/parrainage/visuel/carre'), { params: { format: 'carre' } });
-    expect(refused.status).toBe(401);
-
-    sessionCookie = createLocalSessionToken({ id: 'parrain', email: 'parrain@test.fr' });
-    const unknown = await GET(new Request('https://tracktout.com/app/parrainage/visuel/poster'), { params: { format: 'poster' } });
-    expect(unknown.status).toBe(404);
-    const ok = await GET(new Request('https://tracktout.com/app/parrainage/visuel/story?telecharger=1'), { params: { format: 'story' } });
-    expect(ok.status).toBe(200);
-    const code = (await repo.getProfile('parrain'))!.referral_code;
-    expect(ok.headers.get('content-disposition')).toBe(`attachment; filename="tracktout-story-${code}.png"`);
-    expect(pngSize(new Uint8Array(await ok.arrayBuffer()))).toMatchObject(SHARE_FORMATS.story);
   }, 30_000);
 });

@@ -31,7 +31,7 @@ describe('RGPD', () => {
     expect(Object.keys(data.fiches).sort()).toEqual(['gain', 'notification', 'push_abonnement', 'type_inconnu_futur']);
     expect(JSON.stringify(data.fiches.push_abonnement)).not.toContain('"secret"');
     expect(data.recaps_du_matin).toHaveLength(1);
-    expect(data.parrainage.faits).toHaveLength(1);
+    expect(data.rattachements.faits).toHaveLength(1);
     expect(JSON.stringify(data)).not.toContain('max@test.fr');
     expect(exportFileName(new Date('2026-11-13T10:00:00Z'))).toBe('tracktout-mes-donnees-2026-11-13.json');
   });

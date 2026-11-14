@@ -4,7 +4,6 @@ import {
   Check,
   Clapperboard,
   Gauge,
-  HandCoins,
   ListChecks,
   Radar,
   Sunrise,
@@ -71,14 +70,9 @@ const FEATURES = [
       {
         icon: Sunrise,
         title: 'Récap du matin',
-        desc: 'Tes meilleurs produits et un script prêt, par e-mail ou sur Discord, à l’heure que tu choisis.',
+        desc: 'Ton défi du jour et tes 5 produits à vendre, par e-mail, à l’heure que tu choisis.',
       },
       { icon: ListChecks, title: 'Mes produits', desc: 'Objectif 20 vidéos par produit, et ta progression vidéo après vidéo.' },
-      {
-        icon: HandCoins,
-        title: 'Parrainage',
-        desc: `Invite d’autres créateurs : ${Math.round(REFERRAL_COMMISSION_RATE * 100)} % de ce qu’ils paient, chaque mois.`,
-      },
     ],
   },
 ];

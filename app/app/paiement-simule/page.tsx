@@ -58,7 +58,7 @@ export default async function PaiementSimulePage({
     <div className="mx-auto max-w-lg">
       <PageHeader eyebrow="Compte" title="Paiement simulé" description="Mode local : aucune clé Stripe n’est configurée." />
       <Callout tone="cyan" className="mb-4" title="Aucune carte, aucun prélèvement">
-        Ce paiement passe par le même traitement que les webhooks Stripe : ton plan, ton parrain et ses commissions sont mis à
+        Ce paiement passe par le même traitement que les webhooks Stripe : ton plan, ton formateur et ses commissions sont mis à
         jour comme en vrai.
       </Callout>
       <Card>

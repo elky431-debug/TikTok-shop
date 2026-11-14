@@ -61,10 +61,6 @@ export default async function ConnexionPage({
                 Avec {code.coach.training_name} : −{Math.round(COACH_FIRST_MONTH_DISCOUNT * 100)} % sur ton premier mois d’abonnement
                 mensuel, avec son code promo à saisir au paiement.
               </Callout>
-            ) : code?.kind === 'parrain' ? (
-              <Callout tone="cyan" title="Invitation enregistrée">
-                {code.referrer.first_name ?? 'Un membre'} t'a invité. Ton compte sera relié à son lien.
-              </Callout>
             ) : null}
 
             <LoginForm suite={suite} localMode={localMode} initialMode={searchParams.mode === 'connexion' ? 'connexion' : 'inscription'} />

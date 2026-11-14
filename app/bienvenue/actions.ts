@@ -49,7 +49,7 @@ export async function completeOnboardingAction(raw: Partial<Record<keyof Onboard
     if (code && !profile.coach_id && !profile.referred_by) {
       const result = await applyReferralCode(profile, code);
       if (result.kind === 'none' && result.reason === 'inconnu') {
-        return { ok: false, step: 'code', message: 'Ce code ne correspond à aucun formateur ni parrain. Vérifie-le ou passe cette question.' };
+        return { ok: false, step: 'code', message: 'Ce code ne correspond à aucun formateur. Vérifie-le ou passe cette question.' };
       }
     }
     cookies().delete(REFERRAL_COOKIE);

@@ -91,7 +91,7 @@ export default async function AdminCoachesPage({ searchParams }: { searchParams:
             est retenu sur le suivant.
           </p>
           {beneficiaries.length === 0 ? (
-            <EmptyState title="Personne à payer">Les parrains et formateurs apparaissent ici dès leur première commission.</EmptyState>
+            <EmptyState title="Personne à payer">Les formateurs apparaissent ici dès leur première commission.</EmptyState>
           ) : (
             <ul className="space-y-3">
               {beneficiaries.map((b) => (
@@ -100,7 +100,7 @@ export default async function AdminCoachesPage({ searchParams }: { searchParams:
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="min-w-0 flex-1 truncate font-semibold">
                         {b.profile?.email ?? b.userId}
-                        {b.coach ? <span className="font-normal text-muted"> · formateur {b.coach.training_name}</span> : <span className="font-normal text-muted"> · parrain</span>}
+                        {b.coach ? <span className="font-normal text-muted"> · formateur {b.coach.training_name}</span> : <span className="font-normal text-muted"> · ancien lien d’invitation</span>}
                       </p>
                       {b.earnings.next.eligible ? <Badge tone="gain">À verser</Badge> : null}
                     </div>

@@ -381,7 +381,7 @@ simplement sautée.
 
 ```
 app/(public)/       accueil, prix, formateurs, pages légales
-app/app/            l'appli : radar, fiche produit, studio, mes produits, récap, parrainage, compte
+app/app/            l'appli : radar, fiche produit, studio, mes produits, récap, compte
 app/formateur/      espace formateur        app/admin/   administration
 app/api/            cron, webhook Stripe, interactions Discord, désinscription, visuels produits
 lib/db/             accès aux données (Supabase ou fichier local), une seule interface

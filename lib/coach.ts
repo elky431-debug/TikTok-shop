@@ -47,7 +47,7 @@ export interface StudentDetail {
 export interface CoachDashboard {
   total: number;
   activeThisWeek: number;
-  /** Paient leur abonnement (statut « abonné » du parrainage). */
+  /** Paient leur abonnement (statut « abonné » du rattachement). */
   subscribed: number;
   /** En essai (ancienne grille : les 3 mois offerts ; plus d'essai depuis la nouvelle grille). */
   trial: number;

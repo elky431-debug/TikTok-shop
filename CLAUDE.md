@@ -83,11 +83,11 @@ l'appli renvoie à `/abonnement` (`requireOnboardedViewer`, `{ abonnement: false
 
 | Plan | Prix | Contenu |
 | --- | --- | --- |
-| starter | 34,99 €/mois · 279,90 €/an | radar France complet, score expliqué, fiche produit, 10 scripts/jour en 5 formats, téléprompteur, 10 produits suivis, plan de publication, récap du matin, 3 alertes, 3 recherches/jour, mode préparation, parrainage |
+| starter | 34,99 €/mois · 279,90 €/an | radar France complet, score expliqué, fiche produit, 10 scripts/jour en 5 formats, téléprompteur, 10 produits suivis, plan de publication, récap du matin, 3 alertes, 3 recherches/jour, mode préparation |
 | pro | 59,99 €/mois · 479,90 €/an | Starter + 40 scripts/jour en 8 formats, style personnel, série de 20 vidéos, score « pour toi », produits suivis illimités, gains et import CSV, 20 analyses de vidéo et 20 propositions de marques par mois, comparateur, 15 alertes, 15 recherches/jour, récap de la semaine |
 | elite | 97,99 €/mois · 779,90 €/an | tout le Pro en illimité + Allemagne, Italie, Espagne, traduction des scripts, poids du score réglables, export CSV, 50 recherches/jour |
 
-Code formateur : rattache l'élève au formateur à l'inscription ; la remise (−20 % sur le premier mois mensuel) passe par le
+Code formateur (seul système de rattachement : le parrainage entre utilisateurs est retiré, `DECISIONS.md` 209) : rattache l'élève au formateur à l'inscription ; la remise (−20 % sur le premier mois mensuel) passe par le
 code promo personnel du formateur, créé à la main dans Stripe et saisi sur la page de paiement (`allow_promotion_codes`
 toujours actif, aucun coupon automatique). Au paiement, case obligatoire de démarrage immédiat (rétractation de 14 jours,
 `lib/billing/consent.ts`), enregistrée côté serveur et confirmée par e-mail. Prix créés dans Stripe et retrouvés par
