@@ -65,6 +65,10 @@ const config: Config = {
         shimmer: {
           '100%': { transform: 'translateX(100%)' },
         },
+        'grow-x': {
+          from: { transform: 'scaleX(0)' },
+          to: { transform: 'scaleX(1)' },
+        },
         pop: {
           '0%': { transform: 'scale(1)' },
           '40%': { transform: 'scale(1.06)' },
@@ -76,6 +80,7 @@ const config: Config = {
         shimmer: 'shimmer 1.4s infinite',
         skeleton: 'skeleton 1.5s ease-in-out infinite',
         pop: 'pop 260ms ease-out',
+        'grow-x': 'grow-x 600ms cubic-bezier(.2,.7,.2,1) both',
       },
     },
   },

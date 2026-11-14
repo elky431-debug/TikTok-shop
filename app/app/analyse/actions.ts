@@ -8,7 +8,8 @@ import { requireOnboardedViewer } from '@/lib/auth/session';
 import { getRepo } from '@/lib/db';
 import { isNicheId } from '@/lib/niches';
 import { getPlan } from '@/lib/plans';
-import { normalizeAnalysis, tiktokVideoId, type AnalysisData } from '@/lib/v2/analysis';
+import { isShortTikTokLink, parseTikTokLink, resolveShortLink } from '@/lib/tiktok/video';
+import { normalizeAnalysis, type AnalysisData } from '@/lib/v2/analysis';
 import { remainingThisMonth } from '@/lib/v2/quota';
 import { createStudioDraft, studioDraftHref } from '@/lib/v2/studio-draft';
 
@@ -22,17 +23,17 @@ async function viewer() {
 export async function analyzeVideoAction(formData: FormData) {
   const { profile, plan } = await viewer();
   if ((await remainingThisMonth(profile.id, 'analyse', plan.analysesPerMonth)) <= 0) redirect('/app/analyse?erreur=quota');
-  const url = String(formData.get('lien') ?? '').trim();
+  const raw = String(formData.get('lien') ?? '').trim();
   const text = String(formData.get('texte') ?? '').trim();
-  const videoId = url ? tiktokVideoId(url) : null;
-  if (url && !videoId) redirect('/app/analyse?erreur=lien');
-
-  // Sans lien, le texte suffit ; avec un lien, la description de la vidéo peut le compléter dans la tâche.
-  if (!videoId && text.length < 20) redirect('/app/analyse?erreur=texte');
+  // Lien complet lu sur place ; lien court de partage résolu par sa redirection (sans lire la page).
+  const link = raw ? (parseTikTokLink(raw) ?? (isShortTikTokLink(raw) ? await resolveShortLink(raw) : null)) : null;
+  if (raw && !link) redirect(`/app/analyse?erreur=${isShortTikTokLink(raw) ? 'lien-court' : 'lien'}`);
+  // Sans lien, le texte suffit ; avec un lien, l'analyse se fait toujours, avec ce qu'on trouve.
+  if (!link && text.length < 20) redirect('/app/analyse?erreur=texte');
   const path = await startTask(
     profile,
     'analyse',
-    { lien: url, texte: text.slice(0, 5000), video: videoId, produit: String(formData.get('produit') ?? '') },
+    { lien: link?.url ?? '', texte: text.slice(0, 5000), video: link?.id ?? '', produit: String(formData.get('produit') ?? '') },
     '/app/analyse',
   );
   revalidatePath('/app/analyse');

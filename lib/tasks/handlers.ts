@@ -1,4 +1,5 @@
 import { isScriptFormat, parseSettings } from '@/lib/ai/formats';
+import { repoCache } from '@/lib/data';
 import { NexscopeProvider, type VideoFacts } from '@/lib/data/nexscope';
 import { getRepo, type Repo } from '@/lib/db';
 import { env } from '@/lib/env';
@@ -70,26 +71,29 @@ export const TASK_HANDLERS: Record<TaskType, TaskHandler> = {
 
   async analyse(profile, input, repo) {
     const url = str(input.lien);
-    let text = str(input.texte);
+    const spoken = str(input.texte);
     const videoId = str(input.video) || null;
-    // Avec un lien et la clé Nexscope : description et chiffres de la vidéo (mis en cache par le client de la source).
+    // Avec un lien et la clé Nexscope : légende et chiffres de la vidéo, par son identifiant, gardés 24 h en base.
     let facts: VideoFacts | null = null;
     if (videoId && env.nexscopeApiKey) {
       try {
-        facts = await new NexscopeProvider().fetchVideoDetail(url);
+        facts = await new NexscopeProvider({ cache: repoCache() }).fetchVideoDetail(videoId);
       } catch (error) {
         console.warn('[analyse] Nexscope', error instanceof Error ? error.message : error);
       }
     }
-    if (!text && facts?.description) text = facts.description;
-    if (text.length < 20) return `/app/analyse?erreur=${videoId ? 'sans-texte' : 'texte'}`;
+    const caption = facts?.description?.trim() ?? '';
+    // Sans lien, il faut le texte ; avec un lien, on analyse toujours avec ce qu'on a (texte, légende ou rien).
+    if (!videoId && spoken.length < 20) return '/app/analyse?erreur=texte';
     const productId = str(input.produit);
     const product = productId && (await repo.getSavedProduct(profile.id, productId)) ? await repo.getProduct(productId) : null;
     try {
-      const result = await analyzeVideo({ text, facts, product, profile });
+      const result = await analyzeVideo({ spoken, caption, facts, product, profile });
       const data: AnalysisData = {
         url: url || null,
-        text: text.slice(0, 5000),
+        video_id: videoId,
+        text: (spoken || caption).slice(0, 5000),
+        basis: result.basis,
         facts,
         product_id: product?.id ?? null,
         product_name: product ? displayName(product) : null,

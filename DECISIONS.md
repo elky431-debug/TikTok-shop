@@ -1139,3 +1139,24 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      un export ou une traduction fermés par le plan montrent un cadenas, et la limite ne s'affiche qu'au clic
      (`LockedButton`). Phrases d'explication retirées (compteur de retouches, rappels sur les notes, aide des formats).
      Briques réutilisables pour la suite : `MoreMenu`, `LockedButton`, `InfoTip`, `FormatIcon`.
+200. **Interface, étape 3 : analyse de vidéo qui marche** (14 novembre). Le bug « Aucune description trouvée pour ce
+     lien » venait de là : avec un lien, seule la description Nexscope était lue, et l'analyse s'arrêtait si elle
+     manquait (beaucoup de vidéos TikTok Shop n'ont pas de légende). Lu avant d'écrire : la doc officielle TikTok
+     « Embed Videos » (mise à jour du 23 octobre 2026, annoncée bientôt abandonnée) et « Embed Player » (28 octobre).
+     Constat, confirmé par un vrai appel le 14 novembre : l'oEmbed (`https://www.tiktok.com/oembed?url=…`) ne renvoie
+     plus ni titre, ni auteur, ni miniature, seulement le lecteur intégrable (`embed_product_id`, `html`). Donc :
+     l'oEmbed sert à confirmer que la vidéo est publique (réponse gardée 12 h) ; l'aperçu (vidéo, auteur, légende) est le
+     lecteur officiel `https://www.tiktok.com/player/v1/{id}?description=1`, affiché tel quel ; la légende, la durée,
+     l'auteur, la couverture et les chiffres viennent de Nexscope `POST /et/batchVideoDetail` (route documentée, 10
+     crédits, appelée par `videoIds`, réponse gardée en base 24 h : le cache n'était pas branché pour l'analyse). Les
+     accents abîmés par cette route (« ￠ » pour « à ») sont réparés. Lien court de partage (vm.tiktok.com,
+     vt.tiktok.com, tiktok.com/t/) : résolu en lisant le seul en-tête de redirection, sans lire la page. On ne bloque
+     plus jamais : l'analyse se fait sur le texte collé, sinon la légende, sinon la durée et les chiffres seuls (l'IA
+     décrit alors la structure type, résumé commençant par « Sans le texte de la vidéo : »), et la base est affichée
+     (« Texte de la vidéo », « Légende seule », « Sans texte ») avec un champ pour relancer avec le texte. Aperçu au collage
+     (`/api/video/apercu`, Pro, 40 recherches de légende par compte et par jour). Interface : un grand champ, les options
+     (texte, produit) repliées ; résultat en chronologie de blocs de couleur (accroche rose, problème orange,
+     démonstration cyan, preuve verte, appel à l'action encre) avec une phrase chacun, puis « Ce qui marche » en 3 points
+     (le pourquoi en info-bulle), puis « Ta version » et « Ouvrir dans le studio » ; seconde par seconde et classement
+     repliés ; « Mes inspirations » en grille de cartes à couverture. Domaines ouverts dans l'environnement de la
+     session : www.tiktok.com et developers.tiktok.com (Netlify n'a pas de filtre sortant).

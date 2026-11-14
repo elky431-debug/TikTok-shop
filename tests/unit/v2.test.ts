@@ -21,7 +21,8 @@ import {
   type PlanLimits,
 } from '@/lib/plans';
 import { enabledRegions, regionFor } from '@/lib/regions';
-import { simulateAnalysis, tiktokVideoId, AnalysisSchema } from '@/lib/v2/analysis';
+import { simulateAnalysis, AnalysisSchema } from '@/lib/v2/analysis';
+import { parseTikTokLink } from '@/lib/tiktok/video';
 import { earningsDashboard, parseAmount, parseEarningsCsv, weekStart } from '@/lib/v2/earnings';
 import { OfferExtractionSchema, scoreOffer, simulateExtraction, type OfferExtraction } from '@/lib/v2/offers';
 import { buildPlan, dueOn, planToIcs } from '@/lib/v2/planning';
@@ -334,10 +335,10 @@ describe('plan de publication', () => {
 
 describe('analyse de vidéo virale', () => {
   it('reconnaît un lien de vidéo TikTok, rien d’autre', () => {
-    expect(tiktokVideoId('https://www.tiktok.com/@compte/video/7704347066079677729?lang=fr')).toBe('7704347066079677729');
-    expect(tiktokVideoId('https://vm.tiktok.com/ZMabc/')).toBeNull();
-    expect(tiktokVideoId('https://exemple.com/video/7704347066079677729')).toBeNull();
-    expect(tiktokVideoId('pas un lien')).toBeNull();
+    expect(parseTikTokLink('https://www.tiktok.com/@compte/video/7704347066079677729?lang=fr')?.id).toBe('7704347066079677729');
+    expect(parseTikTokLink('https://vm.tiktok.com/ZMabc/')).toBeNull();
+    expect(parseTikTokLink('https://exemple.com/video/7704347066079677729')).toBeNull();
+    expect(parseTikTokLink('pas un lien')).toBeNull();
   });
 
   it('analyse simulée conforme au schéma, découpée sur la durée réelle', () => {
@@ -352,7 +353,23 @@ describe('analyse de vidéo virale', () => {
   it('lit les chiffres d’une vidéo Nexscope (batchVideoDetail) sans rien inventer', () => {
     expect(mapNexscopeVideoFacts({ videoId: '1', videoDesc: ' Ma routine ', duration: '17', totalViewsCnt: 529386, createDate: '2026-10-24 01:34:07' })).toEqual({
       description: 'Ma routine', duration_s: 17, views: 529386, likes: null, shares: null, sales: null, published_at: '2026-10-24',
+      author: null, comments: null, cover_url: null,
     });
+  });
+
+  it('répare les accents abîmés et garde auteur et couverture (vraie réponse du 14 novembre)', () => {
+    const facts = mapNexscopeVideoFacts({
+      videoId: '7703532774304582934',
+      videoDesc: 'Le calendrier de l\'Avent.\n24 chiffres \uFFE0 presser. Apr\uFFE8s cela, sur l\'\uFFE9tag\uFFE8re',
+      uniqueId: 'aktivismus_shop_fr',
+      totalCommentsCnt: 6,
+      coverUrl: 'https://agent-files.linkfox.com/tiktok/20261114/7703532774304582934.jpg',
+    });
+    expect(facts.description).toBe('Le calendrier de l\'Avent. 24 chiffres à presser. Après cela, sur l\'étagère');
+    expect(facts.author).toBe('@aktivismus_shop_fr');
+    expect(facts.comments).toBe(6);
+    expect(facts.cover_url).toBe('https://agent-files.linkfox.com/tiktok/20261114/7703532774304582934.jpg');
+    expect(mapNexscopeVideoFacts({ coverUrl: 'https://inconnu.example.com/a.jpg' }).cover_url).toBeNull();
   });
 });
 

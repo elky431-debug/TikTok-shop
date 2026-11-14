@@ -1,3 +1,4 @@
+import { repairAccents } from '@/lib/tiktok/text';
 import type { ProductDetails, TopVideo } from '@/lib/db/types';
 import { env } from '@/lib/env';
 import { NICHE_IDS, type NicheId } from '@/lib/niches';
@@ -261,17 +262,26 @@ export interface VideoFacts {
   shares: number | null;
   sales: number | null;
   published_at: string | null;
+  /** Compte TikTok (« @nom »), absent des anciennes analyses. */
+  author?: string | null;
+  comments?: number | null;
+  /** Couverture servie par la source (domaine autorisé), sinon null. */
+  cover_url?: string | null;
 }
 
 export function mapNexscopeVideoFacts(raw: Record<string, unknown>): VideoFacts {
+  const author = text(raw.uniqueId).replace(/^@/, '');
   return {
-    description: text(raw.videoDesc),
+    description: repairAccents(text(raw.videoDesc)),
     duration_s: toCount(raw.duration),
     views: toCount(raw.totalViewsCnt),
     likes: toCount(raw.totalDiggCnt),
     shares: toCount(raw.totalSharesCnt),
     sales: toCount(raw.totalVideoSaleCnt),
     published_at: /^(\d{4}-\d{2}-\d{2})/.exec(text(raw.createDate))?.[1] ?? null,
+    author: author ? `@${author}` : null,
+    comments: toCount(raw.totalCommentsCnt),
+    cover_url: checkImage(text(raw.coverUrl)).image || null,
   };
 }
 
@@ -400,11 +410,12 @@ export class NexscopeProvider implements ProductDataProvider {
   }
 
   /**
-   * Une vidéo TikTok à partir de son lien (data-et-batch-video-detail : `videoUrls`, le serveur en extrait l'identifiant),
-   * ~10 crédits. null si la source ne la connaît pas.
+   * Une vidéo TikTok à partir de son identifiant (data-et-batch-video-detail, `videoIds`), 10 crédits. null si la source
+   * ne la connaît pas.
    */
-  async fetchVideoDetail(url: string): Promise<VideoFacts | null> {
-    const json = await this.post(`${NEXSCOPE_ET_BASE}/batchVideoDetail`, 'et-batchVideoDetail', { videoUrls: [url] });
+  async fetchVideoDetail(videoId: string): Promise<VideoFacts | null> {
+    // Par identifiant (paramètre `videoIds` documenté) : le nom du compte dans le lien peut avoir changé.
+    const json = await this.post(`${NEXSCOPE_ET_BASE}/batchVideoDetail`, 'et-batchVideoDetail', { videoIds: [videoId] });
     const raw = (findList(json, 'videos') ?? [])[0];
     return raw ? mapNexscopeVideoFacts(raw) : null;
   }
