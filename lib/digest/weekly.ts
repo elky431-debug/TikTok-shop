@@ -15,6 +15,7 @@ import { weekStart, type EarningData } from '@/lib/v2/earnings';
 import type { PublicationPlan } from '@/lib/v2/planning';
 import { bestStreak, currentStreak, observePostedVideos, totalsByDay } from './history';
 import type { RecapChannels } from './settings';
+import { displayName } from '@/lib/product-name';
 
 /**
  * Récap du dimanche : la semaine du lundi au dimanche. Vidéos postées (relevé de « Mes produits » et des plans), gains
@@ -58,7 +59,7 @@ export async function buildWeeklyRecap(profile: Profile, repo: Repo = getRepo(),
   ]);
   const productIds = [...new Set([...saved.map((s) => s.product_id), ...Object.values(history.days).flatMap((d) => Object.keys(d))])];
   const products = productIds.length ? await repo.getProducts(productIds) : [];
-  const names = new Map(products.map((p) => [p.id, p.name]));
+  const names = new Map(products.map((p) => [p.id, displayName(p)]));
 
   const byDay = totalsByDay(history);
   const week = Array.from({ length: 7 }, (_, i) => addDays(start, i));

@@ -15,6 +15,7 @@ import { addDays, formatLongDate, parisDate } from '@/lib/utils';
 import { loadMyProducts } from '@/lib/v2/my-products';
 import { monthCalendar, parseMonth, planProgress, RHYTHMS } from '@/lib/v2/planning';
 import { createPlanAction, unschedulePlanAction } from './actions';
+import { displayName } from '@/lib/product-name';
 
 export const metadata: Metadata = { title: 'Plan de publication' };
 
@@ -62,7 +63,7 @@ export default async function PlanPage({ searchParams }: { searchParams: Record<
               <Select id="produit" name="produit" required defaultValue={preselected}>
                 {rows.map((r) => (
                   <option key={r.product.id} value={r.product.id}>
-                    {r.product.name.slice(0, 80)}
+                    {displayName(r.product)}
                   </option>
                 ))}
               </Select>
@@ -110,7 +111,7 @@ export default async function PlanPage({ searchParams }: { searchParams: Record<
               <Card key={board.id}>
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <h3 className="line-clamp-2 text-base">{product.name}</h3>
+                    <h3 className="line-clamp-2 text-base">{displayName(product)}</h3>
                     <p className="text-sm text-muted">
                       {plan.rhythm} vidéos par semaine · {progress.posted}/{progress.total} postées
                       {next ? ` · prochaine : ${next.date === today ? 'aujourd’hui' : formatLongDate(next.date!)}` : ''}

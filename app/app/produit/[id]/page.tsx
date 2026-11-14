@@ -33,11 +33,12 @@ import { sameShopProducts, similarProducts } from '@/lib/radar/similar';
 import { whyNowForProduct } from '@/lib/radar/why-now';
 import { remainingToday } from '@/lib/v2/quota';
 import { cn, formatCompact, formatEuros, formatInt, formatShortDate, parisDate, plural } from '@/lib/utils';
+import { displayName } from '@/lib/product-name';
 import { analyzeHooksAction, loadVideosAction, saveProductAction } from './actions';
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const product = await getRepo().getProduct(params.id);
-  return { title: product?.name ?? 'Produit' };
+  return { title: product ? displayName(product) : 'Produit' };
 }
 
 const HOOK_ERRORS: Record<string, string> = {
@@ -160,13 +161,21 @@ export default async function ProductPage({
           <header className="flex gap-4">
             <ProductImage src={view.image_url} fallback={view.image_fallback} alt={`Visuel de ${view.name}`} className="w-24 sm:w-32" />
             <div className="min-w-0">
-              {/* Les vrais titres TikTok Shop font souvent 150 à 250 caractères : plus petits au-delà de 80. */}
-              <h1 className={cn('leading-tight', view.name.length > 80 ? 'text-lg sm:text-xl' : 'text-2xl sm:text-3xl')}>{view.name}</h1>
+              <h1 className="text-2xl leading-tight sm:text-3xl">{view.name}</h1>
               <p className="mt-1 text-sm text-muted">
                 {nicheLabel(view.niche)}
-                {view.shop_name ? ` · vendu par ${view.shop_name}` : ''}
+                {view.shop_name ? ` · ${view.shop_name}` : ''}
               </p>
-              {figures.category.length ? <p className="mt-0.5 text-xs text-muted">Catégorie TikTok Shop : {figures.category.join(' › ')}</p> : null}
+              {/* Titre complet de TikTok Shop (souvent 150 à 250 caractères) et catégorie : repliés. */}
+              {view.full_name !== view.name || figures.category.length ? (
+                <details className="group mt-1 text-xs text-muted">
+                  <summary className="cursor-pointer list-none font-semibold text-muted hover:text-fg [&::-webkit-details-marker]:hidden">
+                    <span className="underline decoration-line underline-offset-2">Titre complet</span>
+                  </summary>
+                  <p className="mt-1 max-w-prose leading-relaxed">{view.full_name}</p>
+                  {figures.category.length ? <p className="mt-1">Catégorie TikTok Shop : {figures.category.join(' › ')}</p> : null}
+                </details>
+              ) : null}
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <TrendBadge trend={view.trend} growth={view.growth_7d} measured={view.growth_known} />
                 <ProductBadges badges={view.badges} trend={view.trend} growthKnown={view.growth_known} />

@@ -40,6 +40,7 @@ const COLUMNS: Array<[string, (p: ProductView, rank: number, siteUrl: string) =>
   ['Pourquoi maintenant', (p) => p.why_now?.sentence ?? null],
   ['Produit fictif', (p) => (p.demo ? 'oui' : 'non')],
   ['Fiche', (p, _rank, siteUrl) => `${siteUrl}/app/produit/${encodeURIComponent(p.id)}`],
+  ['Titre complet', (p) => p.full_name],
 ];
 
 /** Seuls les produits visibles pour ce plan sont exportés : jamais un produit verrouillé. */

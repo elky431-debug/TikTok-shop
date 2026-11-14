@@ -6,6 +6,7 @@ import type { Product, Profile } from '@/lib/db/types';
 import { nicheLabel } from '@/lib/niches';
 import { TREND_LABELS } from '@/lib/score';
 import { formatEuros, formatGrowth } from '@/lib/utils';
+import { displayName } from '@/lib/product-name';
 
 /**
  * /script : une accroche rapide (les 3 premières secondes) et une idée de plan, par l'IA structurée commune
@@ -26,7 +27,7 @@ const SYSTEM = [
 ].join(' ');
 
 function simulate(product: Pick<Product, 'id' | 'name' | 'niche'>): QuickHook {
-  const short = product.name.split(/\s+/).slice(0, 4).join(' ');
+  const short = displayName(product);
   const hooks = [
     `Je teste ${short} depuis une semaine : voilà ce que personne ne te montre.`,
     `Avant d’acheter ${short}, regarde ça.`,

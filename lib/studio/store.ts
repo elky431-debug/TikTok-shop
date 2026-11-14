@@ -6,6 +6,7 @@ import { getRepo, type Repo } from '@/lib/db';
 import type { ScriptFormat, ScriptRecord, UserRecord } from '@/lib/db/types';
 import { docToText } from './export';
 import { KIND_DOC, type StudioDoc, type StudioDocView } from './types';
+import { displayName } from '@/lib/product-name';
 
 /**
  * Stockage des générations du studio : une fiche `studio_script` (source de vérité : retouches, traductions, notes)
@@ -161,7 +162,7 @@ export async function listHistory(userId: string, repo: Repo = getRepo()): Promi
   }
   const legacy = rows.filter((row) => !seen.has(row.id));
   if (legacy.length) {
-    const names = new Map((await repo.getProducts([...new Set(legacy.map((l) => l.product_id))])).map((p) => [p.id, p.name]));
+    const names = new Map((await repo.getProducts([...new Set(legacy.map((l) => l.product_id))])).map((p) => [p.id, displayName(p)]));
     for (const row of legacy) {
       items.push({
         id: row.id,

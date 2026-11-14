@@ -2,7 +2,8 @@ import { getProvider, type ProductDataProvider, type ProviderProduct, type Provi
 import type { SalesPoint } from '@/lib/data/provider';
 import { getRepo, type Repo } from '@/lib/db';
 import type { Product, ProductDetails, ProductSnapshot, RegionId, ScoreBreakdown, TopVideo } from '@/lib/db/types';
-import { env } from '@/lib/env';
+import { labelProducts } from '@/lib/ai/product-labels';
+import { env, isAiConfigured } from '@/lib/env';
 import { scoreProducts, trendOf, type ScoreInput } from '@/lib/score';
 import { addDays, dateRange, daysBetween, parisDate } from '@/lib/utils';
 import { mapWithConcurrency } from './concurrency';
@@ -22,6 +23,8 @@ export interface RefreshResult {
   provider: string;
   products: number;
   snapshots: number;
+  /** Produits nommés (nom court + niche vérifiée) par l'IA cette nuit. */
+  labelled?: number;
   durationMs: number;
   /** Compteurs du fournisseur réel (appels, cache, reprises, quota, produits écartés, images refusées). */
   stats?: ProviderRunStats;
@@ -79,6 +82,28 @@ const knownSales = (points: Point[]) =>
  * quotidien et calcule le score d'opportunité. Avec `backfillDays`, recalcule aussi les jours passés
  * (utilisé par le seed pour remplir 30 jours d'historique fictif).
  */
+/** Produits nommés par l'IA au plus par nuit (les autres le seront la nuit suivante). */
+const LABELS_PER_RUN = 400;
+
+/**
+ * Nom court et niche vérifiée des produits qui n'en ont pas encore, une seule fois par produit (lib/ai/product-labels.ts).
+ * Sans clé d'IA, rien n'est fait : l'affichage tire un nom court du titre. Jamais bloquant pour le relevé.
+ */
+export async function labelNewProducts(products: Product[], repo: Repo): Promise<number> {
+  if (!isAiConfigured()) return 0;
+  const todo = products.filter((p) => !p.short_name).slice(0, LABELS_PER_RUN);
+  if (!todo.length) return 0;
+  try {
+    const { labels, simulated } = await labelProducts(todo.map((p) => ({ id: p.id, name: p.name, description: p.description, niche: p.niche })));
+    if (simulated) return 0;
+    await repo.updateProductLabels(labels);
+    return labels.length;
+  } catch (error) {
+    console.warn('[noms courts]', error instanceof Error ? error.message : error);
+    return 0;
+  }
+}
+
 export async function refreshCatalog(options: RefreshOptions = {}): Promise<RefreshResult> {
   const started = Date.now();
   const date = options.date ?? parisDate();
@@ -174,7 +199,10 @@ export async function refreshCatalog(options: RefreshOptions = {}): Promise<Refr
       id: p.id,
       provider: provider.name,
       name: p.name,
-      niche: p.niche,
+      // Niche vérifiée par l'IA et nom court : gardés d'une nuit à l'autre (clés absentes si la base ne les a pas).
+      niche: existing.get(p.id)?.niche_checked ? existing.get(p.id)!.niche : p.niche,
+      ...(existing.get(p.id)?.short_name !== undefined ? { short_name: existing.get(p.id)!.short_name ?? null } : {}),
+      ...(existing.get(p.id)?.niche_checked !== undefined ? { niche_checked: existing.get(p.id)!.niche_checked } : {}),
       description: p.description,
       shop_name: p.shop_name,
       price_cents: p.price_cents,
@@ -197,12 +225,14 @@ export async function refreshCatalog(options: RefreshOptions = {}): Promise<Refr
 
   await repo.upsertProducts(rows);
   await repo.upsertSnapshots(snapshots);
+  const labelled = await labelNewProducts(rows, repo);
 
   return {
     date,
     provider: provider.name,
     products: rows.length,
     snapshots: snapshots.length,
+    labelled,
     durationMs: Date.now() - started,
     videos: videos.size,
     details: details.size,

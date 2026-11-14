@@ -15,6 +15,7 @@ import { cn, formatDayMonth, formatEuros, formatInt, formatShortDate, parisDate,
 import { earningsDashboard, EARNINGS_KIND, EARNING_FIELDS, goalProgress, NO_TAX_ADVICE, type EarningData } from '@/lib/v2/earnings';
 import { getEarningsGoal, getMapping } from '@/lib/v2/earnings-store';
 import { addEarningAction, deleteEarningAction, forgetMappingAction, setEarningsGoalAction, startImportAction } from './actions';
+import { shortLabel } from '@/lib/product-name';
 
 export const metadata: Metadata = { title: 'Mes gains' };
 
@@ -324,7 +325,7 @@ export default async function GainsPage({ searchParams }: { searchParams: Record
             {records.slice(0, 30).map((r) => (
               <li key={r.id} className="flex items-center justify-between gap-3 py-2 text-sm">
                 <span className="min-w-0">
-                  <span className="line-clamp-1">{r.data.product_name}</span>
+                  <span className="line-clamp-1">{shortLabel(r.data.product_name)}</span>
                   <span className="text-xs text-muted">
                     {formatShortDate(r.data.date)}
                     {r.data.video ? ` · ${r.data.video}` : ' · produit entier'}

@@ -281,6 +281,19 @@ export class SupabaseRepo implements Repo {
   }
 
 
+  async updateProductLabels(labels: Array<{ id: string; short_name: string; niche: NicheId }>) {
+    for (let i = 0; i < labels.length; i += 10) {
+      await Promise.all(
+        labels.slice(i, i + 10).map(async (l) =>
+          check(
+            'nom court',
+            await this.db.from('products').update({ short_name: l.short_name, niche: l.niche, niche_checked: true }).eq('id', l.id).select('id'),
+          ),
+        ),
+      );
+    }
+  }
+
   async updateProductVideos(id: string, videos: TopVideo[], fetchedAt: string) {
     check('vidéos', await this.db.from('products').update({ top_videos: videos, videos_fetched_at: fetchedAt }).eq('id', id).select('id'));
   }

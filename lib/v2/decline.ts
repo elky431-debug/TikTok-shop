@@ -5,6 +5,7 @@ import { notify } from '@/lib/notify';
 import { isPaidPlan } from '@/lib/plans';
 import { regionFor } from '@/lib/regions';
 import { addDays, formatGrowth } from '@/lib/utils';
+import { displayName } from '@/lib/product-name';
 
 /**
  * Produits suivis qui commencent à baisser : tendance « baisse » du score, croissance 7 jours ≤ −15 %, ou chute des
@@ -92,7 +93,7 @@ export async function alertDecliningProducts(date: string, repo: Repo, now = new
       if (last && last.data.alerted_on > addDays(date, -ALERT_COOLDOWN_DAYS)) continue;
       const replacements = isPaidPlan(profile.plan) ? findReplacements(product, catalog, followed) : [];
       const body = [
-        `${product.name} commence à baisser. ${declineSentence(product)}`,
+        `${displayName(product)} commence à baisser. ${declineSentence(product)}`,
         'Publie vite les vidéos que tu as déjà tournées.',
         replacements.length
           ? `À regarder dans la même niche : ${replacements.map((r) => `${r.name} (score ${r.latest_score})`).join(', ')}.`
@@ -102,7 +103,7 @@ export async function alertDecliningProducts(date: string, repo: Repo, now = new
         profile.id,
         {
           type: 'baisse',
-          title: `${product.name.slice(0, 60)} commence à baisser`,
+          title: `${displayName(product)} commence à baisser`,
           body,
           path: `/app/mes-produits/${encodeURIComponent(product.id)}`,
           action: 'Voir mes produits',

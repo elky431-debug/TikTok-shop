@@ -10,6 +10,7 @@ import { getDoc, listDocs } from './store';
 import { activeStyle } from './style';
 import { KIND_SERIES, type SeriesData, type StudioDocView } from './types';
 import { isUnlimited } from '@/lib/plans';
+import { displayName } from '@/lib/product-name';
 
 /**
  * Séries de 20 vidéos (Pro : 3 par jour, Elite : 20). Le quota compte les séries créées depuis minuit ; une série
@@ -39,7 +40,7 @@ export async function createSeries(profile: Profile, productId: string): Promise
   if (!(await canAccessProduct(profile, productId))) throw new StudioError('acces', 'Ce produit ne fait pas partie de ton catalogue.');
 
   const previousSeries = (await repo.listRecords<SeriesData>(profile.id, KIND_SERIES)).filter((r) => r.data.product_id === productId);
-  const placeholder: SeriesData = { product_id: product.id, product_name: product.name, angles: [], simulated: false, duplicates_removed: 0, filled: 0 };
+  const placeholder: SeriesData = { product_id: product.id, product_name: displayName(product), angles: [], simulated: false, duplicates_removed: 0, filled: 0 };
   const reserved = await reserveToday(profile.id, KIND_SERIES, rights.seriesPerDay, placeholder);
   if (!reserved) {
     throw new StudioError(

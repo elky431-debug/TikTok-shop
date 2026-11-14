@@ -30,6 +30,7 @@ import {
   unlinkDiscordAction,
 } from './actions';
 import { WeeklyPreview } from './weekly-preview';
+import { shortLabel } from '@/lib/product-name';
 
 export const metadata: Metadata = { title: 'Récap' };
 
@@ -216,7 +217,7 @@ export default async function RecapPage({ searchParams }: { searchParams: Record
 
               {content.hook ? (
                 <Panel className="mt-5">
-                  <p className="text-sm text-muted">Accroche du jour pour {quote(content.hook.product_name)}</p>
+                  <p className="text-sm text-muted">Accroche du jour pour {quote(shortLabel(content.hook.product_name))}</p>
                   <p className="mt-1 text-xl font-semibold leading-snug">{quote(content.hook.text)}</p>
                   <CopyButton text={content.hook.text} label="Copier l’accroche" copiedLabel="Accroche copiée" className="mt-3" />
                 </Panel>

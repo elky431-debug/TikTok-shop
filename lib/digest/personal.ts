@@ -4,6 +4,7 @@ import type { NotificationData } from '@/lib/notify';
 import { getPlan } from '@/lib/plans';
 import { addDays, formatDayMonth, parisTimeToUtc } from '@/lib/utils';
 import type { PublicationPlan } from '@/lib/v2/planning';
+import { displayName } from '@/lib/product-name';
 
 /**
  * Partie personnelle du récap du matin : alertes déclenchées et produits suivis en baisse (notifications `alerte` et
@@ -130,7 +131,7 @@ export async function buildPersonal(
   const alerts = noticesSince(notifications, 'alerte', day);
   const drops = noticesSince(notifications, 'baisse', day);
   const products = saved.length ? await repo.getProducts(saved.map((s) => s.product_id)) : [];
-  const names = new Map(products.map((p) => [p.id, p.name]));
+  const names = new Map(products.map((p) => [p.id, displayName(p)]));
   const top = content.products[0] ?? null;
   return {
     alerts: alerts.slice(0, MAX_NOTICES),
@@ -143,7 +144,7 @@ export async function buildPersonal(
       saved: saved
         .filter((s) => names.has(s.product_id))
         .map((s) => ({ product_id: s.product_id, name: names.get(s.product_id)!, videos_posted: s.videos_posted, video_goal: s.video_goal })),
-      top: top ? { id: top.id, name: top.name } : null,
+      top: top ? { id: top.id, name: displayName(top) } : null,
     }),
   };
 }

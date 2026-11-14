@@ -8,6 +8,7 @@ import { isClean } from './guard';
 import { describeStyle, EDIT_SYSTEM_PROMPT } from './prompt';
 import { askStructured } from './structured';
 import type { StyleProfile } from './types';
+import { displayName } from '@/lib/product-name';
 
 /**
  * Série de 20 vidéos sur un produit : 20 angles différents (un affilié gagne au volume, à partir de 20 vidéos sur un
@@ -152,7 +153,7 @@ export function simulateSeries(product: Pick<Product, 'id' | 'name'>, seed = '')
   const formats = rng.shuffle(FORMAT_IDS);
   const angles = rng.shuffle(FIXED_ANGLES);
   const hooks = Object.fromEntries(FIXED_ANGLES.map((a) => [a, rng.shuffle(SERIES_HOOKS[a])])) as Record<FixedAngle, string[]>;
-  const name = product.name.length > 40 ? `${product.name.slice(0, 39).trimEnd()}…` : product.name;
+  const name = displayName(product);
   const out: SeriesAngle[] = [];
   for (let k = 0; k < SERIES_SIZE; k++) {
     const angle = angles[k % 4];

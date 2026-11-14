@@ -12,6 +12,7 @@ import { getSeries, writtenAngles } from '@/lib/studio/series';
 import { cn, formatRelative } from '@/lib/utils';
 import { writeAngleAction } from '../actions';
 import { isUnlimited } from '@/lib/plans';
+import { shortLabel } from '@/lib/product-name';
 
 export const metadata: Metadata = { title: 'Série de 20 vidéos' };
 
@@ -37,7 +38,7 @@ export default async function SeriesDetailPage({ params, searchParams }: { param
       </nav>
       <header className="mb-6">
         <p className="eyebrow">Série de {total} vidéos</p>
-        <h1 className="mt-1 text-2xl sm:text-3xl">{series.data.product_name}</h1>
+        <h1 className="mt-1 text-2xl sm:text-3xl">{shortLabel(series.data.product_name)}</h1>
         <p className="mt-1.5 text-sm text-muted">Créée {formatRelative(series.created_at)} · un angle différent par vidéo, sans répétition.</p>
         <div className="mt-4 max-w-md">
           <div className="mb-1.5 flex items-baseline justify-between text-sm">

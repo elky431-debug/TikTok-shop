@@ -23,7 +23,8 @@
     "check:deps": "node scripts/check-deps.mjs",
     "auth:setup": "tsx scripts/auth-setup.ts",
     "discord:setup": "tsx scripts/discord-setup.ts",
-    "data:enrich": "tsx scripts/enrich-products.ts"
+    "data:enrich": "tsx scripts/enrich-products.ts",
+    "data:noms-courts": "tsx scripts/product-labels.ts"
   },
   "engines": {
     "node": ">=20.19"

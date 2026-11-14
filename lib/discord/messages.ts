@@ -6,6 +6,7 @@ import { commissionPerSale, TREND_LABELS } from '@/lib/score';
 import type { TrendEntry } from '@/lib/tendances';
 import { formatDayMonth, formatEuros, formatGrowth } from '@/lib/utils';
 import type { QuickHook } from './hook';
+import { displayName } from '@/lib/product-name';
 
 /**
  * Messages envoyés par le bot (objets « embed » et boutons de la doc Discord : resources/message, components/reference).
@@ -83,7 +84,7 @@ export function veilleMessage(input: { entries: TrendEntry[]; date: string; demo
     .slice(0, 5)
     .map(
       (p, i) =>
-        `**${i + 1}. ${cut(p.name, 120)}** · ${nicheShort(p.niche)} · ${formatEuros(p.price_cents)} · ${TREND_LABELS[p.trend]}${p.growth_known ? ` ${formatGrowth(p.growth_7d)}` : ''}`,
+        `**${i + 1}. ${cut(displayName(p), 120)}** · ${nicheShort(p.niche)} · ${formatEuros(p.price_cents)} · ${TREND_LABELS[p.trend]}${p.growth_known ? ` ${formatGrowth(p.growth_7d)}` : ''}`,
     );
   return {
     embeds: [
@@ -122,7 +123,7 @@ export function proChannelMessage(input: { products: Product[]; demo: boolean; s
           top
             .map(
               (p, i) =>
-                `**${i + 1}. [${cut(p.name, 120)}](${input.siteUrl}/app/produit/${p.id})** · ${p.latest_score}/100\n` +
+                `**${i + 1}. [${cut(displayName(p), 120)}](${input.siteUrl}/app/produit/${p.id})** · ${p.latest_score}/100\n` +
                 `${nicheShort(p.niche)} · ${formatEuros(p.price_cents)} · ${formatEuros(commissionPerSale(p.price_cents, p.commission_rate))} par vente · ${TREND_LABELS[p.trend]} ${formatGrowth(p.growth_7d)}`,
             )
             .join('\n'),
@@ -147,7 +148,7 @@ export function produitsMessage(input: {
   const plan = getPlan(input.plan);
   const lines = input.products.slice(0, 10).map(
     (p, i) =>
-      `**${i + 1}. [${cut(p.name, 120)}](${input.siteUrl}/app/produit/${p.id})**${plan.showScore ? ` · ${p.latest_score}/100` : ''}\n` +
+      `**${i + 1}. [${cut(displayName(p), 120)}](${input.siteUrl}/app/produit/${p.id})**${plan.showScore ? ` · ${p.latest_score}/100` : ''}\n` +
       `${formatEuros(p.price_cents)} · ${formatEuros(commissionPerSale(p.price_cents, p.commission_rate))} par vente · ${TREND_LABELS[p.trend]} ${formatGrowth(p.growth_7d)}`,
   );
   const notes = [
@@ -194,7 +195,7 @@ export function scoreMessage(input: { product: Product; plan: PlanId; demo: bool
   return {
     embeds: [
       {
-        title: cut(product.name, 256),
+        title: cut(displayName(product), 256),
         url: `${input.siteUrl}/app/produit/${product.id}`,
         color: CYAN,
         description: cut([breakdown?.summary, note].filter(Boolean).join('\n\n'), 4096) || undefined,
@@ -211,7 +212,7 @@ export function hookMessage(product: Pick<Product, 'id' | 'name'>, hook: QuickHo
     content: '',
     embeds: [
       {
-        title: cut(`Accroche pour ${product.name}`, 256),
+        title: cut(`Accroche pour ${displayName(product)}`, 256),
         color: ROSE,
         description: cut(
           `**« ${hook.accroche} »**\n\n${hook.idee}${hook.simulated ? '\n\n_Accroche d’exemple : le service d’écriture n’est pas branché._' : ''}`,

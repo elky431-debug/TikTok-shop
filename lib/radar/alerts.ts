@@ -7,6 +7,7 @@ import { getPlan } from '@/lib/plans';
 import { describeFilters, filtersToParams, filterTarget, hasFilters, matchesFilters, parseFilters, type RadarFilters } from '@/lib/radar-filters';
 import { regionFor } from '@/lib/regions';
 import { BADGES } from './badges';
+import { displayName } from '@/lib/product-name';
 
 /**
  * Alertes personnalisées (bloc 1) : une règle = des critères du radar (niche, commission, ventes, croissance, prix…).
@@ -156,7 +157,7 @@ export async function checkAlerts(date: string, repo: Repo = getRepo(), now: Dat
       let sent = alert.data.last_sent;
       let notified = false;
       if (fresh.length) {
-        const names = fresh.slice(0, 3).map((p) => `« ${p.name.slice(0, 60)} »`);
+        const names = fresh.slice(0, 3).map((p) => `« ${displayName(p)} »`);
         const more = fresh.length > 3 ? ` et ${fresh.length - 3} autre${fresh.length - 3 > 1 ? 's' : ''}` : '';
         const path = fresh.length === 1 ? `/app/produit/${encodeURIComponent(fresh[0].id)}` : `/app/radar?${filtersToParams(alert.data.criteria).toString()}`;
         const result = await notify(

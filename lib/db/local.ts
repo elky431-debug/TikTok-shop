@@ -448,6 +448,16 @@ export class LocalRepo implements Repo {
   }
 
 
+  async updateProductLabels(labels: Array<{ id: string; short_name: string; niche: NicheId }>) {
+    const byId = new Map(labels.map((l) => [l.id, l]));
+    this.write((d) => {
+      for (const product of d.products) {
+        const label = byId.get(product.id);
+        if (label) Object.assign(product, { short_name: label.short_name, niche: label.niche, niche_checked: true });
+      }
+    });
+  }
+
   async updateProductVideos(id: string, videos: TopVideo[], fetchedAt: string) {
     this.write((d) => {
       const product = d.products.find((p) => p.id === id);

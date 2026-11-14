@@ -17,6 +17,7 @@ import { deleteDoc, getDoc, insertDoc, listDocs, updateDoc } from './studio/stor
 import { activeStyle } from './studio/style';
 import type { StudioDocView } from './studio/types';
 import { draftAsPromptContext, type StudioDraft } from '@/lib/v2/studio-draft';
+import { displayName } from '@/lib/product-name';
 
 export { StudioError, type StudioErrorCode } from './studio/errors';
 export { allowedFormats, studioRights, type StudioRights } from './studio/limits';
@@ -128,7 +129,7 @@ export async function createScripts(profile: Profile, productId: string, format:
     const scripts = result.scripts.map((s) => ensureCommercialMention(s));
     return await insertDoc(profile.id, {
       product_id: product.id,
-      product_name: product.name,
+      product_name: displayName(product),
       format,
       settings,
       hooks: result.hooks,

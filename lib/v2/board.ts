@@ -12,6 +12,7 @@ import {
   type PublicationPlan,
   type VideoGoalSettings,
 } from './planning';
+import { displayName } from '@/lib/product-name';
 
 /**
  * Accès serveur au tableau des vidéos (fiche `publication`, une par produit suivi) : création à la demande, compteur
@@ -35,7 +36,7 @@ export async function listBoards(repo: Repo, userId: string): Promise<Map<string
 export async function ensureBoard(repo: Repo, userId: string, saved: SavedProduct, product: Pick<Product, 'id' | 'name'>): Promise<BoardRecord> {
   const existing = (await listBoards(repo, userId)).get(product.id);
   if (existing) return existing;
-  const board = newBoard({ productId: product.id, productName: product.name, goal: saved.video_goal, alreadyPosted: saved.videos_posted });
+  const board = newBoard({ productId: product.id, productName: displayName(product), goal: saved.video_goal, alreadyPosted: saved.videos_posted });
   return repo.saveRecord(userId, BOARD_KIND, board);
 }
 

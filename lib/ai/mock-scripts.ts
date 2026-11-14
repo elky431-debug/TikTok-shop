@@ -5,6 +5,7 @@ import { formatEuros } from '@/lib/utils';
 import { DEFAULT_SETTINGS, DISCLOSURE_LINE, FIXED_ANGLES, type Duration, type FixedAngle, type StudioFormat, type Tone } from './formats';
 import { isClean } from './guard';
 import type { ScriptInput, ScriptOutput, StudioScript } from './types';
+import { displayName } from '@/lib/product-name';
 
 /**
  * Générateur de scripts simulé, sans appel d'API : utilisé quand aucune clé d'IA n'est configurée,
@@ -161,7 +162,7 @@ function beatsFor(input: ScriptInput): Beat[] {
   const { product } = input;
   const words = NICHE_WORDS[product.niche] ?? NICHE_WORDS.maison;
   const price = formatEuros(product.price_cents);
-  const name = product.name;
+  const name = displayName(product);
   const d = firstSentence(product.description);
   const withDesc = d ? ` ${d}.` : '';
   const beats: Record<StudioFormat, Beat[]> = {
@@ -335,11 +336,11 @@ export function generateMockScripts(input: ScriptInput, variant = 0): ScriptOutp
         : titles[index];
     return {
       title,
-      angle: input.seriesAngle ? input.seriesAngle.pitch : `${ANGLE_TITLES[angle]} : ${input.product.name}`,
+      angle: input.seriesAngle ? input.seriesAngle.pitch : `${ANGLE_TITLES[angle]} : ${displayName(input.product)}`,
       duration_seconds: duration,
       shots,
       call_to_action: 'Clique sur le panier orange pour voir le produit.',
-      caption: `${hooks[index % hooks.length].text} ${input.product.name}, testé pour toi.`,
+      caption: `${hooks[index % hooks.length].text} ${displayName(input.product)}, testé pour toi.`,
       hashtags: ['#tiktokshop', words.tag, '#avis', '#test'],
       disclosure: DISCLOSURE_LINE,
       broll: rng.shuffle(defaultBroll(input.format)),

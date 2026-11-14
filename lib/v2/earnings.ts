@@ -2,6 +2,7 @@ import { formatLabel, SCRIPT_FORMATS } from '@/lib/ai/formats';
 import type { ScriptFormat } from '@/lib/db/types';
 import { NICHES, nicheShort, type NicheId } from '@/lib/niches';
 import { addDays, parisDate } from '@/lib/utils';
+import { displayName } from '@/lib/product-name';
 
 /**
  * Suivi des gains : saisie à la main ou import CSV (relevé exporté de TikTok Shop, tableur…). Aucune connexion au
@@ -244,7 +245,8 @@ export const earningKey = (e: Pick<EarningData, 'date' | 'product_name' | 'video
 
 /** Rattache les lignes aux produits suivis reconnus par leur nom (identifiant et niche). */
 export function attachProducts(rows: EarningData[], products: Array<{ id: string; name: string; niche: NicheId }>): EarningData[] {
-  const byName = new Map(products.map((p) => [normalizeText(p.name), p]));
+  // Relevé TikTok : titre complet ; saisie à la main : souvent le nom court. Les deux sont reconnus.
+  const byName = new Map(products.flatMap((p) => [[normalizeText(displayName(p)), p] as const, [normalizeText(p.name), p] as const]));
   return rows.map((row) => {
     const product = byName.get(normalizeText(row.product_name));
     if (!product) return row;

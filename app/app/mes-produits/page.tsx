@@ -15,6 +15,7 @@ import { cn, formatEuros, formatInt, parisDate, plural } from '@/lib/utils';
 import { loadMyProducts, type MyProductRow } from '@/lib/v2/my-products';
 import { MAX_WEEKLY_GOAL, planProgress, STATUS_LABELS } from '@/lib/v2/planning';
 import { removeSavedProductAction, setVideoGoalAction, setWeeklyGoalAction } from './actions';
+import { displayName } from '@/lib/product-name';
 
 export const metadata: Metadata = { title: 'Mes produits' };
 
@@ -31,7 +32,7 @@ function Row({ row }: { row: MyProductRow }) {
         </Link>
         <div className="min-w-0 flex-1">
           <Link href={href} className="font-semibold leading-snug hover:underline hover:underline-offset-4">
-            {product.name}
+            {displayName(product)}
           </Link>
           <p className="num mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
             <span className="font-semibold text-gain">{formatEuros(commissionPerSale(product.price_cents, product.commission_rate))} / vente</span>
@@ -43,7 +44,7 @@ function Row({ row }: { row: MyProductRow }) {
           <button
             type="submit"
             className="flex h-9 w-9 items-center justify-center rounded-full text-muted hover:bg-surface hover:text-fg"
-            aria-label={`Retirer ${product.name} de mes produits`}
+            aria-label={`Retirer ${displayName(product)} de mes produits`}
             title="Retirer de mes produits"
           >
             <Trash2 className="h-4 w-4" aria-hidden="true" />
@@ -181,7 +182,7 @@ export default async function MesProduitsPage({ searchParams }: { searchParams: 
 
           {declining.length ? (
             <Callout tone="warn" className="mb-6" title={`${plural(declining.length, 'produit suivi commence', 'produits suivis commencent')} à baisser`}>
-              {declining.map((d) => d.product.name).join(', ')}. Termine tes vidéos prévues rapidement : tu recevras aussi une alerte.
+              {declining.map((d) => displayName(d.product)).join(', ')}. Termine tes vidéos prévues rapidement : tu recevras aussi une alerte.
             </Callout>
           ) : null}
           <ul className="space-y-3">

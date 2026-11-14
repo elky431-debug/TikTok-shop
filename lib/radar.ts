@@ -16,6 +16,7 @@ import { fallbackImageUrl } from '@/lib/product-image';
 import { commissionPerSale } from '@/lib/score';
 import { regionFor } from '@/lib/regions';
 import { parisDate } from '@/lib/utils';
+import { displayName } from '@/lib/product-name';
 
 export * from '@/lib/radar-filters';
 
@@ -35,7 +36,10 @@ export interface ProductFigures {
 /** Vue d'un produit adaptée au plan : le score et ses points sont retirés sans abonnement. */
 export interface ProductView {
   id: string;
+  /** Nom court (lib/product-name.ts). */
   name: string;
+  /** Titre complet de la source : seulement dans la fiche produit, repliable. */
+  full_name: string;
   niche: NicheId;
   shop_name: string;
   description: string;
@@ -94,7 +98,8 @@ export function toProductView(product: Product, plan: PlanId, saved = false, ext
   const metrics = productMetrics(product);
   return {
     id: product.id,
-    name: product.name,
+    name: displayName(product),
+    full_name: product.name,
     niche: product.niche,
     shop_name: product.shop_name,
     description: product.description,

@@ -4,6 +4,7 @@ import { getPlan } from '@/lib/plans';
 import { rankForUser } from '@/lib/radar-rules';
 import { commissionPerSale, TREND_LABELS } from '@/lib/score';
 import { formatGrowth } from '@/lib/utils';
+import { displayName } from '@/lib/product-name';
 
 export interface DigestExtras {
   hookFor: (product: Product) => Promise<string>;
@@ -29,7 +30,7 @@ export async function buildDigestContent(
   const chosen = ranked.slice(0, count);
   const items: DigestProduct[] = chosen.map((p) => ({
     id: p.id,
-    name: p.name,
+    name: displayName(p),
     niche: p.niche,
     price_cents: p.price_cents,
     commission_cents: commissionPerSale(p.price_cents, p.commission_rate),
@@ -44,8 +45,8 @@ export async function buildDigestContent(
     first_name: profile.first_name,
     plan: profile.plan,
     products: items,
-    hook: top ? { product_id: top.id, product_name: top.name, text: await extras.hookFor(top) } : null,
-    script: top ? await extras.scriptFor(top, profile).then((s) => (s ? { product_id: top.id, product_name: top.name, ...s } : null)) : null,
+    hook: top ? { product_id: top.id, product_name: displayName(top), text: await extras.hookFor(top) } : null,
+    script: top ? await extras.scriptFor(top, profile).then((s) => (s ? { product_id: top.id, product_name: displayName(top), ...s } : null)) : null,
     locked_count: Number.isFinite(plan.visibleProducts) ? Math.max(0, ranked.length - count) : 0,
     ...(chosen.length && chosen.every(isDemoProduct) ? { demo: true } : {}),
   };

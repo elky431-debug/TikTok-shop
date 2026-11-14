@@ -13,6 +13,7 @@ import { listDocs } from '@/lib/studio/store';
 import { formatRelative } from '@/lib/utils';
 import { createSeriesAction } from './actions';
 import { isUnlimited } from '@/lib/plans';
+import { shortLabel } from '@/lib/product-name';
 
 export const metadata: Metadata = { title: 'Série de 20 vidéos' };
 
@@ -118,7 +119,7 @@ export default async function SeriesPage({ searchParams }: { searchParams: { pro
                         <Layers className="h-5 w-5" aria-hidden="true" />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate font-semibold">{s.data.product_name}</p>
+                        <p className="truncate font-semibold">{shortLabel(s.data.product_name)}</p>
                         <p className="text-sm text-muted">
                           <span className="num">
                             {count}/{s.data.angles.length}

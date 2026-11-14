@@ -10,6 +10,7 @@ import { refreshCreatorAction, toggleUpcomingVideoAction } from '@/app/app/dashb
 import { tooltipStyle, useChartColors } from '@/components/charts/colors';
 import { cn, formatDayMonth, formatEuros, formatInt } from '@/lib/utils';
 import type { DayPoint, UpcomingVideo } from '@/lib/dashboard';
+import { shortLabel } from '@/lib/product-name';
 
 /* ------------------------------------------------------------------------------------------------------------------ */
 /* Comptage des chiffres                                                                                               */
@@ -293,7 +294,7 @@ export function UpcomingList({ items }: { items: UpcomingVideo[] }) {
               </button>
               <span className={cn('min-w-0 flex-1 text-sm', checked ? 'text-muted line-through' : 'text-fg')}>
                 <span className="block truncate font-medium">
-                  Vidéo n°{item.n} · {item.productName}
+                  Vidéo n°{item.n} · {shortLabel(item.productName)}
                 </span>
                 <span className={cn('text-xs', item.overdue && !checked ? 'text-warn' : 'text-muted')}>
                   {item.date ? `${item.overdue ? 'Prévue le' : 'Le'} ${formatDayMonth(item.date)}` : 'Pas encore dans le calendrier'}

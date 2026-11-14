@@ -11,6 +11,7 @@ import { extractOffer, scoreOffer, writeReplies, type OfferData } from '@/lib/v2
 import { CONTENT_PLAN_KIND, generateContentPlan, getPreparation, type ContentPlanData } from '@/lib/v2/preparation';
 import { readStudioDraft } from '@/lib/v2/studio-draft';
 import { executeTask, type TaskHandler, type TaskType } from './index';
+import { displayName } from '@/lib/product-name';
 
 /**
  * Le travail long de chaque fonctionnalité d'IA, repris des actions (qui gardent les vérifications rapides : session,
@@ -91,7 +92,7 @@ export const TASK_HANDLERS: Record<TaskType, TaskHandler> = {
         text: text.slice(0, 5000),
         facts,
         product_id: product?.id ?? null,
-        product_name: product?.name ?? null,
+        product_name: product ? displayName(product) : null,
         analysis: result.data,
         simulated: result.simulated,
         format: result.data.format,

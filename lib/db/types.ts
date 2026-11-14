@@ -143,7 +143,12 @@ export interface ScoreBreakdown {
 export interface Product {
   id: string;
   provider: string;
+  /** Titre complet donné par la source (long) : seulement dans la fiche produit, repliable. */
   name: string;
+  /** Nom court de 3 à 6 mots, généré une fois par l'IA (null tant qu'il n'existe pas : voir lib/product-name.ts). */
+  short_name?: string | null;
+  /** Niche vérifiée par l'IA en même temps que le nom court : le relevé de nuit ne la change plus. */
+  niche_checked?: boolean;
   niche: NicheId;
   description: string;
   shop_name: string;

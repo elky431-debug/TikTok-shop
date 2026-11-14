@@ -3,6 +3,7 @@ import Link from 'next/link';
 import type { Product } from '@/lib/db/types';
 import { nicheShort } from '@/lib/niches';
 import { declineSentence } from '@/lib/v2/decline';
+import { displayName } from '@/lib/product-name';
 
 /** Encart « ce produit commence à baisser », avec les remplaçants de la même niche (plans payants). */
 export function DeclineCallout({
@@ -21,7 +22,7 @@ export function DeclineCallout({
       <p className="flex items-start gap-2 font-semibold">
         <TrendingDown className="mt-0.5 h-4 w-4 shrink-0 text-warn" aria-hidden="true" />
         <span>
-          {product.name} commence à baisser. <span className="font-normal text-fg/85">{declineSentence(product)}</span>
+          {displayName(product)} commence à baisser. <span className="font-normal text-fg/85">{declineSentence(product)}</span>
         </span>
       </p>
       <p className="mt-1 text-fg/85">Publie vite les vidéos déjà tournées, puis passe au suivant.</p>

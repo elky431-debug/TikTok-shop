@@ -4,6 +4,7 @@ import type { Product, Profile, RegionId } from '@/lib/db/types';
 import { isPaidPlan } from '@/lib/plans';
 import { rankForUser, visibleProductIds } from '@/lib/radar-rules';
 import { regionFor } from '@/lib/regions';
+import { displayName } from '@/lib/product-name';
 
 /**
  * Catalogue vu depuis Discord, avec exactement les règles de l'appli (lib/radar.ts) :
@@ -57,7 +58,7 @@ export function searchProducts(products: Product[], query: string, limit = 25): 
   const q = normalizeSearch(query);
   const scored = products
     .map((p) => {
-      const name = normalizeSearch(p.name);
+      const name = normalizeSearch(`${displayName(p)} ${p.name}`);
       if (!q) return { p, rank: 2 };
       if (name.startsWith(q)) return { p, rank: 0 };
       if (q.split(' ').every((word) => name.includes(word))) return { p, rank: 1 };
@@ -77,5 +78,5 @@ export function findProduct(products: Product[], value: string): Product | null 
 
 /** Choix d'autocomplétion : nom (100 caractères au plus), valeur = identifiant du produit. */
 export function autocompleteChoices(products: Product[]): Array<{ name: string; value: string }> {
-  return products.map((p) => ({ name: p.name.length > 100 ? `${p.name.slice(0, 99)}…` : p.name, value: p.id.slice(0, 100) }));
+  return products.map((p) => ({ name: displayName(p).slice(0, 100), value: p.id.slice(0, 100) }));
 }

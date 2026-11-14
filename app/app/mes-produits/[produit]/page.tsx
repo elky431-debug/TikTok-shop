@@ -12,6 +12,7 @@ import { getPlan } from '@/lib/plans';
 import { formatCompact, formatInt, formatShortDate, parisDate } from '@/lib/utils';
 import { loadMyProducts } from '@/lib/v2/my-products';
 import { planProgress } from '@/lib/v2/planning';
+import { displayName } from '@/lib/product-name';
 
 export const metadata: Metadata = { title: 'Tableau des vidéos' };
 
@@ -38,7 +39,7 @@ export default async function ProductBoardPage({ params, searchParams }: { param
         Mes produits
       </Link>
       <PageHeader eyebrow="Suivre"
-        title={<span className="line-clamp-2">{product.name}</span>}
+        title={<span className="line-clamp-2">{displayName(product)}</span>}
         description={`${progress.posted} vidéo${progress.posted > 1 ? 's' : ''} postée${progress.posted > 1 ? 's' : ''} sur ${progress.total}. Glisse chaque vidéo d’une colonne à l’autre au fil du tournage.`}
         actions={
           <>
@@ -61,7 +62,7 @@ export default async function ProductBoardPage({ params, searchParams }: { param
 
       {row.declining ? <DeclineCallout product={product} replacements={row.replacements} paid={paid} className="mb-5" /> : null}
 
-      <VideoBoard productId={product.id} productName={product.name} items={plan.items} today={today} openVideo={openVideo} />
+      <VideoBoard productId={product.id} productName={displayName(product)} items={plan.items} today={today} openVideo={openVideo} />
 
       <Card className="mt-6">
         <div className="flex flex-wrap items-baseline justify-between gap-2">

@@ -48,6 +48,8 @@ export interface Repo {
   listProducts(opts?: { niches?: NicheId[] }): Promise<Product[]>;
   getProduct(id: string): Promise<Product | null>;
   getProducts(ids: string[]): Promise<Product[]>;
+  /** Nom court et niche vérifiée par l'IA (une fois par produit). */
+  updateProductLabels(labels: Array<{ id: string; short_name: string; niche: NicheId }>): Promise<void>;
   /** Vidéos chargées à la demande depuis la fiche produit (cache de 3 jours). */
   updateProductVideos(id: string, videos: TopVideo[], fetchedAt: string): Promise<void>;
   upsertSnapshots(snapshots: ProductSnapshot[]): Promise<void>;

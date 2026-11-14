@@ -16,6 +16,7 @@ import { cn, formatCompact, formatInt, formatShortDate } from '@/lib/utils';
 import { clock, filterLibrary, libraryFacets, normalizeAnalysis, roleAt, SEGMENT_LABELS, type AnalysisData, type SegmentRole } from '@/lib/v2/analysis';
 import { remainingThisMonth } from '@/lib/v2/quota';
 import { analyzeVideoAction, classifyAnalysisAction, deleteAnalysisAction, sendToStudioAction } from './actions';
+import { shortLabel } from '@/lib/product-name';
 
 export const metadata: Metadata = { title: 'Analyse de vidéo' };
 
@@ -162,7 +163,7 @@ export default async function AnalysePage({ searchParams }: { searchParams: Reco
                         <span className="mt-2 line-clamp-2 font-medium">{r.data.text.slice(0, 140)}</span>
                         <span className="mt-1 block text-xs text-muted">
                           {formatShortDate(r.created_at.slice(0, 10))}
-                          {r.data.product_name ? ` · pour ${r.data.product_name.slice(0, 40)}` : ''}
+                          {r.data.product_name ? ` · pour ${shortLabel(r.data.product_name)}` : ''}
                         </span>
                       </Link>
                     </li>

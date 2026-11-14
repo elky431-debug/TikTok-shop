@@ -15,6 +15,7 @@ import { getDoc } from '@/lib/studio/store';
 import { cn, formatRelative } from '@/lib/utils';
 import { deleteScriptAction, regenerateHookAction, toggleSaveAction } from '../actions';
 import { ScriptCard } from './script-card';
+import { shortLabel } from '@/lib/product-name';
 
 export const metadata: Metadata = { title: 'Tes scripts' };
 
@@ -51,7 +52,7 @@ export default async function ScriptPage({
 
       <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-2xl sm:text-3xl">{doc.product_name}</h1>
+          <h1 className="text-2xl sm:text-3xl">{shortLabel(doc.product_name)}</h1>
           <p className="mt-1.5 text-sm text-muted">
             {settingsLine(doc)} · écrit {formatRelative(doc.generated_at)}
           </p>

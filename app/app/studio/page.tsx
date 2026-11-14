@@ -14,6 +14,7 @@ import { StudioForm } from './studio-form';
 import { cheapestPlanWith, getPlan, isUnlimited } from '@/lib/plans';
 import { getRepo } from '@/lib/db';
 import { readStudioDraft } from '@/lib/v2/studio-draft';
+import { shortLabel } from '@/lib/product-name';
 
 export const metadata: Metadata = { title: 'Studio de scripts' };
 
@@ -150,7 +151,7 @@ function HistoryRow({ item }: { item: HistoryItem }) {
     <li>
       <Link href={`/app/studio/${item.id}`} className="flex items-center gap-3 px-4 py-3.5 hover:bg-surface">
         <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold">{item.product_name}</p>
+          <p className="truncate font-semibold">{shortLabel(item.product_name)}</p>
           <p className="truncate text-sm text-muted">
             {details.join(' · ')} · {formatRelative(item.generated_at)}
           </p>

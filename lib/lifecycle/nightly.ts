@@ -9,6 +9,7 @@ import { dueLifecycleEmails, needsScriptCount, pickTonight } from './engine';
 import { getDisabledLifecycle } from './preferences';
 import { getLifecycleLog, saveLifecycleLog, sendLifecycleEmail } from './send';
 import { LIFECYCLE_INFO, type LifecycleType } from './types';
+import { displayName } from '@/lib/product-name';
 
 /** Heure d'arrivée des e-mails de cycle de vie (heure de Paris) : pas au milieu de la nuit, pas en même temps que le récap. */
 export const LIFECYCLE_SEND_HOUR = 11;
@@ -71,7 +72,7 @@ export async function runLifecycleNightly(date: string = parisDate(), repo: Repo
           if (!catalog.demo && !catalog.stale) {
             extra.products = rankForUser(catalog.products, profile.niches)
               .slice(0, 3)
-              .map((p) => ({ id: p.id, name: p.name, commission_cents: commissionPerSale(p.price_cents, p.commission_rate) }));
+              .map((p) => ({ id: p.id, name: displayName(p), commission_cents: commissionPerSale(p.price_cents, p.commission_rate) }));
           }
         }
         if (await sendLifecycleEmail(profile, email.type, email.key, extra, { repo, scheduledAt, now })) {

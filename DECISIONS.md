@@ -1113,3 +1113,14 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      l'inscription ne sert plus qu'au rattachement (commission de 30 % sur ce qui est vraiment payé). Tarifs : contenus
      résumés par plan ; en annuel, le prix mensuel équivalent en gros (23,33 €, 39,99 €, 64,99 €), « facturé 279,90 € par
      an » dessous, et « 4 mois offerts · −33 % » sur la bascule.
+198. **Interface, étape 1 : noms courts des produits** (14 novembre). Chaque produit reçoit une fois un nom court de 3 à 6
+     mots, écrit par l'IA (`lib/ai/product-labels.ts`, lots de 25, sans raisonnement), gardé dans `products.short_name` ;
+     la niche est vérifiée en même temps d'après le titre et la vraie catégorie TikTok Shop (`niche_checked`) : la niche
+     de départ vient de la catégorie demandée à la source, qui peut renvoyer un calendrier de l'Avent en « tech ». Le
+     relevé de nuit garde ces deux valeurs et nomme les nouveaux produits (400 au plus par nuit) ;
+     `npm run data:noms-courts` nomme ceux déjà en base. Tant qu'un produit n'est pas nommé, `displayName` tire un nom de
+     son titre (avant le premier séparateur, 5 mots au plus) ; les noms déjà enregistrés ailleurs (scripts, plans,
+     analyses) passent par `shortLabel`. Le nom court est partout (radar, studio, comparateur, dashboard, récaps,
+     e-mails, Discord, notifications) ; le titre complet n'apparaît que dans la fiche produit, replié, et dans l'export
+     CSV (dernière colonne). Les invites de l'IA gardent le titre complet (plus d'informations). Le code accepte une base
+     sans les nouvelles colonnes (rien n'est écrit tant que la migration n'est pas passée).
