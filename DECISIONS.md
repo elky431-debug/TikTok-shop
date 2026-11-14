@@ -1179,3 +1179,17 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      graphique verrouillés en Starter, données jamais lues côté serveur). Barre latérale : « Gestionnaire » (icône
      boutique) à la place de « Mes gains » ; tableau de bord, récap de la semaine et pages hors ligne pointent vers lui.
      Couleurs des graphiques lues dans le thème (`useStageColors`), un attribut SVG ne lisant pas les variables CSS.
+202. **Interface, étape 5 : comparateur en face-à-face** (14 novembre). Deux produits face à face autour d'un grand « VS »
+     animé (ressort à l'arrivée, onde qui pulse ; immobile si les animations sont réduites, via `MotionConfig` de la
+     coque) : de chaque côté, grande image, nom court, prix, score en grand avec le décalage cyan / rose. Puis une ligne
+     par critère (score, score pour toi, gain par vente, commission, ventes 7 et 30 jours, croissance 7 jours,
+     affiliés, note ; une ligne n'apparaît que si au moins un produit a la donnée) : valeur et barre qui pousse depuis le
+     centre de chaque côté ; la valeur qui l'emporte passe en cyan avec une couronne et une barre en dégradé ; le mot
+     « meilleur » n'apparaît plus nulle part. Égalité ou une seule valeur connue : pas de couronne. Affiliés : moins de
+     concurrence l'emporte. Le produit qui gagne le plus de lignes (le score départage) porte « Gagnant » et le bouton
+     « Écrire mes scripts ». Verdict en une phrase : écrit par l'IA à partir des seuls chiffres comparés (sans
+     raisonnement, garde-fou contre promesses et superlatifs, phrase simple sinon), chargé après l'affichage
+     (`/api/comparer/verdict`), gardé 24 h par groupe de produits et jour de données, 30 verdicts écrits par compte et par
+     jour. Choix : cases cliquables qui ouvrent la liste des favoris et des produits suivis (image et nom court) ;
+     « Changer » et « Retirer » sur chaque produit ; « Ajouter un produit » jusqu'à 4. À 3 ou 4 produits : cartes dans
+     le même style (couronnes, barres, nombre de critères gagnés, carte gagnante bordée de dégradé), plus de tableau.
