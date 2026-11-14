@@ -69,6 +69,12 @@ export interface LaunchData {
 
 export const isLaunchStep = (value: unknown): value is LaunchStep => LAUNCH_STEPS.includes(value as LaunchStep);
 
+/** Adresse d'un lancement, à une étape, avec un message ou une célébration. */
+export function launchHref(id: string, step?: LaunchStep | null, extra: Record<string, string> = {}): string {
+  const params = new URLSearchParams({ ...(step ? { etape: step } : {}), ...extra });
+  return `/app/lancer/${id}${params.size ? `?${params}` : ''}`;
+}
+
 export const stepIndex = (step: LaunchStep) => LAUNCH_STEPS.indexOf(step);
 
 /** Lancement neuf : le produit est choisi (étape 1 cochée), on reprend à l'échantillon. */

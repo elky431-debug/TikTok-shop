@@ -82,7 +82,7 @@ function Row({ row }: { row: MyProductRow }) {
           <LayoutGrid className="h-4 w-4" aria-hidden="true" />
           Ouvrir le tableau
         </LinkButton>
-        <LinkButton href={`/app/studio?produit=${encodeURIComponent(product.id)}`} variant="outline" size="sm" className="h-10">
+        <LinkButton href={`/app/lancer/produit/${encodeURIComponent(product.id)}?etape=scripts`} variant="outline" size="sm" className="h-10">
           Écrire mes scripts
         </LinkButton>
         <form action={setVideoGoalAction} className="ml-auto flex items-center gap-2 text-sm">

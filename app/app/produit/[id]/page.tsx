@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { BellPlus, BookmarkCheck, CalendarDays, Scale, Star } from 'lucide-react';
+import { BellPlus, Rocket, Scale, Star } from 'lucide-react';
 import Link from 'next/link';
 import { InfoTip } from '@/components/ui/info-tip';
 import { notFound } from 'next/navigation';
@@ -37,7 +37,10 @@ import { regionFor } from '@/lib/regions';
 import { remainingToday } from '@/lib/v2/quota';
 import { cn, formatCompact, formatEuros, formatInt, formatShortDate, parisDate, plural } from '@/lib/utils';
 import { displayName } from '@/lib/product-name';
-import { analyzeHooksAction, loadVideosAction, saveProductAction } from './actions';
+import { analyzeHooksAction, loadVideosAction } from './actions';
+import { LaunchButton } from '@/components/launch/launch-button';
+import { launchHref, stepIndex, STEP_LABELS } from '@/lib/v2/launch';
+import { launchForProduct } from '@/lib/v2/launch-store';
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const product = await getRepo().getProduct(params.id);
@@ -133,6 +136,8 @@ export default async function ProductPage({
   const shop = sameShopProducts(product, allowed);
   const mini = (p: (typeof allowed)[number]) => toProductView(p, profile.plan, false, { scores: scores?.get(p.id) });
   const links = productActionLinks(view.id);
+  const launch = await launchForProduct(repo, profile.id, view.id);
+  const openLaunch = launch?.data.state === 'en_cours' ? launch : null;
 
   return (
     <div>
@@ -438,41 +443,46 @@ export default async function ProductPage({
               </p>
             ) : null}
             <div className="mt-5 space-y-2">
-              <LinkButton href={links.scripts} size="lg" className="w-full">
-                Écrire mes scripts
-              </LinkButton>
-              {view.saved ? (
-                <LinkButton href="/app/mes-produits" variant="outline" size="lg" className="w-full">
-                  <BookmarkCheck className="h-5 w-5" aria-hidden="true" />
-                  Ajouté à mes produits
+              {/* Lancer ce produit, écrire ses scripts, le planifier : tout ouvre (ou reprend) son lancement. */}
+              {openLaunch ? (
+                <LinkButton href={launchHref(openLaunch.id)} size="lg" className="w-full">
+                  <Rocket className="h-5 w-5" aria-hidden="true" />
+                  Reprendre son lancement
                 </LinkButton>
               ) : (
-                <form action={saveProductAction}>
-                  <input type="hidden" name="produit" value={view.id} />
-                  <SubmitButton variant="outline" size="lg" className="w-full" pendingLabel="Ajout…">
-                    Ajouter à mes produits
-                  </SubmitButton>
-                  {searchParams.suivi === 'limite' ? (
-                    <p className="mt-2 text-xs text-rose-ink" role="alert">
-                      {isUnlimited(profile.plan, 'savedProducts') ? (
-                        'Limite de sécurité des produits suivis atteinte. Retire-en un dans Mes produits pour en suivre un autre.'
-                      ) : (
-                        <>
-                          Tu suis déjà {plan.savedProducts} produits, la limite du plan {plan.name}. Retire-en un dans Mes produits, ou{' '}
-                          <Link href="/app/passer-pro" className="font-semibold underline">
-                            passe à Pro
-                          </Link>{' '}
-                          pour suivre autant de produits que tu veux.
-                        </>
-                      )}
-                    </p>
-                  ) : null}
-                </form>
+                <LaunchButton productId={view.id} back={`/app/produit/${view.id}`} size="lg" className="w-full" label="Lancer ce produit" />
               )}
-              <LinkButton href={links.plan} variant="outline" size="lg" className="w-full">
-                <CalendarDays className="h-5 w-5" aria-hidden="true" />
-                Planifier 20 vidéos
-              </LinkButton>
+              {openLaunch ? (
+                <p className="text-center text-xs text-muted">
+                  Étape {stepIndex(openLaunch.data.step) + 1} sur 7 · {STEP_LABELS[openLaunch.data.step]}
+                </p>
+              ) : null}
+              <LaunchButton productId={view.id} back={`/app/produit/${view.id}`} step="scripts" variant="outline" size="lg" className="w-full" label="Écrire mes scripts" />
+              <LaunchButton
+                productId={view.id}
+                back={`/app/produit/${view.id}`}
+                step="planifier"
+                variant="outline"
+                size="lg"
+                className="w-full"
+                label="Planifier 20 vidéos"
+                icon="calendrier"
+              />
+              {searchParams.lancement === 'limite' ? (
+                <p className="text-xs text-rose-ink" role="alert">
+                  {isUnlimited(profile.plan, 'savedProducts') ? (
+                    'Limite de sécurité des produits suivis atteinte. Termine un lancement pour en ouvrir un autre.'
+                  ) : (
+                    <>
+                      Tu suis déjà {plan.savedProducts} produits, la limite du plan {plan.name}. Termine ou abandonne un lancement, ou{' '}
+                      <Link href="/app/passer-pro" className="font-semibold underline">
+                        passe à Pro
+                      </Link>{' '}
+                      pour suivre autant de produits que tu veux.
+                    </>
+                  )}
+                </p>
+              ) : null}
               <LinkButton href={links.alert} variant="outline" size="lg" className="w-full">
                 <BellPlus className="h-5 w-5" aria-hidden="true" />
                 Créer une alerte

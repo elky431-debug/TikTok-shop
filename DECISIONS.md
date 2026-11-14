@@ -1320,3 +1320,18 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      le tableau (lien vers l'historique). Lancer un produit le suit (limite du plan vérifiée côté serveur) ; relancer un
      produit fermé ouvre un nouveau lancement. Conseil des résultats sans promesse : après 6 vidéos en ligne sans vente
      notée, proposer un autre produit.
+214. **Lancer un produit, étape 2 : l'onglet et les entrées** (14 novembre). Onglet « Lancer un produit » (fusée) juste
+     sous Dashboard, aussi dans la barre du bas sur téléphone (à la place de « Analyse »). Accueil : lancements en cours
+     en cartes (image, nom court, étape, barre d'avancement, statut, vidéos), grand bouton « Lancer un nouveau produit »,
+     historique des lancements terminés ou abandonnés avec « Reprendre ». Étape 1 : radar du jour, dernière recherche
+     ou favoris, en cartes (image, nom court, score, commission) avec « Lancer ce produit ». Un lancement s'ouvre sur sa
+     frise (étapes faites cochées, étape affichée entourée, chaque étape cliquable pour revenir en arrière) avec
+     « Étape précédente » et « Étape suivante » ; une vidéo tournée ou en ligne coche aussi l'étape correspondante, même
+     faite depuis le dashboard. « Lancer ce produit » arrive sur le radar (n°1 et chaque carte, au survol sur
+     ordinateur, toujours sur téléphone ; les cartes deviennent un lien de fond plus une action, comme dans la
+     recherche), la recherche, la fiche produit et le produit du jour. « Écrire mes scripts » (fiche, recherche, produit
+     du jour, comparateur, Mes produits) et l'étoile de suivi (recherche) ouvrent ou reprennent le lancement ; ne plus
+     suivre un produit range son lancement dans l'historique. Sur la fiche, « Ajouter à mes produits » disparaît : suivre
+     un produit, c'est le lancer. Les lignes du tableau du dashboard ouvrent le lancement à son étape (un simple lien ne
+     suit jamais un produit : seulement un produit déjà suivi). Petite célébration (confettis, message annoncé aux
+     lecteurs d'écran) à chaque étape validée, sans mouvement si les animations sont réduites.

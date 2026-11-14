@@ -32,32 +32,42 @@ export function saveLaunch(repo: Repo, userId: string, record: Pick<LaunchRecord
 
 export type StartLaunchResult = { ok: true; launch: LaunchRecord; created: boolean } | { ok: false; reason: 'introuvable' | 'limite' };
 
+/** Suit le produit s'il ne l'est pas encore (limite de produits suivis du plan vérifiée ici, côté serveur). */
+export async function ensureFollowed(repo: Repo, profile: Pick<Profile, 'id' | 'plan'>, productId: string): Promise<boolean> {
+  if (await repo.getSavedProduct(profile.id, productId)) return true;
+  const saved = await repo.listSavedProducts(profile.id);
+  if (saved.length >= getPlan(profile.plan).savedProducts) return false;
+  await repo.saveProduct(profile.id, productId, DEFAULT_VIDEO_GOAL);
+  return true;
+}
+
 /**
- * Ouvre ou reprend le lancement d'un produit. Le produit est suivi au passage (limite de produits suivis du plan
- * vérifiée ici, côté serveur) ; un lancement terminé ou abandonné n'est pas rouvert : un nouveau commence.
+ * Ouvre ou reprend le lancement d'un produit. Le produit est suivi au passage ; un lancement terminé ou abandonné n'est
+ * pas rouvert ici : un nouveau commence (« Reprendre » dans l'historique rouvre l'ancien).
  */
 export async function startLaunch(repo: Repo, profile: Pick<Profile, 'id' | 'plan'>, productId: string, today: string): Promise<StartLaunchResult> {
   const product = await repo.getProduct(productId);
   if (!product) return { ok: false, reason: 'introuvable' };
+  if (!(await ensureFollowed(repo, profile, productId))) return { ok: false, reason: 'limite' };
   const current = await launchForProduct(repo, profile.id, productId);
-  if (current?.data.state === 'en_cours') {
-    if (!(await repo.getSavedProduct(profile.id, productId))) {
-      const saved = await repo.listSavedProducts(profile.id);
-      if (saved.length >= getPlan(profile.plan).savedProducts) return { ok: false, reason: 'limite' };
-      await repo.saveProduct(profile.id, productId, DEFAULT_VIDEO_GOAL);
-    }
-    return { ok: true, launch: current, created: false };
-  }
-  if (!(await repo.getSavedProduct(profile.id, productId))) {
-    const saved = await repo.listSavedProducts(profile.id);
-    if (saved.length >= getPlan(profile.plan).savedProducts) return { ok: false, reason: 'limite' };
-    await repo.saveProduct(profile.id, productId, DEFAULT_VIDEO_GOAL);
-  }
+  if (current?.data.state === 'en_cours') return { ok: true, launch: current, created: false };
   const launch = await repo.saveRecord<LaunchData>(profile.id, LAUNCH_KIND, newLaunch(product, today));
   // Un nouveau lancement repart de « À lancer » si le produit avait été terminé ou abandonné.
   const track = await trackFor(repo, profile.id, productId);
   if (track && isClosedStage(track.data.status)) await repo.deleteRecord(profile.id, track.id);
   return { ok: true, launch, created: true };
+}
+
+/** Rouvre un lancement de l'historique : le produit revient dans les produits en cours, au statut que son parcours justifie. */
+export async function reopenLaunch(repo: Repo, profile: Pick<Profile, 'id' | 'plan'>, record: LaunchRecord, today: string): Promise<boolean> {
+  if (!(await ensureFollowed(repo, profile, record.data.product_id))) return false;
+  const others = (await listLaunches(repo, profile.id)).filter((l) => l.id !== record.id && l.data.product_id === record.data.product_id && l.data.state === 'en_cours');
+  for (const other of others) await saveLaunch(repo, profile.id, other, { ...other.data, state: 'abandonne', ended_at: today });
+  const data: LaunchData = { ...record.data, state: 'en_cours', ended_at: null };
+  await saveLaunch(repo, profile.id, record, data);
+  const board = (await listBoards(repo, profile.id)).get(data.product_id)?.data ?? null;
+  await setProductStage(repo, profile.id, data.product_id, statusFromLaunch(data, board) ?? 'a_lancer', 'manuel', today);
+  return true;
 }
 
 async function trackFor(repo: Repo, userId: string, productId: string) {

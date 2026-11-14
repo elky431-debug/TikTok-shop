@@ -74,7 +74,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const sections: NavSection[] = [
     {
       label: "Accueil",
-      items: [{ href: "/app", label: "Dashboard", icon: "dashboard" }],
+      items: [
+        { href: "/app", label: "Dashboard", icon: "dashboard" },
+        { href: "/app/lancer", label: "Lancer un produit", icon: "lancer" },
+      ],
     },
     {
       label: "Trouver",
@@ -110,10 +113,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   if (!plan.access) sections.splice(0, sections.length, { label: "Compte", items: accountItems.filter((i) => i.href === "/app/compte" || i.href === "/formateur" || i.href === "/admin") });
   const shortcuts: NavLink[] = !plan.access ? [{ href: "/app/compte", label: "Compte", icon: "compte" }] : [
     { href: "/app", label: "Dashboard", icon: "dashboard" },
+    { href: "/app/lancer", label: "Lancer", icon: "lancer" },
     { href: "/app/radar", label: "Radar", icon: "radar" },
     { href: "/app/studio", label: "Studio", icon: "studio" },
     { href: "/app/mes-produits", label: "Produits", icon: "produits" },
-    { href: "/app/analyse", label: "Analyse", icon: "analyse" },
   ];
   const user: ShellUser = {
     firstName: profile.first_name ?? "Mon compte",

@@ -12,6 +12,7 @@ export function offlinePageLabel(path: string): string {
     '/app': 'Produits du jour',
     '/app/studio': 'Studio de scripts',
     '/app/mes-produits': 'Mes produits',
+    '/app/lancer': 'Lancer un produit',
     '/app/recap': 'Récap',
     '/app/plan': 'Plan de publication',
     '/app/notifications': 'Notifications',

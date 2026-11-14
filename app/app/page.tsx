@@ -21,6 +21,8 @@ import { cn, formatDayMonth, formatEuros, parisDate, plural } from '@/lib/utils'
 import { getWeeklyGoal } from '@/lib/v2/board';
 import { loadManager } from '@/lib/v2/manager';
 import { managerFlash, managerTab } from '@/lib/v2/manager-flash';
+import { LaunchButton } from '@/components/launch/launch-button';
+import { LaunchLimitNotice } from '@/components/launch/launch-limit';
 
 export const metadata: Metadata = { title: 'Dashboard' };
 
@@ -127,9 +129,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Re
             </p>
           </div>
           <div className="mt-auto flex flex-col gap-2 pt-6">
-            <LinkButton href={`/app/studio?produit=${encodeURIComponent(product.id)}`} className="w-full" arrow>
-              Écrire mes scripts
-            </LinkButton>
+            <LaunchButton productId={product.id} back="/app" className="w-full" label="Lancer ce produit" />
+            <LaunchButton productId={product.id} back="/app" step="scripts" variant="outline" className="w-full" label="Écrire mes scripts" />
             <LinkButton href={`/app/produit/${encodeURIComponent(product.id)}`} variant="ghost" className="w-full">
               Voir la fiche
             </LinkButton>
@@ -165,6 +166,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Re
         </div>
       ) : null}
 
+      <LaunchLimitNotice reason={searchParams.lancement} plan={profile.plan} className="mb-6" />
       <DashboardPanel profile={profileBlock} data={manager} weeklyGoal={weekly.weekly} productCard={productCard} />
 
       <ManagerTabs data={manager} initialTab={managerTab(searchParams.onglet)} flash={managerFlash(searchParams)} />
@@ -199,9 +201,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Re
             title="Rien pour l’instant"
             action={
               product ? (
-                <LinkButton href={`/app/studio?produit=${encodeURIComponent(product.id)}`} variant="secondary">
-                  Écrire mes premiers scripts
-                </LinkButton>
+                <LaunchButton productId={product.id} back="/app" step="scripts" variant="secondary" label="Écrire mes premiers scripts" />
               ) : null
             }
           />

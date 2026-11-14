@@ -11,6 +11,7 @@ import { ScoreValue } from '@/components/product/score';
 import { ButtonArrow, LinkButton } from '@/components/ui/button';
 import type { CriterionResult } from '@/lib/radar/compare';
 import { cn, formatEuros } from '@/lib/utils';
+import { LaunchButton } from '@/components/launch/launch-button';
 
 export interface FaceProduct {
   id: string;
@@ -257,10 +258,9 @@ function TwoUp({
       <div className="mt-6 flex justify-around gap-4">
         {[0, 1].map((i) =>
           winner === i ? (
-            <LinkButton key={i} href={`/app/studio?produit=${products[i].id}`} size="lg" className="w-full max-w-[15rem]">
-              Écrire mes scripts
-              <ButtonArrow />
-            </LinkButton>
+            <div key={i} className="w-full max-w-[15rem]">
+              <LaunchButton productId={products[i].id} back="/app/comparer" step="scripts" size="lg" className="w-full" label="Écrire mes scripts" />
+            </div>
           ) : (
             <span key={i} className="w-full max-w-[15rem]" aria-hidden="true" />
           ),
@@ -377,10 +377,9 @@ function Grid({
               })}
             </ul>
             {winner === i ? (
-              <LinkButton href={`/app/studio?produit=${p.id}`} className="mt-5 w-full">
-                Écrire mes scripts
-                <ButtonArrow />
-              </LinkButton>
+              <div className="mt-5">
+                <LaunchButton productId={p.id} back="/app/comparer" step="scripts" className="w-full" label="Écrire mes scripts" />
+              </div>
             ) : null}
           </div>
         </motion.li>

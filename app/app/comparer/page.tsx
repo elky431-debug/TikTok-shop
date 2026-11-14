@@ -12,6 +12,7 @@ import type { ProductView } from '@/lib/radar';
 import { compareProducts, parseCompareIds, type CriterionResult } from '@/lib/radar/compare';
 import { loadCompare } from '@/lib/radar/compare-data';
 import { formatCompact, formatEuros, formatGrowth } from '@/lib/utils';
+import { LaunchLimitNotice } from '@/components/launch/launch-limit';
 
 export const metadata: Metadata = { title: 'Comparer' };
 
@@ -65,6 +66,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Reco
   return (
     <div>
       <PageHeader eyebrow="Trouver" title="Comparer" description="Deux produits face à face, pour choisir celui de tes prochaines vidéos." />
+      <LaunchLimitNotice reason={typeof searchParams.lancement === 'string' ? searchParams.lancement : undefined} plan={profile.plan} className="mb-6" />
       {candidates.length < 2 ? (
         <EmptyState
           icon={<Star className="h-5 w-5" />}

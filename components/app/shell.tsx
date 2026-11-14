@@ -13,6 +13,7 @@ import {
   LogOut,
   Menu,
   Radar,
+  Rocket,
   ScanSearch,
   Search,
   Shield,
@@ -42,6 +43,7 @@ import { cn } from '@/lib/utils';
  */
 const ICONS = {
   dashboard: LayoutDashboard,
+  lancer: Rocket,
   radar: Radar,
   recherche: Search,
   alertes: BellRing,

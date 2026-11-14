@@ -43,7 +43,7 @@ export default async function ProductBoardPage({ params, searchParams }: { param
         description={`${progress.posted} vidéo${progress.posted > 1 ? 's' : ''} postée${progress.posted > 1 ? 's' : ''} sur ${progress.total}. Glisse chaque vidéo d’une colonne à l’autre au fil du tournage.`}
         actions={
           <>
-            <LinkButton href={`/app/studio?produit=${encodeURIComponent(product.id)}`} size="sm">
+            <LinkButton href={`/app/lancer/produit/${encodeURIComponent(product.id)}?etape=scripts`} size="sm">
               Écrire mes scripts
             </LinkButton>
             <LinkButton href={canPlan ? `/app/plan?produit=${encodeURIComponent(product.id)}#nouveau` : '/app/plan'} variant="outline" size="sm">

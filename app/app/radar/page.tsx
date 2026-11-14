@@ -21,6 +21,8 @@ import { getFavorites, getRadarSettings } from '@/lib/radar/settings';
 import { SORT_KEYS, type SortKey } from '@/lib/radar/sort';
 import { formatDayMonth, formatInt, formatLongDate, plural } from '@/lib/utils';
 import { enabledRegions, REGIONS } from '@/lib/regions';
+import { LaunchButton } from '@/components/launch/launch-button';
+import { LaunchLimitNotice } from '@/components/launch/launch-limit';
 
 export const metadata: Metadata = { title: 'Radar' };
 
@@ -84,6 +86,7 @@ export default async function RadarPage({
           </>
         }
       />
+      <LaunchLimitNotice reason={typeof searchParams.lancement === 'string' ? searchParams.lancement : undefined} plan={profile.plan} className="mb-6" />
 
       <div className="space-y-3">
         {radar.region !== 'FR' ? (
@@ -212,7 +215,7 @@ export default async function RadarPage({
               <>
                 {featured ? (
                   <div className="mb-4">
-                    <FeaturedProductCard product={featured.product} />
+                    <FeaturedProductCard product={featured.product} action={<LaunchButton productId={featured.product.id} back="/app/radar" label="Lancer ce produit" />} />
                   </div>
                 ) : null}
 
@@ -220,7 +223,7 @@ export default async function RadarPage({
                   {list.map((item) =>
                     item.kind === 'visible' ? (
                       <li key={item.product.id}>
-                        <ProductCard product={item.product} rank={item.rank} />
+                        <ProductCard product={item.product} rank={item.rank} action={<LaunchButton productId={item.product.id} back="/app/radar" size="sm" label="Lancer ce produit" />} />
                       </li>
                     ) : null,
                   )}

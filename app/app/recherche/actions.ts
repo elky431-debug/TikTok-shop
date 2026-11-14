@@ -5,10 +5,12 @@ import { redirect } from 'next/navigation';
 import { requireOnboardedViewer } from '@/lib/auth/session';
 import { getLiveCatalog } from '@/lib/catalog';
 import { getRepo } from '@/lib/db';
-import { DEFAULT_VIDEO_GOAL, getPlan } from '@/lib/plans';
 import { ensureSearchProduct } from '@/lib/radar/search-products';
 import { getFavorites, toggleFavorite } from '@/lib/radar/settings';
 import { regionFor } from '@/lib/regions';
+import { parisDate } from '@/lib/utils';
+import { launchHref, type LaunchStep } from '@/lib/v2/launch';
+import { closeLaunch, launchForProduct, startLaunch } from '@/lib/v2/launch-store';
 
 /**
  * Actions rapides des cartes de la recherche. Chacune crée d'abord la fiche du produit s'il n'est pas encore en base
@@ -25,26 +27,44 @@ async function product(formData: FormData) {
   return { profile, repo, found, back };
 }
 
-export async function searchScriptsAction(formData: FormData) {
-  const { found } = await product(formData);
-  redirect(`/app/studio?produit=${encodeURIComponent(found.id)}`);
+/** Ouvre (ou reprend) le lancement du produit, à une étape ; au-delà de la limite de suivis du plan, retour à la carte. */
+async function openLaunch(formData: FormData, step?: LaunchStep) {
+  const { profile, repo, found, back } = await product(formData);
+  const sep = back.includes('?') ? '&' : '?';
+  const result = await startLaunch(repo, profile, found.id, parisDate());
+  if (!result.ok) redirect(`${back}${sep}suivi=limite#r-${found.id}`);
+  revalidatePath('/app/recherche');
+  revalidatePath('/app');
+  revalidatePath('/app/lancer');
+  redirect(launchHref(result.launch.id, step ?? result.launch.data.step, result.created ? { bravo: 'produit' } : {}));
 }
 
-/** Étoile : suivre le produit (Mes produits), ou ne plus le suivre. Limite du plan vérifiée ici. */
+/** « Lancer ce produit » : ouvre son lancement là où il en est. */
+export async function searchLaunchAction(formData: FormData) {
+  await openLaunch(formData);
+}
+
+/** « Écrire mes scripts » : ouvre le lancement à l'étape des scripts. */
+export async function searchScriptsAction(formData: FormData) {
+  await openLaunch(formData, 'scripts');
+}
+
+/**
+ * Étoile : suivre le produit ouvre son lancement ; ne plus le suivre le retire des produits suivis (son lancement en
+ * cours passe dans l'historique, comme abandonné).
+ */
 export async function searchFollowAction(formData: FormData) {
   const { profile, repo, found, back } = await product(formData);
   const sep = back.includes('?') ? '&' : '?';
-  const saved = await repo.listSavedProducts(profile.id);
-  if (saved.some((s) => s.product_id === found.id)) {
+  if (await repo.getSavedProduct(profile.id, found.id)) {
     await repo.removeSavedProduct(profile.id, found.id);
+    const launch = await launchForProduct(repo, profile.id, found.id);
+    if (launch?.data.state === 'en_cours') await closeLaunch(repo, profile.id, launch, 'abandonne', parisDate());
     revalidatePath('/app/recherche');
+    revalidatePath('/app/lancer');
     redirect(`${back}${sep}suivi=retire#r-${found.id}`);
   }
-  if (saved.length >= getPlan(profile.plan).savedProducts) redirect(`${back}${sep}suivi=limite#r-${found.id}`);
-  await repo.saveProduct(profile.id, found.id, DEFAULT_VIDEO_GOAL);
-  revalidatePath('/app/recherche');
-  revalidatePath('/app');
-  redirect(`${back}${sep}suivi=ok#r-${found.id}`);
+  await openLaunch(formData);
 }
 
 /** Comparer : le produit rejoint les favoris et s'ouvre face à un favori (ou seul, avec une case à remplir). */

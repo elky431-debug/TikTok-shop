@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { ArrowLeft, PenLine, Scale, Search, Star, Users } from 'lucide-react';
+import { ArrowLeft, PenLine, Rocket, Scale, Search, Star, Users } from 'lucide-react';
 import Link from 'next/link';
 import { KeywordSearchForm } from '@/components/product/keyword-search-form';
 import { ProductImage } from '@/components/product/bits';
@@ -14,7 +14,7 @@ import { displayName, heuristicShortName } from '@/lib/product-name';
 import { scaleFromCatalog, searchScore } from '@/lib/radar/search-products';
 import { ScoreValue } from '@/components/product/score';
 import { SubmitButton } from '@/components/ui/submit-button';
-import { searchCompareAction, searchFollowAction, searchScriptsAction } from './actions';
+import { searchCompareAction, searchFollowAction, searchLaunchAction, searchScriptsAction } from './actions';
 import { type PlanLimits, cheapestPlanWith, getPlan } from '@/lib/plans';
 import { remainingSearches, SEARCH_KIND, type SearchRecord } from '@/lib/radar/keyword-search';
 import { fallbackImageUrl } from '@/lib/product-image';
@@ -32,7 +32,7 @@ const ERRORS: Record<string, string> = {
 const FOLLOW: Record<string, string> = {
   ok: 'Produit suivi : il est dans ton dashboard.',
   retire: 'Tu ne suis plus ce produit.',
-  limite: 'Tu suis déjà le maximum de produits de ton plan : retires-en un, ou passe au plan supérieur.',
+  limite: 'Tu suis déjà le maximum de produits de ton plan : termine ou abandonne un lancement, ou passe au plan supérieur.',
 };
 
 /** Recherches du jour faites : le plan suivant et son quota (Starter 3, Pro 15, Elite 50). */
@@ -143,10 +143,18 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
                       </div>
                     </div>
                     <div className="relative z-10 mt-3 flex flex-wrap items-center gap-2 transition-opacity lg:opacity-0 lg:focus-within:opacity-100 lg:group-hover:opacity-100">
-                      <form action={searchScriptsAction}>
+                      <form action={searchLaunchAction}>
                         <input type="hidden" name="produit" value={r.id} />
                         <input type="hidden" name="recherche" value={current.id} />
                         <SubmitButton size="sm" pendingLabel="Ouverture…" className="px-3.5">
+                          <Rocket className="h-4 w-4" aria-hidden="true" />
+                          Lancer ce produit
+                        </SubmitButton>
+                      </form>
+                      <form action={searchScriptsAction}>
+                        <input type="hidden" name="produit" value={r.id} />
+                        <input type="hidden" name="recherche" value={current.id} />
+                        <SubmitButton size="sm" variant="outline" pendingLabel="Ouverture…" className="px-3.5">
                           <PenLine className="h-4 w-4" aria-hidden="true" />
                           Écrire mes scripts
                         </SubmitButton>

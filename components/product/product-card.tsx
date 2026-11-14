@@ -1,5 +1,6 @@
 import { BookmarkCheck, Lock, Star, Users } from 'lucide-react';
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import type { ProductView } from '@/lib/radar';
 import { nicheShort } from '@/lib/niches';
 import { cn, formatCompact, formatEuros } from '@/lib/utils';
@@ -72,68 +73,85 @@ export function PersonalScore({ product, className }: { product: ProductView; cl
   );
 }
 
-/** Produit n°1 du jour : mis en avant, plus grand. */
-export function FeaturedProductCard({ product }: { product: ProductView }) {
+/**
+ * Lien de fond qui couvre toute la carte (ouvre la fiche) : le contenu passe au-dessus sans capter les clics, sauf
+ * l'action (« Lancer ce produit »), cliquable à part.
+ */
+function CardLink({ product, className }: { product: ProductView; className?: string }) {
   return (
     <Link
       href={`/app/produit/${product.id}`}
-      className="group gradient-border block rounded-2xl bg-raised p-4 shadow-[0_0_60px_-24px_rgba(37,244,238,0.35)] transition-transform duration-200 hover:-translate-y-0.5 sm:p-5"
-    >
-      <p className="eyebrow">N°1 dans tes niches aujourd’hui</p>
-      <div className="mt-3 flex gap-4">
-        <ProductImage src={product.image_url} fallback={product.image_fallback} alt="" className="w-24 sm:w-32" />
-        <div className="min-w-0 flex-1">
-          <p className="text-xs font-medium text-muted">{nicheShort(product.niche)}</p>
-          <h2 className="mt-0.5 line-clamp-3 text-lg font-semibold leading-snug group-hover:underline group-hover:underline-offset-4 sm:text-xl">
-            {product.name}
-          </h2>
-          <Meta product={product} />
+      aria-label={`Ouvrir la fiche de ${product.name}`}
+      className={cn('absolute inset-0 z-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan', className)}
+    />
+  );
+}
+
+/** Produit n°1 du jour : mis en avant, plus grand. */
+export function FeaturedProductCard({ product, action }: { product: ProductView; action?: ReactNode }) {
+  return (
+    <div className="group gradient-border relative block rounded-2xl bg-raised p-4 shadow-[0_0_60px_-24px_rgba(37,244,238,0.35)] transition-transform duration-200 hover:-translate-y-0.5 sm:p-5">
+      <CardLink product={product} className="rounded-2xl" />
+      <div className="pointer-events-none relative">
+        <p className="eyebrow">N°1 dans tes niches aujourd’hui</p>
+        <div className="mt-3 flex gap-4">
+          <ProductImage src={product.image_url} fallback={product.image_fallback} alt="" className="w-24 sm:w-32" />
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium text-muted">{nicheShort(product.niche)}</p>
+            <h2 className="mt-0.5 line-clamp-3 text-lg font-semibold leading-snug group-hover:underline group-hover:underline-offset-4 sm:text-xl">
+              {product.name}
+            </h2>
+            <Meta product={product} />
+          </div>
         </div>
+        <div className="mt-4 flex items-end justify-between gap-4 border-t border-line pt-4">
+          <div>
+            <p className="mb-1 text-xs font-medium text-muted">Score d’opportunité</p>
+            <ScoreValue score={product.score} size="lg" />
+            <PersonalScore product={product} className="mt-1 block" />
+          </div>
+          <div className="flex flex-col items-end gap-2">
+            <Sparkline values={product.sales_7d} width={132} height={44} tone={trendTone(product.trend)} />
+            <Signals product={product} />
+          </div>
+        </div>
+        <WhyNowLine whyNow={product.why_now} className="mt-3" withLabel />
+        {product.breakdown ? <p className="mt-2 text-sm text-muted">{product.breakdown.summary}</p> : null}
       </div>
-      <div className="mt-4 flex items-end justify-between gap-4 border-t border-line pt-4">
-        <div>
-          <p className="mb-1 text-xs font-medium text-muted">Score d’opportunité</p>
-          <ScoreValue score={product.score} size="lg" />
-          <PersonalScore product={product} className="mt-1 block" />
-        </div>
-        <div className="flex flex-col items-end gap-2">
-          <Sparkline values={product.sales_7d} width={132} height={44} tone={trendTone(product.trend)} />
-          <Signals product={product} />
-        </div>
-      </div>
-      <WhyNowLine whyNow={product.why_now} className="mt-3" withLabel />
-      {product.breakdown ? <p className="mt-2 text-sm text-muted">{product.breakdown.summary}</p> : null}
-    </Link>
+      {action ? <div className="relative z-10 mt-4 w-fit">{action}</div> : null}
+    </div>
   );
 }
 
 /** Carte compacte d'un produit du radar. */
-export function ProductCard({ product, rank }: { product: ProductView; rank: number }) {
+export function ProductCard({ product, rank, action }: { product: ProductView; rank: number; action?: ReactNode }) {
   return (
-    <Link
-      href={`/app/produit/${product.id}`}
-      className="feature-card group flex h-full gap-3 p-3 sm:p-3.5"
-    >
-      <div className="relative">
+    <div className="feature-card group relative flex h-full gap-3 p-3 sm:p-3.5">
+      <CardLink product={product} className="rounded-[inherit]" />
+      <div className="pointer-events-none relative">
         <ProductImage src={product.image_url} fallback={product.image_fallback} alt="" className="w-[4.5rem]" />
         <span className="num absolute -left-1.5 -top-1.5 flex h-6 min-w-6 items-center justify-center rounded-full bg-fg px-1.5 text-xs font-bold text-bg">
           {rank}
         </span>
       </div>
-      <div className="min-w-0 flex-1">
-        <h3 className="line-clamp-2 font-semibold leading-snug group-hover:underline group-hover:underline-offset-4">
-          {product.name}
-        </h3>
+      <div className="pointer-events-none relative min-w-0 flex-1">
+        <h3 className="line-clamp-2 font-semibold leading-snug group-hover:underline group-hover:underline-offset-4">{product.name}</h3>
         <Meta product={product} compact />
         <Signals product={product} />
         <WhyNowLine whyNow={product.why_now} className="mt-2" compact />
+        {/* Toujours visible sur téléphone ; au survol (ou au clavier) sur ordinateur. */}
+        {action ? (
+          <div className="pointer-events-auto relative z-10 mt-2.5 w-fit transition-opacity lg:opacity-0 lg:focus-within:opacity-100 lg:group-hover:opacity-100">
+            {action}
+          </div>
+        ) : null}
       </div>
-      <div className="flex shrink-0 flex-col items-end justify-between gap-1">
+      <div className="pointer-events-none relative flex shrink-0 flex-col items-end justify-between gap-1">
         <ScoreValue score={product.score} size="sm" showMax={false} />
         <PersonalScore product={product} />
         <Sparkline values={product.sales_7d} width={72} height={26} tone={trendTone(product.trend)} />
       </div>
-    </Link>
+    </div>
   );
 }
 
