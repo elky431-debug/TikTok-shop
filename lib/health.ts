@@ -32,7 +32,33 @@ export interface HealthReport {
   siteUrl: { value: string; ok: boolean };
   /** Fournisseur d'IA des scripts (null = générateur simulé) et forme de sa clé, jamais la clé. */
   ai: { provider: 'openai' | 'anthropic' | null; model: string; keyOk: boolean; keyHints: string[] };
+  /**
+   * Paiement : présence des variables Stripe (oui/non) et mode de la clé (test ou production, lu dans son préfixe),
+   * jamais leurs valeurs ; `otherStripeVariables` : noms d'autres variables STRIPE_* vues (souvent une faute de nom).
+   */
+  billing: {
+    secretKey: boolean;
+    keyMode: 'test' | 'live' | null;
+    webhookSecret: boolean;
+    portalConfiguration: boolean;
+    otherStripeVariables: string[];
+  };
   problems: string[];
+}
+
+const KNOWN_STRIPE_VARIABLES = new Set(['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET', 'STRIPE_PORTAL_CONFIGURATION']);
+
+function billingStatus(): HealthReport['billing'] {
+  const key = env.stripeSecretKey;
+  return {
+    secretKey: Boolean(key),
+    keyMode: key ? (key.startsWith('sk_live') || key.startsWith('rk_live') ? 'live' : 'test') : null,
+    webhookSecret: Boolean(env.stripeWebhookSecret),
+    portalConfiguration: Boolean(env.stripePortalConfiguration),
+    otherStripeVariables: Object.keys(process.env)
+      .filter((name) => /^STRIPE/i.test(name) && !KNOWN_STRIPE_VARIABLES.has(name))
+      .sort(),
+  };
 }
 
 function providerConfigured(name: string): boolean {
@@ -73,6 +99,9 @@ export async function healthReport(now: Date = new Date()): Promise<HealthReport
   if (!siteOk) problems.push('NEXT_PUBLIC_SITE_URL pointe vers localhost');
   const aiProblem = env.aiKeyProblem;
   if (aiProblem) problems.push(aiProblem);
+  const billing = billingStatus();
+  if (production && !billing.secretKey) problems.push('paiement désactivé : STRIPE_SECRET_KEY absente à l’exécution');
+  if (production && billing.secretKey && !billing.webhookSecret) problems.push('STRIPE_WEBHOOK_SECRET absente : les paiements ne mettent pas le plan à jour');
 
   const down = !databaseOk || Boolean(catalog?.stale);
   return {
@@ -95,6 +124,7 @@ export async function healthReport(now: Date = new Date()): Promise<HealthReport
     },
     siteUrl: { value: env.siteUrl, ok: siteOk },
     ai: { provider: env.aiProvider, model: env.aiModelLabel, keyOk: !aiProblem, keyHints: env.aiKeyHints },
+    billing,
     problems,
   };
 }
