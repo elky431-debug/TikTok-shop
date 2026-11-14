@@ -8,10 +8,11 @@ import { getPlan } from '@/lib/plans';
 import { rememberScheduledEmail } from '@/lib/lifecycle/scheduled';
 import { unsubscribeHeaders, unsubscribeUrls } from '@/lib/unsubscribe';
 import { parisTimeToUtc } from '@/lib/utils';
+import { shortLabel } from '@/lib/product-name';
 
 export function digestSubject(digest: Digest): string {
   const top = digest.content.products[0];
-  return top ? `Ton n°1 du jour : ${top.name}` : 'Tes produits du jour sont prêts';
+  return top ? `Ton n°1 du jour : ${shortLabel(top.name)}` : 'Tes produits du jour sont prêts';
 }
 
 /**

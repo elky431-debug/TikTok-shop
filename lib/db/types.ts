@@ -286,6 +286,8 @@ export interface Commission {
 export interface DigestProduct {
   id: string;
   name: string;
+  /** Image du produit (absente dans les récaps d'avant le 14 novembre). */
+  image_url?: string | null;
   niche: NicheId;
   price_cents: number;
   commission_cents: number;

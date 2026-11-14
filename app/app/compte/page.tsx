@@ -281,13 +281,9 @@ export default async function ComptePage({ searchParams }: { searchParams: Recor
             </SubmitButton>
           </form>
           <p className="mt-4 text-sm text-muted">
-            Récap du matin (heure, e-mail, Discord) :{' '}
+            Récap du matin et bilan du dimanche :{' '}
             <Link href="/app/recap" className="font-semibold text-fg underline underline-offset-2">
               réglages du récap
-            </Link>
-            . Ton lien de parrainage :{' '}
-            <Link href="/app/parrainage" className="font-semibold text-fg underline underline-offset-2">
-              parrainage
             </Link>
             .
           </p>

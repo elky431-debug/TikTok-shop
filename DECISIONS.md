@@ -1251,3 +1251,19 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      être coupée), inspirations de l'analyse jusqu'à six colonnes. Les rangées de chiffres (fiche produit, formateur) se
      remplissent toujours (cases qui s'étirent) au lieu de laisser des cases grises. Le site public garde sa largeur de
      page (1 280 px), comme EtSmart. Vérifié à 390, 1 440 et 1 920 px.
+208. **Corrections, étape 4 : le récap en une page simple** (14 novembre). Titre « Ton récap du matin » et une phrase
+     (« Chaque matin, on t'envoie les 5 produits à vendre aujourd'hui et ton défi du jour. »). À gauche, l'aperçu est
+     l'e-mail lui-même (même rendu HTML que l'envoi, dans un cadre isolé qui prend la hauteur du contenu), posé dans une
+     boîte de réception (expéditeur, destinataire, heure d'envoi choisie, objet). À droite, seulement l'essentiel :
+     « Recevoir le récap du matin », l'heure, « Recevoir le bilan du dimanche » (désactivé avec un lien vers Pro en
+     dessous de Pro) et « M'envoyer un exemple maintenant ». Un seul bouton « Enregistrer mes réglages » (interrupteurs
+     natifs avec le rôle `switch`). Sur téléphone, les réglages passent avant l'aperçu. Notifications et Discord ne
+     s'affichent que s'ils marchent vraiment (push configuré et un appareil abonné ; Discord configuré, plan qui le
+     permet) ; sinon les choix déjà enregistrés sont gardés tels quels. Plus aucune mention technique (« Mode local… »,
+     Resend) ; l'aperçu de la semaine quitte la page (le bilan du dimanche renvoie au dashboard, qui a la période
+     « 7 jours »). E-mail du matin : défi du jour, puis les 5 produits en cartes (photo, nom court, score, commission par
+     vente, tendance), alertes et baisses s'il y en a, bouton vers le radar ; l'accroche du jour n'y figure plus (elle
+     reste dans le message Discord). Les photos ne sont mises que si ce sont de vraies images https : le visuel SVG de
+     repli des fiches n'est pas affiché par les messageries, il est remplacé par une vignette colorée de la niche. Noms
+     courts partout : objet, aperçu de l'e-mail, notification, défi, Discord, bilan du dimanche (y compris pour les récaps
+     déjà enregistrés avec un titre long).

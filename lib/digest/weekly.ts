@@ -15,7 +15,7 @@ import { weekStart, type EarningData } from '@/lib/v2/earnings';
 import type { PublicationPlan } from '@/lib/v2/planning';
 import { bestStreak, currentStreak, observePostedVideos, totalsByDay } from './history';
 import type { RecapChannels } from './settings';
-import { displayName } from '@/lib/product-name';
+import { displayName, shortLabel } from '@/lib/product-name';
 
 /**
  * Récap du dimanche : la semaine du lundi au dimanche. Vidéos postées (relevé de « Mes produits » et des plans), gains
@@ -70,7 +70,7 @@ export async function buildWeeklyRecap(profile: Profile, repo: Repo = getRepo(),
   const gainsByProduct = new Map<string, { name: string; id: string | null; cents: number }>();
   for (const g of weekGains) {
     const key = g.product_name.toLowerCase();
-    const row = gainsByProduct.get(key) ?? { name: g.product_name, id: g.product_id, cents: 0 };
+    const row = gainsByProduct.get(key) ?? { name: shortLabel(g.product_name), id: g.product_id, cents: 0 };
     row.cents += g.amount_cents;
     gainsByProduct.set(key, row);
   }
@@ -158,7 +158,7 @@ export async function sendWeeklyRecap(
   const sent: WeeklySendResult = { email: false, discord: false, push: false };
   // Récap de la semaine : à partir de Pro (vérifié ici, pour la tâche du dimanche comme pour l'envoi de test).
   if (!getPlan(profile.plan).weeklyDigest) return { content, sent };
-  const url = `${env.siteUrl}/app/recap#dimanche`;
+  const url = `${env.siteUrl}/app`;
 
   if (channels.email && profile.email) {
     try {
@@ -195,7 +195,7 @@ export async function sendWeeklyRecap(
 
   const notification = await notify(
     profile.id,
-    { type: 'recap', title: 'Ton récap de la semaine', body: weeklySummary(content), path: '/app/recap#dimanche', channels: { push: channels.push } },
+    { type: 'recap', title: 'Ton récap de la semaine', body: weeklySummary(content), path: '/app', channels: { push: channels.push } },
     repo,
   );
   sent.push = Boolean(notification?.channels.push);

@@ -4,7 +4,7 @@ import type { NotificationData } from '@/lib/notify';
 import { getPlan } from '@/lib/plans';
 import { addDays, formatDayMonth, parisTimeToUtc } from '@/lib/utils';
 import type { PublicationPlan } from '@/lib/v2/planning';
-import { displayName } from '@/lib/product-name';
+import { displayName, shortLabel } from '@/lib/product-name';
 
 /**
  * Partie personnelle du récap du matin : alertes déclenchées et produits suivis en baisse (notifications `alerte` et
@@ -98,7 +98,7 @@ export function pickChallenge(input: {
   if (next) {
     return {
       kind: 'objectif',
-      text: `Poste ta vidéo n°${next.videos_posted + 1} sur ${next.name}`,
+      text: `Poste ta vidéo n°${next.videos_posted + 1} sur ${shortLabel(next.name)}`,
       detail: `${next.videos_posted} sur ${next.video_goal} vidéos : continue sur le même produit.`,
       path: '/app/mes-produits',
       product_id: next.product_id,
@@ -107,7 +107,7 @@ export function pickChallenge(input: {
   if (input.top) {
     return {
       kind: 'premiere',
-      text: `Tourne une vidéo sur ${input.top.name}`,
+      text: `Tourne une vidéo sur ${shortLabel(input.top.name)}`,
       detail: 'Le n°1 de tes produits du jour : ton script est prêt ci-dessous.',
       path: `/app/studio?produit=${input.top.id}`,
       product_id: input.top.id,

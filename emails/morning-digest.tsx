@@ -1,8 +1,11 @@
 /** @jsxRuntime automatic */
 /** @jsxImportSource react */
-import { Button, Heading, Link, Section, Text } from '@react-email/components';
+import { Button, Column, Heading, Img, Link, Row, Section, Text } from '@react-email/components';
+import type { DigestProduct } from '@/lib/db/types';
 import type { DigestNotice, PersonalDigestContent } from '@/lib/digest/personal';
+import type { NicheId } from '@/lib/niches';
 import { nicheShort } from '@/lib/niches';
+import { shortLabel } from '@/lib/product-name';
 import { TREND_LABELS } from '@/lib/score';
 import { formatEuros, formatGrowth, formatLongDate } from '@/lib/utils';
 import { colors, EmailLayout } from './layout';
@@ -14,13 +17,90 @@ export interface MorningDigestProps {
   unsubscribeUrl?: string;
 }
 
+/** Vignette de repli quand le produit n'a pas de vraie photo : les messageries n'affichent pas le SVG des fiches. */
+const NICHE_TILE: Record<NicheId, { bg: string; emoji: string }> = {
+  beaute: { bg: '#FFE4EA', emoji: '💄' },
+  maison: { bg: '#E7F3EE', emoji: '🏠' },
+  mode: { bg: '#EFE9F8', emoji: '👗' },
+  tech: { bg: '#E3FBFA', emoji: '🎧' },
+  sport: { bg: '#EAF7E4', emoji: '🏋️' },
+  animaux: { bg: '#FFF1E2', emoji: '🐾' },
+  bebe: { bg: '#E8F2FF', emoji: '🍼' },
+};
+
+/** Photo utilisable dans un e-mail : adresse absolue, image matricielle (pas le visuel SVG de repli). */
+export function emailImageUrl(url: string | null | undefined): string | null {
+  if (!url || !/^https:\/\//.test(url)) return null;
+  if (/\/api\/produit-image\//.test(url) || /\.svg(\?|$)/i.test(url)) return null;
+  return url;
+}
+
+function trendColor(trend: DigestProduct['trend']): string {
+  if (trend === 'baisse') return colors.rose;
+  if (trend === 'stable') return colors.muted;
+  return colors.cyan;
+}
+
+function ProductCard({ product, rank, siteUrl }: { product: DigestProduct; rank: number; siteUrl: string }) {
+  const href = `${siteUrl}/app/produit/${product.id}`;
+  const image = emailImageUrl(product.image_url);
+  const tile = NICHE_TILE[product.niche] ?? NICHE_TILE.maison;
+  const name = shortLabel(product.name);
+  return (
+    <Section style={{ border: '1px solid #E1E1E5', borderRadius: 14, padding: 12, marginTop: 10 }}>
+      <Row>
+        <Column style={{ width: 64, verticalAlign: 'middle' }}>
+          <Link href={href}>
+            {image ? (
+              <Img src={image} width={56} height={56} alt="" style={{ display: 'block', borderRadius: 10, objectFit: 'cover' }} />
+            ) : (
+              <div
+                style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: 10,
+                  backgroundColor: tile.bg,
+                  textAlign: 'center',
+                  lineHeight: '56px',
+                  fontSize: 26,
+                }}
+              >
+                {tile.emoji}
+              </div>
+            )}
+          </Link>
+        </Column>
+        <Column style={{ verticalAlign: 'middle', paddingLeft: 4 }}>
+          <Text style={{ margin: 0, fontSize: 12, color: colors.muted }}>
+            N°{rank} · {nicheShort(product.niche)}
+          </Text>
+          <Link href={href} style={{ color: colors.ink, textDecoration: 'none' }}>
+            <Text style={{ margin: '2px 0 0', fontSize: 16, fontWeight: 700, lineHeight: '21px' }}>{name}</Text>
+          </Link>
+          <Text style={{ margin: '4px 0 0', fontSize: 13, lineHeight: '18px' }}>
+            <span style={{ color: colors.gain, fontWeight: 700 }}>{formatEuros(product.commission_cents)} par vente</span>
+            <span style={{ color: colors.muted }}> · </span>
+            <span style={{ color: trendColor(product.trend), fontWeight: 600 }}>
+              {TREND_LABELS[product.trend]} {formatGrowth(product.growth_7d)}
+            </span>
+          </Text>
+        </Column>
+        {product.score !== null ? (
+          <Column style={{ width: 64, verticalAlign: 'middle', textAlign: 'right' }}>
+            <Text style={{ margin: 0, fontSize: 26, fontWeight: 800, lineHeight: '28px', color: colors.ink }}>{product.score}</Text>
+            <Text style={{ margin: 0, fontSize: 11, color: colors.muted }}>score /100</Text>
+          </Column>
+        ) : null}
+      </Row>
+    </Section>
+  );
+}
+
 function Notices({ title, items, total, siteUrl, tone }: { title: string; items: DigestNotice[]; total: number; siteUrl: string; tone: string }) {
   if (!items.length) return null;
   return (
     <Section style={{ marginTop: 20 }}>
-      <Text style={{ margin: 0, fontSize: 13, fontWeight: 700, color: tone, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-        {title}
-      </Text>
+      <Text style={{ margin: 0, fontSize: 13, fontWeight: 700, color: tone, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{title}</Text>
       {items.map((n, i) => (
         <Text key={i} style={{ margin: '8px 0 0', fontSize: 14, lineHeight: '20px' }}>
           <Link href={`${siteUrl}${n.path}`} style={{ color: colors.ink, fontWeight: 600 }}>
@@ -37,12 +117,12 @@ function Notices({ title, items, total, siteUrl, tone }: { title: string; items:
 }
 
 /**
- * Récap du matin : le défi du jour, les meilleurs produits de ses niches, les alertes et produits suivis en baisse depuis
- * la veille, une accroche prête, un bouton vers l'appli.
+ * Récap du matin : le défi du jour, puis les 5 produits à vendre aujourd'hui (photo, nom court, score, commission par
+ * vente, tendance), les alertes et produits suivis en baisse depuis la veille, et un bouton vers l'appli.
  */
 export function MorningDigestEmail({ content, siteUrl, unsubscribeUrl }: MorningDigestProps) {
   const top = content.products[0];
-  const preview = top ? `N°1 aujourd’hui : ${top.name} (${formatGrowth(top.growth_7d)} en 7 jours)` : 'Tes produits du jour sont prêts';
+  const preview = top ? `N°1 aujourd’hui : ${shortLabel(top.name)} (${formatGrowth(top.growth_7d)} en 7 jours)` : 'Tes produits du jour sont prêts';
   return (
     <EmailLayout
       preview={preview}
@@ -82,35 +162,17 @@ export function MorningDigestEmail({ content, siteUrl, unsubscribeUrl }: Morning
         </Section>
       ) : null}
 
-      <Section style={{ marginTop: 20 }}>
+      <Section style={{ marginTop: 18 }}>
+        <Text style={{ margin: 0, fontSize: 12, fontWeight: 700, color: colors.muted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          {content.products.length > 1 ? `Les ${content.products.length} produits à vendre aujourd’hui` : 'Le produit à vendre aujourd’hui'}
+        </Text>
         {content.products.map((p, i) => (
-          <Section
-            key={p.id}
-            style={{
-              borderTop: i === 0 ? 'none' : '1px solid #E1E1E5',
-              padding: '14px 0',
-            }}
-          >
-            <Text style={{ margin: 0, fontSize: 12, color: colors.muted }}>
-              N°{i + 1} · {nicheShort(p.niche)}
-              {p.score !== null ? ` · score ${p.score}/100` : ''}
-            </Text>
-            <Link href={`${siteUrl}/app/produit/${p.id}`} style={{ color: colors.ink, textDecoration: 'none' }}>
-              <Text style={{ margin: '2px 0 0', fontSize: 17, fontWeight: 600, lineHeight: '22px' }}>{p.name}</Text>
-            </Link>
-            <Text style={{ margin: '4px 0 0', fontSize: 14, lineHeight: '20px' }}>
-              {formatEuros(p.price_cents)} ·{' '}
-              <span style={{ color: colors.gain, fontWeight: 600 }}>{formatEuros(p.commission_cents)} par vente</span> ·{' '}
-              <span style={{ color: p.trend === 'baisse' ? colors.rose : colors.cyan }}>
-                {TREND_LABELS[p.trend]} {formatGrowth(p.growth_7d)}
-              </span>
-            </Text>
-          </Section>
+          <ProductCard key={p.id} product={p} rank={i + 1} siteUrl={siteUrl} />
         ))}
       </Section>
 
       {content.locked_count > 0 ? (
-        <Text style={{ fontSize: 14, color: colors.muted, margin: '4px 0 0' }}>
+        <Text style={{ fontSize: 14, color: colors.muted, margin: '10px 0 0' }}>
           + {content.locked_count} autres produits dans tes niches avec le plan Pro.
         </Text>
       ) : null}
@@ -130,20 +192,13 @@ export function MorningDigestEmail({ content, siteUrl, unsubscribeUrl }: Morning
         tone={colors.rose}
       />
 
-      {content.hook ? (
-        <Section style={{ backgroundColor: '#F1F1F2', borderRadius: 12, padding: '14px 16px', marginTop: 20 }}>
-          <Text style={{ margin: 0, fontSize: 12, color: colors.muted }}>Ton accroche du jour pour « {content.hook.product_name} »</Text>
-          <Text style={{ margin: '4px 0 0', fontSize: 18, fontWeight: 600, lineHeight: '24px' }}>« {content.hook.text} »</Text>
-        </Section>
-      ) : null}
-
       <Section style={{ marginTop: 24 }}>
         <Button
-          href={`${siteUrl}/app`}
+          href={`${siteUrl}/app/radar`}
           style={{
             backgroundColor: colors.rose,
             color: '#FFFFFF',
-            borderRadius: 999,
+            borderRadius: 12,
             padding: '14px 24px',
             fontWeight: 600,
             fontSize: 15,

@@ -31,6 +31,7 @@ export async function buildDigestContent(
   const items: DigestProduct[] = chosen.map((p) => ({
     id: p.id,
     name: displayName(p),
+    image_url: p.image_url || null,
     niche: p.niche,
     price_cents: p.price_cents,
     commission_cents: commissionPerSale(p.price_cents, p.commission_rate),

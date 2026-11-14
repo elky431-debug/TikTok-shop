@@ -5,6 +5,7 @@ import type { PersonalDigestContent } from './personal';
 import { normalizeRecapSettings, RECAP_SETTINGS_KIND, type RecapSettings } from './settings';
 import { isSunday, sendWeeklyRecap } from './weekly';
 import { getPlan } from '@/lib/plans';
+import { shortLabel } from '@/lib/product-name';
 
 export interface RecapHourlyResult {
   morningPush: number;
@@ -44,7 +45,7 @@ export async function runRecapHourly(now: Date = new Date(), repo: Repo = getRep
       {
         type: 'recap',
         title: 'Ton récap du matin est prêt',
-        body: [top ? `N°1 : ${top.name}` : 'Tes produits du jour sont prêts.', challenge ? `Défi : ${challenge.text}` : null].filter(Boolean).join(' · '),
+        body: [top ? `N°1 : ${shortLabel(top.name)}` : 'Tes produits du jour sont prêts.', challenge ? `Défi : ${challenge.text}` : null].filter(Boolean).join(' · '),
         path: '/app/recap',
         channels: { push: true },
       },

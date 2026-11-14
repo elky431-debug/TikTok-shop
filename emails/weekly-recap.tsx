@@ -131,7 +131,7 @@ export function WeeklyRecapEmail({ content, siteUrl, unsubscribeUrl }: WeeklyRec
 
       <Section style={{ marginTop: 24 }}>
         <Button
-          href={`${siteUrl}/app/recap#dimanche`}
+          href={`${siteUrl}/app`}
           style={{ backgroundColor: colors.rose, color: '#FFFFFF', borderRadius: 12, padding: '14px 24px', fontWeight: 600, fontSize: 15 }}
         >
           Voir ma semaine

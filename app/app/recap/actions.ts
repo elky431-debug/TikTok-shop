@@ -5,46 +5,40 @@ import { redirect } from 'next/navigation';
 import { requireOnboardedViewer } from '@/lib/auth/session';
 import { getRepo } from '@/lib/db';
 import { sendDigestEmail } from '@/lib/digest/deliver';
-import { saveRecapSettings, SUNDAY_HOURS } from '@/lib/digest/settings';
+import { saveRecapSettings } from '@/lib/digest/settings';
 import { getTodayDigest } from '@/lib/digest/today';
-import { sendWeeklyRecap } from '@/lib/digest/weekly';
 import { createDiscordLinkCode } from '@/lib/discord';
 import { unlinkDiscordAccount } from '@/lib/discord/link';
 import { getPlan } from '@/lib/plans';
 import { DIGEST_HOURS } from '@/lib/profile-rules';
 import { listPushSubscriptions } from '@/lib/webpush/subscriptions';
 
-/** Réglages du récap du matin : heure, e-mail, Discord (Pro), push (si un appareil est abonné). */
-export async function saveDigestSettingsAction(formData: FormData) {
+/**
+ * Réglages essentiels des récaps : récap du matin par e-mail et son heure, bilan du dimanche par e-mail (Pro). Les
+ * notifications et Discord ne sont enregistrés que s'ils étaient proposés (`canal_push`, `canal_discord`) : sinon on
+ * garde ce qui était choisi.
+ */
+export async function saveRecapAction(formData: FormData) {
   const { profile } = await requireOnboardedViewer('/app/recap');
+  const plan = getPlan(profile.plan);
   const hour = Number(formData.get('heure'));
-  const email = formData.get('email') === '1';
-  const discord = formData.get('discord') === '1' && getPlan(profile.plan).discordDigest;
-  const push = formData.get('push') === '1' && (await listPushSubscriptions(profile.id)).length > 0;
+  const morning = formData.get('matin') === '1';
+  const sunday = formData.get('dimanche') === '1' && plan.weeklyDigest;
+  const pushShown = formData.get('canal_push') === '1';
+  const discordShown = formData.get('canal_discord') === '1';
+  const push = pushShown && formData.get('push') === '1' && (await listPushSubscriptions(profile.id)).length > 0;
+  const discord = discordShown && formData.get('discord') === '1' && plan.discordDigest && Boolean(profile.discord_user_id);
   const updated = await getRepo().updateProfile(profile.id, {
     digest_hour: (DIGEST_HOURS as readonly number[]).includes(hour) ? hour : 8,
-    digest_email: email,
-    digest_discord: discord,
+    digest_email: morning,
+    ...(discordShown ? { digest_discord: discord } : {}),
   });
-  await saveRecapSettings(updated, { matin: { push } });
+  await saveRecapSettings(updated, {
+    ...(pushShown ? { matin: { push } } : {}),
+    dimanche: { email: sunday, ...(pushShown ? { push: push && plan.weeklyDigest } : {}), ...(discordShown ? { discord: discord && plan.weeklyDigest } : {}) },
+  });
   revalidatePath('/app/recap');
   redirect('/app/recap?ok=reglages#reglages');
-}
-
-/** Réglages du récap du dimanche : heure, e-mail, Discord (Pro), push. */
-export async function saveSundaySettingsAction(formData: FormData) {
-  const { profile } = await requireOnboardedViewer('/app/recap');
-  const hour = Number(formData.get('heure'));
-  await saveRecapSettings(profile, {
-    dimanche: {
-      heure: (SUNDAY_HOURS as readonly number[]).includes(hour) ? hour : 18,
-      email: formData.get('email') === '1',
-      discord: formData.get('discord') === '1' && getPlan(profile.plan).discordDigest && Boolean(profile.discord_user_id),
-      push: formData.get('push') === '1' && (await listPushSubscriptions(profile.id)).length > 0,
-    },
-  });
-  revalidatePath('/app/recap');
-  redirect('/app/recap?ok=dimanche#reglages-dimanche');
 }
 
 export async function createDiscordCodeAction() {
@@ -71,13 +65,4 @@ export async function sendTestDigestAction() {
     redirect('/app/recap?erreur=envoi');
   }
   redirect('/app/recap?ok=envoye');
-}
-
-/** Envoie le récap de la semaine en cours tout de suite, par e-mail (pour voir à quoi il ressemble). */
-export async function sendTestWeeklyAction() {
-  const { profile } = await requireOnboardedViewer('/app/recap');
-  if (!getPlan(profile.plan).weeklyDigest) redirect('/app/passer-pro');
-  const { sent } = await sendWeeklyRecap(profile, { email: true, discord: false, push: false }, undefined, undefined, { test: true });
-  revalidatePath('/app/recap');
-  redirect(sent.email ? '/app/recap?ok=dimanche-envoye#dimanche' : '/app/recap?erreur=envoi#dimanche');
 }

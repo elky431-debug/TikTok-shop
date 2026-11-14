@@ -112,3 +112,39 @@ export function ChoiceChip({
     </label>
   );
 }
+
+/**
+ * Interrupteur sur une ligne : intitulé (et explication) à gauche, bouton à droite. Case à cocher native avec le rôle
+ * « switch » : envoyée avec le formulaire, lue « activé / désactivé » par les lecteurs d'écran.
+ */
+export function SwitchRow({
+  name,
+  value = '1',
+  defaultChecked,
+  disabled,
+  children,
+  description,
+  className,
+}: {
+  name: string;
+  value?: string;
+  defaultChecked?: boolean;
+  disabled?: boolean;
+  children: ReactNode;
+  description?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <label className={cn('relative flex cursor-pointer items-start justify-between gap-4', disabled && 'cursor-not-allowed opacity-60', className)}>
+      <span className="min-w-0">
+        <span className="block text-sm font-semibold">{children}</span>
+        {description ? <span className="mt-0.5 block text-xs leading-relaxed text-muted">{description}</span> : null}
+      </span>
+      <input type="checkbox" role="switch" name={name} value={value} defaultChecked={defaultChecked} disabled={disabled} className="peer sr-only" />
+      <span
+        aria-hidden="true"
+        className="relative mt-0.5 h-6 w-11 shrink-0 rounded-full bg-subtle transition-colors after:absolute after:left-0.5 after:top-0.5 after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow-sm after:transition-transform peer-checked:bg-cyan-ink peer-checked:after:translate-x-5 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-cyan motion-reduce:transition-none motion-reduce:after:transition-none"
+      />
+    </label>
+  );
+}

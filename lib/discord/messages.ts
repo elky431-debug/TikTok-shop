@@ -6,7 +6,7 @@ import { commissionPerSale, TREND_LABELS } from '@/lib/score';
 import type { TrendEntry } from '@/lib/tendances';
 import { formatDayMonth, formatEuros, formatGrowth } from '@/lib/utils';
 import type { QuickHook } from './hook';
-import { displayName } from '@/lib/product-name';
+import { displayName, shortLabel } from '@/lib/product-name';
 
 /**
  * Messages envoyés par le bot (objets « embed » et boutons de la doc Discord : resources/message, components/reference).
@@ -39,14 +39,14 @@ function dataNote(input: { demo: boolean; stale: boolean; dataDate: string | nul
 
 export function digestMessage(content: DigestContent, siteUrl: string): DiscordMessage {
   const fields = content.products.slice(0, 10).map((p, i) => ({
-    name: cut(`${i + 1}. ${p.name}${p.score !== null ? ` · ${p.score}/100` : ''}`, 256),
+    name: cut(`${i + 1}. ${shortLabel(p.name)}${p.score !== null ? ` · ${p.score}/100` : ''}`, 256),
     value: cut(
       `${formatEuros(p.price_cents)} · **${formatEuros(p.commission_cents)} par vente** · ${TREND_LABELS[p.trend]} ${formatGrowth(p.growth_7d)}\n` +
         `[Voir la fiche](${siteUrl}/app/produit/${p.id})`,
       1024,
     ),
   }));
-  if (content.hook) fields.push({ name: cut(`Accroche du jour (${content.hook.product_name})`, 256), value: cut(`« ${content.hook.text} »`, 1024) });
+  if (content.hook) fields.push({ name: cut(`Accroche du jour (${shortLabel(content.hook.product_name)})`, 256), value: cut(`« ${content.hook.text} »`, 1024) });
   if (content.script) {
     fields.push({
       name: cut(`Script prêt : ${content.script.title}`, 256),
