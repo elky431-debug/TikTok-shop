@@ -1279,3 +1279,12 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      de quoi verser un éventuel solde ancien (libellé « ancien lien d'invitation »). L'export RGPD garde ces données sous
      « rattachements » (format passé en version 2). Le kit de partage devient le seul message pour les élèves du
      formateur ; le drapeau `referral` des plans disparaît.
+210. **Corrections, étape 6 : captures de l'accueil** (14 novembre). `npm run screenshots:landing` relancé sur la
+     nouvelle interface (dashboard réuni, récap, plus de parrainage) : la carte « Mes gains » devient « Récap du
+     matin » (la page Gains n'existe plus, elle renvoie au dashboard) et le dashboard, qui montre maintenant les
+     commissions du compte de démo, porte le badge « Exemple ». La capture de l'analyse de vidéo envoyée en pièce jointe
+     n'est pas arrivée dans la session : la carte garde une capture de l'appli, et toute image posée dans
+     `docs/landing/` (par exemple `analyse.png`) remplace désormais la capture automatique de sa carte, recadrée et
+     convertie en WebP 640 et 320 px (`npm run screenshots:landing -- --sources` pour ne convertir que ces images).
+     Les photos des produits n'apparaissent pas dans les captures (leur hébergeur n'est pas joignable depuis
+     l'environnement de capture) : les fiches montrent leur visuel de repli, comme dans les captures précédentes.

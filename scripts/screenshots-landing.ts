@@ -10,6 +10,11 @@
  * 3. Lance l'appli en local sur cette base, capture chaque page avec Playwright, puis écrit des WebP de 640 et 320 px
  *    dans `public/landing/`.
  *
+ * Capture fournie à la main : une image `docs/landing/<slug>.png` (ou .jpg, .jpeg, .webp) remplace la capture
+ * automatique de cette carte (recadrée par le haut au format des cartes, puis convertie en WebP aux deux tailles).
+ * C'est le cas de l'analyse de vidéo (`docs/landing/analyse.png`). `npm run screenshots:landing -- --sources` convertit
+ * seulement ces images, sans rien recapturer.
+ *
  * Rien n'est écrit dans Supabase : l'étape 2 tourne en mode local (base JSON).
  */
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
@@ -21,6 +26,8 @@ const ROOT = process.cwd();
 const DB_FILE = path.join(ROOT, '.data', 'landing-db.json');
 const CATALOG_FILE = path.join(ROOT, '.data', 'landing-catalog.json');
 const OUT = path.join(ROOT, 'public', 'landing');
+/** Captures fournies à la main (prioritaires sur la capture automatique). */
+const SOURCES = path.join(ROOT, 'docs', 'landing');
 const PORT = Number(process.env.LANDING_PORT ?? 3320);
 const BASE = `http://localhost:${PORT}`;
 const EMAIL = 'demo-accueil@tracktout.local';
@@ -35,7 +42,7 @@ export const LANDING_SHOTS = [
   'serie',
   'teleprompteur',
   'plan',
-  'gains',
+  'recap',
   'propositions',
   'analyse',
   'alertes',
@@ -254,9 +261,38 @@ function startServer(): Promise<ChildProcess> {
   });
 }
 
+/** Image fournie à la main pour cette carte, s'il y en a une. */
+function customSource(slug: string): string | null {
+  for (const ext of ['png', 'jpg', 'jpeg', 'webp']) {
+    const file = path.join(SOURCES, `${slug}.${ext}`);
+    if (existsSync(file)) return file;
+  }
+  return null;
+}
+
+/** WebP des deux tailles des cartes (640 × 416 pour les écrans à haute densité, 320 × 208), recadrés par le haut. */
+async function writeCard(slug: string, input: Buffer | string) {
+  const sharp = (await import('sharp')).default;
+  mkdirSync(OUT, { recursive: true });
+  await sharp(input).resize(640, 416, { fit: 'cover', position: 'top' }).webp({ quality: 74 }).toFile(path.join(OUT, `${slug}.webp`));
+  await sharp(input).resize(320, 208, { fit: 'cover', position: 'top' }).webp({ quality: 74 }).toFile(path.join(OUT, `${slug}-320.webp`));
+}
+
+/** Convertit seulement les captures fournies à la main. */
+async function convertSources(): Promise<number> {
+  let count = 0;
+  for (const slug of LANDING_SHOTS) {
+    const file = customSource(slug);
+    if (!file) continue;
+    await writeCard(slug, file);
+    console.log(`  ✓ ${slug} (capture fournie : ${path.relative(ROOT, file)})`);
+    count++;
+  }
+  return count;
+}
+
 async function capture(ids: Awaited<ReturnType<typeof buildDemo>>) {
   const { chromium } = await import('playwright');
-  const sharp = (await import('sharp')).default;
   mkdirSync(OUT, { recursive: true });
   const browser = await chromium.launch();
   const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 2, locale: 'fr-FR', reducedMotion: 'reduce' });
@@ -276,13 +312,19 @@ async function capture(ids: Awaited<ReturnType<typeof buildDemo>>) {
     serie: `/app/studio/serie/${ids.seriesId}`,
     teleprompteur: `/app/studio/${ids.docId}`,
     plan: '/app/plan',
-    gains: '/app/gains',
+    recap: '/app/recap',
     propositions: `/app/offres?offre=${ids.offerId}`,
     analyse: `/app/analyse?analyse=${ids.analysisId}`,
     alertes: '/app/alertes',
     comparateur: `/app/comparer?ids=${ids.compare.map(encodeURIComponent).join(',')}`,
   };
   for (const slug of LANDING_SHOTS) {
+    const source = customSource(slug);
+    if (source) {
+      await writeCard(slug, source);
+      console.log(`  ✓ ${slug} (capture fournie : ${path.relative(ROOT, source)})`);
+      continue;
+    }
     await page.goto(`${BASE}${pages[slug]}`, { waitUntil: 'networkidle', timeout: 120_000 });
     if (slug === 'teleprompteur') {
       await page.getByRole('button', { name: 'Téléprompteur' }).first().click();
@@ -302,9 +344,7 @@ async function capture(ids: Awaited<ReturnType<typeof buildDemo>>) {
       await page.evaluate((y) => window.scrollBy(0, y), await target.evaluate((el, gap) => el.getBoundingClientRect().top - gap, spot[1]));
     }
     await page.waitForTimeout(1500);
-    const png = await page.screenshot();
-    await sharp(png).resize(640, 416, { fit: 'cover', position: 'top' }).webp({ quality: 74 }).toFile(path.join(OUT, `${slug}.webp`));
-    await sharp(png).resize(320, 208, { fit: 'cover', position: 'top' }).webp({ quality: 74 }).toFile(path.join(OUT, `${slug}-320.webp`));
+    await writeCard(slug, await page.screenshot());
     console.log(`  ✓ ${slug}`);
   }
   await browser.close();
@@ -312,6 +352,11 @@ async function capture(ids: Awaited<ReturnType<typeof buildDemo>>) {
 
 async function main() {
   if (process.argv.includes('--exporter')) return exportCatalog();
+  if (process.argv.includes('--sources')) {
+    const count = await convertSources();
+    console.log(count ? `${count} capture(s) fournie(s) convertie(s) dans ${path.relative(ROOT, OUT)}/` : `Aucune image dans ${path.relative(ROOT, SOURCES)}/.`);
+    return;
+  }
   mkdirSync(path.dirname(DB_FILE), { recursive: true });
   console.log('1/3 Catalogue de la veille (Supabase, lecture seule)');
   const exported = spawnSync('npx', ['tsx', 'scripts/screenshots-landing.ts', '--exporter'], { stdio: 'inherit', env: process.env });

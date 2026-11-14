@@ -3,27 +3,27 @@
  * inverse, bords en fondu, nom de la fonction en bas à gauche. Pause au survol, fixe (et défilable à la main) si
  * « réduire les animations », une seule rangée sur téléphone. Styles dans `app/globals.css` (`.marquee-*`).
  *
- * Les images viennent de `npm run screenshots:landing` (vraies pages, compte de démo) : `public/landing/<slug>.webp`
- * (640 × 416, écrans à haute densité) et `<slug>-320.webp` (320 × 208).
+ * Les images viennent de `npm run screenshots:landing` (vraies pages, compte de démo, ou capture fournie à la main dans
+ * `docs/landing/`) : `public/landing/<slug>.webp` (640 × 416, écrans à haute densité) et `<slug>-320.webp` (320 × 208).
  */
 
 export interface MarqueeShot {
   slug: string;
   label: string;
-  /** Petit badge en haut à droite (« Exemple » sur les gains : montants fictifs, pas une promesse). */
+  /** Petit badge en haut à droite (« Exemple » sur le dashboard : montants du compte de démo, pas une promesse). */
   badge?: string;
 }
 
 /** Même ordre que `LANDING_SHOTS` dans `scripts/screenshots-landing.ts`. */
 export const MARQUEE_SHOTS: MarqueeShot[] = [
-  { slug: 'dashboard', label: 'Dashboard' },
+  { slug: 'dashboard', label: 'Dashboard', badge: 'Exemple' },
   { slug: 'radar', label: 'Radar' },
   { slug: 'fiche-produit', label: 'Fiche produit' },
   { slug: 'studio', label: 'Studio de scripts' },
   { slug: 'serie', label: 'Série de 20 vidéos' },
   { slug: 'teleprompteur', label: 'Téléprompteur' },
   { slug: 'plan', label: 'Plan de publication' },
-  { slug: 'gains', label: 'Mes gains', badge: 'Exemple' },
+  { slug: 'recap', label: 'Récap du matin' },
   { slug: 'propositions', label: 'Propositions de marques' },
   { slug: 'analyse', label: 'Analyse de vidéo' },
   { slug: 'alertes', label: 'Alertes' },
