@@ -757,5 +757,5 @@ un lien, présentés comme des étapes normales.
 - Le test en ligne a utilisé la vidéo publique de @labras3 : ses chiffres sont ceux de cette vidéo. Avec ta propre
   vidéo, ce seront les tiens, quand la source les connaît (sinon ils restent vides, à saisir aux Résultats).
 - Crédits Nexscope épuisés : les chiffres d'une vidéo ne viennent que du cache (24 h) tant qu'ils ne sont pas rechargés.
-- Pour les captures, sept serveurs ont été ouverts dans l'environnement de travail (lecteur TikTok, couvertures,
+- Pour les captures, six serveurs ont été ouverts dans l'environnement de travail (lecteur TikTok, couvertures,
   photos des produits) : aucun effet sur le site.
