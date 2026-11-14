@@ -312,11 +312,13 @@ export type Database = {
           latest_score: number
           name: string
           niche: string
+          niche_checked: boolean
           price_cents: number
           provider: string
           region: string
           sales_30d: number[]
           shop_name: string
+          short_name: string | null
           snapshot_date: string | null
           top_videos: Json
           trend: Database["public"]["Enums"]["product_trend"]
@@ -335,11 +337,13 @@ export type Database = {
           latest_score?: number
           name: string
           niche: string
+          niche_checked?: boolean
           price_cents: number
           provider?: string
           region?: string
           sales_30d?: number[]
           shop_name?: string
+          short_name?: string | null
           snapshot_date?: string | null
           top_videos?: Json
           trend?: Database["public"]["Enums"]["product_trend"]
@@ -358,11 +362,13 @@ export type Database = {
           latest_score?: number
           name?: string
           niche?: string
+          niche_checked?: boolean
           price_cents?: number
           provider?: string
           region?: string
           sales_30d?: number[]
           shop_name?: string
+          short_name?: string | null
           snapshot_date?: string | null
           top_videos?: Json
           trend?: Database["public"]["Enums"]["product_trend"]
