@@ -165,7 +165,7 @@ export default async function StudioPage({
             {filter === 'gardes' ? 'L’étoile d’un script le range ici.' : filter === 'vendu' ? 'Réponds « Il a vendu ? » sous un script.' : null}
           </EmptyState>
         ) : (
-          <ul className="grid gap-2 sm:grid-cols-2">
+          <ul className="grid gap-2 sm:grid-cols-2 2xl:grid-cols-3">
             {shown.map((item) => (
               <HistoryRow key={item.id} item={item} product={known.get(item.product_id) ?? null} />
             ))}

@@ -48,6 +48,9 @@ export function MonthCalendar({
         </div>
       </div>
 
+      {/* Très grand écran : la liste jour par jour passe à droite du calendrier. */}
+      <div className="grid grid-cols-1 2xl:grid-cols-[minmax(0,1fr)_24rem] 2xl:gap-8">
+      <div className="min-w-0">
       <table className="w-full table-fixed border-separate border-spacing-1 text-sm" aria-describedby="calendrier-legende">
         <thead>
           <tr>
@@ -111,7 +114,10 @@ export function MonthCalendar({
         ))}
       </p>
 
-      <h3 className="mt-6 text-base">Ce mois-ci, jour par jour</h3>
+      </div>
+
+      <div className="min-w-0">
+      <h3 className="mt-6 text-base 2xl:mt-1">Ce mois-ci, jour par jour</h3>
       {days.length ? (
         <ol className="mt-2 divide-y divide-line rounded-2xl border border-line bg-raised">
           {days.map((day) => (
@@ -137,6 +143,8 @@ export function MonthCalendar({
       ) : (
         <p className="mt-2 text-sm text-muted">Rien de prévu ce mois-ci.</p>
       )}
+      </div>
+      </div>
     </section>
   );
 }

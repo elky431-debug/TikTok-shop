@@ -38,7 +38,7 @@ export default async function ImportMappingPage({ searchParams }: { searchParams
   const preview = table.rows.slice(0, 5);
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div>
       <Link href="/app?onglet=commissions#gestion" className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-muted hover:text-fg">
         <ArrowLeft className="h-4 w-4" aria-hidden="true" />
         Commissions

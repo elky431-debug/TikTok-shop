@@ -136,8 +136,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           className="flex min-h-0 min-w-0 flex-1 flex-col bg-bg pb-16 pt-16 lg:ml-16 lg:pb-0 lg:pt-0"
         >
           <AppTopBar user={user} />
-          {/* Conteneur de page d'EtSmart : 1 280 px au plus, marges 12 → 40 px, 16 → 40 px en haut. */}
-          <div className="mx-auto w-full max-w-7xl flex-1 px-3 py-4 sm:px-6 sm:py-6 md:px-8 md:py-10 lg:px-10">
+          {/* Pleine largeur : marges de 16 px sur téléphone, 32 px sur ordinateur ; les textes longs gardent leur largeur de lecture. */}
+          <div className="w-full flex-1 px-4 py-4 sm:py-6 md:py-8 lg:px-8">
             {children}
           </div>
         </main>

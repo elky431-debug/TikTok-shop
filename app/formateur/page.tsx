@@ -44,7 +44,7 @@ function message(searchParams: Record<string, string | undefined>): { tone: 'gai
 
 function Stat({ label, value, gain }: { label: string; value: string; gain?: boolean }) {
   return (
-    <div className="bg-raised p-4">
+    <div className="flex-[1_1_10rem] bg-raised p-4">
       <dt className="text-xs text-muted">{label}</dt>
       <dd className={cn('num mt-1 text-2xl font-semibold', gain && 'text-gain')}>{value}</dd>
     </div>
@@ -71,7 +71,8 @@ export default async function FormateurPage({ searchParams }: { searchParams: Re
       />
       {notice ? <Callout tone={notice.tone} className="mb-6" title={notice.text} /> : null}
 
-      <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line bg-line md:grid-cols-4">
+      {/* Cases qui s'étirent pour remplir chaque ligne : jamais de case vide. */}
+      <dl className="flex flex-wrap gap-px overflow-hidden rounded-2xl border border-line bg-line">
         <Stat label="Élèves inscrits" value={formatInt(data.total)} />
         <Stat label="Actifs cette semaine" value={formatInt(data.activeThisWeek)} />
         <Stat label="Abonnés (payants)" value={formatInt(data.subscribed)} />
@@ -298,7 +299,7 @@ export default async function FormateurPage({ searchParams }: { searchParams: Re
             Versements par virement, une fois par mois, dès {formatEuros(PAYOUT_THRESHOLD_CENTS)} cumulés. Une commission remboursée au
             filleul est retirée du solde (au prorata), même après un versement.
           </Callout>
-          <dl className="mt-3 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-4">
+          <dl className="mt-3 flex flex-wrap gap-px overflow-hidden rounded-2xl border border-line bg-line">
             <Stat label="Gagné au total" value={formatEuros(earnings.earnedCents)} />
             <Stat label="Déjà versé" value={formatEuros(earnings.paidCents)} />
             <Stat label="Solde" value={formatEuros(earnings.balanceCents)} gain />

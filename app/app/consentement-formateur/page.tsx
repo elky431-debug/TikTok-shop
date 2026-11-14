@@ -23,7 +23,7 @@ export default async function ConsentementFormateurPage({ searchParams }: { sear
 
   if (!coach) {
     return (
-      <div className="mx-auto max-w-2xl">
+      <div>
         <PageHeader eyebrow="Compte" title="Mon formateur" />
         <EmptyState title="Tu n’es rattaché à aucun formateur" action={<LinkButton href="/app/radar">Retour au radar</LinkButton>}>
           Si ton formateur t’a donné un code, il s’applique à l’inscription. Rien n’est partagé avec personne.
@@ -35,10 +35,12 @@ export default async function ConsentementFormateurPage({ searchParams }: { sear
   const [consent, announcements] = await Promise.all([getStudentConsent(profile), listAnnouncements(coach, getRepo(), 10)]);
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div>
       <PageHeader eyebrow="Compte" title="Mon formateur" description={`Tu es inscrit avec ${coach.training_name}. Tu décides de ce qu’il voit.`} />
       {searchParams.ok ? <Callout tone="gain" className="mb-4" title="Tes choix sont enregistrés. Tu peux les changer quand tu veux." /> : null}
 
+      {/* Grand écran : tes choix à gauche, les annonces du formateur à droite. */}
+      <div className="grid grid-cols-1 items-start gap-8 xl:grid-cols-2">
       <Card className="sm:p-6">
         <h2 className="text-lg">Ce que voit {coach.training_name}</h2>
         <ul className="mt-3 space-y-2 text-sm">
@@ -77,7 +79,7 @@ export default async function ConsentementFormateurPage({ searchParams }: { sear
         </form>
       </Card>
 
-      <section className="mt-8" aria-labelledby="annonces">
+      <section className="min-w-0" aria-labelledby="annonces">
         <h2 id="annonces" className="mb-3 flex items-center gap-2 text-lg">
           <Megaphone className="h-5 w-5 text-cyan-ink" aria-hidden="true" />
           Annonces de {coach.training_name}
@@ -98,6 +100,7 @@ export default async function ConsentementFormateurPage({ searchParams }: { sear
           </ul>
         )}
       </section>
+      </div>
     </div>
   );
 }

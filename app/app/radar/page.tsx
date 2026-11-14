@@ -216,7 +216,7 @@ export default async function RadarPage({
                   </div>
                 ) : null}
 
-                <ul className="grid gap-1 md:grid-cols-2">
+                <ul className="grid gap-1 md:grid-cols-2 2xl:grid-cols-3">
                   {list.map((item) =>
                     item.kind === 'visible' ? (
                       <li key={item.product.id}>
@@ -237,7 +237,7 @@ export default async function RadarPage({
                   <LinkButton href="/abonnement" className="mt-4">
                     Choisir mon abonnement
                   </LinkButton>
-                  <ul className="mt-4 grid gap-1 md:grid-cols-2">
+                  <ul className="mt-4 grid gap-1 md:grid-cols-2 2xl:grid-cols-3">
                     {radar.items
                       .filter((i) => i.kind === 'locked')
                       .slice(0, 6)

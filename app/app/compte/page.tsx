@@ -63,13 +63,15 @@ export default async function ComptePage({ searchParams }: { searchParams: Recor
   const mode = billingMode();
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div>
       <PageHeader eyebrow="Compte" title="Mon compte" description={user.email} />
       {message ? (
         <Callout tone={message.tone} className="mb-6" title={message.text} />
       ) : null}
 
-      <div className="space-y-6">
+      {/* Grand écran : abonnement et profil à gauche, préférences et données à droite. */}
+      <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-2">
+      <div className="min-w-0 space-y-6">
         {/* Abonnement */}
         <Card id="abonnement">
           <div className="flex flex-wrap items-start justify-between gap-4">
@@ -245,7 +247,9 @@ export default async function ComptePage({ searchParams }: { searchParams: Recor
             <SubmitButton pendingLabel="Enregistrement…">Enregistrer mon profil</SubmitButton>
           </form>
         </Card>
+      </div>
 
+      <div className="min-w-0 space-y-6">
         {/* Préférences */}
         <Card id="preferences">
           <h2 className="text-lg">Préférences</h2>
@@ -360,6 +364,7 @@ export default async function ComptePage({ searchParams }: { searchParams: Recor
             Me déconnecter
           </button>
         </form>
+      </div>
       </div>
     </div>
   );

@@ -41,7 +41,7 @@ export async function SimpleShell({ children }: { title?: string; children: Reac
         <AppMobileHeader sections={sections} user={user} />
         <main id="contenu" className="flex min-h-0 min-w-0 flex-1 flex-col bg-bg pb-16 pt-16 lg:ml-16 lg:pb-0 lg:pt-0">
           <AppTopBar user={user} />
-          <div className="mx-auto w-full max-w-7xl flex-1 px-3 py-4 sm:px-6 sm:py-6 md:px-8 md:py-10 lg:px-10">{children}</div>
+          <div className="w-full flex-1 px-4 py-4 sm:py-6 md:py-8 lg:px-8">{children}</div>
         </main>
         <AppBottomNav items={shortcuts} />
       </div>

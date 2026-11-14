@@ -33,7 +33,7 @@ export default async function ProductBoardPage({ params, searchParams }: { param
   const canPlan = getPlan(profile.plan).planning;
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div>
       <Link href="/app/mes-produits" className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-muted hover:text-fg">
         <ArrowLeft className="h-4 w-4" aria-hidden="true" />
         Mes produits

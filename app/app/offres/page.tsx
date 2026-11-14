@@ -29,7 +29,7 @@ export default async function OffresPage({ searchParams }: { searchParams: Recor
   const plan = getPlan(profile.plan);
   if (!plan.offersPerMonth) {
     return (
-      <div className="mx-auto max-w-5xl">
+      <div>
         <PageHeader eyebrow="Suivre" title="Propositions de marques"  description="Colle le message d’une marque : on le lit, on le note, et tu réponds en un clic." />
         <PlanGate plan="pro" title="Trie les propositions de marques en 10 secondes">
           Colle le message reçu : marque, commission, échantillon et conditions sont extraits, notés sur 100 face aux produits
@@ -49,7 +49,7 @@ export default async function OffresPage({ searchParams }: { searchParams: Recor
     .sort((a, b) => a.data.follow_up_on!.localeCompare(b.data.follow_up_on!));
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div>
       <PageHeader eyebrow="Suivre" title="Propositions de marques" description="Colle le message d’une marque : on le lit, on le note, et tu réponds en un clic." />
       {searchParams.erreur ? (
         <Callout
@@ -113,7 +113,7 @@ export default async function OffresPage({ searchParams }: { searchParams: Recor
             </nav>
           </div>
           {history.length ? (
-            <ul className="space-y-2">
+            <ul className="grid grid-cols-1 gap-2 xl:grid-cols-2">
               {history.map((r) => (
                 <li key={r.id}>
                   <Link

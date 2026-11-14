@@ -50,7 +50,7 @@ export function WhyNowLine({
   return (
     <p className={cn('flex gap-1.5 leading-snug', compact ? 'text-xs text-muted' : 'text-sm text-fg/85', className)} title={compact ? whyNow.sentence : undefined}>
       <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-ink" aria-hidden="true" />
-      <span className={compact ? 'line-clamp-1' : undefined}>
+      <span className={compact ? 'line-clamp-2' : undefined}>
         {withLabel ? <span className="font-semibold text-fg">Pourquoi maintenant : </span> : <span className="sr-only">Pourquoi maintenant : </span>}
         {whyNow.sentence}
         {withLabel ? <span className="sr-only"> ({origin})</span> : null}

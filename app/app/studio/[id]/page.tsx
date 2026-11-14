@@ -52,7 +52,7 @@ export default async function ScriptPage({
   const details = [formatLabel(doc.format), `${doc.settings.duration} s`, `écrit ${formatRelative(doc.generated_at)}`];
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div>
       <div className="mb-5 flex items-center justify-between gap-3">
         <nav aria-label="Fil d’Ariane" className="min-w-0 truncate text-sm text-muted">
           <Link href="/app/studio" className="hover:text-fg">
@@ -152,30 +152,33 @@ export default async function ScriptPage({
         </Callout>
       ) : null}
 
-      <section id="accroches" aria-labelledby="titre-accroches" className="scroll-mt-20">
-        <SectionTitle
-          id="titre-accroches"
-          action={
-            <span className="flex items-center gap-1.5 text-xs text-subtle">
-              <Copy className="h-3.5 w-3.5" aria-hidden="true" />
-              Un clic pour copier
-            </span>
-          }
-        >
-          10 accroches
-        </SectionTitle>
-        <HookList docId={doc.id} hooks={doc.hooks.map((h) => h.text)} fresh={fresh} canRegenerate={regenLeft > 0} regenerate={regenerateHookAction} />
-      </section>
+      {/* Grand écran : accroches à gauche (elles restent visibles), scripts à droite, à largeur de lecture. */}
+      <div className="grid grid-cols-1 gap-12 xl:grid-cols-[minmax(22rem,2fr)_minmax(0,3fr)] xl:items-start xl:gap-10">
+        <section id="accroches" aria-labelledby="titre-accroches" className="scroll-mt-20 xl:sticky xl:top-6">
+          <SectionTitle
+            id="titre-accroches"
+            action={
+              <span className="flex items-center gap-1.5 text-xs text-subtle">
+                <Copy className="h-3.5 w-3.5" aria-hidden="true" />
+                Un clic pour copier
+              </span>
+            }
+          >
+            10 accroches
+          </SectionTitle>
+          <HookList docId={doc.id} hooks={doc.hooks.map((h) => h.text)} fresh={fresh} canRegenerate={regenLeft > 0} regenerate={regenerateHookAction} />
+        </section>
 
-      <section className="mt-12" aria-label="Scripts complets">
-        <ScriptTabs
-          labels={doc.scripts.map((_, i) => `Script ${i + 1}`)}
-          badges={doc.scripts.map((s) => `${s.duration_seconds} s`)}
-          panels={doc.scripts.map((_, i) => (
-            <ScriptCard key={i} doc={doc} index={i} rights={cardRights} error={errorScript === i ? searchParams.erreur : undefined} />
-          ))}
-        />
-      </section>
+        <section className="min-w-0 max-w-4xl" aria-label="Scripts complets">
+          <ScriptTabs
+            labels={doc.scripts.map((_, i) => `Script ${i + 1}`)}
+            badges={doc.scripts.map((s) => `${s.duration_seconds} s`)}
+            panels={doc.scripts.map((_, i) => (
+              <ScriptCard key={i} doc={doc} index={i} rights={cardRights} error={errorScript === i ? searchParams.erreur : undefined} />
+            ))}
+          />
+        </section>
+      </div>
     </div>
   );
 }

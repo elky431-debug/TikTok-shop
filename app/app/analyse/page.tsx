@@ -59,7 +59,7 @@ export default async function AnalysePage({ searchParams }: { searchParams: Reco
   const plan = getPlan(profile.plan);
   if (!plan.analysesPerMonth) {
     return (
-      <div className="mx-auto max-w-5xl">
+      <div>
         <PageHeader
           eyebrow="Créer"
           title="Analyse de vidéo"
@@ -94,7 +94,7 @@ export default async function AnalysePage({ searchParams }: { searchParams: Reco
   };
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div>
       <PageHeader eyebrow="Créer" title="Analyse de vidéo" description="Colle le lien d’une vidéo qui vend : on la décortique et on l’adapte à ton produit." />
       {searchParams.erreur ? (
         <Callout
@@ -187,7 +187,7 @@ export default async function AnalysePage({ searchParams }: { searchParams: Reco
               ) : null}
             </div>
             {library.length ? (
-              <ul className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              <ul className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
                 {library.map((r, i) => (
                   <InspirationCard key={r.id} id={r.id} data={r.data} createdAt={r.created_at} active={r.id === current?.id} index={i} />
                 ))}

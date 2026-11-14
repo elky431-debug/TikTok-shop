@@ -199,9 +199,10 @@ export default async function ProductPage({
           </Panel>
 
           {/* Chiffres clés */}
-          <dl className={cn('grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line bg-line', keyFigures.length >= 4 ? 'sm:grid-cols-4' : 'sm:grid-cols-3')}>
+          {/* Cases qui s'étirent pour remplir chaque ligne : jamais de case vide, quelle que soit la largeur. */}
+          <dl className="flex flex-wrap gap-px overflow-hidden rounded-2xl border border-line bg-line">
             {keyFigures.map((item) => (
-              <div key={item.label} className="bg-raised p-3.5">
+              <div key={item.label} className="flex-[1_1_9rem] bg-raised p-3.5">
                 <dt className="text-xs font-medium text-muted">{item.label}</dt>
                 <dd className={cn('num mt-1 text-xl font-semibold', 'gain' in item && item.gain && 'text-gain')}>{item.value}</dd>
                 {'sub' in item && item.sub ? <dd className="text-xs text-muted">{item.sub}</dd> : null}
@@ -398,7 +399,7 @@ export default async function ProductPage({
               <h2 id="similaires" className="mb-3 text-lg">
                 {similar.basis === 'souscat' ? `Autres produits « ${similar.label} »` : `Autres produits ${nicheLabel(product.niche).toLowerCase()}`}
               </h2>
-              <ul className="grid gap-1 sm:grid-cols-2">
+              <ul className="grid gap-1 sm:grid-cols-2 2xl:grid-cols-3">
                 {similar.products.map((p) => (
                   <li key={p.id}>
                     <MiniProductCard product={mini(p)} />
@@ -412,7 +413,7 @@ export default async function ProductPage({
               <h2 id="boutique" className="mb-3 text-lg">
                 Aussi chez {product.shop_name}
               </h2>
-              <ul className="grid gap-1 sm:grid-cols-2">
+              <ul className="grid gap-1 sm:grid-cols-2 2xl:grid-cols-3">
                 {shop.map((p) => (
                   <li key={p.id}>
                     <MiniProductCard product={mini(p)} />

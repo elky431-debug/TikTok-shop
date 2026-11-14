@@ -35,7 +35,7 @@ export default async function NotificationsPage({ searchParams }: { searchParams
     .find(Boolean);
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div>
       <PageHeader eyebrow="Compte"
         title="Notifications"
         description={unread ? `${plural(unread, 'notification non lue', 'notifications non lues')}.` : 'Tu es à jour.'}
@@ -52,7 +52,9 @@ export default async function NotificationsPage({ searchParams }: { searchParams
       />
       {message ? <Callout tone={message.tone} className="mb-6" title={message.text} /> : null}
 
-      <Card className="mb-6">
+      {/* Grand écran : la liste à gauche, les réglages de l'appareil à droite. */}
+      <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_24rem]">
+      <Card className="xl:order-2">
         <h2 className="flex items-center gap-2 text-lg">
           <Bell className="h-5 w-5 text-cyan-ink" aria-hidden="true" /> Sur cet appareil
         </h2>
@@ -85,6 +87,7 @@ export default async function NotificationsPage({ searchParams }: { searchParams
         ) : null}
       </Card>
 
+      <div className="min-w-0 xl:order-1">
       <nav aria-label="Filtrer les notifications" className="mb-4 flex gap-2">
         {[
           { href: '/app/notifications', label: 'Toutes', active: !onlyUnread },
@@ -153,6 +156,8 @@ export default async function NotificationsPage({ searchParams }: { searchParams
           ))}
         </div>
       )}
+      </div>
+      </div>
     </div>
   );
 }

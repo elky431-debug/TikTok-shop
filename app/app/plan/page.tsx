@@ -26,7 +26,7 @@ export default async function PlanPage({ searchParams }: { searchParams: Record<
   const { profile } = await requireOnboardedViewer('/app/plan');
   if (!getPlan(profile.plan).planning) {
     return (
-      <div className="mx-auto max-w-5xl">
+      <div>
         <PageHeader eyebrow="Créer" title="Plan de publication"  description="20 vidéos par produit, réparties sur tes semaines, avec un rappel le jour J." />
         <PlanGate plan="starter" title="20 vidéos par produit, au bon rythme">
           Choisis un produit suivi et ton rythme : ses vidéos sont réparties sur les semaines à venir dans un calendrier, avec
@@ -46,7 +46,7 @@ export default async function PlanPage({ searchParams }: { searchParams: Record<
   const preselected = rows.some((r) => r.product.id === searchParams.produit) ? searchParams.produit : undefined;
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div>
       <PageHeader eyebrow="Créer"
         title="Plan de publication"
         description="20 vidéos par produit, réparties sur tes semaines, avec un rappel le jour J."
@@ -98,10 +98,11 @@ export default async function PlanPage({ searchParams }: { searchParams: Record<
       </Card>
 
       {scheduled.length ? (
-        <section className="mt-6 space-y-3" aria-labelledby="plans-en-cours">
-          <h2 id="plans-en-cours" className="text-lg">
+        <section className="mt-6" aria-labelledby="plans-en-cours">
+          <h2 id="plans-en-cours" className="mb-3 text-lg">
             Produits planifiés
           </h2>
+          <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-2">
           {scheduled.map(({ board, product }) => {
             const plan = board.data;
             const progress = planProgress(plan);
@@ -139,6 +140,7 @@ export default async function PlanPage({ searchParams }: { searchParams: Record<
               </Card>
             );
           })}
+          </div>
         </section>
       ) : rows.length ? (
         <EmptyState icon={<CalendarDays className="h-5 w-5" />} title="Aucun produit planifié" className="mt-6" />

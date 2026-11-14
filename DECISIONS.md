@@ -1239,3 +1239,15 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      « À venir », l'anneau d'objectif, la liste des produits suivis, les raccourcis et les statistiques de créateur
      (l'objectif est dans l'indicateur des vidéos). Les actions du gestionnaire reviennent sur `/app#gestion` avec leur
      message. Commissions verrouillées (cadenas) sans le plan qui donne les gains, comme avant.
+207. **Corrections, étape 3 : pleine largeur dans l'appli** (14 novembre). La coque (appli, espace formateur,
+     administration) n'a plus de largeur maximale : marges de 16 px sur téléphone, 32 px à partir de 1 024 px. Les pages
+     qui se centraient dans 640 à 1 024 px prennent toute la largeur et passent en colonnes sur grand écran : script
+     (accroches à gauche, qui restent visibles, scripts à droite limités à 56 rem pour la lecture), mes produits (chiffres
+     et objectif côte à côte, produits sur deux colonnes), compte (abonnement et profil à gauche, préférences et données à
+     droite), notifications (réglages de l'appareil à droite), préparation (liste de vérification à droite), mon style,
+     mon formateur, propositions de marques (historique sur deux colonnes), plan de publication (liste jour par jour à
+     droite du calendrier à partir de 1 536 px). Grilles adaptatives : radar, studio et produits proches sur trois colonnes
+     à partir de 1 536 px (la phrase « pourquoi maintenant » des cartes passe sur deux lignes au lieu d'une pour ne pas
+     être coupée), inspirations de l'analyse jusqu'à six colonnes. Les rangées de chiffres (fiche produit, formateur) se
+     remplissent toujours (cases qui s'étirent) au lieu de laisser des cases grises. Le site public garde sa largeur de
+     page (1 280 px), comme EtSmart. Vérifié à 390, 1 440 et 1 920 px.

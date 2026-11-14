@@ -66,7 +66,7 @@ export default async function PreparationPage({ searchParams }: { searchParams: 
     : '';
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div>
       <PageHeader eyebrow="Compte"
         title="Mode préparation"
         description={`Une niche et 30 jours de vidéos pour passer le cap des ${formatInt(AFFILIATE_THRESHOLD)} abonnés.`}
@@ -90,6 +90,9 @@ export default async function PreparationPage({ searchParams }: { searchParams: 
       ) : null}
       {notice ? <Callout tone={notice.tone} className="mb-6" title={notice.text} /> : null}
 
+      {/* Grand écran : progression, niche et plan à gauche ; liste de vérification à droite. */}
+      <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+      <div className="min-w-0 space-y-6">
       <Card id="progression">
         <h2 className="text-lg">Tes abonnés</h2>
         <div className="mt-3 flex items-baseline justify-between text-sm">
@@ -121,7 +124,7 @@ export default async function PreparationPage({ searchParams }: { searchParams: 
         ) : null}
       </Card>
 
-      <Card id="niche" className="mt-6">
+      <Card id="niche">
         <h2 className="text-lg">Choisis ta niche</h2>
         {catalog.demo ? (
           <p className="mt-2 text-xs font-semibold text-warn">Produits fictifs de démonstration : ce classement n’est qu’un exemple.</p>
@@ -178,7 +181,7 @@ export default async function PreparationPage({ searchParams }: { searchParams: 
         </ol>
       </Card>
 
-      <Card id="plan" className="mt-6">
+      <Card id="plan">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-lg">Ton plan de 30 jours</h2>
@@ -236,7 +239,9 @@ export default async function PreparationPage({ searchParams }: { searchParams: 
         )}
       </Card>
 
-      <Card id="verification" className="mt-6">
+      </div>
+
+      <Card id="verification" className="xl:sticky xl:top-6">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="text-lg">Prêt pour l’affiliation ?</h2>
           <span className="num text-sm text-muted">
@@ -263,6 +268,7 @@ export default async function PreparationPage({ searchParams }: { searchParams: 
         </form>
         <Panel className="mt-4 text-xs text-muted">Conditions à confirmer dans l’appli TikTok (centre des créateurs) : elles peuvent changer.</Panel>
       </Card>
+      </div>
     </div>
   );
 }

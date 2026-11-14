@@ -9,7 +9,7 @@ import { requireOnboardedViewer } from '@/lib/auth/session';
 import { STYLE_MAX_CHARS, STYLE_MAX_SAMPLES, STYLE_MIN_CHARS, STYLE_MIN_SAMPLES } from '@/lib/ai/style';
 import { studioRights } from '@/lib/studio';
 import { getStyle, styleAnalysesLeft } from '@/lib/studio/style';
-import { formatRelative } from '@/lib/utils';
+import { cn, formatRelative } from '@/lib/utils';
 import { analyzeStyleAction, deleteStyleAction, toggleStyleAction, updateStyleAction } from './actions';
 
 export const metadata: Metadata = { title: 'Mon style' };
@@ -45,7 +45,7 @@ export default async function StylePage({ searchParams }: { searchParams: { ok?:
   const samples = data?.samples ?? [];
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div>
       {header}
       {searchParams.ok && OK[searchParams.ok] ? (
         <Callout tone="gain" className="mb-6">
@@ -58,8 +58,10 @@ export default async function StylePage({ searchParams }: { searchParams: { ok?:
         </Callout>
       ) : null}
 
+      {/* Grand écran : ton style à gauche, les textes à droite. */}
+      <div className={cn('grid grid-cols-1 items-start gap-6', data && 'xl:grid-cols-2')}>
       {data ? (
-        <Card className="mb-6 sm:p-6">
+        <Card className="sm:p-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex items-start gap-3">
               <span className="icon-chip h-10 w-10 shrink-0">
@@ -149,7 +151,7 @@ export default async function StylePage({ searchParams }: { searchParams: { ok?:
           Ce que tu dis dans {STYLE_MIN_SAMPLES} à {STYLE_MAX_SAMPLES} de tes vidéos (tu peux copier les sous-titres). Tes textes restent privés : ils servent
           seulement à décrire ton style, et tu peux les supprimer quand tu veux.
         </p>
-        <form action={analyzeStyleAction} className="mt-5 grid gap-4">
+        <form action={analyzeStyleAction} className={cn('mt-5 grid gap-4', !data && 'lg:grid-cols-2')}>
           {Array.from({ length: STYLE_MAX_SAMPLES }, (_, i) => (
             <Field
               key={i}
@@ -168,7 +170,7 @@ export default async function StylePage({ searchParams }: { searchParams: { ok?:
               />
             </Field>
           ))}
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4 lg:col-span-full">
             <SubmitButton pendingLabel="Analyse de ton style…" disabled={left <= 0}>
               {data ? 'Analyser à nouveau' : 'Analyser mon style'}
             </SubmitButton>
@@ -178,6 +180,7 @@ export default async function StylePage({ searchParams }: { searchParams: { ok?:
           </div>
         </form>
       </Card>
+      </div>
     </div>
   );
 }

@@ -116,7 +116,7 @@ export default async function MesProduitsPage({ searchParams }: { searchParams: 
   const weekDone = stats.thisWeek >= stats.weeklyGoal;
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div>
       <PageHeader eyebrow="Suivre"
         title="Mes produits"
         description="Choisis peu de produits et publie beaucoup sur chacun. Objectif : 20 vidéos par produit."
@@ -129,14 +129,16 @@ export default async function MesProduitsPage({ searchParams }: { searchParams: 
         </EmptyState>
       ) : (
         <>
-          <dl className="mb-4 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line bg-line text-center sm:grid-cols-4">
+          {/* Grand écran : chiffres et objectif côte à côte, produits sur deux colonnes. */}
+          <div className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-2 xl:items-stretch">
+          <dl className="grid grid-cols-2 content-stretch gap-px overflow-hidden rounded-2xl border border-line bg-line text-center sm:grid-cols-4">
             {[
               { label: 'Produits suivis', value: formatInt(rows.length) },
               { label: 'Vidéos postées', value: formatInt(stats.totalPosted) },
               { label: stats.streak > 1 ? 'Jours d’affilée' : 'Jour d’affilée', value: formatInt(stats.streak), icon: stats.streak > 0 },
               { label: 'Cette semaine', value: `${formatInt(stats.thisWeek)} / ${stats.weeklyGoal}` },
             ].map((item) => (
-              <div key={item.label} className="bg-raised px-2 py-3.5">
+              <div key={item.label} className="flex flex-col justify-center bg-raised px-2 py-3.5">
                 <dd className="num flex items-center justify-center gap-1 text-2xl font-semibold">
                   {item.icon ? <Flame className="h-5 w-5 text-rose-ink" aria-hidden="true" /> : null}
                   {item.value}
@@ -146,7 +148,7 @@ export default async function MesProduitsPage({ searchParams }: { searchParams: 
             ))}
           </dl>
 
-          <Card className="mb-6">
+          <Card>
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h2 className="text-base">Objectif de la semaine</h2>
               <p className={cn('text-sm', weekDone ? 'font-semibold text-gain' : 'text-muted')}>
@@ -179,13 +181,14 @@ export default async function MesProduitsPage({ searchParams }: { searchParams: 
               </SubmitButton>
             </form>
           </Card>
+          </div>
 
           {declining.length ? (
             <Callout tone="warn" className="mb-6" title={`${plural(declining.length, 'produit suivi commence', 'produits suivis commencent')} à baisser`}>
               {declining.map((d) => displayName(d.product)).join(', ')}. Termine tes vidéos prévues rapidement : tu recevras aussi une alerte.
             </Callout>
           ) : null}
-          <ul className="space-y-3">
+          <ul className="grid grid-cols-1 items-start gap-3 xl:grid-cols-2">
             {rows.map((r) => (
               <Row key={r.saved.id} row={r} />
             ))}
