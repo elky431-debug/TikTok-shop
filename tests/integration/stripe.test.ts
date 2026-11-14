@@ -1,7 +1,7 @@
 import Stripe from 'stripe';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { handleBillingEvent } from '@/lib/billing/events';
-import { enrichStripeEvent, normalizeStripeEvent, StripeBilling, stripePriceId } from '@/lib/billing/stripe';
+import { enrichStripeEvent, normalizeStripeEvent, setStripeForTests, StripeBilling, stripePriceId } from '@/lib/billing/stripe';
 import { STRIPE_WEBHOOK_EVENTS } from '@/lib/billing/stripe-config';
 import { setRepoForTests } from '@/lib/db';
 import { LocalRepo } from '@/lib/db/local';
@@ -21,7 +21,11 @@ const consentAt = new Date().toISOString();
 
 describe.skipIf(!ready)('Stripe (mode test réel)', () => {
   // Le corps d'un describe ignoré est quand même lu par Vitest : pas de client sans clé.
-  const stripe = ready ? new Stripe(key) : (null as unknown as Stripe);
+  // Derrière un proxy HTTPS (environnements de développement isolés), le client `fetch` suit le proxy ; ailleurs, client
+  // HTTP habituel. Le même client sert au test et au code testé.
+  const stripe = ready
+    ? new Stripe(key, process.env.HTTPS_PROXY ? { httpClient: Stripe.createFetchHttpClient() } : {})
+    : (null as unknown as Stripe);
   const repo = new LocalRepo(null);
   const customers: string[] = [];
   const started = Math.floor(Date.now() / 1000) - 5;
@@ -56,6 +60,7 @@ describe.skipIf(!ready)('Stripe (mode test réel)', () => {
 
   beforeAll(async () => {
     setRepoForTests(repo);
+    setStripeForTests(stripe);
     await repo.ensureProfile({ id: 'coach', email: 'coach@example.com' });
     await repo.createCoach({ user_id: 'coach', training_name: 'Formation test', promo_code: 'ITEST30', commission_rate: 0.3 });
     for (const id of ['eleve', 'echec', 'remise']) {
@@ -66,6 +71,7 @@ describe.skipIf(!ready)('Stripe (mode test réel)', () => {
 
   afterAll(async () => {
     setRepoForTests(null);
+    setStripeForTests(null);
     for (const id of customers) await stripe.customers.del(id).catch(() => undefined);
   });
 

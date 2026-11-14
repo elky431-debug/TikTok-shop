@@ -1299,3 +1299,12 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      critères et verdict sur toute la largeur. Script : les scripts remplissent leur colonne. Restent centrés par nature :
      le contenu de l'e-mail dans son aperçu (comme dans une messagerie), les fenêtres modales et le téléprompteur. Le
      site public (accueil, prix, CGV) garde la largeur de page d'EtSmart.
+212. **Capture de l'analyse sur une vraie vidéo TikTok Shop** (14 novembre). La capture envoyée (cire RedOne de
+     @labras3, 3,8 M de vues, 271 ventes) montrait l'ancienne mise en page centrée : la même vidéo a été réanalysée sur
+     le site en ligne, en pleine largeur, avec un compte de test supprimé ensuite, puis capturée et posée dans
+     `docs/landing/analyse.png` (convertie par `npm run screenshots:landing -- --sources`). Un premier essai de l'IA avait
+     lu « cire » comme de la cire d'épilation (légende seule) : il a été relancé, le découpage gardé ne suppose rien de
+     plus que la légende. Pour que le lecteur officiel TikTok et sa couverture s'affichent dans les captures, six
+     serveurs de TikTok et de l'hébergeur des photos produits ont été ouverts dans l'environnement de travail
+     (aucun effet sur le site). Tests d'intégration Stripe : derrière un proxy HTTPS, ils utilisent le client `fetch` de
+     Stripe (le même client sert au test et au code testé).
