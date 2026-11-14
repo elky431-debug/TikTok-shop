@@ -3,21 +3,30 @@ import type { LaunchStep } from '@/lib/v2/launch';
 import type { LaunchPageData } from '@/lib/v2/launch-view';
 import { StepFrame, StepNav } from '../step-frame';
 import { ProductStep } from './product-step';
+import { SampleStep } from './sample-step';
+import { ScriptsStep } from './scripts-step';
 
 /** Affiche l'étape demandée d'un lancement. */
 export function LaunchStepView({
   step,
   data,
   profile,
+  searchParams,
+  generating = false,
 }: {
   step: LaunchStep;
   data: LaunchPageData;
   profile: Profile;
   searchParams: Record<string, string | undefined>;
+  generating?: boolean;
 }) {
   switch (step) {
     case 'produit':
       return <ProductStep data={data} profile={profile} />;
+    case 'echantillon':
+      return <SampleStep data={data} searchParams={searchParams} />;
+    case 'scripts':
+      return <ScriptsStep data={data} profile={profile} searchParams={searchParams} generating={generating} />;
     default:
       return (
         <StepFrame step={step} sentence="Cette étape arrive.">

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { Celebration } from '@/components/launch/celebration';
 import { LaunchStepView } from '@/components/launch/steps';
@@ -14,7 +14,8 @@ import { getRepo } from '@/lib/db';
 import { fallbackImageUrl } from '@/lib/product-image';
 import { displayName } from '@/lib/product-name';
 import { cn } from '@/lib/utils';
-import { isLaunchStep } from '@/lib/v2/launch';
+import { isLaunchStep, launchHref } from '@/lib/v2/launch';
+import { TASK_KIND, taskView, type TaskData } from '@/lib/tasks';
 import { getLaunch } from '@/lib/v2/launch-store';
 import { loadLaunchPage } from '@/lib/v2/launch-view';
 import { STAGE_LABELS } from '@/lib/v2/manager';
@@ -27,6 +28,16 @@ export default async function LaunchPage({ params, searchParams }: { params: { i
   const repo = getRepo();
   const launch = await getLaunch(repo, profile.id, params.id);
   if (!launch) notFound();
+  // Écriture de scripts en arrière-plan (Netlify) : l'étape attend sur place, puis affiche le résultat.
+  let generating = false;
+  if (searchParams.tache) {
+    const task = await repo.getRecord<TaskData>(profile.id, searchParams.tache);
+    if (task?.kind === TASK_KIND) {
+      const view = taskView(task.data);
+      if (view.state === 'en_cours') generating = true;
+      else redirect(view.path ?? launchHref(launch.id, 'scripts', view.error ? { erreur: view.error } : {}));
+    }
+  }
   const data = await loadLaunchPage(repo, profile, launch);
   const step = isLaunchStep(searchParams.etape) ? searchParams.etape : launch.data.step;
   const name = data.product ? displayName(data.product) : launch.data.product_name;
@@ -65,7 +76,7 @@ export default async function LaunchPage({ params, searchParams }: { params: { i
         </Callout>
       ) : null}
       <LaunchTimeline id={launch.id} done={data.done} viewing={step} />
-      <LaunchStepView step={step} data={data} profile={profile} searchParams={searchParams} />
+      <LaunchStepView step={step} data={data} profile={profile} searchParams={searchParams} generating={generating} />
     </div>
   );
 }

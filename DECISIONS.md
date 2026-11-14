@@ -1335,3 +1335,15 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      un produit, c'est le lancer. Les lignes du tableau du dashboard ouvrent le lancement à son étape (un simple lien ne
      suit jamais un produit : seulement un produit déjà suivi). Petite célébration (confettis, message annoncé aux
      lecteurs d'écran) à chaque étape validée, sans mouvement si les animations sont réduites.
+215. **Lancer un produit, étape 3 : échantillon et scripts** (14 novembre). Échantillon : un message de demande prêt à
+     copier (adressé au vendeur, donc au vouvoiement, sans promesse de ventes), les 3 gestes à faire dans l'appli
+     TikTok, puis deux cases « Échantillon demandé » et « Échantillon reçu » avec leur date. Elles créent ou mettent à
+     jour la fiche échantillon du gestionnaire (même onglet « Échantillons » du dashboard) et font avancer le statut ;
+     « reçu » valide l'étape. « Pas d'échantillon, je passe » saute l'étape. Une demande ou une réception notée depuis le
+     dashboard est aussi reprise dans le lancement en cours. Scripts : le studio dans l'étape — choix du format (ceux du
+     plan, les autres marqués Pro), « Écrire mes scripts » ; la tâche d'écriture revient au lancement (en local tout de
+     suite ; sur Netlify, l'étape attend sur place et se met à jour toute seule, sans passer par la page d'attente).
+     Chaque script se garde pour une vidéo (le n-ième gardé va à la vidéo n) ; « Ouvrir dans le studio » pour retoucher.
+     Série de 20 angles en Pro et Elite (créer la série, puis « Écrire ce script » angle par angle, sans quitter
+     l'étape) ; en Starter, une ligne renvoie à Pro. L'étape ne se valide qu'avec au moins un script gardé, ce qui passe
+     le produit à « Scripts prêts ».

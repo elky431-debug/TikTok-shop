@@ -13,6 +13,7 @@ import { CONTENT_PLAN_KIND, generateContentPlan, getPreparation, type ContentPla
 import { readStudioDraft } from '@/lib/v2/studio-draft';
 import { executeTask, type TaskHandler, type TaskType } from './index';
 import { displayName } from '@/lib/product-name';
+import { launchHref } from '@/lib/v2/launch';
 
 /**
  * Le travail long de chaque fonctionnalité d'IA, repris des actions (qui gardent les vérifications rapides : session,
@@ -31,31 +32,41 @@ export const TASK_HANDLERS: Record<TaskType, TaskHandler> = {
   async studio(profile, input, repo) {
     const productId = str(input.produit);
     const format = input.format;
+    // Écriture lancée depuis l'étape « Scripts » d'un lancement : on revient au lancement, pas au studio.
+    const launch = str(input.lancement) || null;
     if (!isScriptFormat(format)) return `/app/studio?erreur=${enc('Choisis un format de vidéo.')}`;
     try {
       const draft = await readStudioDraft(repo, profile.id, str(input.brouillon) || null);
       const settings = parseSettings((input.reglages ?? {}) as Record<string, unknown>);
-      return `/app/studio/${(await createScripts(profile, productId, format, { settings, draft })).id}`;
+      const doc = await createScripts(profile, productId, format, { settings, draft });
+      return launch ? launchHref(launch, 'scripts', { ecrit: doc.id }) : `/app/studio/${doc.id}`;
     } catch (error) {
-      return `/app/studio?produit=${enc(productId)}&erreur=${enc(studioMessage(error, 'L’écriture des scripts a échoué. Réessaie dans un instant.'))}`;
+      const message = studioMessage(error, 'L’écriture des scripts a échoué. Réessaie dans un instant.');
+      return launch ? launchHref(launch, 'scripts', { erreur: message }) : `/app/studio?produit=${enc(productId)}&erreur=${enc(message)}`;
     }
   },
 
   async serie(profile, input) {
+    const launch = str(input.lancement) || null;
     try {
-      return `/app/studio/serie/${(await createSeries(profile, str(input.produit))).id}`;
+      const series = await createSeries(profile, str(input.produit));
+      return launch ? launchHref(launch, 'scripts', { serie: 'ok' }) : `/app/studio/serie/${series.id}`;
     } catch (error) {
-      return `/app/studio/serie?erreur=${enc(studioMessage(error, 'La série n’a pas pu être créée. Réessaie dans un instant.'))}`;
+      const message = studioMessage(error, 'La série n’a pas pu être créée. Réessaie dans un instant.');
+      return launch ? launchHref(launch, 'scripts', { erreur: message }) : `/app/studio/serie?erreur=${enc(message)}`;
     }
   },
 
   async angle(profile, input) {
     const seriesId = str(input.serie);
     const index = Number(input.angle);
+    const launch = str(input.lancement) || null;
     try {
-      return `/app/studio/${(await writeFromAngle(profile, seriesId, index)).id}`;
+      const doc = await writeFromAngle(profile, seriesId, index);
+      return launch ? launchHref(launch, 'scripts', { ecrit: doc.id }) : `/app/studio/${doc.id}`;
     } catch (error) {
-      return `/app/studio/serie/${seriesId}?erreur=${enc(studioMessage(error, 'Les scripts n’ont pas pu être écrits. Réessaie dans un instant.'))}&angle=${index}#angle-${index + 1}`;
+      const message = studioMessage(error, 'Les scripts n’ont pas pu être écrits. Réessaie dans un instant.');
+      return launch ? launchHref(launch, 'scripts', { erreur: message }) : `/app/studio/serie/${seriesId}?erreur=${enc(message)}&angle=${index}#angle-${index + 1}`;
     }
   },
 
