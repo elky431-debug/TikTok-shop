@@ -328,3 +328,15 @@ export function planToIcs(plan: PublicationPlan, planId: string, siteUrl: string
   lines.push('END:VCALENDAR');
   return lines.map(fold).join('\r\n') + '\r\n';
 }
+
+/** Jours de publication de chaque rythme, en clair. */
+export const RHYTHM_HINTS: Record<Rhythm, string> = { 3: 'lundi, mercredi, vendredi', 5: 'du lundi au vendredi', 7: 'tous les jours' };
+
+/**
+ * Déplace une vidéo pas encore postée à une autre date (glisser-déposer du calendrier). Une vidéo postée garde sa date.
+ * Rien avant aujourd'hui.
+ */
+export function moveItemDate(plan: PublicationPlan, n: number, date: string, today: string): PublicationPlan {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date < today) return plan;
+  return { ...plan, items: plan.items.map((item) => (item.n === n && item.status !== 'poste' ? { ...item, date } : item)) };
+}

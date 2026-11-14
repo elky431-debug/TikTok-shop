@@ -5,6 +5,8 @@ import { StepFrame, StepNav } from '../step-frame';
 import { ProductStep } from './product-step';
 import { SampleStep } from './sample-step';
 import { ScriptsStep } from './scripts-step';
+import { PlanStep } from './plan-step';
+import { ShootStep } from './shoot-step';
 
 /** Affiche l'étape demandée d'un lancement. */
 export function LaunchStepView({
@@ -27,6 +29,10 @@ export function LaunchStepView({
       return <SampleStep data={data} searchParams={searchParams} />;
     case 'scripts':
       return <ScriptsStep data={data} profile={profile} searchParams={searchParams} generating={generating} />;
+    case 'planifier':
+      return <PlanStep data={data} profile={profile} searchParams={searchParams} />;
+    case 'tourner':
+      return <ShootStep data={data} />;
     default:
       return (
         <StepFrame step={step} sentence="Cette étape arrive.">

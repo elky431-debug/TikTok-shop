@@ -9,7 +9,7 @@ import { ensureSearchProduct } from '@/lib/radar/search-products';
 import { regionFor } from '@/lib/regions';
 import { listBoards } from '@/lib/v2/board';
 import { completeStep, isLaunchStep, launchHref } from '@/lib/v2/launch';
-import { closeLaunch, getLaunch, reopenLaunch, saveLaunch, startLaunch, syncLaunchStage } from '@/lib/v2/launch-store';
+import { closeLaunch, ensureFollowed, getLaunch, reopenLaunch, saveLaunch, startLaunch, syncLaunchStage } from '@/lib/v2/launch-store';
 import { parisDate } from '@/lib/utils';
 import { isScriptFormat } from '@/lib/ai/formats';
 import { getPlan } from '@/lib/plans';
@@ -19,6 +19,12 @@ import { allowedFormats } from '@/lib/studio/limits';
 import { getDoc } from '@/lib/studio/store';
 import { startTask } from '@/lib/tasks/start';
 import { SAMPLE_KIND, type SampleData } from '@/lib/v2/manager';
+import type { Repo } from '@/lib/db';
+import type { Profile } from '@/lib/db/types';
+import { rhythmFor } from '@/lib/profile-rules';
+import { addDays } from '@/lib/utils';
+import { ensureBoard, saveBoard } from '@/lib/v2/board';
+import { isRhythm, moveItem, moveItemDate, schedulePlan } from '@/lib/v2/planning';
 
 function refresh(id?: string) {
   revalidatePath('/app');
@@ -227,4 +233,69 @@ export async function keepScriptAction(formData: FormData) {
   await saveLaunch(repo, profile.id, launch, { ...launch.data, kept });
   refresh(launch.id);
   redirect(launchHref(launch.id, 'scripts', { garde: String(kept.length) }) + `#script-${docId}-${index}`);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Étapes « Planifier » et « Tourner » : le tableau des vidéos du produit (fiche `publication`)
+// ---------------------------------------------------------------------------------------------------------------------
+
+/** Tableau des vidéos du produit du lancement (créé au besoin ; le produit est suivi). */
+async function launchBoard(profile: Profile, repo: Repo, productId: string) {
+  if (!(await ensureFollowed(repo, profile, productId))) return null;
+  const saved = await repo.getSavedProduct(profile.id, productId);
+  const product = await repo.getProduct(productId);
+  if (!saved || !product) return null;
+  return ensureBoard(repo, profile.id, saved, product);
+}
+
+/**
+ * « Planifier mes vidéos » : les vidéos pas encore postées sont réparties au rythme choisi (celui de l'onboarding par
+ * défaut), à partir de la date donnée. Les rappels du jour J partent tout seuls pour les vidéos datées.
+ */
+export async function planLaunchAction(formData: FormData) {
+  const { profile, repo, launch } = await ownLaunch(formData);
+  if (!getPlan(profile.plan).planning) redirect(launchHref(launch.id, 'planifier'));
+  const today = parisDate();
+  const rhythm = Number(formData.get('rythme'));
+  const start = String(formData.get('debut') ?? '');
+  const record = await launchBoard(profile, repo, launch.data.product_id);
+  if (!record) redirect(launchHref(launch.id, 'planifier', { erreur: 'limite' }));
+  const from = /^\d{4}-\d{2}-\d{2}$/.test(start) && start >= today ? start : addDays(today, 1);
+  await saveBoard(repo, profile.id, record, schedulePlan(record.data, isRhythm(rhythm) ? rhythm : rhythmFor(profile.videos_per_week), from));
+  refresh(launch.id);
+  revalidatePath('/app/plan');
+  redirect(launchHref(launch.id, 'planifier', { ok: 'planifie' }));
+}
+
+/** Glisser-déposer : une vidéo change de jour. Appelée depuis le calendrier (sans rechargement de page). */
+export async function moveVideoDateAction(launchId: string, n: number, date: string): Promise<{ ok: boolean }> {
+  const { profile } = await requireOnboardedViewer('/app/lancer');
+  const repo = getRepo();
+  const launch = await getLaunch(repo, profile.id, launchId);
+  if (!launch) return { ok: false };
+  const record = (await listBoards(repo, profile.id)).get(launch.data.product_id);
+  if (!record) return { ok: false };
+  const next = moveItemDate(record.data, Number(n), String(date), parisDate());
+  if (next === record.data) return { ok: false };
+  await saveBoard(repo, profile.id, record, next);
+  refresh(launch.id);
+  revalidatePath('/app/plan');
+  return { ok: true };
+}
+
+/** Case « Tournée » d'une vidéo : le statut passe à « En tournage » à la première. */
+export async function filmedAction(formData: FormData) {
+  const { profile, repo, launch } = await ownLaunch(formData);
+  const today = parisDate();
+  const n = Number(formData.get('n'));
+  const record = await launchBoard(profile, repo, launch.data.product_id);
+  if (!record) redirect(launchHref(launch.id, 'tourner'));
+  const item = record.data.items.find((i) => i.n === n);
+  if (!item || item.status === 'poste') redirect(launchHref(launch.id, 'tourner'));
+  const filmed = item.status !== 'tourne';
+  const plan = moveItem(record.data, n, filmed ? 'tourne' : 'a_tourner', today);
+  await saveBoard(repo, profile.id, record, plan);
+  await syncLaunchStage(repo, profile.id, launch.data, plan, today);
+  refresh(launch.id);
+  redirect(launchHref(launch.id, 'tourner') + `#video-${n}`);
 }

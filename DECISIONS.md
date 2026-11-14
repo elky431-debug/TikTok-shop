@@ -1347,3 +1347,12 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      Série de 20 angles en Pro et Elite (créer la série, puis « Écrire ce script » angle par angle, sans quitter
      l'étape) ; en Starter, une ligne renvoie à Pro. L'étape ne se valide qu'avec au moins un script gardé, ce qui passe
      le produit à « Scripts prêts ».
+216. **Lancer un produit, étape 4 : planifier et tourner** (14 novembre). Planifier : les vidéos pas encore postées sont
+     réparties au rythme choisi à l'onboarding (3, 5 ou 7 par semaine, modifiable, à partir de demain par défaut), dans
+     le même tableau que le plan de publication et le calendrier du dashboard. Le calendrier du lancement montre les
+     semaines utiles ; une vidéo se déplace par glisser-déposer (ordinateur), ou en la touchant puis en touchant le jour
+     voulu (téléphone, clavier, lecteurs d'écran : boutons « Mettre la vidéo n°X le … »), sans recharger la page ; rien
+     avant aujourd'hui, une vidéo en ligne garde sa date. Les rappels du jour J existaient déjà pour toute vidéo datée :
+     l'étape le dit (heure du récap). Tourner : chaque vidéo avec son script (le n-ième gardé), « Voir le script », le
+     téléprompteur et une case « Tournée » ; la première passe le produit à « En tournage ». Un écran : les vidéos
+     prêtes et la suivante, le reste résumé en une ligne qui renvoie aux scripts.
