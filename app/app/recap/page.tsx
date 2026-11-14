@@ -71,7 +71,7 @@ export default async function RecapPage({ searchParams }: { searchParams: Record
           <h2 id="apercu" className="sr-only">
             Aperçu de l’e-mail de demain
           </h2>
-          <div className="mx-auto max-w-3xl overflow-hidden rounded-2xl border border-line bg-raised shadow-sm">
+          <div className="overflow-hidden rounded-2xl border border-line bg-raised shadow-sm">
             <div className="flex items-center gap-2 border-b border-line bg-surface px-4 py-2.5 text-xs font-semibold text-muted">
               <Inbox className="h-4 w-4" aria-hidden="true" />
               Boîte de réception
@@ -99,7 +99,7 @@ export default async function RecapPage({ searchParams }: { searchParams: Record
             </div>
             <EmailFrame html={html} title="Aperçu de l’e-mail du récap du matin" />
           </div>
-          <p className="mx-auto mt-3 flex max-w-3xl flex-wrap items-center justify-between gap-2 text-xs text-muted">
+          <p className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
             <span>Les produits changent chaque nuit : celui-ci est le récap d’aujourd’hui.</span>
             <a href="/app/recap/apercu-email" target="_blank" rel="noopener" className="inline-flex items-center gap-1 font-semibold hover:text-fg">
               Ouvrir l’e-mail en grand

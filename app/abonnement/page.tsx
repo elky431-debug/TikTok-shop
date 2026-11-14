@@ -37,7 +37,7 @@ export default async function AbonnementPage({ searchParams }: { searchParams: {
     <MotionProvider>
       <div className="min-h-dvh bg-bg">
         <header className="border-b border-line">
-          <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+          <div className="flex h-16 items-center justify-between px-4 lg:px-8">
             <Logo href="/abonnement" />
             <form action="/auth/deconnexion" method="post">
               <button type="submit" className="rounded-lg px-3 py-2 text-sm font-semibold text-muted transition-colors hover:bg-fg/5 hover:text-fg">
@@ -47,8 +47,8 @@ export default async function AbonnementPage({ searchParams }: { searchParams: {
           </div>
         </header>
 
-        <main id="contenu" className="mx-auto max-w-6xl px-4 pb-16 pt-10 sm:px-6 sm:pt-14">
-          <div className="mx-auto mb-10 max-w-2xl text-center">
+        <main id="contenu" className="px-4 pb-16 pt-10 sm:pt-14 lg:px-8">
+          <div className="mb-10 max-w-3xl">
             <p className="eyebrow mb-3">{searchParams.bienvenue ? 'Dernière étape' : 'Abonnement'}</p>
             <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
               {profile.first_name ? `${profile.first_name}, choisis` : 'Choisis'} ton abonnement
@@ -59,7 +59,7 @@ export default async function AbonnementPage({ searchParams }: { searchParams: {
             </p>
           </div>
 
-          <div className="mx-auto mb-8 max-w-3xl space-y-3">
+          <div className="mb-8 grid grid-cols-1 gap-3 empty:hidden lg:grid-cols-2">
             {searchParams.erreur ? (
               <Callout tone="rose" title="Paiement non lancé">
                 {ERRORS[searchParams.erreur] ?? ERRORS.ouverture}
@@ -96,11 +96,11 @@ export default async function AbonnementPage({ searchParams }: { searchParams: {
             yearlyBadge={yearlyBadge()}
           />
 
-          <p className="mt-8 text-center text-sm text-muted">
+          <p className="mt-8 text-sm text-muted">
             Prix TTC en euros. Paiement sécurisé par Stripe. Pas de promesse de ventes : l’outil t’aide à choisir et à
             produire, le reste dépend de tes vidéos.
           </p>
-          <p className="mt-3 text-center text-sm text-muted">
+          <p className="mt-3 text-sm text-muted">
             <Link href="/app/compte" className="font-semibold text-fg underline decoration-fg/30 underline-offset-2 hover:decoration-fg">
               Mon compte
             </Link>{' '}

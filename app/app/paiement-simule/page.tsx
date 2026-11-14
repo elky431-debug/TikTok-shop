@@ -23,7 +23,7 @@ export default async function PaiementSimulePage({
   if (searchParams.mode === 'portail') {
     const sub = await getRepo().getActiveSubscription(profile.id);
     return (
-      <div className="mx-auto max-w-lg">
+      <div>
         <PageHeader eyebrow="Compte" title="Portail d’abonnement (simulé)" description="En production, cette page est le portail client Stripe." />
         <Card className="space-y-4">
           {sub ? (
@@ -55,9 +55,11 @@ export default async function PaiementSimulePage({
   const back = getPlan(profile.plan).access ? '/app/passer-pro' : '/abonnement';
 
   return (
-    <div className="mx-auto max-w-lg">
+    <div>
       <PageHeader eyebrow="Compte" title="Paiement simulé" description="Mode local : aucune clé Stripe n’est configurée." />
-      <Callout tone="cyan" className="mb-4" title="Aucune carte, aucun prélèvement">
+      {/* Pleine largeur : l'explication à gauche, le paiement à droite sur ordinateur. */}
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
+      <Callout tone="cyan" title="Aucune carte, aucun prélèvement">
         Ce paiement passe par le même traitement que les webhooks Stripe : ton plan, ton formateur et ses commissions sont mis à
         jour comme en vrai.
       </Callout>
@@ -78,6 +80,7 @@ export default async function PaiementSimulePage({
           Annuler
         </LinkButton>
       </Card>
+      </div>
     </div>
   );
 }

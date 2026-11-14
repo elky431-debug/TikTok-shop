@@ -379,7 +379,7 @@ export function OnboardingFlow({
         );
       case 'abonnes':
         return (
-          <div role="radiogroup" aria-labelledby={titleId} className="grid gap-2.5">
+          <div role="radiogroup" aria-labelledby={titleId} className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
             {FOLLOWER_RANGES.map((r) => (
               <OptionCard key={r.id} role="radio" compact selected={answers.follower_range === r.id} onSelect={(p) => choose('follower_range', r.id, p)}>
                 {r.label}
@@ -390,7 +390,7 @@ export function OnboardingFlow({
       case 'affilie':
         return (
           <div className="space-y-4">
-            <div role="radiogroup" aria-labelledby={titleId} className="grid gap-2.5">
+            <div role="radiogroup" aria-labelledby={titleId} className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
               {AFFILIATE_STATUSES.map((s) => (
                 <OptionCard key={s.id} role="radio" selected={answers.affiliate_status === s.id} onSelect={(p) => choose('affiliate_status', s.id, p && s.id !== 'pas_encore')}>
                   {s.label}
@@ -407,7 +407,7 @@ export function OnboardingFlow({
         );
       case 'niveau':
         return (
-          <div role="radiogroup" aria-labelledby={titleId} className="grid gap-2.5">
+          <div role="radiogroup" aria-labelledby={titleId} className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
             {EXPERIENCE_LEVELS.map((l) => (
               <OptionCard key={l.id} role="radio" hint={l.hint} selected={answers.experience_level === l.id} onSelect={(p) => choose('experience_level', l.id, p)}>
                 {l.label}
@@ -419,7 +419,7 @@ export function OnboardingFlow({
         const full = answers.niches.length >= MAX_NICHES;
         return (
           <div>
-            <div role="group" aria-labelledby={titleId} className="grid grid-cols-2 gap-2.5">
+            <div role="group" aria-labelledby={titleId} className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
               {NICHES.map((n) => {
                 const selected = answers.niches.includes(n.id);
                 return (
@@ -445,7 +445,7 @@ export function OnboardingFlow({
       }
       case 'rythme':
         return (
-          <div role="radiogroup" aria-labelledby={titleId} className="grid gap-2.5">
+          <div role="radiogroup" aria-labelledby={titleId} className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
             {VIDEOS_PER_WEEK.map((v) => (
               <OptionCard
                 key={v.id}
@@ -461,7 +461,7 @@ export function OnboardingFlow({
         );
       case 'styles':
         return (
-          <div role="group" aria-labelledby={titleId} className="grid gap-2.5 sm:grid-cols-2">
+          <div role="group" aria-labelledby={titleId} className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
             {VIDEO_STYLES.map((s) => (
               <OptionCard
                 key={s.id}
@@ -559,7 +559,7 @@ export function OnboardingFlow({
   return (
     <div className="flex h-dvh flex-col bg-bg">
       <header className="px-4 pt-4 sm:px-8 sm:pt-6">
-        <div className="mx-auto flex h-10 w-full max-w-xl items-center justify-between">
+        <div className="flex h-10 w-full items-center justify-between">
           {index > 0 ? (
             <button
               type="button"
@@ -577,7 +577,7 @@ export function OnboardingFlow({
           </span>
         </div>
         <div
-          className="mx-auto mt-3 h-1.5 w-full max-w-xl overflow-hidden rounded-full bg-fg/10"
+          className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-fg/10"
           role="progressbar"
           aria-label="Progression"
           aria-valuemin={0}
@@ -589,7 +589,7 @@ export function OnboardingFlow({
       </header>
 
       <main id="contenu" className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 sm:px-8">
-        <div className="mx-auto w-full max-w-xl flex-1 pb-4 pt-6 sm:pt-12">
+        <div className="w-full flex-1 pb-4 pt-6 sm:pt-12">
           <AnimatePresence mode="wait" initial={false} custom={direction}>
             <motion.section
               key={step}
@@ -611,7 +611,7 @@ export function OnboardingFlow({
       </main>
 
       <footer className="border-t border-line bg-bg px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 sm:px-8">
-        <div className="mx-auto w-full max-w-xl">
+        <div className="w-full">
           {error ? (
             <p className="mb-2 text-sm font-medium text-rose-ink" role="alert">
               {error}
@@ -623,7 +623,7 @@ export function OnboardingFlow({
                 Passer
               </button>
             ) : null}
-            <button type="button" onClick={() => next()} className={buttonClasses('primary', 'lg', 'flex-1')}>
+            <button type="button" onClick={() => next()} className={buttonClasses('primary', 'lg', 'ml-auto flex-1 sm:min-w-[18rem] sm:flex-none')}>
               {primaryLabel}
               <ButtonArrow />
             </button>
@@ -645,18 +645,18 @@ function Preparing({ answers, update }: { answers: OnboardingAnswers; update: bo
     'Ton produit du jour choisi',
   ];
   return (
-    <div className="flex h-dvh flex-col items-center justify-center bg-bg px-6 text-center" role="status" aria-live="polite">
+    <div className="flex h-dvh flex-col justify-center bg-bg px-4 lg:px-8" role="status" aria-live="polite">
       <motion.div
         animate={{ scale: [1, 1.08, 1] }}
         transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
-        className="rounded-3xl p-5 shadow-[0_0_60px_-10px_rgb(var(--cyan)/0.45)]"
+        className="w-fit rounded-3xl p-5 shadow-[0_0_60px_-10px_rgb(var(--cyan)/0.45)]"
       >
         <LogoMark size={56} />
       </motion.div>
       <h1 className="mt-8 text-2xl font-bold tracking-tight sm:text-3xl">
         {update ? 'On enregistre tes réponses' : <>On prépare <span className="text-gradient">ton radar</span></>}
       </h1>
-      <ul className="mt-8 space-y-3 text-left">
+      <ul className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {lines.map((line, i) => (
           <motion.li
             key={line}

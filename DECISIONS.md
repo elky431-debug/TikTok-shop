@@ -1288,3 +1288,14 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      convertie en WebP 640 et 320 px (`npm run screenshots:landing -- --sources` pour ne convertir que ces images).
      Les photos des produits n'apparaissent pas dans les captures (leur hébergeur n'est pas joignable depuis
      l'environnement de capture) : les fiches montrent leur visuel de repli, comme dans les captures précédentes.
+211. **Plus aucune interface centrée** (14 novembre, demande explicite : « aucune interface centrée, tout prend
+     l'espace »). Règle durable, écrite dans CLAUDE.md : dans l'appli et ses parcours (connexion, accueil des nouveaux
+     inscrits, choix de l'abonnement, attente, paiement simulé), aucune page ni bloc ne se centre dans une colonne
+     étroite. Connexion : formulaire à gauche, aperçu de l'appli à droite (trois fonctions en faits, capture du
+     dashboard marquée « Exemple »). Questions de bienvenue : en-tête, progression et réponses sur toute la largeur
+     (réponses sur 2 à 4 colonnes), bouton à droite. Abonnement : titre et textes alignés à gauche, messages sur deux
+     colonnes, choix de période et case de démarrage à gauche (la page publique des prix garde son centrage). Attente :
+     en-tête à gauche et aperçu sur toute la largeur. Récap : la boîte de réception remplit sa colonne. Comparateur :
+     critères et verdict sur toute la largeur. Script : les scripts remplissent leur colonne. Restent centrés par nature :
+     le contenu de l'e-mail dans son aperçu (comme dans une messagerie), les fenêtres modales et le téléprompteur. Le
+     site public (accueil, prix, CGV) garde la largeur de page d'EtSmart.

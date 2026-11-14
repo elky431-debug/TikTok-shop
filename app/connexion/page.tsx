@@ -24,6 +24,13 @@ const ERRORS: Record<string, string> = {
   'google-local': 'Google nécessite Supabase (mode local actif). Utilise le lien magique.',
 };
 
+/** Ce que fait l'appli, en faits (aucune promesse de résultat). */
+const APP_POINTS = [
+  { title: 'Le radar du matin', text: 'Les produits qui montent dans tes niches, avec un score expliqué en phrases.' },
+  { title: 'Tes scripts', text: '10 accroches et 3 scripts prêts à tourner sur le produit que tu choisis.' },
+  { title: 'Ton suivi', text: 'Tes produits, tes échantillons, tes vidéos et tes commissions au même endroit.' },
+];
+
 export default async function ConnexionPage({
   searchParams,
 }: {
@@ -43,8 +50,9 @@ export default async function ConnexionPage({
       <header className="relative px-4 py-5 sm:px-8">
         <Logo />
       </header>
-      <main id="contenu" className="relative flex flex-1 items-start justify-center px-4 pb-16 pt-4 sm:items-center sm:pt-0">
-        <div className="w-full max-w-sm">
+      {/* Pleine largeur : le formulaire à gauche, l'aperçu de l'appli à droite sur ordinateur. Rien n'est centré. */}
+      <main id="contenu" className="relative grid flex-1 grid-cols-1 gap-10 px-4 pb-16 pt-4 sm:px-8 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:items-center lg:gap-16 lg:pt-0">
+        <div className="w-full">
           <h1 className="text-3xl font-bold">
             Connecte-<span className="text-gradient">toi</span>
           </h1>
@@ -97,6 +105,29 @@ export default async function ConnexionPage({
             . On ne se connecte jamais à ton compte TikTok.
           </p>
         </div>
+
+        <aside className="hidden min-w-0 lg:block" aria-label="Ce que tu trouves dans l’appli">
+          <div className="overflow-hidden rounded-3xl border border-line bg-surface">
+            <div className="p-8 xl:p-10">
+              <p className="eyebrow">Dans l’appli</p>
+              <ul className="mt-5 grid gap-4 xl:grid-cols-3">
+                {APP_POINTS.map((point) => (
+                  <li key={point.title} className="rounded-2xl border border-line bg-raised p-4">
+                    <p className="font-semibold">{point.title}</p>
+                    <p className="mt-1 text-sm leading-relaxed text-muted">{point.text}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="relative border-t border-line">
+              {/* eslint-disable-next-line @next/next/no-img-element -- capture déjà optimisée (WebP 640 px) */}
+              <img src="/landing/dashboard.webp" width={640} height={416} alt="" className="block h-auto w-full" />
+              <span className="absolute right-4 top-4 rounded-full border border-line bg-bg/95 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-cyan-ink">
+                Exemple
+              </span>
+            </div>
+          </div>
+        </aside>
       </main>
     </div>
   );

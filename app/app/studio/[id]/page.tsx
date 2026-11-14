@@ -152,7 +152,7 @@ export default async function ScriptPage({
         </Callout>
       ) : null}
 
-      {/* Grand écran : accroches à gauche (elles restent visibles), scripts à droite, à largeur de lecture. */}
+      {/* Grand écran : accroches à gauche (elles restent visibles), scripts à droite. */}
       <div className="grid grid-cols-1 gap-12 xl:grid-cols-[minmax(22rem,2fr)_minmax(0,3fr)] xl:items-start xl:gap-10">
         <section id="accroches" aria-labelledby="titre-accroches" className="scroll-mt-20 xl:sticky xl:top-6">
           <SectionTitle
@@ -169,7 +169,7 @@ export default async function ScriptPage({
           <HookList docId={doc.id} hooks={doc.hooks.map((h) => h.text)} fresh={fresh} canRegenerate={regenLeft > 0} regenerate={regenerateHookAction} />
         </section>
 
-        <section className="min-w-0 max-w-4xl" aria-label="Scripts complets">
+        <section className="min-w-0" aria-label="Scripts complets">
           <ScriptTabs
             labels={doc.scripts.map((_, i) => `Script ${i + 1}`)}
             badges={doc.scripts.map((s) => `${s.duration_seconds} s`)}

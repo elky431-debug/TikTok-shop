@@ -267,7 +267,7 @@ function TwoUp({
         )}
       </div>
 
-      <ol className="mx-auto mt-10 max-w-3xl space-y-2.5" aria-label="Critères">
+      <ol className="mt-10 space-y-2.5" aria-label="Critères">
         {rows.map((row, r) => (
           <li key={row.id} className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4">
             {[0, 1].map((i) => {
@@ -406,7 +406,7 @@ function Verdict({ ids, winner }: { ids: string[]; winner: FaceProduct }) {
   const current = state?.key === key ? state : null;
   return (
     <motion.div
-      className="mx-auto mt-10 max-w-3xl rounded-2xl border border-line bg-gradient-to-br from-cyan-ink/[0.07] via-transparent to-rose-ink/[0.06] p-5 sm:p-6"
+      className="mt-10 rounded-2xl border border-line bg-gradient-to-br from-cyan-ink/[0.07] via-transparent to-rose-ink/[0.06] p-5 sm:p-6"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.5 }}

@@ -55,7 +55,8 @@ export function PricingCards({
 
   return (
     <div>
-      <div className="mb-10 flex justify-center">
+      {/* Dans l'appli, rien n'est centré : le choix de période et la case de démarrage s'alignent à gauche. */}
+      <div className={cn('mb-10 flex', mode === 'app' ? 'justify-start' : 'justify-center')}>
         <div role="radiogroup" aria-label="Période de facturation" className="inline-flex rounded-xl border border-line bg-surface p-1">
           {(
             [
@@ -84,7 +85,7 @@ export function PricingCards({
       </div>
 
       {mode === 'app' ? (
-        <div className="mx-auto mb-8 max-w-3xl">
+        <div className="mb-8">
           <label
             className={cn(
               'flex cursor-pointer gap-3 rounded-2xl border bg-raised p-4 text-sm leading-relaxed text-fg',

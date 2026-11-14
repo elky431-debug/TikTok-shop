@@ -36,7 +36,7 @@ export default async function TaskPage({ params }: { params: { id: string } }) {
 
   if (view.state === 'echec') {
     return (
-      <div className="mx-auto max-w-xl py-10">
+      <div className="py-4">
         <Callout tone="rose" title="Ça n’a pas marché" action={<LinkButton href={record.data.back_path}>Réessayer</LinkButton>}>
           {view.error}
         </Callout>
@@ -45,18 +45,32 @@ export default async function TaskPage({ params }: { params: { id: string } }) {
   }
 
   return (
-    <div className="mx-auto max-w-xl py-6 sm:py-12">
-      <div className="rounded-2xl border border-line bg-bg p-6 text-center md:p-8" role="status" aria-live="polite">
-        <IconChip size="lg" className="mx-auto">
-          <Loader2 className="h-5 w-5 animate-spin" strokeWidth={1.75} />
-        </IconChip>
-        <h1 className="mt-5 text-2xl font-bold tracking-tight">{label.title}</h1>
-        <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted">{label.sentence}</p>
-        <div className="mx-auto mt-8 max-w-sm space-y-3 text-left" aria-hidden="true">
-          <Skeleton className="h-4 w-3/4" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-5/6" />
-          <Skeleton className="h-4 w-2/3" />
+    <div className="py-2 sm:py-4">
+      {/* Pleine largeur : l'en-tête à gauche, puis l'aperçu de ce qui arrive (squelette) sur toute la largeur. */}
+      <div className="rounded-2xl border border-line bg-bg p-5 sm:p-6 md:p-8" role="status" aria-live="polite">
+        <div className="flex items-start gap-4">
+          <IconChip size="lg" className="shrink-0">
+            <Loader2 className="h-5 w-5 animate-spin" strokeWidth={1.75} />
+          </IconChip>
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold tracking-tight">{label.title}</h1>
+            <p className="mt-1.5 text-sm leading-relaxed text-muted">{label.sentence}</p>
+          </div>
+        </div>
+        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]" aria-hidden="true">
+          <div className="space-y-3">
+            {Array.from({ length: 6 }, (_, i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
+          </div>
+          <div className="space-y-3">
+            <Skeleton className="h-6 w-1/3" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-11/12" />
+            <Skeleton className="h-4 w-5/6" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-2/3" />
+          </div>
         </div>
         <p className="mt-8 text-xs text-muted">
           {view.slow ? 'C’est plus long que d’habitude, mais ça avance. ' : ''}Tu peux quitter cette page : le résultat t’attendra dans{' '}

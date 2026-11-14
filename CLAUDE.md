@@ -134,7 +134,9 @@ d'EtSmart l'emporte (voir `DECISIONS.md`, refonte).
 - **Signature** : le décalage cyan / rose façon TikTok reste réservé au score.
 - **Appli** (refonte du 13 novembre, `DECISIONS.md` 164-176) : coque copiée d'EtSmart
   (`components/app/shell.tsx` : barre latérale 64 → 256 px en sections Accueil / Trouver / Créer / Suivre / Compte,
-  en-tête et barre du bas sur téléphone), conteneur `max-w-7xl`, `PageHeader` à étiquette de section, cartes
+  en-tête et barre du bas sur téléphone), **pleine largeur** (marges 16 px sur téléphone, 32 px sur ordinateur : aucune page
+  ni aucun bloc de l'appli centré dans une colonne étroite, tout prend l'espace ; colonnes en plus sur grand écran,
+  `DECISIONS.md` 207 et 211), `PageHeader` à étiquette de section, cartes
   bordées, onglets à trait dégradé. **Dashboard sur `/app`** (`lib/dashboard.ts`, chiffres saisis ou mesurés
   uniquement), **radar sur `/app/radar`**. Onboarding : 10 questions, une par écran (`app/bienvenue`,
   `lib/onboarding-steps.ts`) ; `onboarding_version` < 2 ⇒ nouvelles questions une fois. Courbes Recharts cyan avec

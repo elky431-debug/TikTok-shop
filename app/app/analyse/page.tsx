@@ -378,7 +378,7 @@ function AnalysisResult({ id, data, products }: { id: string; data: AnalysisData
         </div>
 
         {data.video_id ? (
-          <div className="order-first mx-auto w-40 sm:w-48 lg:order-none lg:mx-0 lg:w-full">
+          <div className="order-first w-40 sm:w-48 lg:order-none lg:w-full">
             <div className="overflow-hidden rounded-2xl border border-line bg-surface">
               <iframe
                 src={playerUrl(data.video_id)}
