@@ -8,9 +8,13 @@
  *  3. avec --webhook : le point de terminaison <site>/api/stripe/webhook et ses événements. Son secret (whsec_…) n'est
  *     donné par Stripe qu'à la création : il est écrit dans .env.local, jamais affiché. Si le point existe déjà et que le
  *     secret n'est pas dans .env.local, il est recréé pour obtenir un nouveau secret ;
- *  4. avec --netlify : STRIPE_WEBHOOK_SECRET et STRIPE_PORTAL_CONFIGURATION sont enregistrés dans les variables du site
- *     Netlify (NETLIFY_AUTH_TOKEN et NETLIFY_SITE_ID requis), sans jamais être affichés. Redéploie ensuite.
+ *  4. avec --netlify : STRIPE_SECRET_KEY, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, STRIPE_WEBHOOK_SECRET et
+ *     STRIPE_PORTAL_CONFIGURATION sont enregistrés dans les variables du site Netlify (NETLIFY_AUTH_TOKEN et
+ *     NETLIFY_SITE_ID requis, l'identifiant ou l'adresse …netlify.app), sans jamais être affichés ; --redeployer lance
+ *     ensuite un nouveau déploiement.
  * Les codes promo (dont ceux des formateurs) se créent dans Stripe : le paiement affiche toujours leur champ.
+ *
+ * Mode test : --creer-prix-test crée les prix absents (refusé avec une clé de production).
  *
  * Usage : npm run stripe:setup                                   (vérifie les prix, prépare le portail)
  *         npm run stripe:setup -- --webhook --site=https://tracktout.com [--netlify]
@@ -44,12 +48,15 @@ function writeEnvLocal(name: string, value: string) {
 }
 
 /** Variable d'un site Netlify (API REST officielle) : créée ou remplacée, pour tous les contextes de déploiement. */
-async function setNetlifyVar(token: string, siteId: string, key: string, value: string) {
+async function setNetlifyVar(token: string, siteRef: string, key: string, value: string) {
+  let siteId = siteRef;
   const api = 'https://api.netlify.com/api/v1';
   const headers = { authorization: `Bearer ${token}`, 'content-type': 'application/json' };
   const site = await fetch(`${api}/sites/${siteId}`, { headers });
   if (!site.ok) throw new Error(`Netlify : site introuvable (${site.status}). Vérifie NETLIFY_SITE_ID et le jeton.`);
-  const { account_id: accountId } = (await site.json()) as { account_id: string };
+  // NETLIFY_SITE_ID peut être l'identifiant du site ou son adresse (…netlify.app) : l'API des variables veut l'identifiant.
+  const { account_id: accountId, id } = (await site.json()) as { account_id: string; id: string };
+  siteId = id;
   const values = [{ value, context: 'all' }];
   const update = await fetch(`${api}/accounts/${accountId}/env/${key}?site_id=${siteId}`, {
     method: 'PUT',
@@ -73,7 +80,8 @@ async function main() {
   const { priceLookupKey } = await import('@/lib/billing/prices');
   const key = (process.env.STRIPE_SECRET_KEY ?? '').trim();
   if (!key) fail('STRIPE_SECRET_KEY manquant (dans .env.local ou en variable). Commence par la clé de test sk_test_….');
-  const stripe = new Stripe(key);
+  // Client fetch : il suit le proxy HTTPS quand il y en a un (NODE_USE_ENV_PROXY=1), et marche partout ailleurs.
+  const stripe = new Stripe(key, { httpClient: Stripe.createFetchHttpClient() });
   const site = (arg('site') ?? process.env.NEXT_PUBLIC_SITE_URL ?? '').trim().replace(/\/$/, '') || 'http://localhost:3000';
 
   // 1. Prix créés dans Stripe, retrouvés par lookup_key et comparés à lib/plans.ts
@@ -99,7 +107,39 @@ async function main() {
     const name = typeof price.product === 'string' ? '' : 'name' in price.product ? price.product.name : '';
     console.log(`✓ ${w.key} : ${(price.unit_amount ?? 0) / 100} € / ${w.interval === 'month' ? 'mois' : 'an'}${name ? ` (${name})` : ''}`);
   }
-  if (problems.length) fail(`Prix à corriger dans Stripe avant de continuer :\n  - ${problems.join('\n  - ')}`);
+  // Mode test seulement : --creer-prix-test crée les prix absents (même clé de recherche, montants de lib/plans.ts).
+  const missing = wanted.filter((w) => !found.data.some((p) => p.lookup_key === w.key));
+  if (missing.length && process.argv.includes('--creer-prix-test')) {
+    if (!key.startsWith('sk_test')) fail('--creer-prix-test refuse une clé de production : crée tes prix dans le tableau de bord Stripe.');
+    const productIds = new Map<string, string>();
+    for (const w of missing) {
+      const plan = getPlan(w.plan);
+      let productId = productIds.get(w.plan) ?? found.data.find((p) => p.lookup_key?.startsWith(`${w.plan}_`))?.product;
+      if (typeof productId !== 'string' || !productId) {
+        const product = await stripe.products.create({ name: `${BRAND_SLUG === 'tracktout' ? 'Tracktout' : BRAND_SLUG} ${plan.name}`, metadata: { ...STRIPE_SETUP_METADATA, plan: w.plan } });
+        productId = product.id;
+      }
+      productIds.set(w.plan, productId);
+      const price = await stripe.prices.create({
+        product: productId,
+        currency: 'eur',
+        unit_amount: plan.prices[w.interval],
+        recurring: { interval: w.interval },
+        lookup_key: w.key,
+        metadata: { ...STRIPE_SETUP_METADATA, plan: w.plan },
+        expand: ['product'],
+      });
+      found.data.push(price);
+      console.log(`✓ ${w.key} créé en mode test : ${(price.unit_amount ?? 0) / 100} € / ${w.interval === 'month' ? 'mois' : 'an'}`);
+    }
+    problems.splice(0, problems.length, ...problems.filter((p) => !missing.some((m) => p.startsWith(`${m.key} :`))));
+    byProduct.clear();
+    for (const price of found.data) {
+      const productId = typeof price.product === 'string' ? price.product : price.product.id;
+      byProduct.set(productId, [...(byProduct.get(productId) ?? []), price.id]);
+    }
+  }
+  if (problems.length) fail(`Prix à corriger dans Stripe avant de continuer :\n  - ${problems.join('\n  - ')}${missing.length ? '\n  (en mode test : relance avec -- --creer-prix-test pour créer les prix absents)' : ''}`);
   const products = [...byProduct.entries()].map(([product, prices]) => ({ product, prices }));
 
   // 2. Portail client
@@ -143,12 +183,18 @@ async function main() {
     const token = (process.env.NETLIFY_AUTH_TOKEN ?? '').trim();
     const siteId = (process.env.NETLIFY_SITE_ID ?? '').trim();
     if (!token || !siteId) fail('--netlify demande NETLIFY_AUTH_TOKEN et NETLIFY_SITE_ID (Netlify → Site configuration → Site ID).');
-    for (const name of ['STRIPE_WEBHOOK_SECRET', 'STRIPE_PORTAL_CONFIGURATION']) {
+    // Clés Stripe comprises : le site en ligne doit les voir à l'exécution (fonctions) comme à la construction.
+    for (const name of ['STRIPE_SECRET_KEY', 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY', 'STRIPE_WEBHOOK_SECRET', 'STRIPE_PORTAL_CONFIGURATION']) {
       const value = (process.env[name] ?? '').trim();
       if (!value) continue;
       console.log(`✓ Netlify : ${name} ${await setNetlifyVar(token, siteId, name, value)} (valeur non affichée)`);
     }
-    console.log('  Redéploie le site pour que les nouvelles valeurs soient prises en compte.');
+    if (process.argv.includes('--redeployer')) {
+      const res = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/builds`, { method: 'POST', headers: { authorization: `Bearer ${token}` } });
+      console.log(res.ok ? '✓ Netlify : nouveau déploiement lancé' : `✗ Netlify : redéploiement refusé (${res.status}) ; lance-le depuis Netlify.`);
+    } else {
+      console.log('  Redéploie le site pour que les nouvelles valeurs soient prises en compte (ou relance avec --redeployer).');
+    }
   }
 
   console.log(`\nMode : ${key.startsWith('sk_live') ? 'PRODUCTION' : 'test'}. Prix retrouvés par leur lookup_key.`);

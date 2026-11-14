@@ -1206,3 +1206,11 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      ne garde pas de transformation une fois finie (`backwards`), pour qu'une info-bulle ou un menu ne passe pas sous la
      carte suivante. Accessibilité : pastille orange éclaircie (contraste 4,4 → 4,6), noms accessibles qui reprennent le
      texte visible (accroches, jours du calendrier), squelette du verdict avec `role="status"`.
+204. **Stripe en mode test, avec les clés fournies** (14 novembre). Le compte de test des clés reçues (« environnement de
+     test TrackTout ») ne contenait aucun produit ni prix : les 6 prix ont été créés en mode test seulement, avec les
+     clés de recherche attendues et les montants de `lib/plans.ts` (`npm run stripe:setup -- --creer-prix-test`, refusé
+     avec une clé de production ; sans l'option, le script se contente de réutiliser les prix existants). Portail client
+     et webhook créés sur https://tracktout.com ; secret du webhook et identifiant du portail dans `.env.local`, jamais
+     affichés. Le script parle à Stripe par `fetch` (il suit alors le proxy HTTPS quand il y en a un). `--netlify` pose
+     aussi `STRIPE_SECRET_KEY` et `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, accepte l'adresse …netlify.app comme
+     identifiant du site, et `--redeployer` relance un déploiement.
