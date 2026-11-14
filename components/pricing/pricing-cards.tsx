@@ -46,7 +46,7 @@ export function PricingCards({
   currentPlan?: PlanId;
   action?: (formData: FormData) => void | Promise<void>;
   defaultInterval?: BillingInterval;
-  /** Économie de l'annuel, affichée sur la bascule (« 2 mois offerts »). */
+  /** Économie de l'annuel, affichée sur la bascule (« 4 mois offerts »). */
   yearlyBadge?: string;
 }) {
   const [interval, setInterval] = useState<BillingInterval>(defaultInterval);
@@ -141,7 +141,7 @@ export function PricingCards({
               ) : null}
               <h3 className="text-lg font-semibold text-fg">{plan.name}</h3>
               <p className="mt-1 text-xs text-muted">{plan.tagline}</p>
-              <div className="mt-5 min-h-[4.25rem]">
+              <div className="mt-5 min-h-[5.25rem]">
                 {interval === 'month' ? (
                   <>
                     <p className="num flex items-baseline gap-1.5 text-3xl font-bold text-fg">
@@ -158,8 +158,9 @@ export function PricingCards({
                     <p className="num flex items-baseline gap-1.5 text-3xl font-bold text-fg">
                       {plan.yearly} <span className="text-sm font-medium text-muted">/ an</span>
                     </p>
-                    <p className="num mt-1 text-xs text-muted">
-                      soit {plan.yearlyMonthly} par mois · <span className="font-semibold text-positive">{plan.yearlySavings} économisés</span>
+                    <p className="num mt-1 text-sm font-semibold text-fg">soit {plan.yearlyMonthly} / mois</p>
+                    <p className="num mt-0.5 text-xs text-muted">
+                      <span className="font-semibold text-positive">{plan.yearlySavings} économisés</span> par rapport au mensuel
                     </p>
                   </>
                 )}

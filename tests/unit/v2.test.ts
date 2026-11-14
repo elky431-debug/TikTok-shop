@@ -107,18 +107,16 @@ describe('plans : grille du 13 novembre (lib/plans.ts)', () => {
   const PAID = ['starter', 'pro', 'elite'] as const;
   const limits = (key: keyof PlanLimits) => PAID.map((id) => getPlan(id)[key]);
 
-  it('trois plans payants, Pro recommandé ; annuel = 10 mois (2 mois offerts)', () => {
+  it('trois plans payants, Pro recommandé ; annuel = 8 mois (4 mois offerts)', () => {
     expect(PAID_PLANS).toEqual(['starter', 'pro', 'elite']);
     expect(RECOMMENDED_PLAN).toBe('pro');
     expect(limits('prices')).toEqual([
-      { month: 3499, year: 34990 },
-      { month: 5999, year: 59990 },
-      { month: 9999, year: 99990 },
+      { month: 3499, year: 27990 },
+      { month: 5999, year: 47990 },
+      { month: 9799, year: 77990 },
     ]);
-    for (const id of PAID) {
-      expect(getPlan(id).prices.year).toBe(getPlan(id).prices.month * 10);
-      expect(yearlySavings(id)).toBe(getPlan(id).prices.month * 2);
-    }
+    // L'annuel vaut environ 8 mois : 4 mois offerts sur chaque plan (Elite : 4,04 mois).
+    for (const id of PAID) expect(Math.floor(yearlySavings(id) / getPlan(id).prices.month + 1e-9)).toBe(4);
   });
 
   it('sans abonnement (« aucun », ou plan inconnu) : aucun accès, chaque limite à 0 ou fermée', () => {

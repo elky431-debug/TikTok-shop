@@ -150,11 +150,11 @@ describe('moment « waouh » de l’inscription', () => {
 });
 
 describe('abonnement : annuel, codes de réduction, code formateur', () => {
-  it('l’économie annuelle vient des prix des plans, jamais écrite à la main : 2 mois offerts sur chaque plan', () => {
-    expect(annualOffer('pro')).toMatchObject({ savingsCents: 5999 * 12 - 59990, percent: 17, monthsFree: 2, badge: '2 mois offerts' });
-    expect(annualOffer('pro').savings).toMatch(/^119,98\s€$/);
-    expect(annualOffer('starter')).toMatchObject({ savingsCents: 3499 * 12 - 34990, monthsFree: 2, badge: '2 mois offerts' });
-    expect(annualOffer('elite')).toMatchObject({ savingsCents: 9999 * 12 - 99990, monthsFree: 2, badge: '2 mois offerts' });
+  it('l’économie annuelle vient des prix des plans, jamais écrite à la main : 4 mois offerts sur chaque plan', () => {
+    expect(annualOffer('pro')).toMatchObject({ savingsCents: 5999 * 12 - 47990, percent: 33, monthsFree: 4, badge: '4 mois offerts' });
+    expect(annualOffer('pro').savings).toMatch(/^239,98\s€$/);
+    expect(annualOffer('starter')).toMatchObject({ savingsCents: 3499 * 12 - 27990, monthsFree: 4, badge: '4 mois offerts' });
+    expect(annualOffer('elite')).toMatchObject({ savingsCents: 9799 * 12 - 77990, monthsFree: 4, badge: '4 mois offerts' });
   });
 
   it('Checkout accepte les codes promotionnels Stripe, en français, et revient sur l’appli ou le choix d’abonnement', () => {

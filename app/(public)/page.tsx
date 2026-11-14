@@ -269,7 +269,7 @@ export default function HomePage() {
             eyebrow="Tarifs"
             title="Trois plans,"
             accent="Pro pour publier chaque jour."
-            subtitle="Sans engagement, résiliable en deux clics. À l’année, 2 mois offerts."
+            subtitle={`Sans engagement, résiliable en deux clics. À l’année, ${yearlyBadge().toLowerCase()}.`}
           />
           <Reveal>
             <PricingCards plans={pricingCards()} mode="public" yearlyBadge={yearlyBadge()} />

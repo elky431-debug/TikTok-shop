@@ -163,7 +163,7 @@ const STARTER: PlanLimits = {
   referral: true,
   editsPerGeneration: 10,
   discordCommandsPerDay: 10,
-  prices: { month: 3499, year: 34990 },
+  prices: { month: 3499, year: 27990 },
 };
 
 const PRO: PlanLimits = {
@@ -188,7 +188,7 @@ const PRO: PlanLimits = {
   editsPerGeneration: 20,
   discordCommandsPerDay: 40,
   unlimited: ['savedProducts'],
-  prices: { month: 5999, year: 59990 },
+  prices: { month: 5999, year: 47990 },
 };
 
 const ELITE: PlanLimits = {
@@ -222,7 +222,7 @@ const ELITE: PlanLimits = {
     'editsPerGeneration',
     'discordCommandsPerDay',
   ],
-  prices: { month: 9999, year: 99990 },
+  prices: { month: 9799, year: 77990 },
 };
 
 export const PLANS: Record<PlanId, PlanLimits> = { aucun: NONE, starter: STARTER, pro: PRO, elite: ELITE };

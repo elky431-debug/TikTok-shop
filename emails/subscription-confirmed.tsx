@@ -13,6 +13,7 @@ export function SubscriptionConfirmedEmail({
   priceCents,
   interval,
   firstPaymentCents,
+  monthlyEquivalentCents = null,
   consentText,
   consentAt,
   siteUrl,
@@ -22,6 +23,8 @@ export function SubscriptionConfirmedEmail({
   interval: 'month' | 'year';
   /** Premier paiement s'il diffère du prix (code formateur). */
   firstPaymentCents: number | null;
+  /** Annuel : prix mensuel équivalent, à titre de comparaison. */
+  monthlyEquivalentCents?: number | null;
   consentText: string | null;
   consentAt: string | null;
   siteUrl: string;
@@ -33,7 +36,8 @@ export function SubscriptionConfirmedEmail({
         Ton abonnement {planName} a démarré
       </Heading>
       <Text style={{ margin: '12px 0 0', fontSize: 15, lineHeight: '22px' }}>
-        Plan {planName}, {formatEuros(priceCents)} TTC par {period}, sans engagement : tu résilies quand tu veux depuis ton
+        Plan {planName}, {formatEuros(priceCents)} TTC par {period}
+        {monthlyEquivalentCents ? ` (soit ${formatEuros(monthlyEquivalentCents)} par mois)` : ''}, sans engagement : tu résilies quand tu veux depuis ton
         compte, et l’accès reste ouvert jusqu’à la fin de la période payée.
         {firstPaymentCents !== null ? ` Avec ton code formateur, ton premier mois est à ${formatEuros(firstPaymentCents)}.` : ''}
       </Text>

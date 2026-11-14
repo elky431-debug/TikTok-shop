@@ -6,7 +6,7 @@ import { getRepo, type Repo } from '@/lib/db';
 import type { PlanId, Profile, ReferralStatus, Subscription } from '@/lib/db/types';
 import { sendEmail } from '@/lib/email/send';
 import { env } from '@/lib/env';
-import { getPlan, planRank, REFERRAL_COMMISSION_RATE } from '@/lib/plans';
+import { getPlan, planRank, REFERRAL_COMMISSION_RATE, yearlyMonthlyEquivalent } from '@/lib/plans';
 import { formatEuros } from '@/lib/utils';
 import { discountedFirstMonth } from './coach-discount';
 import { latestConsent } from './consent';
@@ -121,6 +121,7 @@ async function sendConfirmation(repo: Repo, profile: Profile, event: Subscriptio
         priceCents: plan.prices[interval],
         interval,
         firstPaymentCents: consent?.coach_discount && interval === 'month' ? discountedFirstMonth(event.plan) : null,
+        monthlyEquivalentCents: interval === 'year' ? yearlyMonthlyEquivalent(event.plan) : null,
         consentText: consent?.text ?? null,
         consentAt: consent?.accepted_at ?? null,
         siteUrl: env.siteUrl,

@@ -180,7 +180,7 @@ npm run ai:sample
 1. Mets ta clé `STRIPE_SECRET_KEY` (commence par `sk_test_` en test : tout ce qui suit se fait d’abord en test).
 2. Lance `npm run stripe:setup`. Il crée, sans doublon si tu le relances :
    - les produits « Starter », « Pro » et « Elite » et leurs 6 prix, aux montants de `lib/plans.ts` (34,99 €/mois,
-     349,90 €/an ; 59,99 €/mois, 599,90 €/an ; 99,99 €/mois, 999,90 €/an), chacun avec sa `lookup_key`
+     279,90 €/an ; 59,99 €/mois, 479,90 €/an ; 97,99 €/mois, 779,90 €/an), chacun avec sa `lookup_key`
      (`tracktout_<plan>_<month|year>`) : l’appli retrouve les prix par cette clé, **aucun identifiant de prix à
      recopier**. Si un montant change dans `lib/plans.ts`, relance la commande : un nouveau prix reprend la clé et
      l’ancien est archivé (les abonnés en cours le gardent). Les prix de l’ancien « Pro+ » sont archivés ;

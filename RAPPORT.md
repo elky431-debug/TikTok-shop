@@ -538,8 +538,9 @@ nuit (découverte, vidéos, détails) est un coût fixe partagé, suivi dans l'a
 ## Nouvelle grille de prix : tout est payant (13 novembre 2026, décisions 188 à 194)
 
 **Ce qui change pour l'utilisateur**
-- Trois plans, sans plan gratuit ni essai : **Starter** 34,99 €/mois (349,90 €/an), **Pro** 59,99 € (599,90 €/an),
-  **Elite** 99,99 € (999,90 €/an). L'annuel vaut 10 mois (« 2 mois offerts »). Pro est marqué « Recommandé ».
+- Trois plans, sans plan gratuit ni essai : **Starter** 34,99 €/mois (279,90 €/an), **Pro** 59,99 € (479,90 €/an),
+  **Elite** 97,99 € (779,90 €/an) — grille ajustée le 14 novembre. L'annuel vaut 8 mois (« 4 mois offerts », prix mensuel
+  équivalent affiché : 23,33 €, 39,99 €, 64,99 €). Pro est marqué « Recommandé ».
 - Parcours : inscription → onboarding (10 questions) → **choix de l'abonnement** (`/abonnement`) → paiement → appli.
   Sans abonnement, toute page de l'appli renvoie au choix du plan ; le compte (suppression, export) reste ouvert.
 - Au paiement, une **case obligatoire** : « Je demande que mon abonnement démarre tout de suite, avant la fin du délai

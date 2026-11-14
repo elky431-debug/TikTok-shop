@@ -1082,3 +1082,10 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      relié à son plan par la clé, sinon par `metadata.plan` du prix (les anciens `proplus` deviennent `elite`).
      L'admin peut aussi offrir un plan (`grantPlan` : abonnement `admin_…` sans facture, exclu du MRR), ce qui permet
      d'ouvrir l'appli en production tant que Stripe n'a pas de clé.
+195. **Prix ajustés (14 novembre)** : Elite passe à 97,99 €/mois ; l'annuel vaut 8 mois (« 4 mois offerts ») : Starter
+     279,90 €, Pro 479,90 €, Elite 779,90 € par an. Les libellés (« 4 mois offerts », économies, FAQ, description de la
+     page Tarifs, sous-titre de l'accueil) sont calculés depuis `lib/plans.ts` (`annualOffer`, `yearlyBadge`) : Elite
+     économise 4,04 mois, arrondi à « 4 mois offerts » par la règle existante (moins de 0,05 mois d'écart). En annuel,
+     chaque carte affiche le prix mensuel équivalent (23,33 €, 39,99 €, 64,99 €), comme les CGV et l'e-mail de
+     confirmation. Stripe : `npm run stripe:setup` crée les nouveaux prix et leur transfère les clés de recherche (les
+     anciens sont archivés).

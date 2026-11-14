@@ -76,7 +76,7 @@ export function pricingCards(options: { coachDiscount?: boolean } = {}): PlanCar
   });
 }
 
-/** Libellé de l'économie annuelle, commun aux trois plans (l'annuel vaut 10 mois : « 2 mois offerts »). */
+/** Libellé de l'économie annuelle, commun aux trois plans (l'annuel vaut 8 mois : « 4 mois offerts »), calculé depuis les prix. */
 export function yearlyBadge(): string {
   return annualOffer(RECOMMENDED_PLAN).badge;
 }

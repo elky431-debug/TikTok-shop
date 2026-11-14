@@ -13,10 +13,11 @@ test('paiement : choisir Pro à l’année, ouvrir l’appli, puis résilier', a
   await signIn(page, uniqueEmail('paiement'));
   await completeOnboarding(page);
 
-  // Pro recommandé, annuel = 10 mois.
+  // Pro recommandé, annuel = 8 mois (4 mois offerts), prix mensuel équivalent affiché.
   await page.getByRole('radio', { name: /Annuel/ }).click();
-  await expect(page.getByText('599,90 € / an')).toBeVisible();
-  await expect(page.getByRole('radio', { name: /2 mois offerts/ })).toBeVisible();
+  await expect(page.getByText('479,90 € / an')).toBeVisible();
+  await expect(page.getByText('soit 39,99 € / mois')).toBeVisible();
+  await expect(page.getByRole('radio', { name: /4 mois offerts/ })).toBeVisible();
   await page.getByRole('checkbox', { name: /démarre tout de suite/ }).check();
   await page.getByRole('button', { name: 'Choisir Pro', exact: true }).click();
 

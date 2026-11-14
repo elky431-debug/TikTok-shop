@@ -42,7 +42,7 @@ describe('MRR', () => {
   it('abonnements payants × prix du plan, annuel ÷ 12, essais à part ; Stripe seulement quand il existe', () => {
     const all = [
       sub({ user_id: 'a', plan: 'pro', billing_interval: 'month' }), // 59,99
-      sub({ user_id: 'b', plan: 'elite', billing_interval: 'year' }), // 999,90 / 12 = 83,33
+      sub({ user_id: 'b', plan: 'elite', billing_interval: 'year' }), // 779,90 / 12 = 64,99
       sub({ user_id: 'c', plan: 'starter', status: 'past_due' }), // 34,99 (Stripe réessaie)
       sub({ user_id: 'd', plan: 'pro', status: 'trialing' }),
       sub({ user_id: 'e', plan: 'pro', status: 'canceled' }),
@@ -53,13 +53,13 @@ describe('MRR', () => {
     expect(source).toBe('stripe');
     expect(subscriptions.map((s) => s.user_id).sort()).toEqual(['a', 'b', 'c', 'd', 'e']);
     const mrr = computeMrr(subscriptions, 0.2);
-    expect(mrr.ttcCents).toBe(5999 + 8333 + 3499);
-    expect(mrr.htCents).toBe(Math.round((5999 + 8333 + 3499) / 1.2));
+    expect(mrr.ttcCents).toBe(5999 + 6499 + 3499);
+    expect(mrr.htCents).toBe(Math.round((5999 + 6499 + 3499) / 1.2));
     expect(mrr).toMatchObject({ paying: 3, trialing: 1 });
     expect(mrr.byPlan).toEqual({
       starter: { month: 1, year: 0, cents: 3499 },
       pro: { month: 1, year: 0, cents: 5999 },
-      elite: { month: 0, year: 1, cents: 8333 },
+      elite: { month: 0, year: 1, cents: 6499 },
     });
   });
 
@@ -183,7 +183,7 @@ describe('coûts', () => {
       ai30: [{ scripts: 100, otherAi: 0 }],
     });
     expect(margin.commissionsCents).toBe(Math.round((5999 / 1.2) * 0.3));
-    const yearlyFee = Math.round((59990 * 0.015 + 25) / 12);
+    const yearlyFee = Math.round((47990 * 0.015 + 25) / 12);
     expect(margin.stripeFeesCents).toBe(Math.round(5999 * 0.015 + 25) + yearlyFee);
     expect(margin.nexscopeCents).toBeNull();
     expect(margin.aiCents).toBe(0);

@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import { PricingCards } from '@/components/pricing/pricing-cards';
 import { SectionHeading } from '@/components/public/section-heading';
-import { COACH_FIRST_MONTH_DISCOUNT, getPlan } from '@/lib/plans';
+import { annualOffer } from '@/lib/billing/annual-offer';
+import { COACH_FIRST_MONTH_DISCOUNT, getPlan, yearlyMonthlyEquivalent } from '@/lib/plans';
 import { pricingCards, yearlyBadge } from '@/lib/pricing';
 import { formatEuros } from '@/lib/utils';
 
@@ -9,7 +10,7 @@ const price = (id: 'starter' | 'pro' | 'elite') => formatEuros(getPlan(id).price
 
 export const metadata: Metadata = {
   title: 'Tarifs',
-  description: `Starter à ${price('starter')}, Pro à ${price('pro')}, Elite à ${price('elite')} par mois. Sans engagement, 2 mois offerts à l’année.`,
+  description: `Starter à ${price('starter')}, Pro à ${price('pro')}, Elite à ${price('elite')} par mois. Sans engagement, ${yearlyBadge().toLowerCase()} à l’année.`,
 };
 
 const percent = Math.round(COACH_FIRST_MONTH_DISCOUNT * 100);
@@ -33,7 +34,7 @@ const FAQ = [
   },
   {
     q: 'Mensuel ou annuel ?',
-    a: 'L’annuel coûte le prix de 10 mois : 2 mois offerts par rapport à 12 mois en mensuel. Il est payé en une fois pour l’année.',
+    a: `L’annuel coûte le prix de ${12 - annualOffer('pro').monthsFree} mois : ${yearlyBadge().toLowerCase()} par rapport à 12 mois en mensuel (Pro : ${formatEuros(getPlan('pro').prices.year)} par an, soit ${formatEuros(yearlyMonthlyEquivalent('pro'))} par mois). Il est payé en une fois pour l’année.`,
   },
   {
     q: 'Mon formateur m’a donné un code.',

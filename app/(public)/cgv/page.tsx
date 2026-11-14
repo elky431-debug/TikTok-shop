@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { LegalPage, Todo } from '@/components/public/legal';
 import { BRAND } from '@/lib/brand';
 import { WITHDRAWAL_CONSENT_TEXT } from '@/lib/billing/consent';
-import { COACH_FIRST_MONTH_DISCOUNT, getPlan, REFERRAL_COMMISSION_RATE } from '@/lib/plans';
+import { COACH_FIRST_MONTH_DISCOUNT, getPlan, REFERRAL_COMMISSION_RATE, yearlyMonthlyEquivalent } from '@/lib/plans';
 import { formatEuros } from '@/lib/utils';
 
 export const metadata: Metadata = { title: 'Conditions générales de vente' };
@@ -14,7 +14,7 @@ export default function CgvPage() {
   const rate = Math.round(REFERRAL_COMMISSION_RATE * 100);
   const percent = Math.round(COACH_FIRST_MONTH_DISCOUNT * 100);
   return (
-    <LegalPage title="Conditions générales de vente et d’utilisation" updated="13 novembre 2026">
+    <LegalPage title="Conditions générales de vente et d’utilisation" updated="14 novembre 2026">
       <p>
         <Todo>faire relire ces conditions par un juriste avant la mise en ligne</Todo>
       </p>
@@ -42,20 +42,23 @@ export default function CgvPage() {
         <h2>3. Plans et prix</h2>
         <ul>
           <li>
-            Starter : {formatEuros(starter.prices.month)} par mois ou {formatEuros(starter.prices.year)} par an. Radar France complet
+            Starter : {formatEuros(starter.prices.month)} par mois ou {formatEuros(starter.prices.year)} par an (soit{' '}
+            {formatEuros(yearlyMonthlyEquivalent('starter'))} par mois). Radar France complet
             avec score expliqué et fiche produit, {starter.scriptsPerDay} scripts par jour dans {starter.scriptFormats} formats,
             téléprompteur, {starter.savedProducts} produits suivis, plan de publication, récap du matin, {starter.alerts} alertes,{' '}
             {starter.keywordSearchesPerDay} recherches par jour, mode préparation, parrainage.
           </li>
           <li>
-            Pro : {formatEuros(pro.prices.month)} par mois ou {formatEuros(pro.prices.year)} par an. Tout le Starter, plus{' '}
+            Pro : {formatEuros(pro.prices.month)} par mois ou {formatEuros(pro.prices.year)} par an (soit{' '}
+            {formatEuros(yearlyMonthlyEquivalent('pro'))} par mois). Tout le Starter, plus{' '}
             {pro.scriptsPerDay} scripts par jour dans les {pro.scriptFormats} formats, style personnel, série de 20 vidéos, score « pour
             toi », produits suivis illimités, suivi des gains et import CSV, {pro.analysesPerMonth} analyses de vidéo et{' '}
             {pro.offersPerMonth} propositions de marques par mois, comparateur, {pro.alerts} alertes, {pro.keywordSearchesPerDay}{' '}
             recherches par jour, récap de la semaine.
           </li>
           <li>
-            Elite : {formatEuros(elite.prices.month)} par mois ou {formatEuros(elite.prices.year)} par an. Tout le Pro en illimité, plus
+            Elite : {formatEuros(elite.prices.month)} par mois ou {formatEuros(elite.prices.year)} par an (soit{' '}
+            {formatEuros(yearlyMonthlyEquivalent('elite'))} par mois). Tout le Pro en illimité, plus
             les catalogues d’Allemagne, d’Italie et d’Espagne, la traduction des scripts, les poids du score réglables, l’export CSV et{' '}
             {elite.keywordSearchesPerDay} recherches par jour.
           </li>
@@ -66,7 +69,7 @@ export default function CgvPage() {
         </p>
         <p>
           Prix en euros toutes taxes comprises <Todo>ou « TVA non applicable, article 293 B du CGI » selon le régime</Todo>.
-          L’abonnement annuel est payé en une fois pour douze mois. Le paiement se fait par carte via Stripe ; {BRAND} n’a jamais accès
+          L’abonnement annuel est payé en une fois pour douze mois ; le prix mensuel équivalent est indiqué à titre de comparaison. Le paiement se fait par carte via Stripe ; {BRAND} n’a jamais accès
           aux numéros de carte.
         </p>
       </section>

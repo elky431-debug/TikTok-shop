@@ -323,7 +323,7 @@ describe('code formateur : −20 % sur le premier mois', () => {
 
     expect(discountedFirstMonth('starter')).toBe(Math.round(3499 * 0.8));
     expect(discountedFirstMonth('pro')).toBe(4799);
-    expect(discountedFirstMonth('elite')).toBe(Math.round(9999 * 0.8));
+    expect(discountedFirstMonth('elite')).toBe(Math.round(9799 * 0.8));
   });
 
   it('facture le premier mois remisé, commission de 30 % sur ce qui est payé, une seule fois par compte', async () => {
@@ -349,7 +349,7 @@ describe('code formateur : −20 % sur le premier mois', () => {
     await applyReferralCode((await repo.getProfile('eleve'))!, 'TEST30');
     await simulateSubscription((await repo.getProfile('eleve'))!, 'elite', 'year', repo, { coachDiscount: true });
     const [commission] = await repo.listCommissions('coach');
-    expect(commission.amount_cents).toBe(Math.round(99990 * 0.3));
+    expect(commission.amount_cents).toBe(Math.round(77990 * 0.3));
   });
 
   it('l’e-mail de confirmation annonce le premier mois remisé', async () => {
@@ -374,7 +374,7 @@ describe('paiement simulé et abonnements hors paiement', () => {
     await simulateSubscription((await repo.getProfile('filleul'))!, 'elite', 'year', repo);
     expect((await repo.getProfile('filleul'))?.plan).toBe('elite');
     const [commission] = await repo.listCommissions('parrain');
-    expect(commission.amount_cents).toBe(Math.round(99990 * 0.3));
+    expect(commission.amount_cents).toBe(Math.round(77990 * 0.3));
   });
 
   it('un essai ouvert avant la nouvelle grille se termine à son échéance, sans accès ensuite', async () => {
