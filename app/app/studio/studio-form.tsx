@@ -57,6 +57,7 @@ function Chip({
 export function StudioForm({
   today,
   saved,
+  searched = [],
   selected,
   remaining,
   disabled,
@@ -70,6 +71,8 @@ export function StudioForm({
 }: {
   today: StudioProductOption[];
   saved: StudioProductOption[];
+  /** Produit ouvert depuis la recherche. */
+  searched?: StudioProductOption[];
   selected?: string;
   remaining: number;
   disabled: boolean;
@@ -92,7 +95,7 @@ export function StudioForm({
   unlimited?: boolean;
 }) {
   const [state, action] = useFormState<StudioState, FormData>(generateAction, {});
-  const all = [...today, ...saved];
+  const all = [...searched, ...today, ...saved];
   const [productId, setProductId] = useState(selected ?? all[0]?.id ?? '');
   const [picking, setPicking] = useState(false);
   const firstFormat = draft?.format && formats.includes(draft.format) ? draft.format : SCRIPT_FORMATS.find((f) => formats.includes(f.id))?.id;
@@ -117,6 +120,7 @@ export function StudioForm({
   }
 
   const groups = [
+    { label: 'Depuis ta recherche', items: searched },
     { label: 'Du jour', items: today },
     { label: 'Mes produits', items: saved },
   ].filter((g) => g.items.length);

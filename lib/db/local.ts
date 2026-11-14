@@ -433,7 +433,7 @@ export class LocalRepo implements Repo {
   async listProducts(opts: { niches?: NicheId[] } = {}) {
     return this.read((d) =>
       d.products
-        .filter((p) => !opts.niches?.length || opts.niches.includes(p.niche))
+        .filter((p) => p.snapshot_date !== null && (!opts.niches?.length || opts.niches.includes(p.niche)))
         .sort((a, b) => b.latest_score - a.latest_score),
     );
   }

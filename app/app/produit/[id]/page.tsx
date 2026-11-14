@@ -32,6 +32,8 @@ import { productActionLinks } from '@/lib/radar/product-page';
 import { effectiveWeights, getFavorites, getRadarSettings } from '@/lib/radar/settings';
 import { sameShopProducts, similarProducts } from '@/lib/radar/similar';
 import { whyNowForProduct } from '@/lib/radar/why-now';
+import { ensureSearchProduct } from '@/lib/radar/search-products';
+import { regionFor } from '@/lib/regions';
 import { remainingToday } from '@/lib/v2/quota';
 import { cn, formatCompact, formatEuros, formatInt, formatShortDate, parisDate, plural } from '@/lib/utils';
 import { displayName } from '@/lib/product-name';
@@ -57,7 +59,10 @@ export default async function ProductPage({
 }) {
   const { profile } = await requireOnboardedViewer(`/app/produit/${params.id}`);
   const repo = getRepo();
-  const product = await repo.getProduct(params.id);
+  // Produit trouvé par la recherche et pas encore en base : sa fiche est créée maintenant, à partir du résultat déjà reçu.
+  const product =
+    (await repo.getProduct(params.id)) ??
+    (await ensureSearchProduct(repo, profile, params.id, (await getLiveCatalog(repo, new Date(), regionFor(profile))).products));
   if (!product) notFound();
 
   if (!(await canAccessProduct(profile, product.id))) {

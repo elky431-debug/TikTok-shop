@@ -8,6 +8,7 @@ import { Card, Callout, EmptyState, PageHeader, SectionTitle } from '@/component
 import { requireOnboardedViewer } from '@/lib/auth/session';
 import { formatLabel } from '@/lib/ai/formats';
 import { getRepo } from '@/lib/db';
+import { canAccessProduct } from '@/lib/radar';
 import type { Product } from '@/lib/db/types';
 import { cheapestPlanWith, getPlan, isUnlimited } from '@/lib/plans';
 import { fallbackImageUrl } from '@/lib/product-image';
@@ -69,7 +70,10 @@ export default async function StudioPage({
   const filter = searchParams.gardes === '1' ? 'gardes' : searchParams.vendu === '1' ? 'vendu' : 'tous';
   const filtered = history.filter((h) => (filter === 'gardes' ? h.saved : filter === 'vendu' ? h.sold : true));
   const shown = searchParams.plus === '1' ? filtered.slice(0, 300) : filtered.slice(0, PAGE);
-  const all = [...products.today, ...products.saved];
+  // Produit ouvert depuis la recherche (ni du jour, ni suivi) : proposé dans son propre groupe.
+  const asked = searchParams.produit && ![...products.today, ...products.saved].some((p) => p.id === searchParams.produit) ? await repo.getProduct(searchParams.produit) : null;
+  const searched = asked && (await canAccessProduct(profile, asked.id)) ? [asked] : [];
+  const all = [...products.today, ...products.saved, ...searched];
   const selected = all.some((p) => p.id === searchParams.produit) ? searchParams.produit : undefined;
   const feedbackCount = collectFeedback(docs).best.length;
   // Vignettes de l'historique : produits déjà chargés, puis les autres en une requête.
@@ -97,6 +101,7 @@ export default async function StudioPage({
         <StudioForm
           today={products.today.map(toOption)}
           saved={products.saved.map(toOption)}
+          searched={searched.map(toOption)}
           selected={selected}
           remaining={usage.remaining}
           disabled={usage.remaining <= 0}

@@ -1214,3 +1214,17 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      affichés. Le script parle à Stripe par `fetch` (il suit alors le proxy HTTPS quand il y en a un). `--netlify` pose
      aussi `STRIPE_SECRET_KEY` et `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, accepte l'adresse …netlify.app comme
      identifiant du site, et `--redeployer` relance un déploiement.
+205. **Corrections, étape 1 : la recherche sert à quelque chose** (14 novembre). Chaque carte s'ouvre sur la fiche
+     produit complète. Un produit pas encore en base reçoit sa fiche à la volée, construite à partir du résultat que la
+     personne a déjà reçu (ses propres recherches seulement, aucun nouvel appel à la source ; un produit déjà en base
+     n'est jamais remplacé). Score : même formule que le radar, sans la croissance (la source ne la donne pas pour une
+     recherche, son poids est réparti), placé sur l'échelle du jour (15 à 90) ; « pourquoi maintenant » calculé sur les
+     chiffres, ou écrit par l'IA comme pour toute fiche. Les ventes sur 28 jours ne passent pas pour 30 : seul le cumul de
+     7 jours est repris. Ces fiches n'ont pas de relevé du jour (`snapshot_date` vide) : elles n'entrent pas dans le
+     radar, et `listProducts` ne rend plus que les produits relevés, pour qu'elles n'évincent pas le catalogue. Trois
+     actions par carte (visibles au survol sur ordinateur, toujours sur téléphone) : « Écrire mes scripts » (le studio
+     les propose dans « Depuis ta recherche »), l'étoile pour suivre (limite du plan vérifiée), « Comparer » (le produit
+     rejoint les favoris et s'ouvre face à un favori). Nom court de l'IA (un appel par recherche, gardé 24 h avec la
+     recherche et partagé ; ceux déjà en base sont repris) et niche vérifiée en français à la place de la catégorie
+     TikTok. Lignes « Pas dans le radar du jour » et « Source : Nexscope… écartés » retirées. Si la source ne répond pas
+     (crédits épuisés le 14 novembre, code 13011), la recherche se fait dans le radar du jour et le dit en une ligne.

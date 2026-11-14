@@ -265,7 +265,8 @@ export class SupabaseRepo implements Repo {
   }
 
   async listProducts(opts: { niches?: NicheId[] } = {}) {
-    let query = this.db.from('products').select('*').order('latest_score', { ascending: false }).limit(1000);
+    // Produits relevés seulement : les fiches créées depuis une recherche (sans relevé) ne doivent pas évincer le catalogue.
+    let query = this.db.from('products').select('*').not('snapshot_date', 'is', null).order('latest_score', { ascending: false }).limit(1000);
     if (opts.niches?.length) query = query.in('niche', opts.niches);
     return check('catalogue', await query).map(toProduct);
   }

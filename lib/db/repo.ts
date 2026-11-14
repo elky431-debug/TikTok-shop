@@ -45,6 +45,7 @@ export interface Repo {
 
   // Catalogue
   upsertProducts(products: Product[]): Promise<void>;
+  /** Produits relevés (avec un relevé daté) ; les fiches créées depuis une recherche n'y sont pas. */
   listProducts(opts?: { niches?: NicheId[] }): Promise<Product[]>;
   getProduct(id: string): Promise<Product | null>;
   getProducts(ids: string[]): Promise<Product[]>;

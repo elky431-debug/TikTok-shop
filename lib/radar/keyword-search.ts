@@ -11,6 +11,8 @@ import { commissionPerSale } from '@/lib/score';
 import { remainingToday } from '@/lib/v2/quota';
 import { parisDate, parisTimeToUtc } from '@/lib/utils';
 import { categoryPath, productMetrics } from './metrics';
+import { labelProducts } from '@/lib/ai/product-labels';
+import { displayName, heuristicShortName } from '@/lib/product-name';
 
 /**
  * Recherche par mot-clé à la demande (bloc 1). Source : Nexscope `tiktok-product-discovery` avec `keyword` et le pays
@@ -25,7 +27,12 @@ const CACHE_PREFIX = 'recherche-mot-cle';
 
 export interface KeywordResult {
   id: string;
+  /** Titre complet donné par la source. */
   name: string;
+  /** Nom court (IA, ou règle simple) : celui qu'on affiche. Absent des recherches d'avant le 14 novembre. */
+  short_name?: string | null;
+  /** Niche vérifiée par l'IA en même temps que le nom court. */
+  niche_checked?: boolean;
   niche: NicheId | null;
   category: string[];
   shop_name: string;
@@ -52,6 +59,8 @@ export interface SearchRecord {
   results: KeywordResult[];
   /** Produits écartés (autre devise, sans commission…). */
   skipped: number;
+  /** La source n'a pas répondu : résultats tirés du radar du jour. */
+  fallback?: boolean;
 }
 
 /** Mot-clé nettoyé (espaces, casse, 80 caractères) ; null s'il est trop court. */
@@ -113,7 +122,7 @@ async function searchCatalog(keyword: string, region: RegionId, repo: Repo): Pro
   const words = fold(keyword).split(' ').filter(Boolean);
   const { products } = await getLiveCatalog(repo, new Date(), region);
   return products
-    .filter((p) => words.every((w) => fold(`${p.name} ${p.shop_name}`).includes(w)))
+    .filter((p) => words.every((w) => fold(`${p.name} ${p.short_name ?? ''} ${p.shop_name}`).includes(w)))
     .sort((a, b) => b.latest_score - a.latest_score)
     .slice(0, 10)
     .map((p) => {
@@ -121,6 +130,8 @@ async function searchCatalog(keyword: string, region: RegionId, repo: Repo): Pro
       return {
         id: p.id,
         name: p.name,
+        short_name: displayName(p),
+        niche_checked: Boolean(p.niche_checked),
         niche: p.niche,
         category: m.category,
         shop_name: p.shop_name,
@@ -138,6 +149,49 @@ async function searchCatalog(keyword: string, region: RegionId, repo: Repo): Pro
         review_count: m.review_count,
       };
     });
+}
+
+/**
+ * Noms courts et niches des résultats : ceux déjà en base pour les produits connus, sinon un appel à l'IA par recherche
+ * (le résultat est gardé avec la recherche, 24 h, partagé entre tous). Sans IA : la règle simple, niche d'origine.
+ */
+export async function labelResults(results: KeywordResult[], repo: Repo): Promise<void> {
+  if (!results.length) return;
+  const known = new Map((await repo.getProducts(results.map((r) => r.id))).map((p) => [p.id, p]));
+  const missing: KeywordResult[] = [];
+  for (const r of results) {
+    const product = known.get(r.id);
+    if (product?.short_name) {
+      r.short_name = product.short_name;
+      if (product.niche_checked) {
+        r.niche = product.niche;
+        r.niche_checked = true;
+      }
+    } else missing.push(r);
+  }
+  if (!missing.length) return;
+  try {
+    const { labels, simulated } = await labelProducts(
+      missing.map((r) => ({
+        id: r.id,
+        name: r.name,
+        description: r.category.length ? `Catégorie TikTok Shop : ${r.category.join(' › ')}` : '',
+        niche: r.niche ?? 'maison',
+      })),
+    );
+    const byId = new Map(labels.map((l) => [l.id, l]));
+    for (const r of missing) {
+      const label = byId.get(r.id);
+      r.short_name = label?.short_name ?? heuristicShortName(r.name);
+      if (label && !simulated) {
+        r.niche = label.niche;
+        r.niche_checked = true;
+      }
+    }
+  } catch (error) {
+    console.warn('[recherche] noms courts', error instanceof Error ? error.message : error);
+    for (const r of missing) r.short_name = heuristicShortName(r.name);
+  }
 }
 
 export interface SearchSource {
@@ -158,13 +212,21 @@ export async function searchKeyword(
   const cached = (await repo.getProviderCache(key)) as { results?: KeywordResult[]; skipped?: number } | null;
   if (cached && Array.isArray(cached.results)) return { source: 'nexscope', results: cached.results, skipped: cached.skipped ?? 0 };
   const source = options.source ?? new NexscopeProvider();
-  const raw = await source.searchProducts(keyword, region);
+  let raw: Record<string, unknown>[];
+  try {
+    raw = await source.searchProducts(keyword, region);
+  } catch (error) {
+    // Source indisponible (crédits épuisés, panne) : on cherche dans le radar du jour plutôt que de ne rien rendre.
+    console.warn('[recherche] source indisponible, catalogue du jour', error instanceof Error ? error.message : error);
+    return { source: 'catalogue', results: await searchCatalog(keyword, region, repo), skipped: 0, fallback: true };
+  }
   const results: KeywordResult[] = [];
   for (const item of raw) {
     const mapped = mapKeywordResult(item, region);
     if (mapped && !results.some((r) => r.id === mapped.id)) results.push(mapped);
   }
   const skipped = raw.length - results.length;
+  await labelResults(results, repo);
   await repo.setProviderCache(key, { results, skipped }, new Date(Date.now() + SEARCH_CACHE_HOURS * 3_600_000).toISOString());
   return { source: 'nexscope', results, skipped };
 }
