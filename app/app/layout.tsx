@@ -98,7 +98,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       label: "Suivre",
       items: [
         { href: "/app/mes-produits", label: "Mes produits", icon: "produits" },
-        { href: "/app/gains", label: "Mes gains", icon: "gains" },
+        { href: "/app/gestionnaire", label: "Gestionnaire", icon: "gestionnaire" },
         {
           href: "/app/offres",
           label: "Propositions de marques",
@@ -115,7 +115,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     { href: "/app/radar", label: "Radar", icon: "radar" },
     { href: "/app/studio", label: "Studio", icon: "studio" },
     { href: "/app/mes-produits", label: "Produits", icon: "produits" },
-    { href: "/app/gains", label: "Gains", icon: "gains" },
+    { href: "/app/gestionnaire", label: "Gestion", icon: "gestionnaire" },
   ];
   const user: ShellUser = {
     firstName: profile.first_name ?? "Mon compte",

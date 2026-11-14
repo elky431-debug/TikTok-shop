@@ -25,14 +25,16 @@ import {
 import { forgetMapping, getMapping, importEarnings, saveMapping, setEarningsGoal } from '@/lib/v2/earnings-store';
 
 async function viewer() {
-  const { profile } = await requireOnboardedViewer('/app/gains');
+  const { profile } = await requireOnboardedViewer('/app/gestionnaire');
   if (!getPlan(profile.plan).earnings) redirect('/app/passer-pro');
   return profile;
 }
 
+const BASE = '/app/gestionnaire?onglet=commissions';
+
 const done = (query: string): never => {
-  revalidatePath('/app/gains');
-  redirect(`/app/gains?${query}`);
+  revalidatePath('/app/gestionnaire');
+  redirect(`${BASE}&${query}`);
 };
 
 /** Saisie d'un gain, pour une vidéo ou pour le produit entier. */
@@ -42,7 +44,7 @@ export async function addEarningAction(formData: FormData) {
   const date = parseDate(String(formData.get('date') ?? ''));
   const amount = parseAmount(String(formData.get('montant') ?? ''));
   const product = String(formData.get('produit') ?? '').trim();
-  if (!date || amount === null || !product) redirect('/app/gains?erreur=saisie#ajouter');
+  if (!date || amount === null || !product) redirect(`${BASE}&erreur=saisie#ajouter`);
   const sales = Number(formData.get('ventes'));
   const saved = await repo.listSavedProducts(profile.id);
   const products = await repo.getProducts(saved.map((s) => s.product_id));
@@ -76,10 +78,10 @@ export async function startImportAction(formData: FormData) {
   const repo = getRepo();
   const file = formData.get('fichier');
   const text = file instanceof File && file.size ? await file.text() : String(formData.get('texte') ?? '');
-  if (!text.trim()) redirect('/app/gains?erreur=fichier#importer');
-  if (text.length > MAX_IMPORT_BYTES) redirect('/app/gains?erreur=taille#importer');
+  if (!text.trim()) redirect(`${BASE}&erreur=fichier#importer`);
+  if (text.length > MAX_IMPORT_BYTES) redirect(`${BASE}&erreur=taille#importer`);
   const table = readCsv(text);
-  if (table.headers.length < 2 || !table.rows.length) redirect('/app/gains?erreur=vide#importer');
+  if (table.headers.length < 2 || !table.rows.length) redirect(`${BASE}&erreur=vide#importer`);
   const memorized = await getMapping(repo, profile.id);
   if (memorized && formData.get('revoir') !== 'on' && mappingFits(memorized.data.mapping, table.headers)) {
     const result = parseEarningsCsv(text, memorized.data.mapping);
@@ -94,7 +96,7 @@ export async function startImportAction(formData: FormData) {
     text,
     file_name: file instanceof File && file.size ? file.name.slice(0, 120) : null,
   });
-  redirect(`/app/gains/import?fichier=${pending.id}`);
+  redirect(`/app/gestionnaire/import?fichier=${pending.id}`);
 }
 
 /** Deuxième étape : colonnes choisies par l'utilisateur, import, puis correspondance mémorisée pour la prochaine fois. */
@@ -103,18 +105,18 @@ export async function confirmImportAction(formData: FormData) {
   const repo = getRepo();
   const id = String(formData.get('fichier') ?? '');
   const pending = await repo.getRecord<PendingImport>(profile.id, id);
-  if (!pending || pending.kind !== PENDING_IMPORT_KIND) redirect('/app/gains?erreur=expire#importer');
+  if (!pending || pending.kind !== PENDING_IMPORT_KIND) redirect(`${BASE}&erreur=expire#importer`);
   const mapping: CsvMapping = {};
   for (const field of EARNING_FIELDS) {
     const column = String(formData.get(`col_${field.key}`) ?? '');
     if (column) mapping[field.key] = column;
   }
   const missing = EARNING_FIELDS.filter((f) => f.required && !mapping[f.key]);
-  if (missing.length) redirect(`/app/gains/import?fichier=${id}&erreur=obligatoires`);
+  if (missing.length) redirect(`/app/gestionnaire/import?fichier=${id}&erreur=obligatoires`);
   const columns = Object.values(mapping);
-  if (new Set(columns).size !== columns.length) redirect(`/app/gains/import?fichier=${id}&erreur=doublon`);
+  if (new Set(columns).size !== columns.length) redirect(`/app/gestionnaire/import?fichier=${id}&erreur=doublon`);
   const result = parseEarningsCsv(pending.data.text, mapping);
-  if (!result.rows.length) redirect(`/app/gains/import?fichier=${id}&erreur=aucune`);
+  if (!result.rows.length) redirect(`/app/gestionnaire/import?fichier=${id}&erreur=aucune`);
   const { added, duplicates } = await importEarnings(repo, profile.id, result.rows);
   await saveMapping(repo, profile.id, mapping, readCsv(pending.data.text).headers);
   await repo.deleteRecord(profile.id, pending.id);
@@ -137,7 +139,7 @@ export async function setEarningsGoalAction(formData: FormData) {
   const profile = await viewer();
   const raw = String(formData.get('objectif') ?? '').trim();
   const cents = raw ? parseAmount(raw) : 0;
-  if (cents === null || cents < 0) redirect('/app/gains?erreur=objectif#objectif-mois');
+  if (cents === null || cents < 0) redirect(`${BASE}&erreur=objectif#objectif-mois`);
   await setEarningsGoal(getRepo(), profile.id, cents);
   done('ok=objectif#objectif-mois');
 }

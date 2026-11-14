@@ -35,7 +35,7 @@ export function WeeklyPreview({ content }: { content: WeeklyRecapContent }) {
           <dd className="num text-2xl font-bold">{content.gains ? formatEuros(content.gains.cents) : '—'}</dd>
           <dd className="text-xs text-muted">
             {content.gains ? (
-              <Link href="/app/gains" className="underline underline-offset-2">
+              <Link href="/app/gestionnaire?onglet=commissions" className="underline underline-offset-2">
                 {plural(content.gains.entries, 'ligne')}
               </Link>
             ) : (

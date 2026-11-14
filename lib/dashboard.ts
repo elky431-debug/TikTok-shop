@@ -262,7 +262,7 @@ export async function loadDashboard(repo: Repo, profile: Profile, now = new Date
       at: g.created_at,
       kind: 'gain' as const,
       text: `Gain saisi : ${formatEuros(g.data.amount_cents)} sur ${g.data.product_name}`,
-      href: '/app/gains',
+      href: '/app/gestionnaire?onglet=commissions',
     })),
     ...boards.flatMap((b) =>
       b.items

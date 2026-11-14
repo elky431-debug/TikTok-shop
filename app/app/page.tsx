@@ -300,7 +300,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Re
               className="mt-6"
               icon={<Euro className="h-5 w-5" strokeWidth={1.75} />}
               title="Ta courbe apparaîtra ici"
-              action={<LinkButton href="/app/gains" arrow>Saisir mes gains</LinkButton>}
+              action={<LinkButton href="/app/gestionnaire?onglet=commissions" arrow>Saisir mes gains</LinkButton>}
             >
               Note tes commissions (ou importe ton relevé TikTok Shop) : tu verras tes gains et tes ventes sur 7, 30 et 90 jours.
             </EmptyState>
@@ -511,7 +511,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Re
             { label: 'Radar du jour', href: '/app/radar', icon: RadarIcon },
             { label: 'Studio de scripts', href: '/app/studio', icon: PenLine },
             { label: 'Mes produits', href: '/app/mes-produits', icon: Star },
-            { label: 'Mes gains', href: '/app/gains', icon: Euro },
+            { label: 'Gestionnaire', href: '/app/gestionnaire', icon: Euro },
           ].map((item, idx) => (
             <Link
               key={item.href}

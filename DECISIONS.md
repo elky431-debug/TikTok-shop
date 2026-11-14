@@ -1160,3 +1160,22 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      (le pourquoi en info-bulle), puis « Ta version » et « Ouvrir dans le studio » ; seconde par seconde et classement
      repliés ; « Mes inspirations » en grille de cartes à couverture. Domaines ouverts dans l'environnement de la
      session : www.tiktok.com et developers.tiktok.com (Netlify n'a pas de filtre sortant).
+201. **Interface, étape 4 : « Mes gains » devient le Gestionnaire** (14 novembre). Copie du gestionnaire de boutique
+     d'EtSmart (`src/components/dashboard/DashboardStoreManager.tsx`) : barre latérale (titre, « Tableau de bord »,
+     liste, bouton pointillé d'ajout), en-tête à icône, onglets en pilule, choix de période (7 jours, 30 jours, par mois
+     avec flèches, depuis le début), quatre cartes de chiffres en dégradé, « Évolution annuelle » (aire, flèches
+     d'année) et anneau avec total au centre, tableaux à recherche + filtre « Statut » + bouton teinté, pastille de
+     statut qui avance au clic, calendrier du mois avec détail du jour, fenêtres modales à en-tête teinté et halo. Adapté
+     à l'affilié : les boutiques deviennent les produits suivis (pastille de couleur du statut), les commandes deviennent
+     les commissions, le camembert par pays devient « Produits par statut ». Statuts : à lancer (produit tout juste
+     suivi), échantillon demandé, échantillon reçu, en tournage, en ligne, arrêté ; sans choix, il est déduit des vidéos.
+     Onglets : Gestion, Échantillons (demandes, relances, réceptions ; « À relancer » après 7 jours sans réponse),
+     Vidéos (lien, date, vues, ventes saisies, ajoutées au tableau de 20 du produit), Commissions (saisie, import CSV,
+     objectif du mois, export, graphique), Calendrier (lundi en premier, à la française). Données : rien n'est migré ni
+     copié, donc rien ne peut se perdre : les commissions restent les fiches `gain` de « Mes gains », les vidéos restent
+     dans le tableau de publication de chaque produit ; seuls `suivi_produit` (statut et historique) et `echantillon`
+     sont nouveaux. `/app/gains` et `/app/gains/import` redirigent (paramètres gardés). Plans inchangés : le gestionnaire
+     est ouvert à tout abonnement (produits, échantillons, vidéos), les commissions restent dans Pro et Elite (cartes et
+     graphique verrouillés en Starter, données jamais lues côté serveur). Barre latérale : « Gestionnaire » (icône
+     boutique) à la place de « Mes gains » ; tableau de bord, récap de la semaine et pages hors ligne pointent vers lui.
+     Couleurs des graphiques lues dans le thème (`useStageColors`), un attribut SVG ne lisant pas les variables CSS.
