@@ -23,18 +23,26 @@ test('génération de scripts (Starter) : 5 formats, 10 accroches, 3 scripts, r�
   await expect(page).toHaveURL(/\/app\/studio\/[0-9a-f-]{36}/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(productName);
   await expect(page.locator('#accroches li')).toHaveCount(10);
-  await expect(page.getByText(/^Script \d · /)).toHaveCount(3);
+  await expect(page.getByRole('tab', { name: /^Script \d/ })).toHaveCount(3);
   await expect(page.getByText(/#publicité/).first()).toBeVisible();
+  // Onglet 2 : son texte s'affiche ; « Détails du tournage » reste replié.
+  await page.getByRole('tab', { name: /^Script 2/ }).click();
+  await expect(page.locator('#script-2')).toBeVisible();
+  await expect(page.locator('#script-1')).toBeHidden();
+  await expect(page.locator('#script-2').getByRole('button', { name: 'Copier le script' })).toBeVisible();
   await expect(page.getByText('Mode démo : scripts simulés')).toBeVisible();
 
   // Régénérer la première accroche
-  const firstHook = page.locator('#accroches li').first().locator('p').first();
+  const firstHook = page.locator('#accroches [data-hook]').first();
   const before = await firstHook.textContent();
   await page.getByRole('button', { name: 'Nouvelle accroche à la place de la n°1', exact: true }).click();
   await expect(page).toHaveURL(/nouvelle=0/);
   await expect(firstHook).not.toHaveText(before ?? '');
 
-  // Copier puis garder
+  // Copier une accroche d'un clic, tout copier depuis le menu, puis garder (étoile)
+  await page.locator('#accroches li').nth(1).getByRole('button', { name: /^Copier l’accroche 2/ }).click();
+  await expect(page.getByRole('button', { name: 'Accroche 2 copiée' })).toBeVisible();
+  await page.getByRole('button', { name: 'Plus d’actions' }).click();
   await page.getByRole('button', { name: 'Copier tout' }).click();
   await expect(page.getByText('Tout est copié')).toBeVisible();
   await page.getByRole('button', { name: 'Garder ce script' }).click();

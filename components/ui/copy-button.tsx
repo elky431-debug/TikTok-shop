@@ -16,7 +16,8 @@ export function CopyButton({
   label?: string;
   copiedLabel?: string;
   className?: string;
-  size?: 'sm' | 'icon';
+  /** « bare » : aucune forme imposée (ligne de menu), tout vient de className. */
+  size?: 'sm' | 'md' | 'icon' | 'bare';
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -40,9 +41,11 @@ export function CopyButton({
       type="button"
       onClick={copy}
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full font-semibold transition-colors',
-        size === 'icon' ? 'h-9 w-9 justify-center hover:bg-surface' : 'h-9 border border-line px-3.5 text-sm hover:bg-surface',
-        copied && 'border-gain/40 text-gain',
+        size !== 'bare' && 'inline-flex items-center gap-1.5 rounded-full font-semibold transition-colors',
+        size === 'icon' && 'h-9 w-9 justify-center hover:bg-surface',
+        size === 'md' && 'h-11 justify-center rounded-xl border border-line-strong px-6 text-sm hover:bg-surface',
+        size === 'sm' && 'h-9 border border-line px-3.5 text-sm hover:bg-surface',
+        copied && (size === 'bare' ? 'text-gain' : 'border-gain/40 text-gain'),
         className,
       )}
       aria-label={size === 'icon' ? (copied ? copiedLabel : label) : undefined}

@@ -1,20 +1,24 @@
 import type { Metadata } from 'next';
-import { BadgeCheck, Download, Layers, Star } from 'lucide-react';
+import { BadgeCheck, Download, Layers, PenLine, Star } from 'lucide-react';
 import Link from 'next/link';
+import { ProductImage } from '@/components/product/product-image';
+import { FormatIcon } from '@/components/studio/format-icon';
 import { StudioNav } from '@/components/studio/studio-nav';
-import { Card, Callout, EmptyState, PageHeader } from '@/components/ui/surface';
+import { Card, Callout, EmptyState, PageHeader, SectionTitle } from '@/components/ui/surface';
 import { requireOnboardedViewer } from '@/lib/auth/session';
-import { angleLabel, formatLabel, toneLabel } from '@/lib/ai/formats';
+import { formatLabel } from '@/lib/ai/formats';
+import { getRepo } from '@/lib/db';
+import type { Product } from '@/lib/db/types';
+import { cheapestPlanWith, getPlan, isUnlimited } from '@/lib/plans';
+import { fallbackImageUrl } from '@/lib/product-image';
+import { displayName, shortLabel } from '@/lib/product-name';
 import { getUsageToday, latestSettings, listStudioProducts, studioRights } from '@/lib/studio';
 import { collectFeedback } from '@/lib/studio/feedback';
 import { listDocs, listHistory, type HistoryItem } from '@/lib/studio/store';
 import { getStyle } from '@/lib/studio/style';
-import { cn, formatRelative } from '@/lib/utils';
-import { StudioForm } from './studio-form';
-import { cheapestPlanWith, getPlan, isUnlimited } from '@/lib/plans';
-import { getRepo } from '@/lib/db';
+import { cn, formatEuros, formatPercent, formatRelative } from '@/lib/utils';
 import { readStudioDraft } from '@/lib/v2/studio-draft';
-import { shortLabel } from '@/lib/product-name';
+import { StudioForm, type StudioProductOption } from './studio-form';
 
 export const metadata: Metadata = { title: 'Studio de scripts' };
 
@@ -26,13 +30,33 @@ const FILTERS = [
 
 const PAGE = 30;
 
+function toOption(p: Product): StudioProductOption {
+  return {
+    id: p.id,
+    name: displayName(p),
+    image: p.image_url,
+    fallback: fallbackImageUrl(p.id, p.niche),
+    price: formatEuros(p.price_cents),
+    commission: p.commission_rate > 0 ? formatPercent(p.commission_rate) : null,
+  };
+}
+
 export default async function StudioPage({
   searchParams,
 }: {
-  searchParams: { produit?: string; gardes?: string; vendu?: string; supprime?: string; plus?: string; brouillon?: string; erreur?: string };
+  searchParams: {
+    produit?: string;
+    gardes?: string;
+    vendu?: string;
+    supprime?: string;
+    plus?: string;
+    brouillon?: string;
+    erreur?: string;
+  };
 }) {
   const { profile } = await requireOnboardedViewer('/app/studio');
   const rights = studioRights(profile.plan);
+  const repo = getRepo();
   const [products, usage, history, docs, style, settings, draft] = await Promise.all([
     listStudioProducts(profile),
     getUsageToday(profile),
@@ -40,7 +64,7 @@ export default async function StudioPage({
     listDocs(profile.id),
     rights.personalStyle ? getStyle(profile.id) : Promise.resolve(null),
     latestSettings(profile),
-    readStudioDraft(getRepo(), profile.id, searchParams.brouillon),
+    readStudioDraft(repo, profile.id, searchParams.brouillon),
   ]);
   const filter = searchParams.gardes === '1' ? 'gardes' : searchParams.vendu === '1' ? 'vendu' : 'tous';
   const filtered = history.filter((h) => (filter === 'gardes' ? h.saved : filter === 'vendu' ? h.sold : true));
@@ -48,13 +72,14 @@ export default async function StudioPage({
   const all = [...products.today, ...products.saved];
   const selected = all.some((p) => p.id === searchParams.produit) ? searchParams.produit : undefined;
   const feedbackCount = collectFeedback(docs).best.length;
+  // Vignettes de l'historique : produits déjà chargés, puis les autres en une requête.
+  const known = new Map(all.map((p) => [p.id, p]));
+  const missing = [...new Set(shown.map((h) => h.product_id))].filter((id) => !known.has(id));
+  if (missing.length) for (const p of await repo.getProducts(missing)) known.set(p.id, p);
 
   return (
     <div>
-      <PageHeader eyebrow="Créer"
-        title="Studio de scripts"
-        description="10 accroches et 3 scripts complets, plan par plan, écrits pour ton style. Tu choisis, tu tournes avec le téléprompteur."
-      />
+      <PageHeader eyebrow="Créer" title="Studio de scripts" description="10 accroches et 3 scripts, prêts à tourner." />
       <StudioNav active="ecrire" />
 
       {searchParams.erreur ? (
@@ -68,65 +93,81 @@ export default async function StudioPage({
         </Callout>
       ) : null}
 
-      <Card className="sm:p-6">
+      <Card className="sm:p-8">
         <StudioForm
-          today={products.today.map((p) => ({ id: p.id, name: p.name }))}
-          saved={products.saved.map((p) => ({ id: p.id, name: p.name }))}
+          today={products.today.map(toOption)}
+          saved={products.saved.map(toOption)}
           selected={selected}
           remaining={usage.remaining}
           disabled={usage.remaining <= 0}
           settings={settings}
           style={!rights.personalStyle ? 'verrouille' : !style ? 'absent' : style.data.enabled ? 'actif' : 'inactif'}
           feedbackCount={feedbackCount}
-          draft={draft ? { id: draft.id, title: draft.title, lines: draft.lines, format: draft.format } : null}
+          draft={
+            draft
+              ? {
+                  id: draft.id,
+                  title: draft.title,
+                  lines: draft.lines,
+                  format: draft.format,
+                }
+              : null
+          }
           formats={rights.formats}
           formatsPlan={cheapestPlanWith((p) => p.scriptFormats > getPlan(profile.plan).scriptFormats).name}
           unlimited={isUnlimited(profile.plan, 'scriptsPerDay')}
         />
       </Card>
 
-      <section className="mt-10" aria-labelledby="historique">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <h2 id="historique" className="text-xl">
-            Historique
-          </h2>
-          <div className="flex flex-wrap items-center gap-1 text-sm">
-            {FILTERS.map((f) => (
-              <Link
-                key={f.id}
-                href={f.href}
-                aria-current={filter === f.id ? 'page' : undefined}
-                className={cn('rounded-full px-3 py-1.5 font-semibold', filter === f.id ? 'bg-surface text-fg' : 'text-muted hover:text-fg')}
-              >
-                {f.label}
-              </Link>
-            ))}
-            {rights.export ? (
-              <a href="/app/studio/export" className="ml-1 inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 font-semibold hover:bg-surface">
-                <Download className="h-4 w-4" aria-hidden="true" />
-                Exporter tout
-              </a>
-            ) : null}
-          </div>
-        </div>
+      <section className="mt-12" aria-labelledby="historique">
+        <SectionTitle
+          id="historique"
+          action={
+            <div className="flex flex-wrap items-center gap-1 text-sm">
+              {FILTERS.map((f) => (
+                <Link
+                  key={f.id}
+                  href={f.href}
+                  aria-current={filter === f.id ? 'page' : undefined}
+                  className={cn('rounded-full px-3 py-1.5 font-semibold', filter === f.id ? 'bg-surface text-fg' : 'text-muted hover:text-fg')}
+                >
+                  {f.label}
+                </Link>
+              ))}
+              {rights.export ? (
+                <a
+                  href="/app/studio/export"
+                  className="ml-1 flex h-8 w-8 items-center justify-center rounded-full border border-line hover:bg-surface"
+                  aria-label="Exporter tout"
+                  title="Exporter tout"
+                >
+                  <Download className="h-4 w-4" aria-hidden="true" />
+                </a>
+              ) : null}
+            </div>
+          }
+        >
+          Historique
+        </SectionTitle>
 
         {shown.length === 0 ? (
-          <EmptyState title={filter === 'gardes' ? 'Aucun favori' : filter === 'vendu' ? 'Aucun script qui a vendu, pour l’instant' : 'Pas encore de scripts'}>
-            {filter === 'gardes'
-              ? 'Ouvre un script et appuie sur « Garder ce script » pour le retrouver ici.'
-              : filter === 'vendu'
-                ? 'Après avoir posté une vidéo, ouvre son script et réponds à « Il a vendu ? ». Ces scripts servent d’exemple aux suivants.'
-                : 'Choisis un produit, un format et tes réglages ci-dessus, puis appuie sur « Écrire mes scripts ».'}
+          <EmptyState
+            icon={
+              filter === 'gardes' ? <Star className="h-5 w-5" /> : filter === 'vendu' ? <BadgeCheck className="h-5 w-5" /> : <PenLine className="h-5 w-5" />
+            }
+            title={filter === 'gardes' ? 'Aucun favori' : filter === 'vendu' ? 'Aucun script qui a vendu' : 'Pas encore de scripts'}
+          >
+            {filter === 'gardes' ? 'L’étoile d’un script le range ici.' : filter === 'vendu' ? 'Réponds « Il a vendu ? » sous un script.' : null}
           </EmptyState>
         ) : (
-          <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-raised">
+          <ul className="grid gap-2 sm:grid-cols-2">
             {shown.map((item) => (
-              <HistoryRow key={item.id} item={item} />
+              <HistoryRow key={item.id} item={item} product={known.get(item.product_id) ?? null} />
             ))}
           </ul>
         )}
         {filtered.length > shown.length ? (
-          <p className="mt-3 text-center">
+          <p className="mt-4 text-center">
             <Link
               href={`/app/studio?${filter === 'gardes' ? 'gardes=1&' : filter === 'vendu' ? 'vendu=1&' : ''}plus=1#historique`}
               className="text-sm font-semibold text-cyan-ink underline underline-offset-2"
@@ -140,20 +181,24 @@ export default async function StudioPage({
   );
 }
 
-function HistoryRow({ item }: { item: HistoryItem }) {
-  const details = [
-    formatLabel(item.format),
-    item.settings ? `${item.settings.duration} s` : null,
-    item.settings ? toneLabel(item.settings.tone).toLowerCase() : null,
-    item.settings && item.settings.angle !== 'varie' ? angleLabel(item.settings.angle).toLowerCase() : null,
-  ].filter(Boolean);
+function HistoryRow({ item, product }: { item: HistoryItem; product: Product | null }) {
   return (
     <li>
-      <Link href={`/app/studio/${item.id}`} className="flex items-center gap-3 px-4 py-3.5 hover:bg-surface">
+      <Link
+        href={`/app/studio/${item.id}`}
+        className="group flex items-center gap-3 rounded-2xl border border-line bg-raised p-2.5 pr-4 transition-[border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-line-strong"
+      >
+        <ProductImage
+          src={product?.image_url ?? ''}
+          fallback={fallbackImageUrl(item.product_id, product?.niche ?? 'maison')}
+          alt=""
+          className="h-12 w-12 rounded-xl"
+        />
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold">{shortLabel(item.product_name)}</p>
-          <p className="truncate text-sm text-muted">
-            {details.join(' · ')} · {formatRelative(item.generated_at)}
+          <p className="flex items-center gap-1.5 truncate text-xs text-muted">
+            <FormatIcon format={item.format} className="h-3.5 w-3.5 shrink-0" />
+            {formatLabel(item.format)} · {formatRelative(item.generated_at)}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">

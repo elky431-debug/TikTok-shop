@@ -1124,3 +1124,18 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      e-mails, Discord, notifications) ; le titre complet n'apparaît que dans la fiche produit, replié, et dans l'export
      CSV (dernière colonne). Les invites de l'IA gardent le titre complet (plus d'informations). Le code accepte une base
      sans les nouvelles colonnes (rien n'est écrit tant que la migration n'est pas passée).
+199. **Interface, étape 2 : studio de scripts simplifié** (14 novembre). Page de choix visuelle : le produit choisi en
+     carte (image, nom court, prix, commission), « Changer » ouvre une grille d'images ; les 8 formats en cartes illustrées
+     (icône et titre, l'aide passe en info-bulle native, cadenas et plan sur les formats fermés) ; durée, ton et angle
+     repliés dans « Réglages », dont le résumé reste visible. Page de résultat : en-tête avec image, nom court, prix et
+     commission, une ligne discrète (format, durée, date) ; l'étoile remplace « Garder ce script » ; « Copier tout »,
+     « Tout en PDF », « Autres scripts sur ce produit » et « Supprimer » passent dans un menu « … ». Les 10 accroches en
+     liste compacte : un clic sur la ligne la copie, le bouton « nouvelle accroche » n'apparaît qu'au survol, au focus ou
+     sur la ligne touchée ; la durée à l'oral disparaît. Les 3 scripts en onglets (durée en pastille) : seul le texte dit
+     s'affiche, en grand, moment par moment ; « On voit », texte à l'écran, plans de coupe, appel à l'action, légende et
+     hashtags sont repliés dans « Détails du tournage ». Seule la mention légale reste visible sous le texte (une ligne :
+     « Collaboration commerciale » à l'écran, #publicité en légende), parce qu'elle est obligatoire. Deux boutons en
+     évidence : « Téléprompteur » et « Copier le script ». Retouches, export et traduction en petits boutons discrets ;
+     un export ou une traduction fermés par le plan montrent un cadenas, et la limite ne s'affiche qu'au clic
+     (`LockedButton`). Phrases d'explication retirées (compteur de retouches, rappels sur les notes, aide des formats).
+     Briques réutilisables pour la suite : `MoreMenu`, `LockedButton`, `InfoTip`, `FormatIcon`.

@@ -3,7 +3,7 @@
 import { ChevronLeft, ChevronRight, Minus, MonitorPlay, Pause, Play, Plus, RotateCcw, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { buttonClasses, type ButtonVariant } from '@/components/ui/button';
+import { buttonClasses, type ButtonSize, type ButtonVariant } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
   DEFAULT_SIZE_INDEX,
@@ -35,12 +35,14 @@ export function Teleprompter({
   lines,
   label = 'Téléprompteur',
   variant = 'primary',
+  size = 'sm',
   className,
 }: {
   title: string;
   lines: string[];
   label?: string;
   variant?: ButtonVariant;
+  size?: ButtonSize;
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -61,7 +63,7 @@ export function Teleprompter({
 
   return (
     <>
-      <button ref={trigger} type="button" onClick={start} className={buttonClasses(variant, 'sm', className)}>
+      <button ref={trigger} type="button" onClick={start} className={buttonClasses(variant, size, className)}>
         <MonitorPlay className="h-4 w-4" aria-hidden="true" />
         {label}
       </button>
