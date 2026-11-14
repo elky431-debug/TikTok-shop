@@ -1,15 +1,18 @@
 /** @jsxRuntime automatic */
 /** @jsxImportSource react */
-import { BRAND_SPLIT } from '@/lib/brand';
+import { BRAND } from '@/lib/brand';
+import { LOGO_DATA_URI, LOGO_RATIO } from '@/lib/brand-images';
 
 /**
- * Visuels de partage générés par `ImageResponse` (next/og, rendu par Satori) : fond noir, dégradé cyan → rose,
- * logo en deux tons. Satori n'accepte que des boîtes flex et un sous-ensemble du CSS ; la police est celle fournie
- * par next/og (Noto Sans) : Sora n'existe qu'en woff2, format que Satori ne lit pas.
- * Aucun chiffre de gains, aucune promesse : seulement ce que fait l'outil.
+ * Visuels de partage générés par `ImageResponse` (next/og, rendu par Satori) : fond blanc comme le site, logo définitif
+ * en image (tel quel : ses lettres noires ne se liraient pas sur fond noir), dégradé cyan → rose. Satori n'accepte que
+ * des boîtes flex et un sous-ensemble du CSS ; la police est celle fournie par next/og (Noto Sans) : Sora n'existe
+ * qu'en woff2, format que Satori ne lit pas. Aucun chiffre de gains, aucune promesse : seulement ce que fait l'outil.
  */
-export const CYAN = '#25F4EE';
-export const PINK = '#FE2C55';
+export const CYAN = '#00777A';
+export const PINK = '#C8103F';
+export const INK = '#161823';
+export const MUTED = '#5F6068';
 export const GRADIENT = `linear-gradient(90deg, ${CYAN} 0%, ${PINK} 100%)`;
 
 export const SHARE_FORMATS = {
@@ -56,26 +59,15 @@ export function ShareVisual({
         flexDirection: 'column',
         justifyContent: 'space-between',
         padding: pad,
-        backgroundColor: '#000000',
-        backgroundImage: `radial-gradient(circle at 12% 0%, rgba(37,244,238,0.22), transparent 45%), radial-gradient(circle at 95% ${tall ? '60%' : '100%'}, rgba(254,44,85,0.24), transparent 50%)`,
-        color: '#FFFFFF',
+        backgroundColor: '#FFFFFF',
+        backgroundImage: `radial-gradient(circle at 12% 0%, rgba(37,244,238,0.16), transparent 45%), radial-gradient(circle at 95% ${tall ? '60%' : '100%'}, rgba(254,44,85,0.12), transparent 50%)`,
+        color: INK,
         fontFamily: 'sans-serif',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: Math.round(16 * scale) }}>
-        <div
-          style={{
-            width: Math.round(44 * scale),
-            height: Math.round(44 * scale),
-            borderRadius: Math.round(12 * scale),
-            backgroundImage: GRADIENT,
-            transform: 'rotate(45deg) scale(0.72)',
-          }}
-        />
-        <div style={{ display: 'flex', fontSize: Math.round(40 * scale), letterSpacing: -1 }}>
-          <span style={{ color: '#FFFFFF' }}>{BRAND_SPLIT[0]}</span>
-          <span style={{ color: PINK }}>{BRAND_SPLIT[1]}</span>
-        </div>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        {/* eslint-disable-next-line @next/next/no-img-element -- Satori n'accepte que <img> */}
+        <img src={LOGO_DATA_URI} alt={BRAND} height={Math.round(52 * scale)} width={Math.round(52 * scale * LOGO_RATIO)} />
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap }}>
@@ -88,7 +80,7 @@ export function ShareVisual({
         </div>
         <div style={{ display: 'flex', width: Math.round(220 * scale), height: Math.round(8 * scale), borderRadius: 8, backgroundImage: GRADIENT }} />
         {subtitle ? (
-          <div style={{ display: 'flex', fontSize: subtitleSize, lineHeight: 1.35, color: '#B6B7BD', maxWidth: Math.round(980 * scale) }}>
+          <div style={{ display: 'flex', fontSize: subtitleSize, lineHeight: 1.35, color: MUTED, maxWidth: Math.round(980 * scale) }}>
             {subtitle}
           </div>
         ) : null}
@@ -100,6 +92,7 @@ export function ShareVisual({
                 padding: `${Math.round(14 * scale)}px ${Math.round(26 * scale)}px`,
                 borderRadius: Math.round(16 * scale),
                 border: `${Math.max(2, Math.round(3 * scale))}px solid ${PINK}`,
+                color: INK,
                 fontSize: badgeSize,
                 letterSpacing: 2,
               }}
@@ -110,7 +103,7 @@ export function ShareVisual({
         ) : null}
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: Math.round(24 * scale), color: '#8A8B91' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: Math.round(24 * scale), color: MUTED }}>
         <span>{footer ?? 'TikTok Shop France · en français'}</span>
       </div>
     </div>

@@ -52,7 +52,7 @@ export const IOS_SPLASH_SCREENS: Array<[number, number, number]> = [
 
 /**
  * Réglages iOS de l'appli ajoutée à l'écran d'accueil : titre, barre d'état noire, écrans de démarrage (une image par
- * taille d'écran, choisie par media query). Images produites par `python3 scripts/pwa-icons.py`.
+ * taille d'écran, choisie par media query). Images produites par `python3 scripts/brand-assets.py` à partir du logo définitif.
  */
 export const appleWebApp = {
   capable: true,

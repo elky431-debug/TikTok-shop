@@ -1089,3 +1089,15 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      chaque carte affiche le prix mensuel équivalent (23,33 €, 39,99 €, 64,99 €), comme les CGV et l'e-mail de
      confirmation. Stripe : `npm run stripe:setup` crée les nouveaux prix et leur transfère les clés de recherche (les
      anciens sont archivés).
+196. **Logo définitif (14 novembre)** : l'image fournie est utilisée telle quelle, jamais redessinée ni recolorée
+     (`docs/brand/logo-source.jpg`). `scripts/brand-assets.py` fait les deux seuls ajustements permis : recadrage (les
+     morceaux d'interface du bas sont retirés) et fond rendu transparent. Méthode : chaque pixel est projeté sur la droite
+     fond → couleur du logo (rose ou encre, mesurées sur l'image) ; les aplats (≥ 96 % de couleur) gardent leurs pixels
+     d'origine, seuls les bords lissés reçoivent une transparence partielle et une couleur démélangée du fond (pas de
+     liseré blanc). Le T fléché est découpé dans la même image (composantes roses à gauche du « r », rien du « r »),
+     puis exporté en carré de 512 px transparent : favicon, Stripe. Appli installable : le même T sur fond blanc (iOS et
+     les icônes « maskable » refusent la transparence), badge Android en silhouette blanche (exigé par Android), écrans de
+     démarrage blancs avec le logo complet. Le site, l'appli (barre repliée : le T ; dépliée : le logo complet) et les
+     e-mails (image servie par le site, adresse absolue) affichent l'image. Les images de partage passent sur fond blanc :
+     les lettres noires du logo ne se liraient pas sur l'ancien fond noir. Thème noir (option du compte) : plaque blanche
+     derrière le logo complet, sans toucher à ses couleurs. Les captures du défilé de l'accueil ont été refaites.

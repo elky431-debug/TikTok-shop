@@ -28,8 +28,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { LogoMark } from '@/components/brand/logo';
-import { BRAND_SPLIT } from '@/lib/brand';
+import { LogoImage, LogoMark } from '@/components/brand/logo';
 import { cn } from '@/lib/utils';
 
 /**
@@ -118,12 +117,10 @@ export function AppSidebar({ sections, user }: { sections: NavSection[]; user: S
       <div className="relative flex h-full min-h-0 w-16 min-w-0 flex-col overflow-hidden border-r border-line-strong bg-bg transition-[width] duration-300 ease-out group-focus-within:w-64 group-hover:w-64">
         {/* Logo */}
         <div className="shrink-0 border-b border-line-strong p-4">
-          <Link href="/app" className="flex items-center gap-3" aria-label="Tracktout, tableau de bord">
-            <LogoMark size={28} />
-            <span className={cn(reveal, 'text-lg font-bold tracking-tight')}>
-              {BRAND_SPLIT[0]}
-              <span className="text-gradient">{BRAND_SPLIT[1]}</span>
-            </span>
+          <Link href="/app" className="flex h-8 items-center" aria-label="Tracktout, tableau de bord">
+            {/* Barre repliée : le T fléché ; dépliée : le logo complet (qui contient déjà le T). */}
+            <LogoMark size={28} className="group-focus-within:hidden group-hover:hidden" />
+            <LogoImage height={28} className="hidden group-focus-within:block group-hover:block" />
           </Link>
         </div>
 
@@ -234,12 +231,8 @@ export function AppMobileHeader({ sections, user }: { sections: NavSection[]; us
   return (
     <div className="fixed left-0 right-0 top-0 z-50 border-b border-line-strong bg-bg lg:hidden">
       <div className="flex h-16 items-center justify-between gap-2 px-4">
-        <Link href="/app" className="flex min-w-0 items-center gap-2" aria-label="Tracktout, tableau de bord">
-          <LogoMark size={28} />
-          <span className="text-lg font-bold tracking-tight">
-            {BRAND_SPLIT[0]}
-            <span className="text-gradient">{BRAND_SPLIT[1]}</span>
-          </span>
+        <Link href="/app" className="flex min-w-0 items-center" aria-label="Tracktout, tableau de bord">
+          <LogoImage height={28} />
         </Link>
         <div className="flex shrink-0 items-center gap-1.5">
           <NotificationsLink unread={user.unread} />

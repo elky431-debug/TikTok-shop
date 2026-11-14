@@ -113,8 +113,12 @@ d'EtSmart l'emporte (voir `DECISIONS.md`, refonte).
 - **Typo** : grand titre de l'accueil en gras serré (`tracking-tight`), centré, partie finale en
   italique et en dégradé (`.text-gradient-live`) ; titres de section sur deux lignes, la seconde en
   dégradé ; étiquettes en majuscules espacées (`.eyebrow`, `.eyebrow-category`) — voulues.
-- **Composants** : en-tête fixe flouté, logo à halo + nom en deux tons (« Track » blanc, « tout »
-  en dégradé) ; bouton principal rose arrondi 12 px avec flèche → (monte de 2 px, halo rose, flèche
+- **Logo** : le logo définitif fourni (T fléché rose, « rack » noir, « tout » rose), utilisé **tel quel** : jamais
+  redessiné ni recoloré. Fichiers dans `public/brand/` (logo complet, icône du T fléché en 512 px), favicon, icônes de
+  l'appli installable et écrans de démarrage générés par `python3 scripts/brand-assets.py` depuis
+  `docs/brand/logo-source.jpg` (recadrage et fond transparent seulement). Composants `LogoImage`, `LogoMark`, `Logo`
+  (`components/brand/logo.tsx`) ; en thème noir, plaque blanche derrière le logo complet.
+- **Composants** : en-tête fixe flouté, logo complet à gauche ; bouton principal rose arrondi 12 px avec flèche → (monte de 2 px, halo rose, flèche
   qui glisse au survol) ; bouton secondaire bordé ; pastille d'annonce avec point cyan qui pulse ;
   bandeau de chiffres en dégradé (faits vrais uniquement) ; cartes `.feature-card` (bordure dégradée au
   survol) avec `.icon-chip`.
@@ -124,7 +128,7 @@ d'EtSmart l'emporte (voir `DECISIONS.md`, refonte).
   des chiffres, apparitions au défilement (une fois), défilé de captures sous le titre (`components/public/screenshot-marquee.tsx`,
   images de `npm run screenshots:landing`).
   Toujours une version sans mouvement si `prefers-reduced-motion`.
-- **Signature** : le décalage cyan / rose façon logo TikTok reste réservé au logo et au score.
+- **Signature** : le décalage cyan / rose façon TikTok reste réservé au score.
 - **Appli** (refonte du 13 novembre, `DECISIONS.md` 164-176) : coque copiée d'EtSmart
   (`components/app/shell.tsx` : barre latérale 64 → 256 px en sections Accueil / Trouver / Créer / Suivre / Compte,
   en-tête et barre du bas sur téléphone), conteneur `max-w-7xl`, `PageHeader` à étiquette de section, cartes
@@ -160,6 +164,7 @@ npm run stripe:setup  # produits, prix, portail client (et webhook avec -- --web
 npm run discord:setup # commandes /lier /delier et adresse des interactions Discord
 npm run screenshots   # captures (voir scripts/screenshots.mjs)
 npm run screenshots:landing  # captures du défilé de l'accueil (public/landing/, compte de démo local)
+python3 scripts/brand-assets.py  # logo, icônes et écrans de démarrage depuis docs/brand/logo-source.jpg
 ```
 
 ## Où trouver quoi

@@ -189,6 +189,9 @@ npm run ai:sample
    - la **configuration du portail client** : changement de plan et de période (prorata), résiliation en fin de
      période avec un motif, changement de carte, factures.
    Il affiche `STRIPE_PORTAL_CONFIGURATION` à copier dans `.env.local` et sur Netlify.
+   Image de marque de Stripe (*Settings → Branding*) : icône `public/brand/tracktout-icone-512.png` (le T fléché, carré),
+   logo `public/brand/tracktout-logo.png` ; couleur d'accent `#E0144A`. Stripe ne permet pas de les régler par l'API
+   pour son propre compte : à faire une fois dans le tableau de bord.
 3. **Webhook**, une fois le site en ligne : `npm run stripe:setup -- --webhook` (avec `NEXT_PUBLIC_SITE_URL` = l’adresse
    publique) crée le point de terminaison `<NEXT_PUBLIC_SITE_URL>/api/stripe/webhook` avec ses 9 événements et écrit
    son secret dans `.env.local` (`STRIPE_WEBHOOK_SECRET`, jamais affiché) : copie-le sur Netlify. À la main, c’est

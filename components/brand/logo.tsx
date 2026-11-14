@@ -1,47 +1,53 @@
+/* eslint-disable @next/next/no-img-element -- fichiers PNG déjà à la bonne taille (scripts/brand-assets.py) */
 import Link from 'next/link';
-import { BRAND, BRAND_SPLIT } from '@/lib/brand';
+import { BRAND } from '@/lib/brand';
 import { cn } from '@/lib/utils';
 
-const SIZES = {
-  sm: { icon: 28, text: 'text-lg' },
-  md: { icon: 36, text: 'text-xl' },
-  lg: { icon: 52, text: 'text-2xl' },
-};
-
 /**
- * Icône du logo : un losange avec le décalage cyan / rose façon TikTok,
- * posée sur un halo lumineux comme le logo d'EtSmart. Le décalage est réservé au logo et au score.
+ * Logo définitif de Tracktout, utilisé tel quel (image fournie, recadrée, fond rendu transparent par
+ * `scripts/brand-assets.py`) : jamais redessiné ni recoloré. Les lettres « rack » étant noires, le thème noir (option du
+ * compte) pose le logo sur une plaque blanche plutôt que de toucher à ses couleurs.
  */
-export function LogoMark({ size = 36, className }: { size?: number; className?: string }) {
+const LOGO = { src: '/brand/tracktout-logo-480.png', width: 480, height: 116 };
+const MARK = '/brand/tracktout-icone-128.png';
+
+const HEIGHTS = { sm: 26, md: 32, lg: 44 } as const;
+
+/** Le logo complet (T fléché + « Tracktout »), à une hauteur donnée. */
+export function LogoImage({ height = 32, className }: { height?: number; className?: string }) {
   return (
-    <span
-      className={cn('relative inline-flex shrink-0 transition-transform duration-200 group-hover:rotate-[5deg] group-hover:scale-[1.08]', className)}
-      style={{ width: size, height: size }}
-      aria-hidden="true"
-    >
-      <span
-        className="absolute inset-0 scale-150 opacity-40 blur-xl"
-        style={{ background: 'var(--logo-halo)' }}
-      />
-      <svg viewBox="0 0 32 32" width={size} height={size} className="relative" style={{ filter: 'drop-shadow(0 0 8px var(--logo-shadow))' }}>
-        <path d="M16 3.5 27 14 16 28.5 5 14Z" style={{ fill: 'var(--cyan-hex)' }} transform="translate(-1.4 -1)" />
-        <path d="M16 3.5 27 14 16 28.5 5 14Z" style={{ fill: 'var(--pink-hex)' }} transform="translate(1.4 1)" />
-        <path d="M16 3.5 27 14 16 28.5 5 14Z" fill="rgb(var(--fg))" />
-        <path d="M11 14h10M16 3.5 13 14l3 14.5M16 3.5 19 14l-3 14.5" stroke="rgb(var(--bg))" strokeOpacity=".55" strokeWidth="1.1" fill="none" />
-      </svg>
-    </span>
+    <img
+      src={LOGO.src}
+      width={Math.round((height * LOGO.width) / LOGO.height)}
+      height={height}
+      alt={BRAND}
+      decoding="async"
+      draggable={false}
+      className={cn('block shrink-0 select-none dark:rounded-lg dark:bg-white dark:px-1.5 dark:py-0.5 dark:box-content', className)}
+    />
   );
 }
 
-export function Logo({ href = '/', size = 'md', className }: { href?: string; size?: keyof typeof SIZES; className?: string }) {
-  const { icon, text } = SIZES[size];
+/** Icône carrée : le T fléché seul, découpé dans le même logo. Décorative (le nom est dit à côté ou dans le lien). */
+export function LogoMark({ size = 36, className }: { size?: number; className?: string }) {
   return (
-    <Link href={href} className={cn('group inline-flex items-center gap-2', className)} aria-label={`${BRAND}, accueil`}>
-      <LogoMark size={icon} />
-      <span className={cn('font-bold tracking-tight', text)}>
-        <span className="text-fg">{BRAND_SPLIT[0]}</span>
-        <span className="text-gradient">{BRAND_SPLIT[1]}</span>
-      </span>
+    <img
+      src={MARK}
+      width={size}
+      height={size}
+      alt=""
+      aria-hidden="true"
+      decoding="async"
+      draggable={false}
+      className={cn('block shrink-0 select-none', className)}
+    />
+  );
+}
+
+export function Logo({ href = '/', size = 'md', className }: { href?: string; size?: keyof typeof HEIGHTS; className?: string }) {
+  return (
+    <Link href={href} className={cn('inline-flex items-center', className)} aria-label={`${BRAND}, accueil`}>
+      <LogoImage height={HEIGHTS[size]} />
     </Link>
   );
 }

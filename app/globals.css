@@ -60,8 +60,6 @@
     --on-gradient: 255 255 255;
     --positive: 0 119 122;
     --chart-2: #c8103f;
-    --logo-halo: radial-gradient(circle, rgba(37, 244, 238, 0.35) 0%, rgba(254, 44, 85, 0.2) 100%);
-    --logo-shadow: rgba(0, 119, 122, 0.25);
   }
 
   /* Thème noir : sur demande, depuis le compte (cyan et rose TikTok purs). */
@@ -105,8 +103,6 @@
     --on-gradient: 0 0 0;
     --positive: 37 244 238;
     --chart-2: #fe2c55;
-    --logo-halo: radial-gradient(circle, rgba(37, 244, 238, 0.45) 0%, rgba(254, 44, 85, 0.25) 100%);
-    --logo-shadow: rgba(37, 244, 238, 0.3);
   }
 
   html {

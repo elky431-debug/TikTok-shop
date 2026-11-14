@@ -1,8 +1,9 @@
 /** @jsxRuntime automatic */
 /** @jsxImportSource react */
-import { Body, Container, Head, Hr, Html, Preview, Section, Text } from '@react-email/components';
+import { Body, Container, Head, Hr, Html, Img, Preview, Section, Text } from '@react-email/components';
 import type { ReactNode } from 'react';
 import { BRAND } from '@/lib/brand';
+import { env } from '@/lib/env';
 
 export const colors = {
   ink: '#161823',
@@ -24,9 +25,8 @@ export function EmailLayout({ preview, children, footer }: { preview: string; ch
       <Preview>{preview}</Preview>
       <Body style={{ backgroundColor: colors.surface, margin: 0, padding: '24px 0', fontFamily: font, color: colors.ink }}>
         <Container style={{ backgroundColor: colors.paper, maxWidth: 560, borderRadius: 16, padding: '28px 24px' }}>
-          <Text style={{ margin: 0, fontSize: 20, fontWeight: 700, letterSpacing: '-0.01em' }}>
-            <span style={{ color: colors.ink }}>◆</span> {BRAND}
-          </Text>
+          {/* Logo définitif (public/brand, scripts/brand-assets.py), servi par le site : adresse absolue obligatoire. */}
+          <Img src={`${env.siteUrl.replace(/\/$/, '')}/brand/tracktout-logo-480.png`} width={140} height={34} alt={BRAND} style={{ display: 'block' }} />
           <Section style={{ marginTop: 20 }}>{children}</Section>
           <Hr style={{ borderColor: '#E1E1E5', margin: '28px 0 16px' }} />
           <Text style={{ fontSize: 12, lineHeight: '18px', color: colors.muted, margin: 0 }}>
