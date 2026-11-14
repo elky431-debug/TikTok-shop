@@ -16,7 +16,7 @@ import { parisDate } from '@/lib/utils';
  * part, avec le produit filtré s'il y en avait un.
  */
 async function viewer() {
-  const { profile } = await requireOnboardedViewer('/app/gestionnaire');
+  const { profile } = await requireOnboardedViewer('/app');
   return { profile, repo: getRepo() };
 }
 
@@ -24,10 +24,9 @@ function back(formData: FormData, onglet: string, query: string): never {
   const params = new URLSearchParams({ onglet });
   const filtre = String(formData.get('filtre') ?? '');
   if (filtre) params.set('produit', filtre);
-  revalidatePath('/app/gestionnaire');
   revalidatePath('/app/mes-produits');
   revalidatePath('/app');
-  redirect(`/app/gestionnaire?${params}&${query}`);
+  redirect(`/app?${params}&${query}#gestion`);
 }
 
 async function followed(userId: string, productId: string) {

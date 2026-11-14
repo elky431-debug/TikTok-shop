@@ -4,5 +4,5 @@ import { redirect } from 'next/navigation';
 export default function GainsPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
   const params = new URLSearchParams({ onglet: 'commissions' });
   for (const [key, value] of Object.entries(searchParams)) if (value) params.set(key, value);
-  redirect(`/app/gestionnaire?${params}`);
+  redirect(`/app?${params}#gestion`);
 }

@@ -23,10 +23,10 @@ const ERRORS: Record<string, string> = {
 /** Écran de choix des colonnes : à la première importation (ou sur demande), puis la correspondance est mémorisée. */
 export default async function ImportMappingPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
   const { profile } = await requireOnboardedViewer('/app/gestionnaire');
-  if (!getPlan(profile.plan).earnings) redirect('/app/gestionnaire');
+  if (!getPlan(profile.plan).earnings) redirect('/app');
   const repo = getRepo();
   const pending = searchParams.fichier ? await repo.getRecord<PendingImport>(profile.id, searchParams.fichier) : null;
-  if (!pending || pending.kind !== PENDING_IMPORT_KIND) redirect('/app/gestionnaire?onglet=commissions&erreur=expire');
+  if (!pending || pending.kind !== PENDING_IMPORT_KIND) redirect('/app?onglet=commissions&erreur=expire#gestion');
   const table = readCsv(pending.data.text);
   const memorized = await getMapping(repo, profile.id);
   const guess = guessMapping(table.headers);
@@ -39,7 +39,7 @@ export default async function ImportMappingPage({ searchParams }: { searchParams
 
   return (
     <div className="mx-auto max-w-5xl">
-      <Link href="/app/gestionnaire?onglet=commissions" className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-muted hover:text-fg">
+      <Link href="/app?onglet=commissions#gestion" className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-muted hover:text-fg">
         <ArrowLeft className="h-4 w-4" aria-hidden="true" />
         Commissions
       </Link>

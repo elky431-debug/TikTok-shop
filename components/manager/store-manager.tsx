@@ -55,21 +55,14 @@ import {
 import { cn, formatCompact, formatEuros, formatInt, formatShortDate } from '@/lib/utils';
 import { fieldClass, KpiCard, labelClass, Modal, ModalFooter, panelClass, Pills, STAGE_TONES, useStageColors } from './manager-ui';
 
-export type ManagerTab = 'gestion' | 'echantillons' | 'videos' | 'commissions' | 'calendrier';
+export type ManagerTab = 'produits' | 'echantillons' | 'videos' | 'commissions' | 'calendrier';
 
-const TABS: Array<{ id: ManagerTab; label: string }> = [
-  { id: 'gestion', label: 'Gestion' },
+export const MANAGER_TABS: Array<{ id: ManagerTab; label: string }> = [
+  { id: 'produits', label: 'Produits en cours' },
   { id: 'echantillons', label: 'Échantillons' },
   { id: 'videos', label: 'Vidéos' },
   { id: 'commissions', label: 'Commissions' },
   { id: 'calendrier', label: 'Calendrier' },
-];
-
-const RANGES: Array<{ id: StatsRange; label: string }> = [
-  { id: '7d', label: '7 jours' },
-  { id: '30d', label: '30 jours' },
-  { id: 'month', label: 'Par mois' },
-  { id: 'all', label: 'Depuis le début' },
 ];
 
 const MONTHS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
@@ -77,193 +70,56 @@ const MONTHS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet'
 type ModalKind = null | 'commission' | 'import' | 'echantillon' | 'video' | { video: ManagerVideo };
 
 /**
- * Gestionnaire : copie du gestionnaire de boutique d'EtSmart (barre latérale des boutiques, en-tête, onglets en pilule,
- * période, quatre chiffres, évolution annuelle, répartition en anneau, tableaux, calendrier, fenêtres modales), où les
- * boutiques deviennent les produits suivis et les commandes deviennent les commissions.
+ * Onglets du gestionnaire (repris du gestionnaire de boutique d'EtSmart), dans le tableau de bord : produits en cours
+ * avec leur statut, échantillons, vidéos, commissions et calendrier, avec leurs fenêtres modales. Les chiffres et le
+ * graphique sont au-dessus, une seule fois, dans le tableau de bord.
  */
-export function StoreManager({
-  data,
-  initialTab,
-  initialProduct,
-  flash,
-}: {
-  data: ManagerData;
-  initialTab: ManagerTab;
-  initialProduct: string | null;
-  flash: ReactFlash;
-}) {
+export function ManagerTabs({ data, initialTab, flash }: { data: ManagerData; initialTab: ManagerTab; flash: ReactFlash }) {
   const [tab, setTab] = useState<ManagerTab>(initialTab);
-  const [productId, setProductId] = useState<string | null>(data.products.some((p) => p.id === initialProduct) ? initialProduct : null);
-  const [range, setRange] = useState<StatsRange>('30d');
-  const [statsMonth, setStatsMonth] = useState(data.today.slice(0, 7));
-  const [year, setYear] = useState(Number(data.today.slice(0, 4)));
   const [modal, setModal] = useState<ModalKind>(null);
-  const product = data.products.find((p) => p.id === productId) ?? null;
-  const kpis = useMemo(() => managerKpis(data, range, statsMonth, productId), [data, range, statsMonth, productId]);
-  const filtre = productId ?? '';
+  const filtre = '';
 
   return (
-    <div className="flex min-h-[640px] flex-col overflow-hidden rounded-2xl border border-line bg-bg md:flex-row">
-      {/* Barre latérale */}
-      <aside className="flex w-full flex-shrink-0 flex-col border-b border-line bg-gradient-to-b from-fg/[0.03] to-transparent md:w-64 md:border-b-0 md:border-r">
-        <div className="border-b border-line p-5">
-          <h2 className="text-sm font-semibold">Gestionnaire</h2>
-          <p className="mt-1 text-xs text-muted">De l’échantillon à la commission.</p>
+    <section id="gestion" aria-label="Gestion" className="scroll-mt-24">
+      {flash ? <Flash flash={flash} /> : null}
+      <div className="mb-5 overflow-x-auto">
+        <Pills label="Sections du gestionnaire" items={MANAGER_TABS} value={tab} onChange={setTab} className="w-max" />
+      </div>
+
+      {data.products.length === 0 && tab !== 'commissions' ? (
+        <div className={cn(panelClass, 'flex flex-col items-center justify-center gap-4 py-14 text-center text-muted')}>
+          <Store className="h-14 w-14 text-fg/15" aria-hidden="true" />
+          <p className="font-semibold text-fg">Suis un produit depuis le radar</p>
+          <LinkButton href="/app/radar" arrow>
+            Ouvrir le radar
+          </LinkButton>
         </div>
-        <nav className="flex-1 p-3 md:overflow-y-auto" aria-label="Produits du gestionnaire">
-          <button
-            type="button"
-            onClick={() => setProductId(null)}
-            aria-current={productId === null ? 'page' : undefined}
-            className={cn(
-              'flex w-full items-center gap-3 rounded-xl px-4 py-3 font-medium transition-colors',
-              productId === null
-                ? 'border border-cyan-ink/30 bg-cyan-ink/10 text-fg shadow-lg shadow-cyan-ink/5'
-                : 'text-muted hover:bg-fg/[0.04] hover:text-fg',
-            )}
-          >
-            <Home className="h-[18px] w-[18px]" aria-hidden="true" />
-            Tableau de bord
-          </button>
-          <p className="mb-2 mt-6 px-4 text-xs font-medium uppercase tracking-wider text-subtle">Produits en cours</p>
-          <ul className="scrollbar-none relative -mx-3 flex gap-1 overflow-x-auto px-3 md:mx-0 md:block md:space-y-0.5 md:px-0">
-            {data.products.map((p) => (
-              <li key={p.id} className="shrink-0 md:shrink">
-                <button
-                  type="button"
-                  onClick={() => setProductId(p.id)}
-                  aria-current={productId === p.id ? 'page' : undefined}
-                  className={cn(
-                    'relative flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors md:px-4',
-                    productId === p.id ? 'bg-fg/[0.07] font-medium text-fg' : 'text-muted hover:bg-fg/[0.04] hover:text-fg',
-                  )}
-                >
-                  <span className="relative shrink-0">
-                    <ProductImage src={p.image} fallback={p.fallback} alt="" className="h-8 w-8 rounded-lg" />
-                    <span className={cn('absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-bg', DOT[p.stage])} aria-hidden="true" />
-                  </span>
-                  <span className="max-w-[9rem] truncate text-sm md:max-w-none">{p.name}</span>
-                  <span className="sr-only"> · {STAGE_LABELS[p.stage]}</span>
-                </button>
-              </li>
-            ))}
-            <li className="shrink-0 md:shrink">
-              <Link
-                href="/app/radar"
-                className="mt-0 flex w-full items-center gap-3 rounded-xl border border-dashed border-line px-4 py-2.5 text-muted transition-colors hover:border-cyan-ink/30 hover:bg-fg/[0.04] hover:text-fg md:mt-1"
-              >
-                <Plus className="h-[18px] w-[18px]" aria-hidden="true" />
-                <span className="whitespace-nowrap text-sm">Suivre un produit</span>
-              </Link>
-            </li>
-          </ul>
-        </nav>
-      </aside>
+      ) : null}
 
-      {/* Contenu */}
-      <main className="min-w-0 flex-1 bg-gradient-to-b from-bg via-fg/[0.015] to-bg p-4 md:p-6">
-        {flash ? <Flash flash={flash} /> : null}
+      {tab === 'produits' && data.products.length ? <ProductsTab data={data} filtre={filtre} /> : null}
+      {tab === 'echantillons' && data.products.length ? (
+        <SamplesTab data={data} productId={null} filtre={filtre} onNew={() => setModal('echantillon')} />
+      ) : null}
+      {tab === 'videos' && data.products.length ? (
+        <VideosTab data={data} productId={null} onNew={() => setModal('video')} onEdit={(video) => setModal({ video })} />
+      ) : null}
+      {tab === 'commissions' ? (
+        <CommissionsTab data={data} productId={null} filtre={filtre} onNew={() => setModal('commission')} onImport={() => setModal('import')} />
+      ) : null}
+      {tab === 'calendrier' && data.products.length ? <CalendarTab data={data} productId={null} /> : null}
 
-        {/* En-tête */}
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-4">
-            {product ? (
-              <ProductImage src={product.image} fallback={product.fallback} alt="" className="h-12 w-12 rounded-xl" />
-            ) : (
-              <div className="rounded-xl border border-line bg-fg/[0.04] p-2.5 text-cyan-ink">
-                <Store className="h-6 w-6" aria-hidden="true" />
-              </div>
-            )}
-            <div className="min-w-0">
-              <h1 className="truncate text-2xl font-bold tracking-tight">{product ? product.name : 'Tableau de bord'}</h1>
-              <p className="mt-0.5 text-sm text-muted">
-                {product ? (
-                  <span className="num">
-                    {formatEuros(product.priceCents)} · {formatEuros(product.commissionPerSaleCents)} par vente
-                  </span>
-                ) : (
-                  `${data.products.length} produit${data.products.length > 1 ? 's' : ''} en cours`
-                )}
-              </p>
-            </div>
-          </div>
-          {product ? (
-            <Link
-              href={`/app/mes-produits/${encodeURIComponent(product.id)}`}
-              className="flex items-center gap-2 rounded-lg bg-fg/[0.06] px-4 py-2 font-medium transition-colors hover:bg-fg/10"
-            >
-              <Package className="h-[18px] w-[18px]" aria-hidden="true" />
-              Fiche du produit
-            </Link>
-          ) : (
-            <Link href="/app/radar" className="flex items-center gap-2 rounded-lg bg-fg/[0.06] px-4 py-2 font-medium transition-colors hover:bg-fg/10">
-              <Radar className="h-[18px] w-[18px]" aria-hidden="true" />
-              Radar
-            </Link>
-          )}
-        </div>
-
-        {product ? <StageSwitcher productId={product.id} stage={product.stage} filtre={filtre} tab={tab} /> : null}
-
-        <div className="mb-6 overflow-x-auto">
-          <Pills
-            label="Sections du gestionnaire"
-            items={TABS}
-            value={tab}
-            onChange={setTab}
-            className="w-max min-w-full max-w-2xl md:min-w-0 [&>button]:flex-1"
-          />
-        </div>
-
-        {data.products.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-4 py-16 text-center text-muted">
-            <Store className="h-16 w-16 text-fg/15" aria-hidden="true" />
-            <p className="max-w-xs">Suis un produit depuis le radar : il apparaît ici, de l’échantillon jusqu’à tes commissions.</p>
-            <LinkButton href="/app/radar" arrow>
-              Ouvrir le radar
-            </LinkButton>
-          </div>
-        ) : null}
-
-        {tab === 'gestion' && data.products.length ? (
-          <GestionTab
-            data={data}
-            productId={productId}
-            filtre={filtre}
-            kpis={kpis}
-            range={range}
-            setRange={setRange}
-            statsMonth={statsMonth}
-            setStatsMonth={setStatsMonth}
-            year={year}
-            setYear={setYear}
-            onSelect={setProductId}
-          />
-        ) : null}
-        {tab === 'echantillons' && data.products.length ? (
-          <SamplesTab data={data} productId={productId} filtre={filtre} onNew={() => setModal('echantillon')} />
-        ) : null}
-        {tab === 'videos' && data.products.length ? (
-          <VideosTab data={data} productId={productId} onNew={() => setModal('video')} onEdit={(video) => setModal({ video })} />
-        ) : null}
-        {tab === 'commissions' ? (
-          <CommissionsTab data={data} productId={productId} filtre={filtre} onNew={() => setModal('commission')} onImport={() => setModal('import')} />
-        ) : null}
-        {tab === 'calendrier' && data.products.length ? <CalendarTab data={data} productId={productId} /> : null}
-      </main>
-
-      <CommissionModal open={modal === 'commission'} onClose={() => setModal(null)} data={data} productId={productId} />
+      <CommissionModal open={modal === 'commission'} onClose={() => setModal(null)} data={data} productId={null} />
       <ImportModal open={modal === 'import'} onClose={() => setModal(null)} />
-      <SampleModal open={modal === 'echantillon'} onClose={() => setModal(null)} data={data} productId={productId} filtre={filtre} />
+      <SampleModal open={modal === 'echantillon'} onClose={() => setModal(null)} data={data} productId={null} filtre={filtre} />
       <VideoModal
         open={modal === 'video' || (typeof modal === 'object' && modal !== null)}
         onClose={() => setModal(null)}
         data={data}
-        productId={productId}
+        productId={null}
         filtre={filtre}
         video={typeof modal === 'object' && modal !== null ? modal.video : null}
       />
-    </div>
+    </section>
   );
 }
 
@@ -282,15 +138,6 @@ function Flash({ flash }: { flash: NonNullable<ReactFlash> }) {
     </p>
   );
 }
-
-const DOT: Record<ProductStage, string> = {
-  a_lancer: 'bg-subtle',
-  echantillon_demande: 'bg-warn',
-  echantillon_recu: 'bg-cyan-ink',
-  en_tournage: 'bg-rose-ink',
-  en_ligne: 'bg-gain',
-  arrete: 'bg-muted',
-};
 
 function Hidden({ filtre, tab }: { filtre: string; tab?: string }) {
   return (
@@ -314,7 +161,7 @@ function StageChip({ productId, stage, filtre, tab }: { productId: string; stage
         title={`Passer à « ${STAGE_LABELS[next]} »`}
         aria-label={`${STAGE_LABELS[stage]} : passer à « ${STAGE_LABELS[next]} »`}
         className={cn(
-          'inline-flex w-fit select-none rounded-full px-2.5 py-0.5 text-xs font-semibold transition-shadow hover:ring-1 hover:ring-fg/20',
+          'inline-flex w-fit select-none whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold transition-shadow hover:ring-1 hover:ring-fg/20',
           STAGE_TONES[stage],
         )}
       >
@@ -324,293 +171,59 @@ function StageChip({ productId, stage, filtre, tab }: { productId: string; stage
   );
 }
 
-/** Les cinq statuts d'un produit, au choix (produit sélectionné). */
-function StageSwitcher({ productId, stage, filtre, tab }: { productId: string; stage: ProductStage; filtre: string; tab: string }) {
-  return (
-    <div className="mb-5 flex flex-wrap gap-1.5" role="group" aria-label="Statut du produit">
-      {PIPELINE_STATUSES.map((status) => (
-        <form key={status} action={setStageAction}>
-          <Hidden filtre={filtre} tab={tab} />
-          <input type="hidden" name="produit" value={productId} />
-          <input type="hidden" name="statut" value={status} />
-          <button
-            type="submit"
-            aria-pressed={stage === status}
-            className={cn(
-              'rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors',
-              stage === status ? cn('border-transparent', STAGE_TONES[status]) : 'border-line text-muted hover:border-line-strong hover:text-fg',
-            )}
-          >
-            {STAGE_LABELS[status]}
-          </button>
-        </form>
-      ))}
-    </div>
-  );
-}
-
-function Locked({ children }: { children: string }) {
-  return (
-    <p className="mt-2 flex items-center gap-1.5 text-sm font-semibold text-muted">
-      <Lock className="h-3.5 w-3.5 text-cyan-ink" aria-hidden="true" />
-      {children}
-    </p>
-  );
-}
-
 // ---------------------------------------------------------------------------------------------------------------------
-// Gestion
+// Produits en cours
 // ---------------------------------------------------------------------------------------------------------------------
 
-function GestionTab({
-  data,
-  productId,
-  filtre,
-  kpis,
-  range,
-  setRange,
-  statsMonth,
-  setStatsMonth,
-  year,
-  setYear,
-  onSelect,
-}: {
-  data: ManagerData;
-  productId: string | null;
-  filtre: string;
-  kpis: ReturnType<typeof managerKpis>;
-  range: StatsRange;
-  setRange: (r: StatsRange) => void;
-  statsMonth: string;
-  setStatsMonth: (m: string) => void;
-  year: number;
-  setYear: (y: number) => void;
-  onSelect: (id: string) => void;
-}) {
-  const chart = useChartColors();
-  const stageColors = useStageColors();
-  const annual = useMemo(() => annualSeries(data.earnings, year, productId), [data.earnings, year, productId]);
-  const products = productId ? data.products.filter((p) => p.id === productId) : data.products;
-  const stages: ProductStage[] = ['a_lancer', ...PIPELINE_STATUSES];
-  const pie = stages.map((stage) => ({ stage, name: STAGE_LABELS[stage], value: products.filter((p) => p.stage === stage).length })).filter((d) => d.value > 0);
-  const shiftMonth = (delta: number) => {
-    const [y, m] = statsMonth.split('-').map(Number);
-    const d = new Date(Date.UTC(y, m - 1 + delta, 1));
-    setStatsMonth(d.toISOString().slice(0, 7));
-  };
-
+function ProductsTab({ data, filtre }: { data: ManagerData; filtre: string }) {
   return (
-    <>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">Statistiques</h2>
-        <div className="min-w-0 max-w-full overflow-x-auto">
-          <Pills label="Période" items={RANGES} value={range} onChange={setRange} />
-        </div>
-      </div>
-      {range === 'month' ? (
-        <div className="mb-4 flex items-center justify-end gap-2">
-          <button
-            type="button"
-            onClick={() => shiftMonth(-1)}
-            className="rounded-lg p-2 text-muted hover:bg-fg/[0.06] hover:text-fg"
-            aria-label="Mois précédent"
-          >
-            <ChevronLeft className="h-[18px] w-[18px]" aria-hidden="true" />
-          </button>
-          <span className="min-w-[140px] text-center text-sm">
-            {MONTHS[Number(statsMonth.slice(5, 7)) - 1]} {statsMonth.slice(0, 4)}
-          </span>
-          <button type="button" onClick={() => shiftMonth(1)} className="rounded-lg p-2 text-muted hover:bg-fg/[0.06] hover:text-fg" aria-label="Mois suivant">
-            <ChevronRight className="h-[18px] w-[18px]" aria-hidden="true" />
-          </button>
-        </div>
-      ) : null}
-
-      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <KpiCard
-          title="Commissions"
-          value={formatEuros(kpis.commissionsCents)}
-          tone="gain"
-          locked={data.canEarnings ? undefined : <Locked>Inclus dans Pro</Locked>}
-        />
-        <KpiCard title="Ventes" value={formatInt(kpis.sales)} sub="saisies" />
-        <KpiCard title="Vidéos postées" value={formatInt(kpis.videos)} />
-        <KpiCard title="Échantillons en attente" value={formatInt(kpis.samplesPending)} />
-      </div>
-
-      <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className={panelClass}>
-          <div className="mb-1 flex flex-wrap items-start justify-between gap-2">
-            <h3 className="text-sm font-semibold">Évolution annuelle</h3>
-            <div className="flex items-center gap-1 rounded-lg border border-line bg-fg/[0.04] px-1">
-              <button
-                type="button"
-                onClick={() => setYear(year - 1)}
-                className="rounded-md p-1.5 text-muted hover:bg-fg/[0.08] hover:text-fg"
-                aria-label="Année précédente"
-              >
-                <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-              </button>
-              <span className="num min-w-[3rem] text-center text-xs font-medium">{year}</span>
-              <button
-                type="button"
-                onClick={() => setYear(year + 1)}
-                className="rounded-md p-1.5 text-muted hover:bg-fg/[0.08] hover:text-fg"
-                aria-label="Année suivante"
-              >
-                <ChevronRight className="h-4 w-4" aria-hidden="true" />
-              </button>
-            </div>
-          </div>
-          <p className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
-            <span className="flex items-center gap-1.5">
-              <span className="h-0.5 w-4 rounded-full" style={{ background: chart.line }} aria-hidden="true" /> Commissions
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="h-0 w-4 border-t-2 border-dashed" style={{ borderColor: chart.second }} aria-hidden="true" /> Ventes
-            </span>
-          </p>
-          {data.canEarnings ? (
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={annual}>
-                  <defs>
-                    <linearGradient id="commissionsGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={chart.line} stopOpacity={0.35} />
-                      <stop offset="100%" stopColor={chart.line} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="month" stroke={chart.axis} fontSize={11} tickLine={false} axisLine={false} />
-                  <YAxis yAxisId="eur" stroke={chart.axis} fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v: number) => `${v} €`} width={52} />
-                  <YAxis yAxisId="ventes" orientation="right" hide />
-                  <Tooltip
-                    contentStyle={tooltipStyle}
-                    formatter={(v, name) =>
-                      name === 'Commissions'
-                        ? [
-                            `${Number(v ?? 0)
-                              .toFixed(2)
-                              .replace('.', ',')} €`,
-                            name,
-                          ]
-                        : [formatInt(Number(v ?? 0)), name]
-                    }
-                  />
-                  <Area
-                    yAxisId="eur"
-                    type="monotone"
-                    dataKey="commissions"
-                    name="Commissions"
-                    stroke={chart.line}
-                    strokeWidth={2}
-                    fill="url(#commissionsGrad)"
-                  />
-                  <Area
-                    yAxisId="ventes"
-                    type="monotone"
-                    dataKey="ventes"
-                    name="Ventes"
-                    stroke={chart.second}
-                    strokeWidth={1.5}
-                    strokeDasharray="4 4"
-                    fill="none"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <div className="flex h-64 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-line text-center">
-              <Lock className="h-6 w-6 text-cyan-ink" aria-hidden="true" />
-              <p className="text-sm font-semibold">Le suivi des commissions est inclus dans Pro.</p>
-              <LinkButton href="/app/passer-pro" size="sm" variant="outline">
-                Voir les plans
-              </LinkButton>
-            </div>
-          )}
-        </div>
-        <div className={panelClass}>
-          <h3 className="mb-0.5 text-sm font-semibold">Produits par statut</h3>
-          <p className="mb-4 text-xs text-muted">Où en est chaque produit</p>
-          <div className="relative h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={pie} cx="50%" cy="50%" innerRadius={56} outerRadius={84} paddingAngle={2} dataKey="value" nameKey="name" stroke="none">
-                  {pie.map((entry) => (
-                    <Cell key={entry.stage} fill={stageColors[entry.stage]} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={tooltipStyle} />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <div className="text-center">
-                <span className="num text-2xl font-bold">{products.length}</span>
-                <br />
-                <span className="text-xs text-muted">Total</span>
-              </div>
-            </div>
-          </div>
-          <ul className="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-muted">
-            {pie.map((entry) => (
-              <li key={entry.stage} className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full" style={{ background: stageColors[entry.stage] }} aria-hidden="true" />
-                {entry.name} <span className="num font-semibold text-fg">{entry.value}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-
-      <div className={cn(panelClass, 'mb-6')}>
-        <h3 className="mb-0.5 text-sm font-semibold">Produits en cours</h3>
-        <p className="mb-4 text-xs text-muted">Statut, vidéos, vues, ventes et commissions de chaque produit</p>
-        <div className="overflow-x-auto rounded-xl border border-line">
-          <table className="w-full text-xs sm:text-sm">
-            <thead className="border-b border-line bg-fg/[0.04] text-muted">
-              <tr>
-                <th className="px-3 py-2.5 text-left font-medium">Produit</th>
-                <th className="px-3 py-2.5 text-left font-medium">Statut</th>
-                <th className="whitespace-nowrap px-3 py-2.5 text-right font-medium">Vidéos</th>
-                <th className="px-3 py-2.5 text-right font-medium">Vues</th>
-                <th className="px-3 py-2.5 text-right font-medium">Ventes</th>
-                <th className="px-3 py-2.5 text-right font-medium">Commissions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.map((p) => (
-                <tr key={p.id} className="border-b border-line/60 transition-colors last:border-0 hover:bg-fg/[0.03]">
-                  <td className="px-3 py-2.5">
-                    <button type="button" onClick={() => onSelect(p.id)} className="flex min-w-[11rem] items-center gap-3 text-left hover:text-cyan-ink">
-                      <ProductImage src={p.image} fallback={p.fallback} alt="" className="h-9 w-9 rounded-xl" />
-                      <span className="line-clamp-2 font-medium">{p.name}</span>
-                    </button>
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <StageChip productId={p.id} stage={p.stage} filtre={filtre} tab="gestion" />
-                  </td>
-                  <td className="num whitespace-nowrap px-3 py-2.5 text-right">
-                    {p.videosPosted} / {p.videosGoal}
-                  </td>
-                  <td className="num px-3 py-2.5 text-right text-muted">{p.views ? formatCompact(p.views) : '—'}</td>
-                  <td className="num px-3 py-2.5 text-right text-muted">{p.videoSales ? formatInt(p.videoSales) : '—'}</td>
-                  <td className="num px-3 py-2.5 text-right font-semibold text-gain">
-                    {data.canEarnings ? (
-                      p.commissionsCents ? (
-                        formatEuros(p.commissionsCents)
-                      ) : (
-                        '—'
-                      )
+    <div className={panelClass}>
+      <div className="overflow-x-auto rounded-xl border border-line">
+        <table className="w-full text-xs sm:text-sm">
+          <thead className="border-b border-line bg-fg/[0.04] text-muted">
+            <tr>
+              <th className="px-3 py-2.5 text-left font-medium">Produit</th>
+              <th className="px-3 py-2.5 text-left font-medium">Statut</th>
+              <th className="whitespace-nowrap px-3 py-2.5 text-right font-medium">Vidéos</th>
+              <th className="px-3 py-2.5 text-right font-medium">Vues</th>
+              <th className="px-3 py-2.5 text-right font-medium">Ventes</th>
+              <th className="px-3 py-2.5 text-right font-medium">Commissions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.products.map((p) => (
+              <tr key={p.id} className="border-b border-line/60 transition-colors last:border-0 hover:bg-fg/[0.03]">
+                <td className="px-3 py-2.5">
+                  <Link href={`/app/mes-produits/${encodeURIComponent(p.id)}`} className="flex min-w-[12rem] items-center gap-3 hover:text-cyan-ink">
+                    <ProductImage src={p.image} fallback={p.fallback} alt="" className="h-10 w-10 rounded-xl" />
+                    <span className="line-clamp-2 font-medium">{p.name}</span>
+                  </Link>
+                </td>
+                <td className="px-3 py-2.5">
+                  <StageChip productId={p.id} stage={p.stage} filtre={filtre} tab="produits" />
+                </td>
+                <td className="num whitespace-nowrap px-3 py-2.5 text-right">
+                  {p.videosPosted} / {p.videosGoal}
+                </td>
+                <td className="num px-3 py-2.5 text-right text-muted">{p.views ? formatCompact(p.views) : '—'}</td>
+                <td className="num px-3 py-2.5 text-right text-muted">{p.videoSales ? formatInt(p.videoSales) : '—'}</td>
+                <td className="num px-3 py-2.5 text-right font-semibold text-gain">
+                  {data.canEarnings ? (
+                    p.commissionsCents ? (
+                      formatEuros(p.commissionsCents)
                     ) : (
-                      <Lock className="ml-auto h-3.5 w-3.5 text-subtle" aria-label="Inclus dans Pro" />
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                      '—'
+                    )
+                  ) : (
+                    <Lock className="ml-auto h-3.5 w-3.5 text-subtle" aria-label="Inclus dans Pro" />
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-    </>
+    </div>
   );
 }
 

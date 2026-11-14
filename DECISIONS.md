@@ -1228,3 +1228,14 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      recherche et partagé ; ceux déjà en base sont repris) et niche vérifiée en français à la place de la catégorie
      TikTok. Lignes « Pas dans le radar du jour » et « Source : Nexscope… écartés » retirées. Si la source ne répond pas
      (crédits épuisés le 14 novembre, code 13011), la recherche se fait dans le radar du jour et le dit en une ligne.
+206. **Corrections, étape 2 : dashboard et gestionnaire réunis sur `/app`** (14 novembre). Un seul onglet « Dashboard »
+     dans la barre latérale ; `/app/gestionnaire` (et `/app/gains`) renvoient vers `/app`, en gardant l'onglet demandé
+     et l'ancre `#gestion`. Ordre de la page : en-tête (photo, prénom, compte TikTok, plan, série de jours à gauche ;
+     période 7 jours / 30 jours / par mois / depuis le début à droite) ; une ligne d'indicateurs (commissions, ventes,
+     vidéos postées face à l'objectif, échantillons en attente, produits suivis) ; produit du jour à côté de la courbe
+     commissions et ventes ; onglets du gestionnaire (Produits en cours, Échantillons, Vidéos, Commissions, Calendrier) ;
+     activité récente. L'ancien panneau de gauche « Produits en cours » devient le premier onglet (tableau dont chaque
+     ligne ouvre la fiche du produit suivi) : plus de menu dans le menu. Retirés pour éviter les doublons : la liste
+     « À venir », l'anneau d'objectif, la liste des produits suivis, les raccourcis et les statistiques de créateur
+     (l'objectif est dans l'indicateur des vidéos). Les actions du gestionnaire reviennent sur `/app#gestion` avec leur
+     message. Commissions verrouillées (cadenas) sans le plan qui donne les gains, comme avant.

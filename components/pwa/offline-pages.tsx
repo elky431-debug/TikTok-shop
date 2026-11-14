@@ -14,7 +14,6 @@ export function offlinePageLabel(path: string): string {
     '/app/mes-produits': 'Mes produits',
     '/app/recap': 'Récap',
     '/app/plan': 'Plan de publication',
-    '/app/gestionnaire': 'Gestionnaire',
     '/app/notifications': 'Notifications',
     '/app/compte': 'Mon compte',
     '/app/parrainage': 'Parrainage',

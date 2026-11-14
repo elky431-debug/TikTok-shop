@@ -25,15 +25,15 @@ import {
 import { forgetMapping, getMapping, importEarnings, saveMapping, setEarningsGoal } from '@/lib/v2/earnings-store';
 
 async function viewer() {
-  const { profile } = await requireOnboardedViewer('/app/gestionnaire');
+  const { profile } = await requireOnboardedViewer('/app');
   if (!getPlan(profile.plan).earnings) redirect('/app/passer-pro');
   return profile;
 }
 
-const BASE = '/app/gestionnaire?onglet=commissions';
+const BASE = '/app?onglet=commissions';
 
 const done = (query: string): never => {
-  revalidatePath('/app/gestionnaire');
+  revalidatePath('/app');
   redirect(`${BASE}&${query}`);
 };
 

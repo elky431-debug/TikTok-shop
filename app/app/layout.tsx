@@ -98,7 +98,6 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       label: "Suivre",
       items: [
         { href: "/app/mes-produits", label: "Mes produits", icon: "produits" },
-        { href: "/app/gestionnaire", label: "Gestionnaire", icon: "gestionnaire" },
         {
           href: "/app/offres",
           label: "Propositions de marques",
@@ -111,11 +110,11 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   // Sans abonnement (pages compte et paiement seulement) : rien d'autre à ouvrir que le compte.
   if (!plan.access) sections.splice(0, sections.length, { label: "Compte", items: accountItems.filter((i) => i.href === "/app/compte" || i.href === "/formateur" || i.href === "/admin") });
   const shortcuts: NavLink[] = !plan.access ? [{ href: "/app/compte", label: "Compte", icon: "compte" }] : [
-    { href: "/app", label: "Accueil", icon: "dashboard" },
+    { href: "/app", label: "Dashboard", icon: "dashboard" },
     { href: "/app/radar", label: "Radar", icon: "radar" },
     { href: "/app/studio", label: "Studio", icon: "studio" },
     { href: "/app/mes-produits", label: "Produits", icon: "produits" },
-    { href: "/app/gestionnaire", label: "Gestion", icon: "gestionnaire" },
+    { href: "/app/analyse", label: "Analyse", icon: "analyse" },
   ];
   const user: ShellUser = {
     firstName: profile.first_name ?? "Mon compte",
