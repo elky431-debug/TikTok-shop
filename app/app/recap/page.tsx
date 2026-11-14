@@ -138,7 +138,7 @@ export default async function RecapPage({ searchParams }: { searchParams: Record
     <div>
       <PageHeader eyebrow="Compte"
         title="Récap"
-        description={`Chaque matin à ${profile.digest_hour} h : tes meilleurs produits, ton défi du jour et un script prêt. Le dimanche à ${settings.dimanche.heure} h : ta semaine en chiffres.`}
+        description={`Tes produits du jour à ${profile.digest_hour} h, ta semaine le dimanche à ${settings.dimanche.heure} h.`}
       />
       {message ? <Callout tone={message.tone} className="mb-6" title={message.text} /> : null}
 
@@ -318,7 +318,6 @@ export default async function RecapPage({ searchParams }: { searchParams: Record
 {plan.weeklyDigest ? (
           <Card id="reglages-dimanche" className="scroll-mt-20">
             <h2 className="text-lg">Récap du dimanche</h2>
-            <p className="mt-1 text-sm text-muted">Vidéos postées, série, gains saisis et meilleur produit de ta semaine.</p>
             <form action={saveSundaySettingsAction} className="mt-4 space-y-4">
               <div>
                 <Label htmlFor="heure-dimanche">Heure d’envoi, le dimanche</Label>

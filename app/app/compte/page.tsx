@@ -132,10 +132,7 @@ export default async function ComptePage({ searchParams }: { searchParams: Recor
         {/* Pays du catalogue */}
         <Card id="pays">
           <h2 className="text-lg">Pays du catalogue</h2>
-          <p className="mt-1 text-sm text-muted">
-            La France par défaut. Avec Elite, ouvre aussi les produits d’Allemagne, d’Italie et d’Espagne (l’appli reste en
-            français).
-          </p>
+          <p className="mt-1 text-sm text-muted">La France ; l’Allemagne, l’Italie et l’Espagne avec Elite.</p>
           {plan.europe ? (
             <form action={updateRegionAction} className="mt-4 flex flex-wrap items-end gap-3">
               <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Pays du catalogue">
@@ -296,7 +293,7 @@ export default async function ComptePage({ searchParams }: { searchParams: Recor
         <Card id="emails" className="scroll-mt-20">
           <h2 className="text-lg">E-mails</h2>
           <p className="mt-1 text-sm text-muted">
-            Chacun part une seule fois, au bon moment. Décoche ceux que tu ne veux pas recevoir. Les récaps se règlent sur la{' '}
+            Décoche ceux que tu ne veux pas recevoir. Les récaps se règlent sur la{' '}
             <Link href="/app/recap#reglages" className="font-semibold text-fg underline underline-offset-2">
               page Récap
             </Link>
@@ -331,10 +328,7 @@ export default async function ComptePage({ searchParams }: { searchParams: Recor
         {/* Données personnelles */}
         <Card id="donnees" className="scroll-mt-20">
           <h2 className="text-lg">Mes données</h2>
-          <p className="mt-1 max-w-prose text-sm text-muted">
-            Télécharge tout ce que nous gardons sur toi, dans un fichier JSON : profil, scripts, produits suivis, récaps, abonnement,
-            parrainages, gains, plans de publication, notifications et réglages.
-          </p>
+          <p className="mt-1 max-w-prose text-sm text-muted">Tout ce que nous gardons sur toi, dans un fichier JSON.</p>
           <a
             href="/app/compte/export"
             download
@@ -349,9 +343,7 @@ export default async function ComptePage({ searchParams }: { searchParams: Recor
         <section id="suppression" className="rounded-2xl border border-rose-ink/30 p-4 sm:p-5">
           <h2 className="text-lg">Supprimer mon compte</h2>
           <p className="mt-1 max-w-prose text-sm text-muted">
-            Tout est effacé : profil, scripts, produits suivis, récaps, gains, plans de publication, notifications, réglages, liaison
-            Discord et notifications de tes appareils. Ton abonnement est résilié tout de suite et les e-mails déjà programmés sont
-            annulés. C’est définitif : télécharge tes données avant si tu veux les garder.
+            Tout est effacé et ton abonnement est résilié tout de suite. C’est définitif : télécharge tes données avant.
           </p>
           <ForgetDeviceForm action={deleteAccountAction} className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
             <Field label="Tape SUPPRIMER pour confirmer" htmlFor="confirmation" className="sm:w-64">

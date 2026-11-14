@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { ArrowLeft, Store, Users } from 'lucide-react';
+import { ArrowLeft, Search, Store, Users } from 'lucide-react';
 import Link from 'next/link';
 import { KeywordSearchForm } from '@/components/product/keyword-search-form';
 import { ProductImage } from '@/components/product/bits';
@@ -36,7 +36,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
   if (!plan.keywordSearchesPerDay) {
     return (
       <div>
-        <PageHeader eyebrow="Trouver" title="Recherche par mot-clé"  description="Les produits de TikTok Shop France qui contiennent ce mot, triés par ventes sur 7 jours. Chaque chiffre vient de la source ; ce qu’elle ne donne pas n’est pas affiché." />
+        <PageHeader eyebrow="Trouver" title="Recherche par mot-clé"  description="Les produits qui contiennent ce mot, triés par ventes sur 7 jours." />
         <PlanGate plan="starter" title="Cherche n’importe quel produit de TikTok Shop">
           Tape un mot-clé (« sérum », « gourde »…) et vois les produits qui se vendent le plus en France sur 7 jours, avec leur
           commission et leur nombre d’affiliés.
@@ -60,7 +60,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
       </Link>
       <PageHeader eyebrow="Trouver"
         title="Recherche par mot-clé"
-        description="Les produits de TikTok Shop France qui contiennent ce mot, triés par ventes sur 7 jours. Chaque chiffre vient de la source ; ce qu’elle ne donne pas n’est pas affiché."
+        description="Les produits qui contiennent ce mot, triés par ventes sur 7 jours."
       />
       <KeywordSearchForm remaining={remaining} limit={plan.keywordSearchesPerDay} defaultValue={current?.data.keyword} catalogOnly={!env.nexscopeApiKey} />
       {searchParams.erreur === 'quota' ? (
@@ -76,7 +76,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
           </h2>
           <p className="mt-1 text-sm text-muted">
             {current.data.source === 'catalogue'
-              ? 'Recherche dans le catalogue du jour : la source de recherche n’est pas branchée.'
+              ? 'Dans le catalogue du jour.'
               : `Source : Nexscope, ${formatRelative(current.created_at)}.`}
             {current.data.skipped ? ` ${current.data.skipped} produit${current.data.skipped > 1 ? 's' : ''} écarté${current.data.skipped > 1 ? 's' : ''} (autre devise, sans commission affiliée…).` : ''}
           </p>
@@ -131,8 +131,8 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
               })}
             </ul>
           ) : (
-            <EmptyState title="Aucun produit trouvé" className="mt-4">
-              Essaie un mot plus simple ou plus court, en français (« crème » plutôt que « crème hydratante visage bio »).
+            <EmptyState icon={<Search className="h-5 w-5" />} title="Aucun produit trouvé" className="mt-4">
+              Essaie un mot plus court.
             </EmptyState>
           )}
         </section>

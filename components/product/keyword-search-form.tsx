@@ -55,7 +55,7 @@ export function KeywordSearchForm({
       </div>
       <p id="recherche-aide" className="mt-1.5 text-xs text-muted">
         {remaining > 0 ? `${plural(remaining, 'recherche restante', 'recherches restantes')} aujourd’hui sur ${limit}.` : `Tes ${limit} recherches du jour sont faites : reviens demain.`}{' '}
-        {catalogOnly ? 'La source de recherche n’est pas branchée : la recherche se fait dans le catalogue du jour.' : 'Relancer le même mot-clé dans la journée ne compte pas.'}
+        {catalogOnly ? 'Dans le catalogue du jour.' : null}
       </p>
     </form>
   );

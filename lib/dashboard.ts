@@ -1,3 +1,4 @@
+import { fallbackImageUrl } from '@/lib/product-image';
 import type { Repo } from '@/lib/db';
 import type { Product, Profile, UserRecord } from '@/lib/db/types';
 import type { NotificationData } from '@/lib/notify';
@@ -106,6 +107,9 @@ export interface UpcomingVideo {
   n: number;
   date: string | null;
   overdue: boolean;
+  /** Image du produit (ajoutée par le tableau de bord). */
+  image?: string;
+  fallback?: string;
 }
 
 export interface ActivityItem {
@@ -286,7 +290,10 @@ export async function loadDashboard(repo: Repo, profile: Profile, now = new Date
     earningsEnabled: plan.earnings,
     monthGains,
     goalCents: goal.cents,
-    upcoming: nextVideos(boards, today),
+    upcoming: nextVideos(boards, today).map((v) => {
+      const product = byId.get(v.productId);
+      return product ? { ...v, image: product.image_url, fallback: fallbackImageUrl(product.id, product.niche) } : v;
+    }),
     hasBoards: boards.some((b) => b.items.some((i) => i.status !== 'poste')),
     planningEnabled: plan.planning,
     followed: followed.slice(0, 5),

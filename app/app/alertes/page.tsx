@@ -33,7 +33,7 @@ export default async function AlertsPage({ searchParams }: { searchParams: Recor
   if (!plan.alerts) {
     return (
       <div>
-        <PageHeader eyebrow="Trouver" title="Alertes"  description="Une règle, et chaque nuit après le relevé, tu es prévenu dès qu’un nouveau produit la remplit. Une notification par alerte et par jour, au plus." />
+        <PageHeader eyebrow="Trouver" title="Alertes"  description="Tu es prévenu dès qu’un nouveau produit remplit ta règle." />
         <PlanGate plan="starter" title="Sois prévenu quand un produit remplit tes critères">
           Niche, commission minimum, ventes sur 7 jours, croissance, prix : chaque nuit, dès qu’un nouveau produit remplit ta règle,
           tu reçois une notification, un e-mail et un message Discord.
@@ -68,7 +68,7 @@ export default async function AlertsPage({ searchParams }: { searchParams: Recor
     <div>
       <PageHeader eyebrow="Trouver"
         title="Alertes"
-        description="Une règle, et chaque nuit après le relevé, tu es prévenu dès qu’un nouveau produit la remplit. Une notification par alerte et par jour, au plus."
+        description="Tu es prévenu dès qu’un nouveau produit remplit ta règle."
       />
       {searchParams.ok === 'cree' ? (
         <Callout tone="gain" className="mb-6" title="Alerte créée">
@@ -136,8 +136,8 @@ export default async function AlertsPage({ searchParams }: { searchParams: Recor
               ))}
             </ul>
           ) : (
-            <EmptyState title="Aucune alerte pour l’instant">
-              Crée ta première règle à côté : par exemple « beauté, 20 % de commission et plus, 300 ventes sur 7 jours ».
+            <EmptyState icon={<BellRing className="h-5 w-5" />} title="Aucune alerte pour l’instant">
+              Crée ta première règle à côté.
             </EmptyState>
           )}
         </section>

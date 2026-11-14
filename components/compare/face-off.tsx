@@ -419,7 +419,7 @@ function Verdict({ ids, winner }: { ids: string[]; winner: FaceProduct }) {
       {current ? (
         <p className="text-lg font-semibold leading-snug sm:text-xl">{current.sentence ?? current.error}</p>
       ) : (
-        <div className="space-y-2" aria-label="Verdict en cours d’écriture">
+        <div className="space-y-2" role="status" aria-label="Verdict en cours d’écriture">
           <div className="h-5 w-11/12 animate-skeleton rounded-md bg-fg/10" />
           <div className="h-5 w-2/3 animate-skeleton rounded-md bg-fg/10" />
         </div>

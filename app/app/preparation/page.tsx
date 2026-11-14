@@ -69,7 +69,7 @@ export default async function PreparationPage({ searchParams }: { searchParams: 
     <div className="mx-auto max-w-3xl">
       <PageHeader eyebrow="Compte"
         title="Mode préparation"
-        description={`Sous ${formatInt(AFFILIATE_THRESHOLD)} abonnés, on prépare ton compte : une niche, 30 jours de vidéos sans vente, et tout ce qu’il faut pour être prêt le jour où tu passes le cap.`}
+        description={`Une niche et 30 jours de vidéos pour passer le cap des ${formatInt(AFFILIATE_THRESHOLD)} abonnés.`}
       />
 
       {searchParams.ok === 'affilie' ? (
@@ -100,7 +100,7 @@ export default async function PreparationPage({ searchParams }: { searchParams: 
         </div>
         <ProgressBar className="mt-2" value={latestCount?.count ?? 0} max={AFFILIATE_THRESHOLD} label={`Abonnés sur le seuil de ${formatInt(AFFILIATE_THRESHOLD)}`} />
         <FollowerChart entries={data.followers} threshold={AFFILIATE_THRESHOLD} />
-        {data.followers.length === 1 ? <p className="mt-3 text-sm text-muted">Note ton nombre d’abonnés une fois par semaine : la courbe apparaît dès le deuxième point.</p> : null}
+        {data.followers.length === 1 ? <p className="mt-3 text-sm text-muted">La courbe apparaît au deuxième relevé.</p> : null}
         <form action={logFollowersAction} className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
           <Field label="Abonnés" htmlFor="abonnes">
             <Input id="abonnes" name="abonnes" type="number" min={0} inputMode="numeric" required placeholder="840" className="num" />
@@ -112,7 +112,6 @@ export default async function PreparationPage({ searchParams }: { searchParams: 
             Enregistrer mes abonnés
           </SubmitButton>
         </form>
-        <p className="mt-2 text-xs text-muted">Tu lis ce chiffre sur ton profil TikTok : rien n’est relevé sur ton compte. À {formatInt(AFFILIATE_THRESHOLD)}, ton compte passe tout seul en mode affilié.</p>
         {!affiliate ? (
           <form action={declareThresholdAction} className="mt-3">
             <SubmitButton variant="outline" size="sm" pendingLabel="Passage…">
@@ -124,7 +123,6 @@ export default async function PreparationPage({ searchParams }: { searchParams: 
 
       <Card id="niche" className="mt-6">
         <h2 className="text-lg">Choisis ta niche</h2>
-        <p className="mt-1 text-sm text-muted">Le classement croise les niches qui montent dans le radar du jour et ce que tu aimes filmer.</p>
         {catalog.demo ? (
           <p className="mt-2 text-xs font-semibold text-warn">Produits fictifs de démonstration : ce classement n’est qu’un exemple.</p>
         ) : catalog.stale && catalog.dataDate ? (
@@ -184,7 +182,7 @@ export default async function PreparationPage({ searchParams }: { searchParams: 
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-lg">Ton plan de 30 jours</h2>
-            <p className="mt-1 text-sm text-muted">Une vidéo par jour, aucune vente : le but est que les gens reviennent pour toi.</p>
+            <p className="mt-1 text-sm text-muted">Une vidéo par jour, sans rien vendre.</p>
           </div>
           {latestPlan?.data.simulated ? <Badge>Plan simulé</Badge> : null}
         </div>

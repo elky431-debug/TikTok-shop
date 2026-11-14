@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
-import { AlertTriangle, BellRing } from 'lucide-react';
+import { AlertTriangle, BellRing, Inbox } from 'lucide-react';
 import Link from 'next/link';
 import { PlanGate } from '@/components/app/plan-gate';
 import { CopyButton } from '@/components/ui/copy-button';
 import { Field, Input, Select, Textarea } from '@/components/ui/field';
 import { SubmitButton } from '@/components/ui/submit-button';
-import { Badge, Callout, Card, PageHeader, Panel } from '@/components/ui/surface';
+import { Badge, Callout, Card, EmptyState, PageHeader, Panel } from '@/components/ui/surface';
 import { requireOnboardedViewer } from '@/lib/auth/session';
 import { getRepo } from '@/lib/db';
 import { getPlan, quotaReachedMessage, remainingLabel } from '@/lib/plans';
@@ -139,7 +139,7 @@ export default async function OffresPage({ searchParams }: { searchParams: Recor
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-muted">Aucune proposition avec ce statut.</p>
+            <EmptyState icon={<Inbox className="h-5 w-5" />} title="Aucune proposition avec ce statut" />
           )}
         </section>
       ) : null}
@@ -209,7 +209,7 @@ function OfferResult({ id, data, today }: { id: string; data: OfferData; today: 
             </ul>
           ) : (
             <p className="rounded-2xl border border-line p-3.5 text-sm text-muted">
-              Rien d’inhabituel repéré dans le message. Relis quand même les conditions avant d’accepter.
+              Rien d’inhabituel repéré. Relis quand même les conditions.
             </p>
           )}
         </section>

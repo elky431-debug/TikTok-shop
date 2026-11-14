@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { BellPlus, BookmarkCheck, CalendarDays, Scale, Star } from 'lucide-react';
 import Link from 'next/link';
+import { InfoTip } from '@/components/ui/info-tip';
 import { notFound } from 'next/navigation';
 import { toggleFavoriteAction } from '@/app/app/actions';
 import { ProductBadges, WhyNowLine } from '@/components/product/badges';
@@ -286,8 +287,12 @@ export default async function ProductPage({
 
           {/* Évolution du score */}
           <section aria-labelledby="evolution">
-            <h2 id="evolution" className="mb-3 text-lg">
+            <h2 id="evolution" className="mb-3 flex items-center gap-1 text-lg">
               Évolution du score
+              <InfoTip label="Lire la courbe du score">
+                Score général de chaque jour (poids par défaut). Il place le produit parmi ceux du jour : il peut baisser sans que les ventes
+                baissent, si d’autres produits montent plus vite.
+              </InfoTip>
             </h2>
             {view.score === null ? (
               <p className="text-sm text-muted">
@@ -299,10 +304,6 @@ export default async function ProductPage({
             ) : scoreHistory.length >= 2 ? (
               <Card>
                 <ScoreHistoryChart data={scoreHistory} />
-                <p className="mt-2 text-xs text-muted">
-                  Score général de chaque jour (poids par défaut), sur {plural(scoreHistory.length, 'relevé')}. Le score place le produit
-                  parmi ceux du jour : il peut baisser sans que les ventes baissent, si d’autres produits montent plus vite.
-                </p>
               </Card>
             ) : (
               <p className="text-sm text-muted">La courbe du score se trace à partir de deux relevés : reviens demain.</p>
@@ -311,10 +312,10 @@ export default async function ProductPage({
 
           {/* Simulation */}
           <section aria-labelledby="simulation">
-            <h2 id="simulation" className="mb-1 text-lg">
+            <h2 id="simulation" className="mb-3 flex items-center gap-1 text-lg">
               Simulation
+              <InfoTip label="À propos de la simulation">Le calcul se fait avec la commission de ce produit aujourd’hui, et tes hypothèses.</InfoTip>
             </h2>
-            <p className="mb-3 text-sm text-muted">Règle les hypothèses : le calcul se fait avec la commission de ce produit aujourd’hui.</p>
             <Card>
               <EarningsSimulation commissionCents={view.commission_cents} />
             </Card>
@@ -363,7 +364,6 @@ export default async function ProductPage({
                 ) : plan.hookAnalysesPerDay ? (
                   <Panel className="flex flex-wrap items-center justify-between gap-3">
                     <p className="text-sm text-muted">
-                      Type d’accroche, durée et structure de chaque vidéo, à partir de son texte et de ses chiffres.{' '}
                       {hooksLeft > 0
                         ? remainingLabel(profile.plan, 'hookAnalysesPerDay', hooksLeft, { one: 'analyse', many: 'analyses', feminine: true }, 'aujourd’hui')
                         : quotaReachedMessage(profile.plan, 'hookAnalysesPerDay', 'analyses d’accroches', 'du jour')}
@@ -486,9 +486,6 @@ export default async function ProductPage({
                 </LinkButton>
               ) : null}
             </div>
-            <p className="mt-3 text-xs text-muted">
-              Objectif conseillé : 20 vidéos sur ce produit. Chez les affiliés, c’est le volume sur un même produit qui fait la différence.
-            </p>
           </Card>
         </aside>
       </div>

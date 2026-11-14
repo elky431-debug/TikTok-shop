@@ -1,9 +1,10 @@
 import { rhythmFor } from '@/lib/profile-rules';
 import type { Metadata } from 'next';
-import { CalendarDays, LayoutGrid } from 'lucide-react';
+import { CalendarDays, LayoutGrid, Radar } from 'lucide-react';
 import Link from 'next/link';
 import { PlanGate } from '@/components/app/plan-gate';
 import { MonthCalendar } from '@/components/v2/month-calendar';
+import { fallbackImageUrl } from '@/lib/product-image';
 import { LinkButton } from '@/components/ui/button';
 import { Field, Input, Select } from '@/components/ui/field';
 import { SubmitButton } from '@/components/ui/submit-button';
@@ -26,7 +27,7 @@ export default async function PlanPage({ searchParams }: { searchParams: Record<
   if (!getPlan(profile.plan).planning) {
     return (
       <div className="mx-auto max-w-5xl">
-        <PageHeader eyebrow="Créer" title="Plan de publication"  description="Tenir 20 vidéos par produit, c’est là que l’affiliation paie. Rien n’est publié à ta place : tu reçois un rappel le jour J." />
+        <PageHeader eyebrow="Créer" title="Plan de publication"  description="20 vidéos par produit, réparties sur tes semaines, avec un rappel le jour J." />
         <PlanGate plan="starter" title="20 vidéos par produit, au bon rythme">
           Choisis un produit suivi et ton rythme : ses vidéos sont réparties sur les semaines à venir dans un calendrier, avec
           un rappel le jour J par notification, e-mail et Discord, et un fichier à importer dans ton agenda.
@@ -48,7 +49,7 @@ export default async function PlanPage({ searchParams }: { searchParams: Record<
     <div className="mx-auto max-w-5xl">
       <PageHeader eyebrow="Créer"
         title="Plan de publication"
-        description="Tenir 20 vidéos par produit, c’est là que l’affiliation paie. Rien n’est publié à ta place : tu reçois un rappel le jour J."
+        description="20 vidéos par produit, réparties sur tes semaines, avec un rappel le jour J."
       />
       {searchParams.ok === 'cree' ? <Callout tone="gain" className="mb-6" title="Vidéos réparties dans le calendrier : rappel le jour J à l’heure de ton récap." /> : null}
       {searchParams.ok === 'retire' ? <Callout tone="neutral" className="mb-6" title="Calendrier retiré. Ton tableau de vidéos est intact." /> : null}
@@ -56,7 +57,6 @@ export default async function PlanPage({ searchParams }: { searchParams: Record<
 
       <Card id="nouveau">
         <h2 className="text-lg">Planifier un produit</h2>
-        <p className="mt-1 text-sm text-muted">Les vidéos pas encore postées sont réparties selon ton rythme. Refaire un plan le remplace.</p>
         {rows.length ? (
           <form action={createPlanAction} className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_13rem_10rem_auto] lg:items-end">
             <Field label="Produit suivi" htmlFor="produit" className="sm:col-span-2 lg:col-span-1">
@@ -83,18 +83,18 @@ export default async function PlanPage({ searchParams }: { searchParams: Record<
             <SubmitButton pendingLabel="Répartition…">Planifier les vidéos</SubmitButton>
           </form>
         ) : (
-          <p className="mt-2 text-sm text-muted">
-            Ajoute d’abord un produit à{' '}
-            <Link href="/app/mes-produits" className="font-semibold text-fg underline">
-              Mes produits
-            </Link>{' '}
-            depuis le radar.
-          </p>
+          <EmptyState icon={<Radar className="h-5 w-5" />} title="Suis d’abord un produit" className="mt-4" action={<LinkButton href="/app/radar" arrow>Ouvrir le radar</LinkButton>} />
         )}
       </Card>
 
       <Card className="mt-6">
-        <MonthCalendar month={month} weeks={weeks} today={today} hrefFor={(m) => `/app/plan?mois=${m}`} />
+        <MonthCalendar
+          month={month}
+          weeks={weeks}
+          today={today}
+          hrefFor={(m) => `/app/plan?mois=${m}`}
+          images={Object.fromEntries(rows.map((r) => [r.product.id, { src: r.product.image_url, fallback: fallbackImageUrl(r.product.id, r.product.niche) }]))}
+        />
       </Card>
 
       {scheduled.length ? (
@@ -141,9 +141,7 @@ export default async function PlanPage({ searchParams }: { searchParams: Record<
           })}
         </section>
       ) : rows.length ? (
-        <EmptyState title="Aucun produit planifié" className="mt-6">
-          Choisis un produit et un rythme ci-dessus : ses vidéos sont réparties sur les semaines à venir.
-        </EmptyState>
+        <EmptyState icon={<CalendarDays className="h-5 w-5" />} title="Aucun produit planifié" className="mt-6" />
       ) : null}
     </div>
   );

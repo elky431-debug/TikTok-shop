@@ -48,12 +48,12 @@ export function WhyNowLine({
   if (!whyNow) return null;
   const origin = whyNow.source === 'ia' ? 'écrit par l’IA à partir des chiffres' : whyNow.source === 'simulation' ? 'simulation sans IA, calculée sur les chiffres' : 'calculé sur les chiffres';
   return (
-    <p className={cn('flex gap-1.5 leading-snug', compact ? 'text-xs text-muted' : 'text-sm text-fg/85', className)}>
+    <p className={cn('flex gap-1.5 leading-snug', compact ? 'text-xs text-muted' : 'text-sm text-fg/85', className)} title={compact ? whyNow.sentence : undefined}>
       <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-ink" aria-hidden="true" />
-      <span className={compact ? 'line-clamp-2' : undefined}>
+      <span className={compact ? 'line-clamp-1' : undefined}>
         {withLabel ? <span className="font-semibold text-fg">Pourquoi maintenant : </span> : <span className="sr-only">Pourquoi maintenant : </span>}
         {whyNow.sentence}
-        {withLabel ? <span className="block text-xs text-muted">({origin})</span> : null}
+        {withLabel ? <span className="sr-only"> ({origin})</span> : null}
       </span>
     </p>
   );

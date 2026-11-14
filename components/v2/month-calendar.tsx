@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
+import { ProductImage } from '@/components/product/product-image';
 import { cn, formatLongDate } from '@/lib/utils';
 import { shiftMonth, STATUS_LABELS, type CalendarDay, type CalendarEntry } from '@/lib/v2/planning';
 
@@ -13,7 +14,20 @@ const monthLabel = (month: string) =>
  * Calendrier mensuel des vidéos prévues et postées. Grille lun. → dim. sur ordinateur (noms des produits), points de
  * couleur sur mobile, puis la liste des jours du mois en dessous (lisible sur un petit écran).
  */
-export function MonthCalendar({ month, weeks, today, hrefFor }: { month: string; weeks: CalendarDay[][]; today: string; hrefFor: (month: string) => string }) {
+export function MonthCalendar({
+  month,
+  weeks,
+  today,
+  hrefFor,
+  images = {},
+}: {
+  month: string;
+  weeks: CalendarDay[][];
+  today: string;
+  hrefFor: (month: string) => string;
+  /** Image de chaque produit (identifiant → image, repli). */
+  images?: Record<string, { src: string; fallback: string }>;
+}) {
   const days = weeks.flat().filter((d) => d.inMonth && d.entries.length);
   return (
     <section aria-labelledby="calendrier-titre">
@@ -109,6 +123,7 @@ export function MonthCalendar({ month, weeks, today, hrefFor }: { month: string;
                 {day.entries.map((e) => (
                   <li key={`${e.planId}-${e.n}`} className="flex items-center gap-2 text-sm">
                     <span className={cn('h-2 w-2 shrink-0 rounded-full', DOT[e.status])} aria-hidden="true" />
+                    {images[e.productId] ? <ProductImage src={images[e.productId].src} fallback={images[e.productId].fallback} alt="" className="h-7 w-7 self-center rounded-md" /> : null}
                     <Link href={`/app/mes-produits/${encodeURIComponent(e.productId)}`} className="min-w-0 truncate hover:underline">
                       Vidéo n°{e.n}/{e.total} · {e.product}
                     </Link>

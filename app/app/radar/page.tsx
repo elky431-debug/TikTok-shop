@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Scale, SlidersVertical, Sprout } from 'lucide-react';
+import { Radar as RadarIcon, Scale, SlidersVertical, Sprout } from 'lucide-react';
 import Link from 'next/link';
 import { KeywordSearchForm } from '@/components/product/keyword-search-form';
 import { LockedProductCard, FeaturedProductCard, ProductCard } from '@/components/product/product-card';
@@ -156,8 +156,7 @@ export default async function RadarPage({
                 <ScoreWeightsForm weights={radar.weights} query={query} />
               ) : (
                 <p className="text-sm text-muted">
-                  Avec Elite, donne plus d’importance à la commission ou à la croissance : le score du radar et des fiches suit
-                  tes poids.{' '}
+                  Poids du score réglables avec Elite.{' '}
                   <Link href="/app/passer-pro" className="font-semibold text-rose-ink hover:underline">
                     Passer à Elite
                   </Link>
@@ -174,7 +173,7 @@ export default async function RadarPage({
                 Comparer mes {favorites.length} favoris
               </Link>
             ) : (
-              <span>Mets au moins 2 produits en favori (étoile en vue liste, ou depuis leur fiche) pour les comparer.</span>
+              <span>2 favoris pour comparer</span>
             )}
           </p>
         ) : null}
@@ -183,7 +182,8 @@ export default async function RadarPage({
       <div className="mt-5">
         {radar.items.length === 0 ? (
           <EmptyState
-            title={radar.filtered ? 'Aucun produit ne correspond à ces filtres' : 'Pas encore de produits aujourd’hui'}
+            icon={<RadarIcon className="h-5 w-5" />}
+            title={radar.filtered ? 'Aucun produit avec ces filtres' : 'Pas encore de produits aujourd’hui'}
             action={
               radar.filtered ? (
                 <LinkButton href="/app/radar" variant="outline">
@@ -196,9 +196,7 @@ export default async function RadarPage({
               )
             }
           >
-            {radar.filtered
-              ? 'Élargis la fourchette de prix, baisse la commission minimum ou retire un filtre avancé.'
-              : 'Le radar se remplit chaque nuit. Reviens dans quelques heures.'}
+            {radar.filtered ? null : 'Le radar se remplit chaque nuit.'}
           </EmptyState>
         ) : (
           <>
@@ -236,9 +234,6 @@ export default async function RadarPage({
                   <h2 id="verrouilles" className="text-lg">
                     {plural(radar.lockedCount, 'autre produit', 'autres produits')} à vendre aujourd’hui
                   </h2>
-                  <p className="mt-1 max-w-prose text-sm text-muted">
-                    Avec un abonnement, tu vois tout le radar, le score détaillé, et tu écris tes scripts chaque jour.
-                  </p>
                   <LinkButton href="/abonnement" className="mt-4">
                     Choisir mon abonnement
                   </LinkButton>

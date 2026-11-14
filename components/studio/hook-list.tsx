@@ -54,8 +54,8 @@ export function HookList({
             type="button"
             onClick={() => copy(index)}
             className="flex min-h-12 min-w-0 flex-1 items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-surface focus-visible:bg-surface"
-            aria-label={copied === index ? `Accroche ${index + 1} copiée` : `Copier l’accroche ${index + 1} : ${hook}`}
           >
+            <span className="sr-only">Copier l’accroche </span>
             <span className="num w-5 shrink-0 text-xs font-bold text-subtle">{index + 1}</span>
             <span data-hook className="min-w-0 flex-1 font-semibold leading-snug">
               {hook}
@@ -65,9 +65,9 @@ export function HookList({
                 'flex shrink-0 items-center gap-1 text-xs font-semibold',
                 copied === index ? 'text-gain' : 'text-subtle opacity-0 group-hover:opacity-100',
               )}
-              aria-hidden="true"
+              aria-live="polite"
             >
-              {copied === index ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              {copied === index ? <Check className="h-4 w-4" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
               {copied === index ? 'Copiée' : null}
             </span>
           </button>

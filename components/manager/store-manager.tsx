@@ -1085,7 +1085,6 @@ function CalendarTab({ data, productId }: { data: ManagerData; productId: string
               type="button"
               onClick={() => setSelected(key)}
               aria-pressed={active}
-              aria-label={`${day} ${MONTHS[m - 1]}${d ? ` : ${[d.commissionsCents && data.canEarnings ? formatEuros(d.commissionsCents) : null, d.videos.length ? `${d.videos.length} vidéo(s)` : null, d.requested.length + d.received.length ? 'échantillon' : null].filter(Boolean).join(', ')}` : ''}`}
               className={cn(
                 'flex h-12 flex-col items-center justify-center gap-0.5 rounded-lg border text-xs transition-all sm:h-14',
                 active
@@ -1100,6 +1099,21 @@ function CalendarTab({ data, productId }: { data: ManagerData; productId: string
               {d && data.canEarnings && d.commissionsCents ? (
                 <span className="num hidden text-[10px] font-semibold text-gain sm:inline">+{Math.round(d.commissionsCents / 100)} €</span>
               ) : null}
+              {d ? (
+                <span className="sr-only">
+                  {' '}
+                  {MONTHS[m - 1]} :{' '}
+                  {[
+                    d.commissionsCents && data.canEarnings ? formatEuros(d.commissionsCents) : null,
+                    d.videos.length ? `${d.videos.length} vidéo${d.videos.length > 1 ? 's' : ''}` : null,
+                    d.requested.length + d.received.length ? 'échantillon' : null,
+                  ]
+                    .filter(Boolean)
+                    .join(', ')}
+                </span>
+              ) : (
+                <span className="sr-only"> {MONTHS[m - 1]}</span>
+              )}
               {d ? (
                 <span className="flex gap-0.5" aria-hidden="true">
                   {d.commissionsCents && data.canEarnings ? <span className="h-1.5 w-1.5 rounded-full bg-gain sm:hidden" /> : null}

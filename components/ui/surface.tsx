@@ -1,3 +1,4 @@
+import { Inbox } from 'lucide-react';
 import type { ComponentProps, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -15,7 +16,7 @@ export function Card({ className, ...props }: ComponentProps<'div'>) {
   return (
     <div
       className={cn(
-        'rounded-2xl border border-line bg-bg p-5 transition-[border-color,box-shadow] duration-300 hover:border-line-strong hover:shadow-[0_0_40px_-12px_rgb(var(--cyan)/0.2)] sm:p-6',
+        'animate-fade-up rounded-2xl border border-line bg-bg p-5 transition-[border-color,box-shadow] duration-300 hover:border-line-strong hover:shadow-[0_0_40px_-12px_rgb(var(--cyan)/0.2)] motion-reduce:animate-none sm:p-6',
         className,
       )}
       {...props}
@@ -112,7 +113,7 @@ const badgeTones = {
   rose: 'border-rose-ink/30 bg-rose-ink/10 text-rose-ink',
   cyan: 'border-cyan-ink/25 bg-cyan-ink/[0.07] text-cyan-ink',
   gain: 'border-gain/25 bg-gain/10 text-gain',
-  warn: 'border-warn/30 bg-warn/10 text-warn',
+  warn: 'border-warn/30 bg-warn/[0.05] text-warn',
   ink: 'border-transparent bg-fg text-bg',
 };
 
@@ -181,8 +182,10 @@ export function EmptyState({
   className?: string;
 }) {
   return (
-    <div className={cn('rounded-2xl border border-dashed border-line-strong bg-bg px-6 py-12 text-center', className)}>
-      {icon ? <IconChip size="lg" className="mx-auto mb-4">{icon}</IconChip> : null}
+    <div className={cn('animate-fade-up rounded-2xl border border-dashed border-line-strong bg-bg px-6 py-12 text-center motion-reduce:animate-none', className)}>
+      <IconChip size="lg" className="mx-auto mb-4">
+        {icon ?? <Inbox className="h-5 w-5" />}
+      </IconChip>
       <p className="text-base font-semibold">{title}</p>
       {children ? <div className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted">{children}</div> : null}
       {action ? <div className="mt-6 flex justify-center">{action}</div> : null}
@@ -208,7 +211,7 @@ export function PageHeader({
   className?: string;
 }) {
   return (
-    <header className={cn('mb-8 flex flex-col gap-6 border-b border-line pb-8 lg:flex-row lg:items-end lg:justify-between', className)}>
+    <header className={cn('mb-8 flex animate-fade-up flex-col gap-6 border-b border-line pb-8 motion-reduce:animate-none lg:flex-row lg:items-end lg:justify-between', className)}>
       <div className="min-w-0">
         {eyebrow ? <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted">{eyebrow}</p> : null}
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl md:text-[2rem]">{title}</h1>

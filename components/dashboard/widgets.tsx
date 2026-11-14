@@ -1,5 +1,6 @@
 'use client';
 
+import { ProductImage } from '@/components/product/product-image';
 import { Check, RefreshCw } from 'lucide-react';
 import { animate, motion, useInView, useReducedMotion } from 'motion/react';
 import Link from 'next/link';
@@ -292,6 +293,7 @@ export function UpcomingList({ items }: { items: UpcomingVideo[] }) {
               >
                 {checked ? <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden="true" /> : null}
               </button>
+              {item.image !== undefined ? <ProductImage src={item.image} fallback={item.fallback ?? ''} alt="" className="h-10 w-10 self-center rounded-lg" /> : null}
               <span className={cn('min-w-0 flex-1 text-sm', checked ? 'text-muted line-through' : 'text-fg')}>
                 <span className="block truncate font-medium">
                   Vidéo n°{item.n} · {shortLabel(item.productName)}

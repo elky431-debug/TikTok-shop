@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Download } from 'lucide-react';
+import { Download, Gift } from 'lucide-react';
 import { CopyButton } from '@/components/ui/copy-button';
 import { Badge, Callout, Card, EmptyState, PageHeader, Panel } from '@/components/ui/surface';
 import { requireOnboardedViewer } from '@/lib/auth/session';
@@ -91,9 +91,8 @@ export default async function ParrainagePage() {
           Tes filleuls
         </h2>
         {referrals.length === 0 ? (
-          <EmptyState title="Pas encore de filleul">
-            Partage ton lien à des créateurs qui veulent se lancer sur TikTok Shop. Ils s’inscrivent avec ton lien ; tu touches {rate} % de ce
-            qu’ils paient, chaque mois, tant qu’ils restent abonnés.
+          <EmptyState icon={<Gift className="h-5 w-5" />} title="Pas encore de filleul">
+            Partage ton lien ci-dessus.
           </EmptyState>
         ) : (
           <ul className="divide-y divide-line rounded-2xl border border-line">
@@ -160,7 +159,7 @@ export default async function ParrainagePage() {
         <h2 id="kit" className="text-lg">
           Kit de partage
         </h2>
-        <p className="mt-1 text-sm text-muted">Des textes et des visuels prêts à poster, avec ton lien ou ton code. Pas de promesse de gains : juste l’outil.</p>
+        <p className="mt-1 text-sm text-muted">Des textes et des visuels prêts à poster, avec ton lien.</p>
         <ul className="mt-4 space-y-2">
           {texts.map((t) => (
             <li key={t.id}>

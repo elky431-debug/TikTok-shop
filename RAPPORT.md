@@ -610,3 +610,50 @@ studio Starter avec 5 formats), build ✅, lint ✅, migrations rejouées deux f
   l'afficher.
 - `/api/health` signale « dernier relevé de plus de 36 heures » (relevé du 12 novembre) : la tâche de nuit n'a pas
   tourné depuis ; à regarder (journal de la fonction `nightly-refresh` sur Netlify).
+
+## Interface plus simple, plus belle (14 novembre, décisions 198 à 203)
+
+Six étapes, un commit chacune, poussées sur `main` (Netlify) et `claude/kind-galileo-ardtih`. Captures à 390 et
+1440 px de chaque page modifiée : `docs/captures/interface/` (55 images, dont 5 du site en ligne).
+
+1. **Noms courts** : 62 produits nommés en 3 à 6 mots par l'IA en production, 10 niches corrigées (le calendrier de
+   l'Avent n'est plus en tech). Titre complet seulement dans la fiche, replié. Les nouveaux produits sont nommés la nuit.
+2. **Studio** : choix en cartes (produit avec image, 8 formats illustrés, réglages repliés) ; résultat avec image, prix
+   et commission en tête, 10 accroches copiables d'un clic, 3 scripts en onglets avec le texte parlé en grand, détails
+   du tournage repliés, deux boutons (Téléprompteur, Copier le script), étoile pour garder, limites affichées au clic.
+3. **Analyse de vidéo** : elle ne bloque plus jamais. Ce que dit la doc officielle TikTok (vérifié par un vrai appel) :
+   l'oEmbed ne donne plus ni titre, ni auteur, ni miniature depuis octobre 2026, seulement le lecteur intégrable.
+   L'aperçu est donc le lecteur officiel TikTok (vidéo, auteur, légende), et la légende, l'auteur, la couverture et les
+   chiffres viennent de Nexscope (route documentée, en cache). **Testé en ligne sur tracktout.com** avec 5 vraies vidéos
+   TikTok Shop France récentes (beauté, mode, animaux, maison, tech) : aperçu, analyse et version adaptée à chaque fois ;
+   4 sur la légende seule, 1 sans texte (vidéo sans légende), chacune marquée comme telle avec un champ pour ajouter le
+   texte. Résultat en blocs de couleur, 3 points, « Ouvrir dans le studio » ; inspirations en cartes à couverture.
+4. **Gestionnaire** (remplace « Mes gains ») : copie du gestionnaire de boutique d'EtSmart, adapté à l'affilié :
+   produits en cours avec statuts, échantillons (demandes, relances, réceptions), vidéos (lien, vues, ventes), commissions
+   (saisie, import CSV, objectif, graphique), calendrier. Aucune donnée déplacée : les commissions et les vidéos restent
+   dans les mêmes fiches, donc rien n'a pu se perdre. Les commissions restent dans Pro et Elite.
+5. **Comparateur** : face-à-face avec « VS » animé, barres, couronnes, verdict de l'IA en une phrase et « Écrire mes
+   scripts » sur le gagnant ; cartes à 3 ou 4 produits.
+6. **Autres pages** : en-têtes à une phrase, explications retirées ou en info-bulle, images produit, états vides
+   illustrés, apparitions légères.
+
+| Vérification | Résultat |
+| --- | --- |
+| `npm run build`, `npm run lint` | ✅ |
+| `npm test` | ✅ 448 tests (dont gestionnaire, comparateur, liens TikTok, analyse sans texte) |
+| Playwright | ✅ 4 tests (inscription, lien formateur, paiement, studio) |
+| axe (WCAG 2.1 AA), 390 et 1440 px | ✅ 0 violation sur 26 pages, plus les fenêtres et menus ouverts |
+| Analyse en ligne (tracktout.com) | ✅ 5 vraies vidéos, compte de test supprimé ensuite |
+
+À savoir :
+- Domaines ouverts dans l'environnement de la session : `www.tiktok.com` (oEmbed) et `developers.tiktok.com` (doc).
+  Netlify n'a pas de filtre sortant : rien à faire côté site.
+- Le lecteur officiel TikTok et les couvertures n'ont pas pu s'afficher dans le navigateur de la session (domaines des
+  serveurs d'images de TikTok non ouverts ici) ; en ligne, les couvertures se chargent (vérifié), et le lecteur est
+  celui que TikTok fournit pour l'intégration.
+- Nexscope ne connaît pas toutes les vidéos : sans légende ni chiffres, l'analyse se fait quand même, marquée « Sans
+  texte ». Les liens courts (vm.tiktok.com) sont résolus par leur redirection ; pas de vrai lien court sous la main pour
+  le tester en ligne (testé avec une redirection simulée).
+- Le défilé de captures de l'accueil montre encore l'ancien « Mes gains » : relancer `npm run screenshots:landing` pour
+  le mettre à jour.
+- Stripe : toujours en attente de ta clé (voir la section précédente).

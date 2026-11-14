@@ -76,7 +76,7 @@ const config: Config = {
         },
       },
       animation: {
-        'fade-up': 'fade-up 420ms cubic-bezier(.2,.7,.2,1) both',
+        'fade-up': 'fade-up 420ms cubic-bezier(.2,.7,.2,1) backwards',
         shimmer: 'shimmer 1.4s infinite',
         skeleton: 'skeleton 1.5s ease-in-out infinite',
         pop: 'pop 260ms ease-out',

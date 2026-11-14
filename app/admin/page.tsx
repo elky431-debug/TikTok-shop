@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { GraduationCap, Mail, RefreshCw } from 'lucide-react';
 import { SimpleShell } from '@/components/app/simple-shell';
 import { SubmitButton } from '@/components/ui/submit-button';
 import { Badge, Callout, Card, EmptyState, Panel, PageHeader } from '@/components/ui/surface';
@@ -94,7 +95,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Record
 
   return (
     <SimpleShell title="Administration">
-      <PageHeader eyebrow="Administration" title="Aperçu" description="Inscriptions, abonnements, données et tâches de la nuit : l’état de Tracktout en un coup d’œil." className="mb-6" />
+      <PageHeader eyebrow="Administration" title="Aperçu" description="L’état de Tracktout en un coup d’œil." className="mb-6" />
       <div className="mt-4">
         <AdminNav current="apercu" />
       </div>
@@ -164,7 +165,6 @@ export default async function AdminPage({ searchParams }: { searchParams: Record
                   Pas encore de relevé : il se fait chaque nuit (fonction recordDailyMetrics), ou avec le bouton ci-dessus pour la veille.
                 </p>
               )}
-              <p className="mt-2 text-xs text-muted">Actif = venu dans l’appli ce jour-là, ou a écrit un script. Relevé la nuit suivante.</p>
             </Card>
           </div>
         </Section>
@@ -321,7 +321,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Record
               ) : null}
             </Card>
           ) : (
-            <EmptyState title="Aucune exécution pour l’instant">Lance un rafraîchissement pour remplir le radar.</EmptyState>
+            <EmptyState icon={<RefreshCw className="h-5 w-5" />} title="Aucune exécution pour l’instant" />
           )}
           <Panel className="mt-3 text-sm text-muted">
             Discord (toutes les heures) : récaps privés {discord.digests ? 'actifs' : 'non configurés'} · salons {discord.channels ? 'actifs' : 'non configurés'} ·
@@ -332,7 +332,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Record
 
         <Section id="demandes" title={`Demandes de partenariat (${applications.filter((a) => a.status === 'nouvelle').length} nouvelles)`}>
           {applications.length === 0 ? (
-            <EmptyState title="Aucune demande">Les demandes du formulaire /formateurs arrivent ici et par e-mail.</EmptyState>
+            <EmptyState icon={<GraduationCap className="h-5 w-5" />} title="Aucune demande de formateur" />
           ) : (
             <ul className="space-y-2">
               {applications.map((a) => {
@@ -383,7 +383,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Record
         {isLocalMode() ? (
           <Section id="boite" title="Boîte de réception locale">
             {emails.length === 0 ? (
-              <EmptyState title="Aucun e-mail">Les e-mails envoyés sans clé Resend apparaissent ici.</EmptyState>
+              <EmptyState icon={<Mail className="h-5 w-5" />} title="Aucun e-mail" />
             ) : (
               <ul className="divide-y divide-line rounded-2xl border border-line">
                 {emails.map((e) => (

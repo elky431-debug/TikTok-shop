@@ -1193,3 +1193,16 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      jour. Choix : cases cliquables qui ouvrent la liste des favoris et des produits suivis (image et nom court) ;
      « Changer » et « Retirer » sur chaque produit ; « Ajouter un produit » jusqu'à 4. À 3 ou 4 produits : cartes dans
      le même style (couronnes, barres, nombre de critères gagnés, carte gagnante bordée de dégradé), plus de tableau.
+203. **Interface, étape 6 : toutes les autres pages** (14 novembre). Radar, fiche produit, recherche, alertes, tableau de
+     bord, plan de publication, propositions de marques, récap, préparation, parrainage, compte, espace formateur et
+     admin : un titre et une phrase au plus dans l'en-tête ; les phrases d'explication sous les titres de section sont
+     retirées, ou passent dans une info-bulle (`InfoTip`) quand elles portent une précision honnête (« montants saisis par
+     toi, rien n'est estimé », « un repère, pas une promesse », lecture de la courbe du score) ; la mention « Simulation,
+     pas une promesse » de la fiche produit reste visible. Images produit ajoutées là où elles manquaient (produits
+     suivis et vidéos à tourner du tableau de bord, liste jour par jour du plan). « Pourquoi maintenant » tient sur une
+     ligne dans les cartes du radar (phrase entière au survol). États vides : une icône partout (icône par défaut dans
+     `EmptyState`) et un bouton quand il y a quelque chose à faire. Animations : cartes, en-têtes et états vides
+     apparaissent en glissant légèrement (420 ms, `animate-fade-up`, aucune si les animations sont réduites) ; l'animation
+     ne garde pas de transformation une fois finie (`backwards`), pour qu'une info-bulle ou un menu ne passe pas sous la
+     carte suivante. Accessibilité : pastille orange éclaircie (contraste 4,4 → 4,6), noms accessibles qui reprennent le
+     texte visible (accroches, jours du calendrier), squelette du verdict avec `role="status"`.

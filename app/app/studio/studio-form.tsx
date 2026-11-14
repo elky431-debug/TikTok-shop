@@ -158,9 +158,9 @@ export function StudioForm({
         <fieldset className="min-w-0">
           <legend className={labelClass}>Produit</legend>
           {product ? (
-            <div className="flex items-center gap-4 rounded-2xl border border-line bg-raised p-3 pr-4 sm:p-4">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl border border-line bg-raised p-3 pr-4 sm:flex-nowrap sm:p-4">
               <ProductImage src={product.image} fallback={product.fallback} alt="" className="h-16 w-16 rounded-xl sm:h-20 sm:w-20" />
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 basis-40">
                 <p className="line-clamp-2 text-base font-bold leading-snug tracking-tight sm:text-lg">{product.name}</p>
                 <p className="num mt-0.5 text-sm text-muted">
                   <span className="font-semibold text-fg">{product.price}</span>
@@ -173,7 +173,7 @@ export function StudioForm({
                   onClick={() => setPicking((v) => !v)}
                   aria-expanded={picking}
                   aria-controls="choix-produit"
-                  className="inline-flex h-9 shrink-0 items-center gap-1 rounded-lg border border-line px-3 text-sm font-semibold transition-colors hover:bg-surface"
+                  className="ml-auto inline-flex h-9 shrink-0 items-center gap-1 rounded-lg border border-line px-3 text-sm font-semibold transition-colors hover:bg-surface"
                 >
                   Changer
                   <ChevronDown className={cn('h-4 w-4 transition-transform', picking && 'rotate-180')} aria-hidden="true" />

@@ -18,6 +18,7 @@ import {
 import Link from 'next/link';
 import { CascadeItem, Cascade, CountUp, CreatorRefresh, GainsChart, ProgressRing, UpcomingList } from '@/components/dashboard/widgets';
 import { ProductImage } from '@/components/product/product-image';
+import { InfoTip } from '@/components/ui/info-tip';
 import { Sparkline } from '@/components/product/sparkline';
 import { LinkButton } from '@/components/ui/button';
 import { Badge, Callout, EmptyState, IconChip, SectionTitle, TrendPill } from '@/components/ui/surface';
@@ -26,6 +27,7 @@ import { cleanHandle, creatorRefreshPolicy } from '@/lib/creator-profile';
 import { loadDashboard, type Kpi } from '@/lib/dashboard';
 import { getRepo } from '@/lib/db';
 import { fallbackImageUrl } from '@/lib/product-image';
+import { displayName } from '@/lib/product-name';
 import { getPlan } from '@/lib/plans';
 import { followerRangeLabel } from '@/lib/profile-rules';
 import { getRadar } from '@/lib/radar';
@@ -302,12 +304,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: Re
               title="Ta courbe apparaîtra ici"
               action={<LinkButton href="/app/gestionnaire?onglet=commissions" arrow>Saisir mes gains</LinkButton>}
             >
-              Note tes commissions (ou importe ton relevé TikTok Shop) : tu verras tes gains et tes ventes sur 7, 30 et 90 jours.
             </EmptyState>
           ) : (
             <>
               <div className="mt-6">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted">Ce mois-ci</p>
+                <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-muted">
+                  Ce mois-ci
+                  <InfoTip label="D’où viennent ces montants">Montants saisis ou importés par toi : rien n’est estimé.</InfoTip>
+                </p>
                 <p className="mt-2 text-[2.5rem] font-bold leading-none tracking-tight md:text-[2.85rem] lg:text-[3.25rem]">
                   <CountUp value={data.monthGains} format="euros" className="text-gradient" />
                 </p>
@@ -321,7 +325,6 @@ export default async function DashboardPage({ searchParams }: { searchParams: Re
                     <span className="text-xs text-muted">{gainsKpi.variation.compare}</span>
                   </div>
                 ) : null}
-                <p className="mt-4 max-w-lg text-xs leading-relaxed text-muted">Montants saisis ou importés par toi : rien n’est estimé.</p>
               </div>
               <div className="mt-8">
                 <GainsChart series={data.series} />
@@ -346,13 +349,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Re
       {/* À tourner + objectif */}
       <Cascade className="grid grid-cols-1 gap-6 xl:grid-cols-2 xl:gap-8">
         <CascadeItem className="rounded-2xl border border-line bg-bg p-6 md:p-8">
-          <div className="mb-1 flex items-center gap-3">
+          <div className="mb-6 flex items-center gap-3">
             <IconChip>
               <Clapperboard className="h-4 w-4" strokeWidth={1.75} />
             </IconChip>
             <h2 className="text-base font-semibold">À tourner cette semaine</h2>
           </div>
-          <p className="mb-6 text-xs text-muted">Les 3 prochaines vidéos de tes produits suivis. Coche-les une fois postées.</p>
           {data.upcoming.length ? (
             <UpcomingList items={data.upcoming} />
           ) : (
@@ -370,21 +372,18 @@ export default async function DashboardPage({ searchParams }: { searchParams: Re
                 )
               }
             >
-              {data.hasBoards
-                ? 'Tes prochaines vidéos sont prévues plus tard. Avance-les dans ton plan si tu veux tourner plus.'
-                : 'Suis un produit depuis le radar : son tableau de 20 vidéos se crée tout seul.'}
             </EmptyState>
           )}
         </CascadeItem>
 
         <CascadeItem className="rounded-2xl border border-line bg-bg p-6 md:p-8">
-          <div className="mb-1 flex items-center gap-3">
+          <div className="mb-6 flex items-center gap-3">
             <IconChip tone="neutral">
               <Target className="h-4 w-4" strokeWidth={1.75} />
             </IconChip>
             <h2 className="text-base font-semibold">Objectif du mois</h2>
+            <InfoTip label="À propos de l’objectif">Ton objectif personnel de gains : un repère, pas une promesse.</InfoTip>
           </div>
-          <p className="mb-6 text-xs text-muted">Ton objectif personnel de gains : un repère, pas une promesse.</p>
           {data.goalCents ? (
             <div className="flex flex-col items-center gap-6 sm:flex-row">
               <ProgressRing
@@ -429,7 +428,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Re
       {/* Produits suivis + activité */}
       <Cascade className="grid grid-cols-1 gap-6 xl:grid-cols-2 xl:gap-8">
         <CascadeItem className="rounded-2xl border border-line bg-bg p-6 md:p-8">
-          <div className="mb-1 flex items-center justify-between gap-3">
+          <div className="mb-6 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <IconChip>
                 <Star className="h-4 w-4" strokeWidth={1.75} />
@@ -440,7 +439,6 @@ export default async function DashboardPage({ searchParams }: { searchParams: Re
               Tout voir
             </Link>
           </div>
-          <p className="mb-6 text-xs text-muted">Ventes des 7 derniers jours ; ceux qui baissent passent en tête.</p>
           {data.followed.length ? (
             <ul className="space-y-2">
               {data.followed.map(({ product: p, declining }) => (
@@ -452,8 +450,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Re
                       declining ? 'border-warn/40 hover:border-warn/60' : 'border-line hover:border-line-strong',
                     )}
                   >
+                    <ProductImage src={p.image_url} fallback={fallbackImageUrl(p.id, p.niche)} alt="" className="h-10 w-10 self-center rounded-lg" />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium">{p.name}</span>
+                      <span className="block truncate text-sm font-medium">{displayName(p)}</span>
                       <span className={cn('text-xs', declining ? 'font-semibold text-warn' : 'text-muted')}>
                         {declining ? 'En baisse : pense à le remplacer' : `${formatInt(p.sales_30d.slice(-7).reduce((s, v) => s + v, 0))} ventes sur 7 jours`}
                       </span>
@@ -467,19 +466,17 @@ export default async function DashboardPage({ searchParams }: { searchParams: Re
             </ul>
           ) : (
             <EmptyState title="Tu ne suis encore aucun produit" action={<LinkButton href="/app/radar" variant="secondary">Ouvrir le radar</LinkButton>}>
-              Suis les produits sur lesquels tu tournes : tu verras ici leurs ventes et une alerte s’ils baissent.
             </EmptyState>
           )}
         </CascadeItem>
 
         <CascadeItem className="rounded-2xl border border-line bg-bg p-6 md:p-8">
-          <div className="mb-1 flex items-center gap-3">
+          <div className="mb-6 flex items-center gap-3">
             <IconChip tone="neutral">
               <History className="h-4 w-4" strokeWidth={1.75} />
             </IconChip>
             <h2 className="text-base font-semibold">Activité récente</h2>
           </div>
-          <p className="mb-6 text-xs text-muted">Tes derniers scripts, vidéos postées, gains saisis et alertes.</p>
           {data.activity.length ? (
             <ul className="space-y-1">
               {data.activity.map((a, i) => {

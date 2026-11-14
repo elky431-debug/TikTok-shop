@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Lock, Megaphone, ShieldCheck } from 'lucide-react';
+import { Euro, Landmark, Lock, Megaphone, ShieldCheck, Users } from 'lucide-react';
 import { SignupsChart } from '@/components/app/signups-chart';
 import { SimpleShell } from '@/components/app/simple-shell';
 import { CopyButton } from '@/components/ui/copy-button';
@@ -67,7 +67,7 @@ export default async function FormateurPage({ searchParams }: { searchParams: Re
       <PageHeader
         eyebrow={<>Formateur · {coach.training_name}</>}
         title="Tes élèves"
-        description={`Avec tes codes, tes élèves ont −${percent} % sur leur premier mois. Tu touches ${rate} % de ce qu’ils paient, chaque mois, tant qu’ils restent abonnés.`}
+        description={`Tu touches ${rate} % de ce que paient tes élèves, chaque mois.`}
       />
       {notice ? <Callout tone={notice.tone} className="mb-6" title={notice.text} /> : null}
 
@@ -85,8 +85,7 @@ export default async function FormateurPage({ searchParams }: { searchParams: Re
         Plans : {data.plans.starter} en Starter, {data.plans.pro} en Pro, {data.plans.elite} en Elite, {data.plans.aucun} sans abonnement ·{' '}
         {data.canceled} résiliation
         {data.canceled > 1 ? 's' : ''} · {data.eligible} élève{data.eligible > 1 ? 's' : ''} affilié{data.eligible > 1 ? 's' : ''} (1 500
-        abonnés et plus), les autres en préparation · {formatInt(data.productsFollowed)} produits suivis au total. Vidéos postées : celles que
-        tes élèves marquent comme postées dans l’appli.
+        abonnés et plus), les autres en préparation · {formatInt(data.productsFollowed)} produits suivis au total.
       </p>
 
       <div className="mt-10 space-y-12">
@@ -94,10 +93,7 @@ export default async function FormateurPage({ searchParams }: { searchParams: Re
           <h2 id="codes-titre" className="text-xl">
             Tes codes et tes liens
           </h2>
-          <p className="mt-1 max-w-prose text-sm text-muted">
-            Un code par promo ou par formation, pour savoir d’où viennent tes élèves. Quel que soit le code, l’élève t’est rattaché, avec
-            −{percent} % sur son premier mois.
-          </p>
+          <p className="mt-1 max-w-prose text-sm text-muted">Un code par promo ou par formation, −{percent} % sur le premier mois.</p>
           <ul className="mt-4 grid gap-3 lg:grid-cols-2">
             {data.byCode.map((c) => {
               const link = coachLandingLink(env.siteUrl, c.code);
@@ -167,9 +163,7 @@ export default async function FormateurPage({ searchParams }: { searchParams: Re
           <h2 id="annonces-titre" className="text-xl">
             Annonces à tes élèves
           </h2>
-          <p className="mt-1 max-w-prose text-sm text-muted">
-            Ton message arrive dans leurs notifications, dans l’appli. {ANNOUNCES_PER_DAY} annonces par jour au plus.
-          </p>
+          <p className="mt-1 max-w-prose text-sm text-muted">Dans leurs notifications, {ANNOUNCES_PER_DAY} par jour au plus.</p>
           <div className="mt-4 grid gap-3 lg:grid-cols-[1.1fr_1fr]">
             <Card>
               <form action={announceAction} className="space-y-3">
@@ -188,7 +182,7 @@ export default async function FormateurPage({ searchParams }: { searchParams: Re
               </form>
             </Card>
             {announcements.length === 0 ? (
-              <EmptyState title="Aucune annonce publiée">Tes annonces apparaîtront ici, avec le nombre d’élèves qui les ont reçues.</EmptyState>
+              <EmptyState icon={<Megaphone className="h-5 w-5" />} title="Aucune annonce publiée" />
             ) : (
               <ul className="space-y-2">
                 {announcements.map((a) => (
@@ -230,8 +224,8 @@ export default async function FormateurPage({ searchParams }: { searchParams: Re
           </Panel>
 
           {data.consented.length === 0 ? (
-            <EmptyState title="Aucun détail partagé pour l’instant" className="mt-3">
-              Quand un élève accepte de te montrer sa progression, il apparaît ici. Son e-mail n’apparaît que s’il l’a aussi accepté.
+            <EmptyState icon={<Users className="h-5 w-5" />} title="Aucun détail partagé pour l’instant" className="mt-3">
+              Un élève apparaît ici s’il accepte de partager sa progression.
             </EmptyState>
           ) : (
             <>
@@ -314,7 +308,7 @@ export default async function FormateurPage({ searchParams }: { searchParams: Re
             <div>
               <h3 className="mb-2 text-sm font-semibold">Commissions</h3>
               {earnings.commissions.length === 0 ? (
-                <EmptyState title="Aucune commission">Elles apparaissent ici à chaque paiement d’un de tes élèves.</EmptyState>
+                <EmptyState icon={<Euro className="h-5 w-5" />} title="Aucune commission pour l’instant" />
               ) : (
                 <ul className="divide-y divide-line rounded-2xl border border-line">
                   {earnings.commissions.slice(0, 24).map((c) => (
@@ -332,7 +326,7 @@ export default async function FormateurPage({ searchParams }: { searchParams: Re
             <div>
               <h3 className="mb-2 text-sm font-semibold">Versements</h3>
               {earnings.payouts.length === 0 ? (
-                <EmptyState title="Aucun versement">Chaque virement apparaît ici avec sa date et sa référence.</EmptyState>
+                <EmptyState icon={<Landmark className="h-5 w-5" />} title="Aucun versement pour l’instant" />
               ) : (
                 <ul className="divide-y divide-line rounded-2xl border border-line">
                   {earnings.payouts.map((p) => (

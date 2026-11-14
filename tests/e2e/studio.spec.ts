@@ -40,8 +40,8 @@ test('génération de scripts (Starter) : 5 formats, 10 accroches, 3 scripts, r�
   await expect(firstHook).not.toHaveText(before ?? '');
 
   // Copier une accroche d'un clic, tout copier depuis le menu, puis garder (étoile)
-  await page.locator('#accroches li').nth(1).getByRole('button', { name: /^Copier l’accroche 2/ }).click();
-  await expect(page.getByRole('button', { name: 'Accroche 2 copiée' })).toBeVisible();
+  await page.locator('#accroches li').nth(1).getByRole('button', { name: /^Copier l’accroche 2 / }).click();
+  await expect(page.locator('#accroches li').nth(1).getByText('Copiée')).toBeVisible();
   await page.getByRole('button', { name: 'Plus d’actions' }).click();
   await page.getByRole('button', { name: 'Copier tout' }).click();
   await expect(page.getByText('Tout est copié')).toBeVisible();
