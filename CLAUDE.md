@@ -141,6 +141,10 @@ d'EtSmart l'emporte (voir `DECISIONS.md`, refonte).
   uniquement), **radar sur `/app/radar`**. Onboarding : 10 questions, une par écran (`app/bienvenue`,
   `lib/onboarding-steps.ts`) ; `onboarding_version` < 2 ⇒ nouvelles questions une fois. Courbes Recharts cyan avec
   remplissage dégradé. `MotionConfig reducedMotion="user"` dans la coque.
+- **Lancer un produit** (`/app/lancer`, `lib/v2/launch*.ts`, `components/launch/`) : parcours en 7 étapes (produit,
+  échantillon, scripts, planning, tournage, publication par lien de vidéo, résultats), une fiche `lancement` par produit ;
+  tout le reste vit dans les fiches existantes, et le statut du dashboard avance tout seul (`setProductStage`, vers
+  l'avant seulement), modifiable au menu déroulant. `DECISIONS.md` 213-218.
 - **Qualité** : mobile d'abord, focus visible, contraste AA vérifié à l'audit axe, états vides utiles,
   erreurs précises, squelettes. Boutons = verbe exact, réutilisé dans la confirmation.
 

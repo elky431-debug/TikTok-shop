@@ -704,3 +704,58 @@ Six étapes, un commit chacune, toutes en ligne sur https://tracktout.com.
 - **Stripe** : les 4 variables (STRIPE_SECRET_KEY, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, STRIPE_WEBHOOK_SECRET,
   STRIPE_PORTAL_CONFIGURATION) sont toujours à poser dans Netlify ; les paiements de test en ligne attendent ça. Après
   les tests, régénérer la clé secrète de test (elle est passée dans la conversation).
+
+## Pleine largeur, capture de l'analyse, Stripe (14 novembre, décisions 211-212)
+
+- **Plus aucune interface centrée** (règle durable, écrite dans CLAUDE.md) : connexion (formulaire à gauche, aperçu de
+  l'appli à droite), questions de bienvenue, choix de l'abonnement, page d'attente, paiement simulé, récap,
+  comparateur et script prennent toute la largeur. Seuls restent centrés par nature : le contenu d'un e-mail dans son
+  aperçu, les fenêtres modales et le téléprompteur. Le site public garde la largeur de page d'EtSmart.
+- **Capture de l'analyse** : la tienne (cire RedOne de @labras3) a été mise en place, puis refaite sur la même vraie
+  vidéo, en pleine largeur, sur le site en ligne (`docs/landing/analyse.png`). Un premier essai de l'IA avait pris la cire
+  coiffante pour de la cire d'épilation : relancé, le découpage gardé s'en tient à la légende.
+- **Stripe** : les 4 tests d'intégration passent contre ton compte Stripe de test (paiement mensuel et annuel, portail,
+  Pro → Elite, remboursement, résiliation, paiement refusé, code formateur −20 % avec 30 % de commission). **En ligne, le
+  site ne voit encore aucune variable `STRIPE_*`** (`/api/health`, même après deux déploiements neufs) : les paiements de
+  test sur tracktout.com n'ont donc pas pu être faits. À vérifier dans Netlify (Site configuration → Environment
+  variables) : les 4 noms exacts, le bon site (celui de tracktout.com), le périmètre « Functions » (ou « All scopes »)
+  coché, le contexte « Production », puis « Clear cache and deploy site ».
+
+## Lancer un produit (14 novembre, décisions 213-218)
+
+Nouvel onglet (fusée, sous Dashboard ; aussi dans la barre du bas sur téléphone) : un lancement suit un produit de bout
+en bout, en 7 étapes sur une frise (faites cochées, étape affichée entourée, chaque étape cliquable) :
+
+1. **Produit** : radar du jour, dernière recherche ou favoris ; « Lancer ce produit » aussi sur le radar, la recherche,
+   la fiche et le produit du jour. « Écrire mes scripts » et l'étoile de suivi ouvrent ou reprennent le lancement.
+2. **Échantillon** : message prêt à copier, 3 gestes dans TikTok, cases « demandé » et « reçu » avec leur date, ou « Pas
+   d'échantillon, je passe ».
+3. **Scripts** : le studio dans l'étape (l'écriture attend sur place), scripts gardés pour les vidéos, série de 20 en Pro.
+4. **Planifier** : vidéos réparties au rythme de l'onboarding, déplacées par glisser-déposer ou au toucher ; rappels du
+   jour J.
+5. **Tourner** : chaque vidéo avec son script, le téléprompteur et une case « Tournée ».
+6. **Publier** : le lien de la vidéo publiée la marque en ligne (lecteur officiel, chiffres publics en cache quand la
+   source les a), compteurs et objectif de la semaine à jour.
+7. **Résultats** : vues, ventes, commissions, gain total et un conseil honnête ; « Marquer terminé » ou « Abandonner ».
+
+Statut du dashboard automatique (À lancer → Échantillon demandé → Échantillon reçu → Scripts prêts → En tournage → En
+ligne → Terminé), modifiable au menu déroulant ; chaque ligne de « Produits en cours » ouvre son lancement ; terminés et
+abandonnés passent dans l'historique. Ce que TikTok ne dit pas (échantillon arrivé, vidéo publiée) passe par une case ou
+un lien, présentés comme des étapes normales.
+
+| Vérification | Résultat |
+| --- | --- |
+| `npm run build`, `npm run lint` | ✅ |
+| `npm test` | ✅ 467 tests (dont 11 sur les lancements : étapes, statuts, limite du plan, fermeture et reprise, liens, calendrier) |
+| Playwright | ✅ 5 parcours, dont le nouveau `lancement.spec.ts` (toutes les étapes, statut vérifié à chacune) |
+| axe (WCAG 2.1 AA), 390 et 1 440 px | ✅ 0 violation sur les 9 écrans du parcours, le dashboard, le radar, la recherche et la fiche (le contenu du lecteur TikTok, tiers, est exclu) |
+| Captures | ✅ `docs/captures/lancement/` : chaque étape, l'accueil et le dashboard à 390 et 1 440 px, plus 4 captures du test en ligne |
+| Parcours complet en ligne (tracktout.com, téléphone) | ✅ choix sur le radar → échantillon demandé puis reçu → scripts écrits par l'IA (attente sur place) → planning et vidéo déplacée → tournée → vrai lien TikTok (lecteur officiel, 3,8 M de vues et 271 ventes récupérées) → commission → « Terminé » ; statut juste à chaque étape ; compte de test supprimé |
+| Défilé de l'accueil | ✅ carte « Lancer un produit » ; les vraies photos des produits apparaissent désormais dans les captures |
+
+À savoir :
+- Le test en ligne a utilisé la vidéo publique de @labras3 : ses chiffres sont ceux de cette vidéo. Avec ta propre
+  vidéo, ce seront les tiens, quand la source les connaît (sinon ils restent vides, à saisir aux Résultats).
+- Crédits Nexscope épuisés : les chiffres d'une vidéo ne viennent que du cache (24 h) tant qu'ils ne sont pas rechargés.
+- Pour les captures, sept serveurs ont été ouverts dans l'environnement de travail (lecteur TikTok, couvertures,
+  photos des produits) : aucun effet sur le site.
