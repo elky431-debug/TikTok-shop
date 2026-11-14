@@ -1356,3 +1356,14 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      l'étape le dit (heure du récap). Tourner : chaque vidéo avec son script (le n-ième gardé), « Voir le script », le
      téléprompteur et une case « Tournée » ; la première passe le produit à « En tournage ». Un écran : les vidéos
      prêtes et la suivante, le reste résumé en une ligne qui renvoie aux scripts.
+217. **Lancer un produit, étape 5 : publier et suivre les résultats** (14 novembre). Publier : pour chaque vidéo tournée
+     (sinon la prochaine), on colle le lien de la vidéo publiée — c'est ce qui la marque en ligne, TikTok ne prévenant pas
+     l'appli. Le lien est lu (complet, ou court résolu par sa redirection), l'existence de la vidéo est confirmée par
+     l'oEmbed officiel (en cache 12 h ; seule une vidéo introuvable est refusée), ses chiffres publics viennent de la
+     source documentée (Nexscope, vidéo par identifiant, en cache, 40 recherches par jour et par compte, comme l'aperçu
+     de l'analyse) quand elle les a, sinon restent vides. En mode local et dans les tests, aucun appel extérieur. Les
+     vidéos en ligne s'affichent dans le lecteur officiel de TikTok ; le compteur « Vidéos postées » et l'objectif de la
+     semaine sont ceux du dashboard. La première vidéo passe le produit à « En ligne » et déclenche une célébration plus
+     grande. Résultats : vues et ventes par vidéo (saisies ou corrigées), commissions du produit (saisie, ou import du
+     relevé dans le dashboard ; Pro et Elite, comme le suivi des gains), totaux, et un conseil sans promesse
+     (lib/v2/launch.ts). « Marquer terminé » ou « Abandonner ce lancement » le range dans l'historique.

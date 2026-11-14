@@ -1,12 +1,13 @@
 import type { Profile } from '@/lib/db/types';
 import type { LaunchStep } from '@/lib/v2/launch';
 import type { LaunchPageData } from '@/lib/v2/launch-view';
-import { StepFrame, StepNav } from '../step-frame';
 import { ProductStep } from './product-step';
 import { SampleStep } from './sample-step';
 import { ScriptsStep } from './scripts-step';
 import { PlanStep } from './plan-step';
 import { ShootStep } from './shoot-step';
+import { PublishStep } from './publish-step';
+import { ResultsStep } from './results-step';
 
 /** Affiche l'étape demandée d'un lancement. */
 export function LaunchStepView({
@@ -33,11 +34,9 @@ export function LaunchStepView({
       return <PlanStep data={data} profile={profile} searchParams={searchParams} />;
     case 'tourner':
       return <ShootStep data={data} />;
-    default:
-      return (
-        <StepFrame step={step} sentence="Cette étape arrive.">
-          <StepNav id={data.launch.id} step={step} />
-        </StepFrame>
-      );
+    case 'publier':
+      return <PublishStep data={data} profile={profile} searchParams={searchParams} />;
+    case 'resultats':
+      return <ResultsStep data={data} profile={profile} searchParams={searchParams} />;
   }
 }

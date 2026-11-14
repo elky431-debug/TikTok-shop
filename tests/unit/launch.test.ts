@@ -120,3 +120,23 @@ describe('lancement · base', () => {
     expect(await currentStage(repo, 'u4', 'p2')).toBe('a_lancer');
   });
 });
+
+describe('lancement · lien de la vidéo publiée', () => {
+  it('lit un lien complet sans appel extérieur en mode local ; refuse le reste avec la bonne raison', async () => {
+    const { checkPublishedLink } = await import('@/lib/v2/launch-publish');
+    const ok = await checkPublishedLink('https://www.tiktok.com/@labras3/video/7685364570164088097?lang=fr', { repo, userId: 'u', offline: true });
+    expect(ok).toMatchObject({ ok: true, views: null, sales: null });
+    expect(ok.ok && ok.link.id).toBe('7685364570164088097');
+    expect(await checkPublishedLink('https://example.com/video/1', { repo, userId: 'u', offline: true })).toEqual({ ok: false, reason: 'lien' });
+    expect(await checkPublishedLink('https://vm.tiktok.com/ZMabc123/', { repo, userId: 'u', offline: true })).toEqual({ ok: false, reason: 'court' });
+  });
+
+  it('déplacer une vidéo dans le calendrier : jamais avant aujourd’hui, jamais une vidéo en ligne', async () => {
+    const { moveItemDate, moveItem: move } = await import('@/lib/v2/planning');
+    let board = newBoard({ productId: 'p', productName: 'P' });
+    board = move(board, 2, 'poste', TODAY);
+    expect(moveItemDate(board, 1, '2026-11-20', TODAY).items[0].date).toBe('2026-11-20');
+    expect(moveItemDate(board, 1, '2026-11-01', TODAY)).toBe(board);
+    expect(moveItemDate(board, 2, '2026-11-20', TODAY).items[1].date).toBeNull();
+  });
+});

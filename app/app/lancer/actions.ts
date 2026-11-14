@@ -24,7 +24,10 @@ import type { Profile } from '@/lib/db/types';
 import { rhythmFor } from '@/lib/profile-rules';
 import { addDays } from '@/lib/utils';
 import { ensureBoard, saveBoard } from '@/lib/v2/board';
-import { isRhythm, moveItem, moveItemDate, schedulePlan } from '@/lib/v2/planning';
+import { isRhythm, moveItem, moveItemDate, schedulePlan, setPostedDetails } from '@/lib/v2/planning';
+import { isLocalMode } from '@/lib/env';
+import { EARNINGS_KIND, type EarningData } from '@/lib/v2/earnings';
+import { checkPublishedLink } from '@/lib/v2/launch-publish';
 
 function refresh(id?: string) {
   revalidatePath('/app');
@@ -298,4 +301,80 @@ export async function filmedAction(formData: FormData) {
   await syncLaunchStage(repo, profile.id, launch.data, plan, today);
   refresh(launch.id);
   redirect(launchHref(launch.id, 'tourner') + `#video-${n}`);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Étapes « Publier » et « Résultats »
+// ---------------------------------------------------------------------------------------------------------------------
+
+
+/**
+ * La vidéo est en ligne : son lien la passe en « posté » (date du jour), avec ses chiffres publics quand la source les
+ * donne. Le compteur « Vidéos postées », l'objectif de la semaine et le statut (« En ligne ») suivent. Avec une vidéo
+ * déjà postée, change seulement son lien.
+ */
+export async function publishVideoAction(formData: FormData) {
+  const { profile, repo, launch } = await ownLaunch(formData);
+  const today = parisDate();
+  const n = Number(formData.get('n'));
+  const check = await checkPublishedLink(String(formData.get('lien') ?? ''), { repo, userId: profile.id, offline: isLocalMode() });
+  if (!check.ok) redirect(launchHref(launch.id, 'publier', { erreur: check.reason, video: String(n) }) + `#video-${n}`);
+  const record = await launchBoard(profile, repo, launch.data.product_id);
+  if (!record) redirect(launchHref(launch.id, 'publier'));
+  const item = record.data.items.find((i) => i.n === n);
+  if (!item) redirect(launchHref(launch.id, 'publier'));
+  const first = !record.data.items.some((i) => i.status === 'poste');
+  let plan = item.status === 'poste' ? record.data : moveItem(record.data, n, 'poste', today);
+  plan = setPostedDetails(plan, n, {
+    url: check.link.url,
+    posted_at: item.posted_at ?? today,
+    views: check.views ?? item.views ?? null,
+    sales: check.sales ?? item.sales ?? null,
+  });
+  await saveBoard(repo, profile.id, record, plan);
+  await syncLaunchStage(repo, profile.id, launch.data, plan, today);
+  refresh(launch.id);
+  revalidatePath('/app/plan');
+  redirect(launchHref(launch.id, 'publier', first ? { bravo: 'premiere' } : { ok: 'publie' }) + `#video-${n}`);
+}
+
+/** Vues et ventes d'une vidéo, saisies (ou corrigées) à la main. */
+export async function saveResultsAction(formData: FormData) {
+  const { profile, repo, launch } = await ownLaunch(formData);
+  const n = Number(formData.get('n'));
+  const record = (await listBoards(repo, profile.id)).get(launch.data.product_id);
+  const item = record?.data.items.find((i) => i.n === n && i.status === 'poste');
+  if (!record || !item) redirect(launchHref(launch.id, 'resultats'));
+  const count = (value: FormDataEntryValue | null) => {
+    const raw = String(value ?? '').replace(/\s/g, '');
+    if (!raw) return null;
+    const v = Number(raw);
+    return Number.isFinite(v) && v >= 0 ? Math.min(Math.round(v), 1_000_000_000) : null;
+  };
+  const plan = setPostedDetails(record.data, n, { url: item.url, posted_at: item.posted_at ?? null, views: count(formData.get('vues')), sales: count(formData.get('ventes')) });
+  await saveBoard(repo, profile.id, record, plan);
+  refresh(launch.id);
+  redirect(launchHref(launch.id, 'resultats', { ok: 'chiffres' }) + `#resultat-${n}`);
+}
+
+/** Commission reçue pour ce produit (suivi des gains : Pro et Elite), saisie à la main. */
+export async function addCommissionAction(formData: FormData) {
+  const { profile, repo, launch } = await ownLaunch(formData);
+  if (!getPlan(profile.plan).earnings) redirect(launchHref(launch.id, 'resultats'));
+  const today = parisDate();
+  const euros = Number(String(formData.get('montant') ?? '').replace(',', '.').replace(/\s/g, ''));
+  if (!Number.isFinite(euros) || euros <= 0 || euros > 100_000) redirect(launchHref(launch.id, 'resultats', { erreur: 'montant' }));
+  const product = await repo.getProduct(launch.data.product_id);
+  await repo.saveRecord<EarningData>(profile.id, EARNINGS_KIND, {
+    date: pastDate(formData.get('date'), today),
+    product_name: product ? displayName(product) : launch.data.product_name,
+    product_id: launch.data.product_id,
+    video: null,
+    amount_cents: Math.round(euros * 100),
+    sales: null,
+    source: 'saisie',
+    niche: product?.niche ?? null,
+  });
+  refresh(launch.id);
+  redirect(launchHref(launch.id, 'resultats', { ok: 'commission' }));
 }
