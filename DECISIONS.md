@@ -1101,3 +1101,15 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      e-mails (image servie par le site, adresse absolue) affichent l'image. Les images de partage passent sur fond blanc :
      les lettres noires du logo ne se liraient pas sur l'ancien fond noir. Thème noir (option du compte) : plaque blanche
      derrière le logo complet, sans toucher à ses couleurs. Les captures du défilé de l'accueil ont été refaites.
+197. **Stripe : produits et prix créés à la main, codes promo des formateurs** (14 novembre). Les prix sont créés dans le
+     tableau de bord Stripe et retrouvés par leurs clés `starter_mensuel`, `starter_annuel`, `pro_mensuel`, `pro_annuel`,
+     `elite_mensuel`, `elite_annuel` (les anciennes clés `tracktout_<plan>_<période>` restent reconnues pour un abonnement
+     existant). `npm run stripe:setup` ne crée plus ni produit, ni prix, ni coupon : il vérifie que les 6 prix existent et
+     suivent `lib/plans.ts` (montant, euros, période ; un écart arrête le script), prépare le portail client, crée le
+     webhook (`--webhook --site=https://…`, recréé si son secret n'est pas connu) et peut enregistrer
+     `STRIPE_WEBHOOK_SECRET` et `STRIPE_PORTAL_CONFIGURATION` sur Netlify (`--netlify`, jeton et identifiant du site),
+     sans jamais les afficher. Plus de remise automatique pour les élèves d'un formateur : le paiement affiche toujours le
+     champ « code promotionnel », où l'élève saisit le code personnel de son formateur (créé dans Stripe). Le code saisi à
+     l'inscription ne sert plus qu'au rattachement (commission de 30 % sur ce qui est vraiment payé). Tarifs : contenus
+     résumés par plan ; en annuel, le prix mensuel équivalent en gros (23,33 €, 39,99 €, 64,99 €), « facturé 279,90 € par
+     an » dessous, et « 4 mois offerts · −33 % » sur la bascule.

@@ -8,7 +8,6 @@ import { sendEmail } from '@/lib/email/send';
 import { env } from '@/lib/env';
 import { getPlan, planRank, REFERRAL_COMMISSION_RATE, yearlyMonthlyEquivalent } from '@/lib/plans';
 import { formatEuros } from '@/lib/utils';
-import { discountedFirstMonth } from './coach-discount';
 import { latestConsent } from './consent';
 import {
   ACTIVE_STATUSES,
@@ -120,7 +119,6 @@ async function sendConfirmation(repo: Repo, profile: Profile, event: Subscriptio
         planName: plan.name,
         priceCents: plan.prices[interval],
         interval,
-        firstPaymentCents: consent?.coach_discount && interval === 'month' ? discountedFirstMonth(event.plan) : null,
         monthlyEquivalentCents: interval === 'year' ? yearlyMonthlyEquivalent(event.plan) : null,
         consentText: consent?.text ?? null,
         consentAt: consent?.accepted_at ?? null,

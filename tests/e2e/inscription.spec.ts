@@ -70,7 +70,7 @@ test('inscription : de l’accueil au radar, abonnement choisi avant l’appli, 
   await expect(page.getByRole('heading', { name: 'Pourquoi ce score' })).toBeVisible();
 });
 
-test('inscription avec un lien formateur : −20 % sur le premier mois', async ({ browser }) => {
+test('inscription avec un lien formateur : rattachement, remise à saisir au paiement', async ({ browser }) => {
   const code = `T${Date.now().toString(36).toUpperCase()}`;
   const coachEmail = uniqueEmail('formateur');
 
@@ -100,11 +100,12 @@ test('inscription avec un lien formateur : −20 % sur le premier mois', async (
   await expect(page.getByText(`Code formateur ${code} appliqué`)).toBeVisible();
   await signIn(page, uniqueEmail('eleve'));
   await completeOnboarding(page, { firstName: 'Nora' });
+  // La remise du formateur se saisit sur la page de paiement Stripe (code promo) : rien n'est remisé d'office.
   await expect(page.getByText('Code formateur : −20 % sur ton premier mois')).toBeVisible();
-  await expect(page.getByText('47,99 € le premier mois')).toBeVisible();
+  await expect(page.getByText(/champ « code promotionnel » de la page de paiement/)).toBeVisible();
   await page.getByRole('checkbox', { name: /démarre tout de suite/ }).check();
   await page.getByRole('button', { name: 'Choisir Pro' }).click();
-  await expect(page.getByText('Code formateur : 47,99 € le premier mois (−20 %).')).toBeVisible();
+  await expect(page.getByText('59,99 €')).toBeVisible();
   await page.getByRole('button', { name: 'Simuler le paiement' }).click();
   await expect(page).toHaveURL(/\/app\?paiement=ok/);
   // Radar complet, score visible.

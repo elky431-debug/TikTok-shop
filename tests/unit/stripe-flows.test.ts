@@ -3,7 +3,6 @@ import type { AddressInfo } from 'node:net';
 import Stripe from 'stripe';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { POST as webhookRoute } from '@/app/api/stripe/webhook/route';
-import { COACH_COUPON_ID } from '@/lib/billing/coach-discount';
 import { clearPriceCacheForTests, normalizeStripeEvent, setStripeForTests, StripeBilling } from '@/lib/billing/stripe';
 import { BillingUnavailableError } from '@/lib/billing/types';
 import { portalConfiguration, STRIPE_WEBHOOK_EVENTS } from '@/lib/billing/stripe-config';
@@ -25,12 +24,12 @@ interface FakePrice {
   metadata?: Record<string, string>;
   interval: 'month' | 'year';
 }
-/** Prix posés par « npm run stripe:setup » (clé tracktout_<plan>_<période>), plus un prix Pro+ de l'ancienne grille. */
+/** Prix créés dans Stripe (clés starter_mensuel, pro_annuel…), un prix à l'ancienne clé et un prix Pro+ de l'ancienne grille. */
 const PRICES = {
-  starter_m: { id: 'price_starter_m', lookup_key: 'tracktout_starter_month', interval: 'month' },
-  pro_m: { id: 'price_pro_m', lookup_key: 'tracktout_pro_month', interval: 'month' },
-  pro_y: { id: 'price_pro_y', lookup_key: 'tracktout_pro_year', interval: 'year' },
-  elite_m: { id: 'price_elite_m', lookup_key: 'tracktout_elite_month', interval: 'month' },
+  starter_m: { id: 'price_starter_m', lookup_key: 'starter_mensuel', interval: 'month' },
+  pro_m: { id: 'price_pro_m', lookup_key: 'pro_mensuel', interval: 'month' },
+  pro_y: { id: 'price_pro_y', lookup_key: 'pro_annuel', interval: 'year' },
+  elite_m: { id: 'price_elite_m', lookup_key: 'elite_mensuel', interval: 'month' },
   elite_y: { id: 'price_elite_y', lookup_key: 'tracktout_elite_year', interval: 'year' },
   legacy_plus_y: { id: 'price_plus_y', lookup_key: null, metadata: { plan: 'proplus' }, interval: 'year' },
 } satisfies Record<string, FakePrice>;
@@ -268,10 +267,10 @@ describe('requêtes envoyées à Stripe', () => {
   it('Checkout mensuel ou annuel pour un compte sans abonnement : prix retrouvé par sa clé, gardé en mémoire', async () => {
     const profile = (await repo.getProfile('eleve'))!;
     const billing = new StripeBilling();
-    const url = await billing.createCheckout({ profile, plan: 'pro', interval: 'year', coachDiscount: false, consentAt });
+    const url = await billing.createCheckout({ profile, plan: 'pro', interval: 'year', consentAt });
     expect(url).toBe('https://checkout.stripe.com/c/pay/cs_1');
     const lookup = requests.find((r) => r.method === 'GET' && r.path === '/v1/prices')!.query;
-    expect(lookup.get('lookup_keys[0]')).toBe('tracktout_pro_year');
+    expect(lookup.get('lookup_keys[0]')).toBe('pro_annuel');
     expect(lookup.get('active')).toBe('true');
     const checkout = requests.find((r) => r.path === '/v1/checkout/sessions')!.form;
     expect(checkout.get('mode')).toBe('subscription');
@@ -288,26 +287,26 @@ describe('requêtes envoyées à Stripe', () => {
     expect(checkout.get('cancel_url')).toMatch(/\/abonnement\?paiement=annule$/);
 
     // Deuxième paiement du même prix : pas de nouvelle recherche chez Stripe.
-    await billing.createCheckout({ profile, plan: 'pro', interval: 'year', coachDiscount: false, consentAt });
+    await billing.createCheckout({ profile, plan: 'pro', interval: 'year', consentAt });
     expect(requests.filter((r) => r.path === '/v1/prices')).toHaveLength(1);
     expect(requests.filter((r) => r.path === '/v1/checkout/sessions')).toHaveLength(2);
   });
 
-  it('code formateur : coupon −20 % sur le premier mois, sans champ de code promotionnel', async () => {
+  it('code formateur : pas de coupon automatique, le champ « code promotionnel » est toujours là', async () => {
     const profile = (await repo.getProfile('eleve'))!;
-    await new StripeBilling().createCheckout({ profile, plan: 'starter', interval: 'month', coachDiscount: true, consentAt });
+    await new StripeBilling().createCheckout({ profile, plan: 'starter', interval: 'month', consentAt });
     const checkout = requests.find((r) => r.path === '/v1/checkout/sessions')!.form;
     expect(checkout.get('line_items[0][price]')).toBe(PRICES.starter_m.id);
-    expect(checkout.get('discounts[0][coupon]')).toBe(COACH_COUPON_ID);
-    expect(checkout.get('allow_promotion_codes')).toBeNull();
+    expect(checkout.get('discounts[0][coupon]')).toBeNull();
+    expect(checkout.get('allow_promotion_codes')).toBe('true');
   });
 
-  it('un prix sans clé de recherche (stripe:setup pas lancé) : paiement indisponible, sans session créée', async () => {
+  it('un prix sans clé de recherche (pas créé dans Stripe) : paiement indisponible, sans session créée', async () => {
     const profile = (await repo.getProfile('eleve'))!;
-    const attempt = new StripeBilling().createCheckout({ profile, plan: 'starter', interval: 'year', coachDiscount: false, consentAt });
+    const attempt = new StripeBilling().createCheckout({ profile, plan: 'starter', interval: 'year', consentAt });
     await expect(attempt).rejects.toBeInstanceOf(BillingUnavailableError);
-    await expect(new StripeBilling().createCheckout({ profile, plan: 'starter', interval: 'year', coachDiscount: false, consentAt })).rejects.toThrow(
-      /tracktout_starter_year/,
+    await expect(new StripeBilling().createCheckout({ profile, plan: 'starter', interval: 'year', consentAt })).rejects.toThrow(
+      /starter_annuel/,
     );
     expect(requests.some((r) => r.path === '/v1/checkout/sessions')).toBe(false);
   });
@@ -316,7 +315,7 @@ describe('requêtes envoyées à Stripe', () => {
     subscription('sub_1', PRICES.pro_m);
     await sendWebhook('customer.subscription.created', { id: 'sub_1' });
     const profile = (await repo.getProfile('eleve'))!;
-    expect(await new StripeBilling().createCheckout({ profile, plan: 'elite', interval: 'month', coachDiscount: false, consentAt })).toBe(
+    expect(await new StripeBilling().createCheckout({ profile, plan: 'elite', interval: 'month', consentAt })).toBe(
       'https://billing.stripe.com/p/session/bps_1',
     );
     const portal = requests.find((r) => r.path === '/v1/billing_portal/sessions')!.form;

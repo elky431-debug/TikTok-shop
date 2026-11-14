@@ -3,7 +3,6 @@
 import { redirect } from 'next/navigation';
 import { requireOnboardedViewer } from '@/lib/auth/session';
 import { billingMode } from '@/lib/billing';
-import { coachDiscountApplies } from '@/lib/billing/coach-discount';
 import { simulateCancel, simulateSubscription } from '@/lib/billing/simulated';
 import { getRepo } from '@/lib/db';
 import { isBillingInterval, parsePaidPlan } from '@/lib/plans';
@@ -20,8 +19,7 @@ export async function confirmSimulatedPayment(formData: FormData) {
   const interval = formData.get('periode');
   if (!plan || !isBillingInterval(interval)) redirect('/app/passer-pro?erreur=plan');
   const repo = getRepo();
-  const coachDiscount = await coachDiscountApplies(repo, profile, interval);
-  await simulateSubscription(profile, plan, interval, repo, { coachDiscount });
+  await simulateSubscription(profile, plan, interval, repo);
   redirect('/app?paiement=ok');
 }
 

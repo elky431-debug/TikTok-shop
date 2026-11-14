@@ -597,3 +597,16 @@ messages des séries, du style et des retouches, pas de récap du matin sans abo
 (inscription → choix de l'abonnement → paiement simulé, code formateur à −20 %, paiement annuel puis résiliation,
 studio Starter avec 5 formats), build ✅, lint ✅, migrations rejouées deux fois + tests RLS ✅, audit axe ✅ sur
 `/abonnement`, `/prix` et `/app/passer-pro`.
+
+## Stripe : prix créés dans le tableau de bord (14 novembre)
+
+- L'appli retrouve les prix par les clés que tu as créées (`starter_mensuel` … `elite_annuel`) ; rien n'est plus créé par
+  le script. Le paiement affiche toujours le champ « code promotionnel » : crée un code par formateur dans Stripe
+  (coupon −20 % « une fois » + code promo à son nom). Plus aucune remise appliquée d'office.
+- **Pas fait par la session** (clé Stripe non fournie) : vérification des 6 prix, portail client, webhook, secret sur
+  Netlify, paiements de test en ligne. Depuis ton poste, avec `STRIPE_SECRET_KEY` (sk_test_), `NETLIFY_AUTH_TOKEN` et
+  `NETLIFY_SITE_ID` dans `.env.local` : `npm run stripe:setup -- --webhook --site=https://tracktout.com --netlify`, puis
+  redéploie. Le script vérifie les prix, crée le portail et le webhook, et enregistre le secret sur Netlify sans
+  l'afficher.
+- `/api/health` signale « dernier relevé de plus de 36 heures » (relevé du 12 novembre) : la tâche de nuit n'a pas
+  tourné depuis ; à regarder (journal de la fonction `nightly-refresh` sur Netlify).

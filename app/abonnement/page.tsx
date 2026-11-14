@@ -7,8 +7,6 @@ import { PricingCards } from '@/components/pricing/pricing-cards';
 import { Callout } from '@/components/ui/surface';
 import { requireViewer } from '@/lib/auth/session';
 import { billingMode } from '@/lib/billing';
-import { coachDiscountApplies } from '@/lib/billing/coach-discount';
-import { getRepo } from '@/lib/db';
 import { COACH_FIRST_MONTH_DISCOUNT, getPlan } from '@/lib/plans';
 import { pricingCards, yearlyBadge } from '@/lib/pricing';
 import { startCheckoutAction } from '@/app/app/passer-pro/actions';
@@ -33,7 +31,6 @@ export default async function AbonnementPage({ searchParams }: { searchParams: {
   if (getPlan(profile.plan).access) redirect('/app/passer-pro');
 
   const mode = billingMode();
-  const coachDiscount = await coachDiscountApplies(getRepo(), profile, 'month');
   const percent = Math.round(COACH_FIRST_MONTH_DISCOUNT * 100);
 
   return (
@@ -83,15 +80,16 @@ export default async function AbonnementPage({ searchParams }: { searchParams: {
                 Aucune clé Stripe n’est configurée. Le paiement est simulé, sans carte ni prélèvement, pour tester le parcours.
               </Callout>
             ) : null}
-            {coachDiscount ? (
+            {profile.coach_id ? (
               <Callout tone="gain" title={`Code formateur : −${percent} % sur ton premier mois`}>
-                La remise s’applique toute seule au premier paiement de l’abonnement mensuel.
+                Saisis le code promo de ton formateur dans le champ « code promotionnel » de la page de paiement : la remise
+                s’affiche avant que tu paies (abonnement mensuel).
               </Callout>
             ) : null}
           </div>
 
           <PricingCards
-            plans={pricingCards({ coachDiscount })}
+            plans={pricingCards()}
             mode="app"
             currentPlan={profile.plan}
             action={startCheckoutAction}

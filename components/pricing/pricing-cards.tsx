@@ -20,8 +20,6 @@ export interface PlanCard {
   yearly: string;
   yearlyMonthly: string;
   yearlySavings: string;
-  /** Premier mois avec le code formateur (−20 %), ou null. */
-  firstMonth?: string | null;
   features: Array<{ text: string; included: boolean }>;
 }
 
@@ -46,7 +44,7 @@ export function PricingCards({
   currentPlan?: PlanId;
   action?: (formData: FormData) => void | Promise<void>;
   defaultInterval?: BillingInterval;
-  /** Économie de l'annuel, affichée sur la bascule (« 4 mois offerts »). */
+  /** Économie de l'annuel, affichée sur la bascule (« 4 mois offerts · −33 % »). */
   yearlyBadge?: string;
 }) {
   const [interval, setInterval] = useState<BillingInterval>(defaultInterval);
@@ -143,24 +141,17 @@ export function PricingCards({
               <p className="mt-1 text-xs text-muted">{plan.tagline}</p>
               <div className="mt-5 min-h-[5.25rem]">
                 {interval === 'month' ? (
-                  <>
-                    <p className="num flex items-baseline gap-1.5 text-3xl font-bold text-fg">
-                      {plan.monthly} <span className="text-sm font-medium text-muted">/ mois</span>
-                    </p>
-                    {plan.firstMonth ? (
-                      <p className="num mt-1 text-xs text-muted">
-                        <span className="font-semibold text-positive">{plan.firstMonth} le premier mois</span> avec ton code formateur
-                      </p>
-                    ) : null}
-                  </>
+                  <p className="num flex items-baseline gap-1.5 text-3xl font-bold text-fg">
+                    {plan.monthly} <span className="text-sm font-medium text-muted">/ mois</span>
+                  </p>
                 ) : (
                   <>
                     <p className="num flex items-baseline gap-1.5 text-3xl font-bold text-fg">
-                      {plan.yearly} <span className="text-sm font-medium text-muted">/ an</span>
+                      {plan.yearlyMonthly} <span className="text-sm font-medium text-muted">/ mois</span>
                     </p>
-                    <p className="num mt-1 text-sm font-semibold text-fg">soit {plan.yearlyMonthly} / mois</p>
+                    <p className="num mt-1 text-sm text-muted">facturé {plan.yearly} par an</p>
                     <p className="num mt-0.5 text-xs text-muted">
-                      <span className="font-semibold text-positive">{plan.yearlySavings} économisés</span> par rapport au mensuel
+                      au lieu de {plan.monthly} par mois · <span className="font-semibold text-positive">{plan.yearlySavings} économisés</span>
                     </p>
                   </>
                 )}

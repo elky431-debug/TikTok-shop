@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { annualOffer } from '@/lib/billing/annual-offer';
-import { COACH_COUPON_ID } from '@/lib/billing/coach-discount';
 import { WITHDRAWAL_CONSENT_VERSION } from '@/lib/billing/consent';
 import { checkoutSessionParams } from '@/lib/billing/stripe';
 import { MockProvider } from '@/lib/data/mock';
@@ -169,11 +168,10 @@ describe('abonnement : annuel, codes de réduction, code formateur', () => {
     expect(params.subscription_data?.metadata).toEqual({ user_id: 'u1' });
   });
 
-  it('avec le code formateur : coupon −20 % appliqué d’office, sans champ de code promotionnel (Stripe interdit les deux)', () => {
-    const params = checkoutSessionParams({ customer: 'cus_1', userId: 'u1', price: 'price_m', siteUrl: 'https://x.fr', coachDiscount: true });
-    expect(params.discounts).toEqual([{ coupon: COACH_COUPON_ID }]);
-    expect(COACH_COUPON_ID).toBe('tracktout_formateur_20');
-    expect(params).not.toHaveProperty('allow_promotion_codes');
+  it('aucun coupon automatique : le champ « code promotionnel » est toujours affiché (codes des formateurs)', () => {
+    const params = checkoutSessionParams({ customer: 'cus_1', userId: 'u1', price: 'price_m', siteUrl: 'https://x.fr' });
+    expect(params).not.toHaveProperty('discounts');
+    expect(params.allow_promotion_codes).toBe(true);
   });
 
   it('garde la demande de démarrage immédiat dans les métadonnées de la session et de l’abonnement', () => {

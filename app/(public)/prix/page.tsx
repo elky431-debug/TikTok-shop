@@ -3,14 +3,14 @@ import { PricingCards } from '@/components/pricing/pricing-cards';
 import { SectionHeading } from '@/components/public/section-heading';
 import { annualOffer } from '@/lib/billing/annual-offer';
 import { COACH_FIRST_MONTH_DISCOUNT, getPlan, yearlyMonthlyEquivalent } from '@/lib/plans';
-import { pricingCards, yearlyBadge } from '@/lib/pricing';
+import { pricingCards, yearlyBadge, yearlyFreeMonthsLabel } from '@/lib/pricing';
 import { formatEuros } from '@/lib/utils';
 
 const price = (id: 'starter' | 'pro' | 'elite') => formatEuros(getPlan(id).prices.month);
 
 export const metadata: Metadata = {
   title: 'Tarifs',
-  description: `Starter à ${price('starter')}, Pro à ${price('pro')}, Elite à ${price('elite')} par mois. Sans engagement, ${yearlyBadge().toLowerCase()} à l’année.`,
+  description: `Starter à ${price('starter')}, Pro à ${price('pro')}, Elite à ${price('elite')} par mois. Sans engagement, ${yearlyFreeMonthsLabel().toLowerCase()} à l’année.`,
 };
 
 const percent = Math.round(COACH_FIRST_MONTH_DISCOUNT * 100);
@@ -34,11 +34,11 @@ const FAQ = [
   },
   {
     q: 'Mensuel ou annuel ?',
-    a: `L’annuel coûte le prix de ${12 - annualOffer('pro').monthsFree} mois : ${yearlyBadge().toLowerCase()} par rapport à 12 mois en mensuel (Pro : ${formatEuros(getPlan('pro').prices.year)} par an, soit ${formatEuros(yearlyMonthlyEquivalent('pro'))} par mois). Il est payé en une fois pour l’année.`,
+    a: `L’annuel coûte le prix de ${12 - annualOffer('pro').monthsFree} mois : ${yearlyFreeMonthsLabel().toLowerCase()} (−${annualOffer('pro').percent} %) par rapport à 12 mois en mensuel (Pro : ${formatEuros(getPlan('pro').prices.year)} par an, soit ${formatEuros(yearlyMonthlyEquivalent('pro'))} par mois). Il est payé en une fois pour l’année.`,
   },
   {
     q: 'Mon formateur m’a donné un code.',
-    a: `Inscris-toi avec son lien ou entre le code pendant l’inscription : tu as −${percent} % sur ton premier mois d’abonnement mensuel, quel que soit le plan.`,
+    a: `Inscris-toi avec son lien ou entre son code pendant l’inscription, puis saisis son code promo dans le champ « code promotionnel » de la page de paiement : −${percent} % sur ton premier mois d’abonnement mensuel, quel que soit le plan.`,
   },
   {
     q: 'Je peux changer de plan ?',

@@ -1,7 +1,6 @@
 import { getRepo, type Repo } from '@/lib/db';
 import type { BillingInterval, Profile } from '@/lib/db/types';
 import { getPlan, type PaidPlanId } from '@/lib/plans';
-import { discountedFirstMonth } from './coach-discount';
 import { randomId } from '@/lib/utils';
 import { handleBillingEvent } from './events';
 import type { BillingProvider, CheckoutInput } from './types';
@@ -9,7 +8,7 @@ import type { BillingProvider, CheckoutInput } from './types';
 /**
  * Paiement simulé : uniquement en mode local (aucune clé), pour tester tout le parcours.
  * Il produit les mêmes événements normalisés que Stripe et passe par le même traitement
- * (handleBillingEvent) : plan, remise formateur, parrainage et commissions se comportent comme en vrai.
+ * (handleBillingEvent) : plan, parrainage et commissions se comportent comme en vrai. Pas de champ de code promo ici.
  */
 
 type PaidPlan = PaidPlanId;
@@ -22,7 +21,6 @@ export async function simulateSubscription(
   plan: PaidPlan,
   interval: BillingInterval,
   repo: Repo = getRepo(),
-  options: { coachDiscount?: boolean } = {},
 ): Promise<void> {
   const base = {
     provider: 'simulation' as const,
@@ -51,8 +49,7 @@ export async function simulateSubscription(
       eventId: `sim_evt_${randomId()}`,
       ...base,
       invoiceId: `sim_inv_${randomId()}`,
-      // Code formateur : −20 % sur le premier mois, comme le coupon Stripe.
-      amountCents: options.coachDiscount && interval === 'month' ? discountedFirstMonth(plan) : getPlan(plan).prices[interval],
+      amountCents: getPlan(plan).prices[interval],
       paidAt: new Date().toISOString(),
     },
     repo,

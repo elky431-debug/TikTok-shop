@@ -131,9 +131,8 @@ describe('page co-brandée /f/[code]', () => {
     expect(html).toContain('Proposé par Formation Shop');
     expect(html).toContain('−20 % sur ton');
     expect(html).toContain('premier mois avec PROMO2.');
-    // Le prix remisé vient de lib/plans.ts : Pro à 59,99 € → 47,99 € le premier mois.
-    expect(html).toContain('47,99');
-    expect(html).toContain('59,99');
+    // La remise passe par le code promo du formateur, saisi au paiement (aucun prix remisé promis sur la page).
+    expect(html).toContain('à saisir sur la page de paiement');
     expect(html).not.toMatch(/mois de Pro offerts|gratuit|sans carte/i);
     expect(html).toContain('href="/r/PROMO2"');
     expect(html).not.toMatch(/gagne[rsz]? \d|€ par mois de gains/);

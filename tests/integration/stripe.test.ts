@@ -1,6 +1,5 @@
 import Stripe from 'stripe';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { COACH_COUPON_ID, discountedFirstMonth } from '@/lib/billing/coach-discount';
 import { handleBillingEvent } from '@/lib/billing/events';
 import { enrichStripeEvent, normalizeStripeEvent, StripeBilling, stripePriceId } from '@/lib/billing/stripe';
 import { STRIPE_WEBHOOK_EVENTS } from '@/lib/billing/stripe-config';
@@ -70,12 +69,12 @@ describe.skipIf(!ready)('Stripe (mode test réel)', () => {
     for (const id of customers) await stripe.customers.del(id).catch(() => undefined);
   });
 
-  it('Checkout mensuel et annuel (avec ou sans code formateur), et portail client, renvoient une page Stripe', async () => {
+  it('Checkout mensuel et annuel (champ code promo affiché), et portail client, renvoient une page Stripe', async () => {
     const profile = (await repo.getProfile('eleve'))!;
     const billing = new StripeBilling();
-    expect(await billing.createCheckout({ profile, plan: 'pro', interval: 'month', coachDiscount: true, consentAt })).toMatch(/^https:\/\/checkout\.stripe\.com\//);
-    expect(await billing.createCheckout({ profile, plan: 'pro', interval: 'year', coachDiscount: false, consentAt })).toMatch(/^https:\/\/checkout\.stripe\.com\//);
-    expect(await billing.createCheckout({ profile, plan: 'starter', interval: 'month', coachDiscount: false, consentAt })).toMatch(/^https:\/\/checkout\.stripe\.com\//);
+    expect(await billing.createCheckout({ profile, plan: 'pro', interval: 'month', consentAt })).toMatch(/^https:\/\/checkout\.stripe\.com\//);
+    expect(await billing.createCheckout({ profile, plan: 'pro', interval: 'year', consentAt })).toMatch(/^https:\/\/checkout\.stripe\.com\//);
+    expect(await billing.createCheckout({ profile, plan: 'starter', interval: 'month', consentAt })).toMatch(/^https:\/\/checkout\.stripe\.com\//);
     const fresh = (await repo.getProfile('eleve'))!;
     customers.push(fresh.stripe_customer_id!);
     expect(await billing.createPortal({ profile: fresh })).toMatch(/^https:\/\/billing\.stripe\.com\//);
@@ -128,22 +127,28 @@ describe.skipIf(!ready)('Stripe (mode test réel)', () => {
     expect(mails.some((m) => m.subject.includes('n’est pas passé'))).toBe(true);
   });
 
-  it('code formateur : −20 % sur le premier mois seulement, commission de 30 % sur ce qui est payé', async () => {
-    const customer = await customerWithCard('remise', 'pm_card_visa');
-    const sub = await stripe.subscriptions.create({
-      customer,
-      items: [{ price: await stripePriceId('starter', 'month') }],
-      discounts: [{ coupon: COACH_COUPON_ID }],
-      metadata: { user_id: 'remise' },
-    });
-    await sync(customer, 'invoice.paid');
-    expect((await repo.getProfile('remise'))?.plan).toBe('starter');
-    const invoice = await stripe.invoices.retrieve(String(sub.latest_invoice));
-    expect(invoice.amount_paid).toBe(discountedFirstMonth('starter'));
-    const commission = (await repo.listCommissions('coach')).find((c) => c.invoice_id === invoice.id);
-    expect(commission?.amount_cents).toBe(Math.round(discountedFirstMonth('starter') * 0.3));
-    // Coupon « une fois » : la facture suivante est au plein prix.
-    const upcoming = await stripe.invoices.createPreview({ customer, subscription: sub.id });
-    expect(upcoming.total).toBe(3499);
+  it('code promo d’un formateur (−20 % une fois) : remise sur le premier paiement, commission de 30 % sur ce qui est payé', async () => {
+    // Équivalent du code personnel qu'on crée pour un formateur dans Stripe (supprimé à la fin du test).
+    const coupon = await stripe.coupons.create({ percent_off: 20, duration: 'once', name: 'Test formateur (intégration)' });
+    try {
+      const customer = await customerWithCard('remise', 'pm_card_visa');
+      const sub = await stripe.subscriptions.create({
+        customer,
+        items: [{ price: await stripePriceId('starter', 'month') }],
+        discounts: [{ coupon: coupon.id }],
+        metadata: { user_id: 'remise' },
+      });
+      await sync(customer, 'invoice.paid');
+      expect((await repo.getProfile('remise'))?.plan).toBe('starter');
+      const invoice = await stripe.invoices.retrieve(String(sub.latest_invoice));
+      expect(invoice.amount_paid).toBe(Math.round(3499 * 0.8));
+      const commission = (await repo.listCommissions('coach')).find((c) => c.invoice_id === invoice.id);
+      expect(commission?.amount_cents).toBe(Math.round(Math.round(3499 * 0.8) * 0.3));
+      // Remise « une fois » : la facture suivante est au plein prix.
+      const upcoming = await stripe.invoices.createPreview({ customer, subscription: sub.id });
+      expect(upcoming.total).toBe(3499);
+    } finally {
+      await stripe.coupons.del(coupon.id).catch(() => undefined);
+    }
   });
 });

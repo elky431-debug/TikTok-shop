@@ -178,27 +178,26 @@ npm run ai:sample
 ### Stripe (abonnements)
 
 1. Mets ta clé `STRIPE_SECRET_KEY` (commence par `sk_test_` en test : tout ce qui suit se fait d’abord en test).
-2. Lance `npm run stripe:setup`. Il crée, sans doublon si tu le relances :
-   - les produits « Starter », « Pro » et « Elite » et leurs 6 prix, aux montants de `lib/plans.ts` (34,99 €/mois,
-     279,90 €/an ; 59,99 €/mois, 479,90 €/an ; 97,99 €/mois, 779,90 €/an), chacun avec sa `lookup_key`
-     (`tracktout_<plan>_<month|year>`) : l’appli retrouve les prix par cette clé, **aucun identifiant de prix à
-     recopier**. Si un montant change dans `lib/plans.ts`, relance la commande : un nouveau prix reprend la clé et
-     l’ancien est archivé (les abonnés en cours le gardent). Les prix de l’ancien « Pro+ » sont archivés ;
-   - le **coupon du code formateur** (−20 % sur le premier mois, une seule fois), appliqué d’office au paiement
-     mensuel d’un élève arrivé avec un code formateur ;
-   - la **configuration du portail client** : changement de plan et de période (prorata), résiliation en fin de
-     période avec un motif, changement de carte, factures.
-   Il affiche `STRIPE_PORTAL_CONFIGURATION` à copier dans `.env.local` et sur Netlify.
+2. Crée dans Stripe (*Product catalog*) les produits Starter, Pro et Elite et leurs 6 prix récurrents en euros, avec
+   ces clés de recherche (*lookup key*) : `starter_mensuel`, `starter_annuel`, `pro_mensuel`, `pro_annuel`,
+   `elite_mensuel`, `elite_annuel`, aux montants de `lib/plans.ts` (34,99 €/mois, 279,90 €/an ; 59,99 €/mois,
+   479,90 €/an ; 97,99 €/mois, 779,90 €/an). Puis lance `npm run stripe:setup` : il vérifie ces 6 prix (un écart de
+   montant, de devise ou de période arrête le script), crée ou met à jour la **configuration du portail client**
+   (changement de plan et de période au prorata, résiliation en fin de période avec un motif, carte, factures) et écrit
+   `STRIPE_PORTAL_CONFIGURATION` dans `.env.local`. Il ne crée ni produit, ni prix, ni coupon.
+   Codes formateurs : crée un code promo par formateur dans Stripe (*Coupons* → coupon −20 % « une fois », puis un
+   *promotion code* à son nom) ; le paiement affiche toujours le champ « code promotionnel ».
    Image de marque de Stripe (*Settings → Branding*) : icône `public/brand/tracktout-icone-512.png` (le T fléché, carré),
    logo `public/brand/tracktout-logo.png` ; couleur d'accent `#E0144A`. Stripe ne permet pas de les régler par l'API
    pour son propre compte : à faire une fois dans le tableau de bord.
-3. **Webhook**, une fois le site en ligne : `npm run stripe:setup -- --webhook` (avec `NEXT_PUBLIC_SITE_URL` = l’adresse
-   publique) crée le point de terminaison `<NEXT_PUBLIC_SITE_URL>/api/stripe/webhook` avec ses 9 événements et écrit
-   son secret dans `.env.local` (`STRIPE_WEBHOOK_SECRET`, jamais affiché) : copie-le sur Netlify. À la main, c’est
-   *Developers → Webhooks → Add endpoint* avec `checkout.session.completed`, `customer.subscription.created`,
-   `customer.subscription.updated`, `customer.subscription.deleted`, `customer.subscription.paused`,
-   `customer.subscription.resumed`, `invoice.paid`, `invoice.payment_failed`, `charge.refunded`.
-   En local : `stripe listen --forward-to localhost:3000/api/stripe/webhook` (le secret affiché va dans `.env.local`).
+3. **Webhook**, une fois le site en ligne : `npm run stripe:setup -- --webhook --site=https://tracktout.com` crée le
+   point de terminaison `https://tracktout.com/api/stripe/webhook` avec ses 9 événements et écrit son secret dans
+   `.env.local` (`STRIPE_WEBHOOK_SECRET`, jamais affiché). Ajoute `--netlify` (avec `NETLIFY_AUTH_TOKEN` et
+   `NETLIFY_SITE_ID` dans `.env.local`) pour enregistrer aussi `STRIPE_WEBHOOK_SECRET` et `STRIPE_PORTAL_CONFIGURATION`
+   dans les variables du site Netlify, puis redéploie. À la main : *Developers → Webhooks → Add endpoint* avec
+   `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`,
+   `customer.subscription.deleted`, `customer.subscription.paused`, `customer.subscription.resumed`, `invoice.paid`,
+   `invoice.payment_failed`, `charge.refunded`. En local : `stripe listen --forward-to localhost:3000/api/stripe/webhook`.
 4. **Relances de paiement** (*Settings → Billing → Subscriptions and emails*) : garde les nouveaux essais
    automatiques (« Smart Retries ») et choisis d’annuler l’abonnement si tous échouent. Pendant les essais, l’abonné
    garde son accès (statut « past_due »), reçoit notre e-mail « Ton paiement n’est pas passé » et voit un bandeau avec

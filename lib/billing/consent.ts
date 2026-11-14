@@ -26,8 +26,6 @@ export interface ConsentData {
   version: string;
   plan: PaidPlanId;
   interval: BillingInterval;
-  /** Remise du code formateur appliquée au premier mois. */
-  coach_discount: boolean;
   accepted_at: string;
 }
 
@@ -39,7 +37,7 @@ export function consentGiven(formData: FormData): boolean {
 export async function recordConsent(
   repo: Repo,
   profile: Profile,
-  input: { plan: PaidPlanId; interval: BillingInterval; coachDiscount: boolean },
+  input: { plan: PaidPlanId; interval: BillingInterval },
   now = new Date(),
 ): Promise<UserRecord<ConsentData>> {
   return repo.saveRecord<ConsentData>(profile.id, CONSENT_KIND, {
@@ -47,7 +45,6 @@ export async function recordConsent(
     version: WITHDRAWAL_CONSENT_VERSION,
     plan: input.plan,
     interval: input.interval,
-    coach_discount: input.coachDiscount,
     accepted_at: now.toISOString(),
   });
 }

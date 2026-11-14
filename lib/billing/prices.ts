@@ -3,12 +3,14 @@ import type { BillingInterval } from '@/lib/db/types';
 import { isPaidPlan, type PaidPlanId } from '@/lib/plans';
 
 /**
- * Prix Stripe retrouvés par leur `lookup_key` (`tracktout_<plan>_<month|year>`), posée par « npm run stripe:setup » :
- * aucune variable d'identifiant de prix à recopier. Quand un montant change, le script crée un nouveau prix et lui
- * transfère la clé ; les abonnés de l'ancien prix gardent le leur, reconnu par ses métadonnées.
+ * Prix Stripe retrouvés par leur `lookup_key`, créés dans le tableau de bord Stripe : `starter_mensuel`,
+ * `starter_annuel`, `pro_mensuel`, `pro_annuel`, `elite_mensuel`, `elite_annuel`. Aucune variable d'identifiant de prix à
+ * recopier ; « npm run stripe:setup » vérifie qu'ils existent et que leurs montants suivent lib/plans.ts.
  */
+export const INTERVAL_SUFFIX: Record<BillingInterval, string> = { month: 'mensuel', year: 'annuel' };
+
 export function priceLookupKey(plan: PaidPlanId, interval: BillingInterval): string {
-  return `${BRAND_SLUG}_${plan}_${interval}`;
+  return `${plan}_${INTERVAL_SUFFIX[interval]}`;
 }
 
 /** Ancienne grille : `proplus` est devenu `elite`, `free` est devenu `aucun`. */
@@ -37,10 +39,16 @@ export function planFromPrice(price: PriceLike | string | null | undefined): { p
     const plan = normalizePlan(sim[1]);
     return plan ? { plan, interval: sim[2] as BillingInterval } : null;
   }
-  const key = new RegExp(`^${BRAND_SLUG}_([a-z]+)_(month|year)$`).exec(p.lookup_key ?? '');
+  const key = /^([a-z]+)_(mensuel|annuel)$/.exec(p.lookup_key ?? '');
   if (key) {
     const plan = normalizePlan(key[1]);
-    if (plan) return { plan, interval: key[2] as BillingInterval };
+    if (plan) return { plan, interval: key[2] === 'annuel' ? 'year' : 'month' };
+  }
+  // Anciennes clés (`tracktout_<plan>_<month|year>`), pour les abonnements créés avec elles.
+  const legacy = new RegExp(`^${BRAND_SLUG}_([a-z]+)_(month|year)$`).exec(p.lookup_key ?? '');
+  if (legacy) {
+    const plan = normalizePlan(legacy[1]);
+    if (plan) return { plan, interval: legacy[2] as BillingInterval };
   }
   const plan = normalizePlan(p.metadata?.plan);
   const interval = normalizeInterval(p.recurring?.interval);

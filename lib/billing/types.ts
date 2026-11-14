@@ -12,8 +12,8 @@ export type ProviderName = 'stripe' | 'simulation' | 'disabled';
 export interface BillingProvider {
   readonly name: ProviderName;
   /**
-   * URL où envoyer l'utilisateur pour payer. `coachDiscount` : −20 % sur le premier mois (code formateur) ;
-   * `consentAt` : date de la demande de démarrage immédiat (case obligatoire, voir lib/billing/consent.ts).
+   * URL où envoyer l'utilisateur pour payer. `consentAt` : date de la demande de démarrage immédiat (case obligatoire,
+   * voir lib/billing/consent.ts). Les codes promotionnels se saisissent sur la page de paiement.
    */
   createCheckout(input: CheckoutInput): Promise<string>;
   /**
@@ -29,7 +29,6 @@ export interface CheckoutInput {
   profile: Profile;
   plan: PaidPlanId;
   interval: BillingInterval;
-  coachDiscount: boolean;
   consentAt: string;
 }
 

@@ -130,10 +130,11 @@ export default function CgvPage() {
       <section>
         <h2>6. Code d’un formateur partenaire</h2>
         <p>
-          Un utilisateur inscrit avec le code ou le lien d’un formateur partenaire bénéficie d’une remise de {percent} % sur le premier
-          mois de son abonnement mensuel, quel que soit le plan, une seule fois par compte (aucun abonnement souscrit auparavant). La
-          remise est appliquée automatiquement au premier paiement ; elle ne s’applique pas à l’abonnement annuel. Les essais offerts
-          ouverts avant le 13 novembre 2026 vont jusqu’à leur terme, sans prélèvement si aucun abonnement n’est choisi.
+          Un utilisateur inscrit avec le code ou le lien d’un formateur partenaire est rattaché à ce formateur. Le code
+          promotionnel personnel du formateur, à saisir sur la page de paiement, donne une remise de {percent} % sur le premier
+          mois d’un abonnement mensuel, quel que soit le plan, une seule fois par compte ; il ne s’applique pas à l’abonnement
+          annuel. Les essais offerts ouverts avant le 13 novembre 2026 vont jusqu’à leur terme, sans prélèvement si aucun
+          abonnement n’est choisi.
         </p>
       </section>
       <section>

@@ -12,7 +12,6 @@ export function SubscriptionConfirmedEmail({
   planName,
   priceCents,
   interval,
-  firstPaymentCents,
   monthlyEquivalentCents = null,
   consentText,
   consentAt,
@@ -21,8 +20,6 @@ export function SubscriptionConfirmedEmail({
   planName: string;
   priceCents: number;
   interval: 'month' | 'year';
-  /** Premier paiement s'il diffère du prix (code formateur). */
-  firstPaymentCents: number | null;
   /** Annuel : prix mensuel équivalent, à titre de comparaison. */
   monthlyEquivalentCents?: number | null;
   consentText: string | null;
@@ -39,7 +36,6 @@ export function SubscriptionConfirmedEmail({
         Plan {planName}, {formatEuros(priceCents)} TTC par {period}
         {monthlyEquivalentCents ? ` (soit ${formatEuros(monthlyEquivalentCents)} par mois)` : ''}, sans engagement : tu résilies quand tu veux depuis ton
         compte, et l’accès reste ouvert jusqu’à la fin de la période payée.
-        {firstPaymentCents !== null ? ` Avec ton code formateur, ton premier mois est à ${formatEuros(firstPaymentCents)}.` : ''}
       </Text>
       {consentText ? (
         <Text style={{ margin: '12px 0 0', fontSize: 14, lineHeight: '21px', color: colors.muted }}>

@@ -27,7 +27,7 @@ export default function FormateursPage() {
     {
       icon: Gift,
       title: `−${percent} % sur le premier mois de tes élèves`,
-      text: 'Avec ton code ou ton lien, sur le premier mois de l’abonnement mensuel, quel que soit le plan. Ils arrivent sur un radar complet dès le premier jour.',
+      text: 'Avec ton code promo personnel, à saisir au paiement, sur le premier mois de l’abonnement mensuel, quel que soit le plan. Ils arrivent sur un radar complet dès le premier jour.',
     },
     {
       icon: BarChart3,

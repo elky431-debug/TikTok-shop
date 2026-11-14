@@ -1,62 +1,30 @@
 import type { PlanCard } from '@/components/pricing/pricing-cards';
 import { annualOffer } from '@/lib/billing/annual-offer';
-import { discountedFirstMonth } from '@/lib/billing/coach-discount';
 import { getPlan, PAID_PLANS, RECOMMENDED_PLAN, yearlyMonthlyEquivalent, yearlySavings, type PaidPlanId } from '@/lib/plans';
 import { formatEuros } from '@/lib/utils';
 
-/** Ce que contient chaque plan, dans l'ordre de la grille (13 novembre 2026). */
+/**
+ * Ce que contient chaque plan, résumé pour la page Tarifs (grille complète et limites exactes : lib/plans.ts et CGV).
+ */
 const CONTENT: Record<PaidPlanId, { tagline: string; intro?: string; features: string[] }> = {
   starter: {
-    tagline: 'Pour lancer ton compte sur les bons produits.',
-    features: [
-      'Radar France complet, score expliqué et fiche produit',
-      '10 scripts par jour, 5 formats',
-      'Téléprompteur',
-      '10 produits suivis',
-      'Plan de publication',
-      'Récap du matin',
-      '3 alertes',
-      '3 recherches par jour',
-      'Mode préparation',
-      'Parrainage',
-    ],
+    tagline: 'Tu trouves les produits et tu écris tes scripts.',
+    features: ['Radar des produits qui montent', '10 scripts par jour', 'Téléprompteur', 'Plan de publication', 'Récap du matin'],
   },
   pro: {
-    tagline: 'Pour publier tous les jours et suivre ce qui marche.',
+    tagline: 'Plus de volume, et tu suis tes gains.',
     intro: 'Tout le Starter, plus :',
-    features: [
-      '40 scripts par jour, les 8 formats',
-      'Style personnel',
-      'Série de 20 vidéos',
-      'Score « pour toi »',
-      'Produits suivis illimités',
-      'Suivi des gains et import CSV',
-      '20 analyses de vidéo par mois',
-      '20 propositions de marques par mois',
-      'Comparateur',
-      '15 alertes',
-      '15 recherches par jour',
-      'Récap de la semaine',
-    ],
+    features: ['40 scripts par jour', 'Série de 20 vidéos', 'Suivi des gains', 'Analyse de vidéos', 'Propositions de marques'],
   },
   elite: {
-    tagline: 'Pour les gros volumes et l’Europe.',
-    intro: 'Tout le Pro en illimité, plus :',
-    features: [
-      'Allemagne, Italie et Espagne',
-      'Traduction des scripts',
-      'Poids du score réglables',
-      'Export CSV',
-      '50 recherches par jour',
-    ],
+    tagline: 'Tout en illimité, sur quatre pays.',
+    intro: 'Tout le Pro, plus :',
+    features: ['Tout en illimité', 'France, Allemagne, Italie et Espagne'],
   },
 };
 
-/**
- * Contenu des cartes de prix, partagé entre la page publique, le choix de l'abonnement et l'appli. `coachDiscount` :
- * l'élève d'un formateur voit le prix de son premier mois avec −20 %.
- */
-export function pricingCards(options: { coachDiscount?: boolean } = {}): PlanCard[] {
+/** Contenu des cartes de prix, partagé entre la page publique, le choix de l'abonnement et l'appli. */
+export function pricingCards(): PlanCard[] {
   return PAID_PLANS.map((id) => {
     const plan = getPlan(id);
     const content = CONTENT[id];
@@ -70,13 +38,21 @@ export function pricingCards(options: { coachDiscount?: boolean } = {}): PlanCar
       yearly: formatEuros(plan.prices.year),
       yearlyMonthly: formatEuros(yearlyMonthlyEquivalent(id)),
       yearlySavings: formatEuros(yearlySavings(id)),
-      firstMonth: options.coachDiscount ? formatEuros(discountedFirstMonth(id)) : null,
       features: content.features.map((text) => ({ text, included: true })),
     };
   });
 }
 
-/** Libellé de l'économie annuelle, commun aux trois plans (l'annuel vaut 8 mois : « 4 mois offerts »), calculé depuis les prix. */
+/**
+ * Libellé de l'économie annuelle, commun aux trois plans (l'annuel vaut 8 mois : « 4 mois offerts · −33 % »), calculé
+ * depuis les prix du plan recommandé.
+ */
 export function yearlyBadge(): string {
+  const offer = annualOffer(RECOMMENDED_PLAN);
+  return `${offer.badge} · −${offer.percent} %`;
+}
+
+/** « 4 mois offerts » seul, pour les phrases. */
+export function yearlyFreeMonthsLabel(): string {
   return annualOffer(RECOMMENDED_PLAN).badge;
 }

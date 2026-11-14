@@ -58,8 +58,8 @@ export default async function ConnexionPage({
             ) : null}
             {code?.kind === 'coach' ? (
               <Callout tone="cyan" title={`Code formateur ${code.code} appliqué`}>
-                Avec {code.coach.training_name}, tu as −{Math.round(COACH_FIRST_MONTH_DISCOUNT * 100)} % sur ton premier mois
-                d’abonnement mensuel.
+                Avec {code.coach.training_name} : −{Math.round(COACH_FIRST_MONTH_DISCOUNT * 100)} % sur ton premier mois d’abonnement
+                mensuel, avec son code promo à saisir au paiement.
               </Callout>
             ) : code?.kind === 'parrain' ? (
               <Callout tone="cyan" title="Invitation enregistrée">

@@ -55,7 +55,7 @@ export async function seedDemoAccounts(repo: Repo): Promise<string[]> {
     if (!(await repo.getReferralByReferred(s.id))) await repo.createReferral({ referrer_id: coachUser.id, referred_id: s.id, coach_id: coach.id });
   }
   const yanis = await repo.getProfile(students[1].id);
-  if (yanis && yanis.plan === 'aucun') await simulateSubscription(yanis, 'pro', 'month', repo, { coachDiscount: true });
+  if (yanis && yanis.plan === 'aucun') await simulateSubscription(yanis, 'pro', 'month', repo);
 
   const admin = await repo.ensureProfile({ id: '00000000-0000-4000-8000-0000000000a1', email: LOCAL_ADMIN_EMAIL });
   if (!admin.onboarded_at) {

@@ -21,7 +21,7 @@ import { LinkButton } from '@/components/ui/button';
 import { FeatureCard } from '@/components/ui/feature-card';
 import { BRAND, BRAND_DESCRIPTION, BRAND_TAGLINE } from '@/lib/brand';
 import { COACH_FIRST_MONTH_DISCOUNT, getPlan, REFERRAL_COMMISSION_RATE } from '@/lib/plans';
-import { pricingCards, yearlyBadge } from '@/lib/pricing';
+import { pricingCards, yearlyBadge, yearlyFreeMonthsLabel } from '@/lib/pricing';
 import { MARKET_FIGURES } from '@/lib/market';
 import { formatEuros } from '@/lib/utils';
 
@@ -269,7 +269,7 @@ export default function HomePage() {
             eyebrow="Tarifs"
             title="Trois plans,"
             accent="Pro pour publier chaque jour."
-            subtitle={`Sans engagement, résiliable en deux clics. À l’année, ${yearlyBadge().toLowerCase()}.`}
+            subtitle={`Sans engagement, résiliable en deux clics. À l’année, ${yearlyFreeMonthsLabel().toLowerCase()}.`}
           />
           <Reveal>
             <PricingCards plans={pricingCards()} mode="public" yearlyBadge={yearlyBadge()} />

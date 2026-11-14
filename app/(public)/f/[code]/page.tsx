@@ -7,9 +7,7 @@ import { AnnouncementPill } from '@/components/ui/announcement-pill';
 import { FeatureCard } from '@/components/ui/feature-card';
 import { BRAND } from '@/lib/brand';
 import { COACH_FIRST_MONTH_DISCOUNT, getPlan } from '@/lib/plans';
-import { discountedFirstMonth } from '@/lib/billing/coach-discount';
 import { describeCode, normalizeCode } from '@/lib/referral';
-import { formatEuros } from '@/lib/utils';
 
 /**
  * Page d'accueil co-brandée d'un formateur : /f/CODE (code principal ou supplémentaire actif). Le bouton passe par
@@ -68,8 +66,8 @@ export default async function CoachLandingPage({ params }: { params: { code: str
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-muted">
           {coach.training_name} te propose {BRAND} : chaque matin, les produits TikTok Shop à vendre dans tes niches, et des scripts vidéo
-          prêts à tourner. Avec son code, ton premier mois d’abonnement mensuel est à −{percent} %, quel que soit le plan (Pro :{' '}
-          {formatEuros(discountedFirstMonth('pro'))} au lieu de {formatEuros(pro.prices.month)}). Sans engagement.
+          prêts à tourner. Avec son code promo, à saisir sur la page de paiement, ton premier mois d’abonnement mensuel est à
+          −{percent} %, quel que soit le plan. Sans engagement.
         </p>
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <LinkButton href={signup} size="lg" arrow>
@@ -79,7 +77,9 @@ export default async function CoachLandingPage({ params }: { params: { code: str
             Voir les plans
           </LinkButton>
         </div>
-        <p className="mt-4 text-xs text-muted">Le code {code} est appliqué automatiquement à ton inscription.</p>
+        <p className="mt-4 text-xs text-muted">
+          Le code {code} rattache ton compte à {coach.training_name} dès l’inscription ; la remise se saisit au paiement.
+        </p>
       </div>
 
       <ul className="relative mt-16 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

@@ -3,7 +3,6 @@ import os from 'node:os';
 import path from 'node:path';
 import Stripe from 'stripe';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { coachDiscountApplies, discountedFirstMonth } from '@/lib/billing/coach-discount';
 import { consentGiven, latestConsent, recordConsent, WITHDRAWAL_CONSENT_TEXT } from '@/lib/billing/consent';
 import { handleBillingEvent } from '@/lib/billing/events';
 import { grantPlan } from '@/lib/billing/grant';
@@ -61,16 +60,21 @@ function subEvent(overrides: Partial<SubscriptionChanged> = {}): SubscriptionCha
 const mailsTo = async (to: string) => (await repo.listLocalEmails!(50)).filter((m) => m.to === to);
 
 describe('prix : clé de recherche Stripe et plan d’un prix', () => {
-  it('nomme chaque prix tracktout_<plan>_<période>', () => {
-    expect(priceLookupKey('starter', 'month')).toBe('tracktout_starter_month');
-    expect(priceLookupKey('pro', 'year')).toBe('tracktout_pro_year');
-    expect(priceLookupKey('elite', 'month')).toBe('tracktout_elite_month');
+  it('retrouve chaque prix par la clé créée dans Stripe : <plan>_mensuel ou <plan>_annuel', () => {
+    expect(priceLookupKey('starter', 'month')).toBe('starter_mensuel');
+    expect(priceLookupKey('starter', 'year')).toBe('starter_annuel');
+    expect(priceLookupKey('pro', 'month')).toBe('pro_mensuel');
+    expect(priceLookupKey('pro', 'year')).toBe('pro_annuel');
+    expect(priceLookupKey('elite', 'month')).toBe('elite_mensuel');
+    expect(priceLookupKey('elite', 'year')).toBe('elite_annuel');
   });
 
   it('retrouve plan et période : prix simulé, clé de recherche, sinon métadonnées ; « proplus » devient Elite', () => {
     expect(planFromPrice('sim_starter_month')).toEqual({ plan: 'starter', interval: 'month' });
     expect(planFromPrice('sim_proplus_year')).toEqual({ plan: 'elite', interval: 'year' });
-    expect(planFromPrice({ id: 'price_x', lookup_key: 'tracktout_pro_year' })).toEqual({ plan: 'pro', interval: 'year' });
+    expect(planFromPrice({ id: 'price_x', lookup_key: 'pro_annuel' })).toEqual({ plan: 'pro', interval: 'year' });
+    expect(planFromPrice({ id: 'price_x', lookup_key: 'elite_mensuel' })).toEqual({ plan: 'elite', interval: 'month' });
+    expect(planFromPrice({ id: 'price_x', lookup_key: 'tracktout_pro_year' })).toEqual({ plan: 'pro', interval: 'year' }); // ancienne clé
     expect(planFromPrice({ id: 'price_x', lookup_key: 'tracktout_proplus_month' })).toEqual({ plan: 'elite', interval: 'month' });
     // Ancien prix (sans clé, transférée au nouveau) : reconnu par ses métadonnées et sa périodicité.
     expect(planFromPrice({ id: 'price_old', lookup_key: null, metadata: { plan: 'proplus' }, recurring: { interval: 'year' } })).toEqual({
@@ -265,7 +269,7 @@ describe('traitement des événements', () => {
 
   it('confirme un nouvel abonnement par e-mail, une seule fois par abonnement, avec le texte de démarrage immédiat', async () => {
     const eleve = await makeUser('eleve');
-    await recordConsent(repo, eleve, { plan: 'pro', interval: 'month', coachDiscount: false }, new Date('2026-11-13T10:00:00Z'));
+    await recordConsent(repo, eleve, { plan: 'pro', interval: 'month' }, new Date('2026-11-13T10:00:00Z'));
     await handleBillingEvent(subEvent());
     // Mise à jour du même abonnement (renouvellement, changement de carte) : pas de deuxième confirmation.
     await handleBillingEvent(subEvent({ currentPeriodEnd: new Date(Date.now() + 60 * 86_400_000).toISOString() }));
@@ -297,72 +301,32 @@ describe('demande de démarrage immédiat (rétractation)', () => {
 
     const user = await makeUser('client');
     expect(await latestConsent(repo, user.id)).toBeNull();
-    await recordConsent(repo, user, { plan: 'starter', interval: 'year', coachDiscount: false }, new Date('2026-11-12T09:00:00Z'));
-    await recordConsent(repo, user, { plan: 'pro', interval: 'month', coachDiscount: true }, new Date('2026-11-13T09:00:00Z'));
+    await recordConsent(repo, user, { plan: 'starter', interval: 'year' }, new Date('2026-11-12T09:00:00Z'));
+    await recordConsent(repo, user, { plan: 'pro', interval: 'month' }, new Date('2026-11-13T09:00:00Z'));
     expect(await latestConsent(repo, user.id)).toMatchObject({
       text: WITHDRAWAL_CONSENT_TEXT,
       plan: 'pro',
       interval: 'month',
-      coach_discount: true,
       accepted_at: '2026-11-13T09:00:00.000Z',
     });
   });
 });
 
-describe('code formateur : −20 % sur le premier mois', () => {
-  it('s’applique au premier abonnement mensuel d’un élève, jamais à l’annuel ni sans formateur', async () => {
+describe('code formateur : remise saisie au paiement (code promo Stripe)', () => {
+  it('un élève rattaché paie le prix affiché ici (la remise vient de son code promo chez Stripe) ; 30 % de ce qui est payé', async () => {
     await makeCoach();
     await makeUser('eleve');
     await applyReferralCode((await repo.getProfile('eleve'))!, 'TEST30');
     const eleve = (await repo.getProfile('eleve'))!;
-    expect(await coachDiscountApplies(repo, eleve, 'month')).toBe(true);
-    expect(await coachDiscountApplies(repo, eleve, 'year')).toBe(false);
-
-    const solo = await makeUser('solo');
-    expect(await coachDiscountApplies(repo, solo, 'month')).toBe(false);
-
-    expect(discountedFirstMonth('starter')).toBe(Math.round(3499 * 0.8));
-    expect(discountedFirstMonth('pro')).toBe(4799);
-    expect(discountedFirstMonth('elite')).toBe(Math.round(9799 * 0.8));
-  });
-
-  it('facture le premier mois remisé, commission de 30 % sur ce qui est payé, une seule fois par compte', async () => {
-    await makeCoach();
-    await makeUser('eleve');
-    await applyReferralCode((await repo.getProfile('eleve'))!, 'TEST30');
-    let eleve = (await repo.getProfile('eleve'))!;
-
-    const coachDiscount = await coachDiscountApplies(repo, eleve, 'month');
-    await simulateSubscription(eleve, 'pro', 'month', repo, { coachDiscount });
+    await recordConsent(repo, eleve, { plan: 'pro', interval: 'month' });
+    await simulateSubscription(eleve, 'pro', 'month', repo);
     expect((await repo.getProfile('eleve'))?.plan).toBe('pro');
     const [commission] = await repo.listCommissions('coach');
-    expect(commission.amount_cents).toBe(Math.round(4799 * 0.3));
-
-    // Déjà abonné une fois : plus de remise sur un abonnement suivant.
-    eleve = (await repo.getProfile('eleve'))!;
-    expect(await coachDiscountApplies(repo, eleve, 'month')).toBe(false);
-  });
-
-  it('l’annuel est toujours au plein prix, même si la remise est demandée', async () => {
-    await makeCoach();
-    await makeUser('eleve');
-    await applyReferralCode((await repo.getProfile('eleve'))!, 'TEST30');
-    await simulateSubscription((await repo.getProfile('eleve'))!, 'elite', 'year', repo, { coachDiscount: true });
-    const [commission] = await repo.listCommissions('coach');
-    expect(commission.amount_cents).toBe(Math.round(77990 * 0.3));
-  });
-
-  it('l’e-mail de confirmation annonce le premier mois remisé', async () => {
-    await makeCoach();
-    await makeUser('eleve');
-    await applyReferralCode((await repo.getProfile('eleve'))!, 'TEST30');
-    const eleve = (await repo.getProfile('eleve'))!;
-    await recordConsent(repo, eleve, { plan: 'pro', interval: 'month', coachDiscount: true });
-    await simulateSubscription(eleve, 'pro', 'month', repo, { coachDiscount: true });
+    expect(commission.amount_cents).toBe(Math.round(5999 * 0.3));
+    // L'e-mail ne promet aucun montant remisé : le reçu de Stripe montre la remise réellement appliquée.
     const [mail] = await mailsTo('eleve@test.fr');
     expect(mail.subject).toBe('Ton abonnement Pro a démarré');
-    expect(mail.html).toContain('premier mois est à');
-    expect(mail.html).toContain('47,99');
+    expect(mail.html).not.toContain('premier mois est à');
   });
 });
 

@@ -3,7 +3,6 @@
 import { redirect } from 'next/navigation';
 import { requireOnboardedViewer } from '@/lib/auth/session';
 import { getBilling } from '@/lib/billing';
-import { coachDiscountApplies } from '@/lib/billing/coach-discount';
 import { consentGiven, recordConsent } from '@/lib/billing/consent';
 import { BillingUnavailableError } from '@/lib/billing/types';
 import { getRepo } from '@/lib/db';
@@ -12,7 +11,7 @@ import { getPlan, isBillingInterval, parsePaidPlan } from '@/lib/plans';
 /**
  * Lance le paiement d'un abonnement (nouveau ou changement de plan), depuis /abonnement ou /app/passer-pro. La case
  * de démarrage immédiat est obligatoire : sans elle, rien n'est lancé. La demande est enregistrée avant d'ouvrir le
- * paiement ; le code formateur donne −20 % sur le premier mois.
+ * paiement ; les codes promo (dont celui du formateur) se saisissent sur la page de paiement Stripe.
  */
 export async function startCheckoutAction(formData: FormData) {
   const { profile } = await requireOnboardedViewer('/app/passer-pro', { abonnement: false });
@@ -25,9 +24,8 @@ export async function startCheckoutAction(formData: FormData) {
   const repo = getRepo();
   let url: string;
   try {
-    const coachDiscount = await coachDiscountApplies(repo, profile, interval);
-    const consent = await recordConsent(repo, profile, { plan: paidPlan, interval, coachDiscount });
-    url = await getBilling().createCheckout({ profile, plan: paidPlan, interval, coachDiscount, consentAt: consent.data.accepted_at });
+    const consent = await recordConsent(repo, profile, { plan: paidPlan, interval });
+    url = await getBilling().createCheckout({ profile, plan: paidPlan, interval, consentAt: consent.data.accepted_at });
   } catch (error) {
     if (error instanceof BillingUnavailableError) redirect(`${back}?erreur=indisponible`);
     console.error('[paiement] ouverture', error instanceof Error ? error.message : error);

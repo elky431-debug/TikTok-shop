@@ -1,19 +1,20 @@
 /**
- * Prépare Stripe (mode test conseillé), sans doublon si on le relance :
- *  1. produits Starter, Pro et Elite et leurs 6 prix (mensuel, annuel) aux montants de lib/plans.ts, retrouvés par
- *     lookup_key (`tracktout_<plan>_<month|year>`). Si un montant a changé, un nouveau prix reprend la clé
- *     (transfer_lookup_key) et l'ancien est archivé : les abonnés en cours le gardent. Les prix de l'ancien plan
- *     « Pro+ » sont archivés ;
- *  2. le coupon du code formateur (−20 % sur le premier mois, une seule fois) ;
- *  3. configuration du portail client (changement de plan avec prorata, résiliation en fin de période, carte,
- *     factures), mise à jour si elle existe ;
- *  4. avec --webhook et une adresse publique https : le point de terminaison du webhook et ses événements. Son secret
- *     (whsec_…) n'est donné qu'à la création : il est écrit dans .env.local, jamais affiché.
- * L'appli retrouve les prix par leur lookup_key : aucun identifiant de prix à recopier. Seul
- * STRIPE_PORTAL_CONFIGURATION (non secret) est affiché, à copier dans .env.local et dans les variables Netlify.
+ * Prépare Stripe à partir des produits et prix créés dans le tableau de bord (rien n'est créé côté catalogue) :
+ *  1. retrouve les 6 prix par leur lookup_key (starter_mensuel, starter_annuel, pro_mensuel, pro_annuel, elite_mensuel,
+ *     elite_annuel) et vérifie qu'ils correspondent à lib/plans.ts (montant, euros, période). Un écart arrête le script :
+ *     corrige le prix dans Stripe (ou lib/plans.ts), puis relance ;
+ *  2. configuration du portail client (changement de plan entre ces 6 prix avec prorata, résiliation en fin de période,
+ *     carte, factures), mise à jour si elle existe déjà ;
+ *  3. avec --webhook : le point de terminaison <site>/api/stripe/webhook et ses événements. Son secret (whsec_…) n'est
+ *     donné par Stripe qu'à la création : il est écrit dans .env.local, jamais affiché. Si le point existe déjà et que le
+ *     secret n'est pas dans .env.local, il est recréé pour obtenir un nouveau secret ;
+ *  4. avec --netlify : STRIPE_WEBHOOK_SECRET et STRIPE_PORTAL_CONFIGURATION sont enregistrés dans les variables du site
+ *     Netlify (NETLIFY_AUTH_TOKEN et NETLIFY_SITE_ID requis), sans jamais être affichés. Redéploie ensuite.
+ * Les codes promo (dont ceux des formateurs) se créent dans Stripe : le paiement affiche toujours leur champ.
  *
- * Usage : npm run stripe:setup              (STRIPE_SECRET_KEY dans .env.local)
- *         npm run stripe:setup -- --webhook  (NEXT_PUBLIC_SITE_URL = l'adresse publique du site)
+ * Usage : npm run stripe:setup                                   (vérifie les prix, prépare le portail)
+ *         npm run stripe:setup -- --webhook --site=https://tracktout.com [--netlify]
+ * Variables lues dans l'environnement ou .env.local : STRIPE_SECRET_KEY (sk_test_… d'abord), NEXT_PUBLIC_SITE_URL.
  */
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { loadEnvConfig } from '@next/env';
@@ -21,12 +22,14 @@ import Stripe from 'stripe';
 
 loadEnvConfig(process.cwd());
 
-/** Plans de l'ancienne grille dont les prix sont archivés. */
-const RETIRED_PLANS = ['proplus'] as const;
-
 function fail(message: string): never {
   console.error(`✗ ${message}`);
   process.exit(1);
+}
+
+function arg(name: string): string | null {
+  const found = process.argv.find((a) => a.startsWith(`--${name}=`));
+  return found ? found.slice(name.length + 3) : null;
 }
 
 /** Écrit ou remplace une variable dans .env.local sans jamais afficher sa valeur. */
@@ -37,130 +40,122 @@ function writeEnvLocal(name: string, value: string) {
   const pattern = new RegExp(`^${name}=.*$`, 'm');
   const next = pattern.test(current) ? current.replace(pattern, line) : `${current.replace(/\n?$/, '\n')}${line}\n`;
   writeFileSync(file, next);
+  process.env[name] = value;
+}
+
+/** Variable d'un site Netlify (API REST officielle) : créée ou remplacée, pour tous les contextes de déploiement. */
+async function setNetlifyVar(token: string, siteId: string, key: string, value: string) {
+  const api = 'https://api.netlify.com/api/v1';
+  const headers = { authorization: `Bearer ${token}`, 'content-type': 'application/json' };
+  const site = await fetch(`${api}/sites/${siteId}`, { headers });
+  if (!site.ok) throw new Error(`Netlify : site introuvable (${site.status}). Vérifie NETLIFY_SITE_ID et le jeton.`);
+  const { account_id: accountId } = (await site.json()) as { account_id: string };
+  const values = [{ value, context: 'all' }];
+  const update = await fetch(`${api}/accounts/${accountId}/env/${key}?site_id=${siteId}`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify({ key, scopes: ['builds', 'functions', 'runtime'], values }),
+  });
+  if (update.ok) return 'mise à jour';
+  const create = await fetch(`${api}/accounts/${accountId}/env?site_id=${siteId}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify([{ key, scopes: ['builds', 'functions', 'runtime'], values }]),
+  });
+  if (!create.ok) throw new Error(`Netlify : ${key} non enregistrée (${create.status}).`);
+  return 'créée';
 }
 
 async function main() {
   const { STRIPE_WEBHOOK_EVENTS, STRIPE_SETUP_METADATA, portalConfiguration } = await import('@/lib/billing/stripe-config');
-  const { BRAND, BRAND_SLUG } = await import('@/lib/brand');
-  const { PAID_PLANS, getPlan, COACH_FIRST_MONTH_DISCOUNT } = await import('@/lib/plans');
+  const { BRAND_SLUG } = await import('@/lib/brand');
+  const { PAID_PLANS, getPlan } = await import('@/lib/plans');
   const { priceLookupKey } = await import('@/lib/billing/prices');
-  const { COACH_COUPON_ID } = await import('@/lib/billing/coach-discount');
   const key = (process.env.STRIPE_SECRET_KEY ?? '').trim();
   if (!key) fail('STRIPE_SECRET_KEY manquant (dans .env.local ou en variable). Commence par la clé de test sk_test_….');
   const stripe = new Stripe(key);
-  const site = (process.env.NEXT_PUBLIC_SITE_URL ?? '').trim().replace(/\/$/, '') || 'http://localhost:3000';
-  const lines: string[] = [];
+  const site = (arg('site') ?? process.env.NEXT_PUBLIC_SITE_URL ?? '').trim().replace(/\/$/, '') || 'http://localhost:3000';
 
-  // 1. Produits et prix
-  const allProducts = await stripe.products.list({ active: true, limit: 100 });
-  const products: Array<{ product: string; prices: string[] }> = [];
-  for (const planId of PAID_PLANS) {
-    const plan = getPlan(planId);
-    const name = `${BRAND} ${plan.name}`;
-    const lookups = (['month', 'year'] as const).map((interval) => priceLookupKey(planId, interval));
-    const existing = await stripe.prices.list({ lookup_keys: lookups, active: true, limit: 10 });
-    let productId =
-      allProducts.data.find((p) => p.metadata?.app === STRIPE_SETUP_METADATA.app && p.metadata?.plan === planId)?.id ??
-      (existing.data[0] ? String(existing.data[0].product) : null);
-    if (productId) {
-      await stripe.products.update(productId, { name, metadata: { plan: planId, ...STRIPE_SETUP_METADATA } });
-    } else {
-      productId = (await stripe.products.create({ name, metadata: { plan: planId, ...STRIPE_SETUP_METADATA } })).id;
+  // 1. Prix créés dans Stripe, retrouvés par lookup_key et comparés à lib/plans.ts
+  const wanted = PAID_PLANS.flatMap((plan) => (['month', 'year'] as const).map((interval) => ({ plan, interval, key: priceLookupKey(plan, interval) })));
+  const found = await stripe.prices.list({ lookup_keys: wanted.map((w) => w.key), active: true, limit: 20, expand: ['data.product'] });
+  const problems: string[] = [];
+  const byProduct = new Map<string, string[]>();
+  for (const w of wanted) {
+    const price = found.data.find((p) => p.lookup_key === w.key);
+    const expected = getPlan(w.plan).prices[w.interval];
+    if (!price) {
+      problems.push(`${w.key} : aucun prix actif avec cette clé de recherche`);
+      continue;
     }
-    const prices: string[] = [];
-    for (const [i, interval] of (['month', 'year'] as const).entries()) {
-      const amount = plan.prices[interval];
-      let price = existing.data.find((p) => p.lookup_key === lookups[i]);
-      if (!price || price.unit_amount !== amount || String(price.product) !== productId) {
-        const previous = price;
-        price = await stripe.prices.create({
-          product: productId,
-          currency: 'eur',
-          unit_amount: amount,
-          recurring: { interval },
-          lookup_key: lookups[i],
-          transfer_lookup_key: true,
-          tax_behavior: 'inclusive',
-          metadata: { plan: planId },
-        });
-        // Ancien montant : archivé (les abonnés en cours le gardent, plus personne ne peut le choisir).
-        if (previous) await stripe.prices.update(previous.id, { active: false });
-      }
-      prices.push(price.id);
-    }
-    products.push({ product: productId, prices });
-    console.log(`✓ ${name} : ${(plan.prices.month / 100).toFixed(2)} €/mois, ${(plan.prices.year / 100).toFixed(2)} €/an`);
+    const issues = [
+      price.unit_amount !== expected ? `${(price.unit_amount ?? 0) / 100} € au lieu de ${expected / 100} €` : null,
+      price.currency !== 'eur' ? `devise ${price.currency}` : null,
+      price.recurring?.interval !== w.interval ? `période ${price.recurring?.interval ?? 'aucune'} au lieu de ${w.interval}` : null,
+    ].filter(Boolean);
+    if (issues.length) problems.push(`${w.key} : ${issues.join(', ')}`);
+    const productId = typeof price.product === 'string' ? price.product : price.product.id;
+    byProduct.set(productId, [...(byProduct.get(productId) ?? []), price.id]);
+    const name = typeof price.product === 'string' ? '' : 'name' in price.product ? price.product.name : '';
+    console.log(`✓ ${w.key} : ${(price.unit_amount ?? 0) / 100} € / ${w.interval === 'month' ? 'mois' : 'an'}${name ? ` (${name})` : ''}`);
   }
-  // Ancienne grille : prix archivés, produit désactivé.
-  for (const retired of RETIRED_PLANS) {
-    const old = await stripe.prices.list({ lookup_keys: [`${BRAND_SLUG}_${retired}_month`, `${BRAND_SLUG}_${retired}_year`], active: true, limit: 10 });
-    for (const price of old.data) await stripe.prices.update(price.id, { active: false });
-    const product = allProducts.data.find((p) => p.metadata?.plan === retired && p.metadata?.app === STRIPE_SETUP_METADATA.app);
-    if (product) await stripe.products.update(product.id, { active: false });
-    if (old.data.length || product) console.log(`✓ Ancien plan « ${retired} » archivé`);
-  }
+  if (problems.length) fail(`Prix à corriger dans Stripe avant de continuer :\n  - ${problems.join('\n  - ')}`);
+  const products = [...byProduct.entries()].map(([product, prices]) => ({ product, prices }));
 
-  // 2. Coupon du code formateur
-  const percent = Math.round(COACH_FIRST_MONTH_DISCOUNT * 100);
-  const coupon = await stripe.coupons.retrieve(COACH_COUPON_ID).catch(() => null);
-  if (!coupon || coupon.deleted) {
-    await stripe.coupons.create({
-      id: COACH_COUPON_ID,
-      name: `Code formateur : −${percent} % sur le premier mois`,
-      percent_off: percent,
-      duration: 'once',
-      metadata: STRIPE_SETUP_METADATA,
-    });
-    console.log(`✓ Coupon formateur créé (−${percent} % le premier mois)`);
-  } else if (coupon.percent_off !== percent || coupon.duration !== 'once') {
-    fail(`Le coupon ${COACH_COUPON_ID} existe avec d'autres conditions : supprime-le dans Stripe puis relance.`);
-  } else {
-    console.log(`✓ Coupon formateur déjà en place (−${percent} % le premier mois)`);
-  }
-
-  // 3. Portail client
+  // 2. Portail client
   const params = portalConfiguration({ siteUrl: site, products });
   const configurations = await stripe.billingPortal.configurations.list({ active: true, limit: 100 });
   const mine = configurations.data.find((c) => c.metadata?.app === STRIPE_SETUP_METADATA.app);
   const configuration = mine
     ? await stripe.billingPortal.configurations.update(mine.id, params)
     : await stripe.billingPortal.configurations.create(params);
-  lines.push(`STRIPE_PORTAL_CONFIGURATION=${configuration.id}`);
+  writeEnvLocal('STRIPE_PORTAL_CONFIGURATION', configuration.id);
   console.log(`✓ Portail client ${mine ? 'mis à jour' : 'créé'} (changement de plan, résiliation, carte, factures)`);
 
-  // 4. Webhook
+  // 3. Webhook
   const url = `${site}/api/stripe/webhook`;
   if (process.argv.includes('--webhook')) {
     if (!/^https:\/\//.test(site) || /localhost|127\.0\.0\.1/.test(site)) {
-      fail('--webhook demande une adresse publique https dans NEXT_PUBLIC_SITE_URL (en local, utilise « stripe listen »).');
+      fail('--webhook demande une adresse publique https (--site=https://… ou NEXT_PUBLIC_SITE_URL). En local : « stripe listen ».');
     }
     const endpoints = await stripe.webhookEndpoints.list({ limit: 100 });
     const existing = endpoints.data.find((e) => e.url === url);
-    if (existing) {
-      await stripe.webhookEndpoints.update(existing.id, { enabled_events: [...STRIPE_WEBHOOK_EVENTS] });
-      console.log(`✓ Webhook existant mis à jour (${url}) : garde le STRIPE_WEBHOOK_SECRET déjà en place.`);
+    const haveSecret = Boolean((process.env.STRIPE_WEBHOOK_SECRET ?? '').trim());
+    if (existing && haveSecret) {
+      await stripe.webhookEndpoints.update(existing.id, { enabled_events: [...STRIPE_WEBHOOK_EVENTS], disabled: false });
+      console.log(`✓ Webhook existant mis à jour (${url}) : le secret déjà en place reste valable.`);
     } else {
+      if (existing) await stripe.webhookEndpoints.del(existing.id);
       const created = await stripe.webhookEndpoints.create({
         url,
         enabled_events: [...STRIPE_WEBHOOK_EVENTS],
         description: `${BRAND_SLUG} : abonnements, factures, remboursements`,
         metadata: STRIPE_SETUP_METADATA,
       });
-      if (created.secret) writeEnvLocal('STRIPE_WEBHOOK_SECRET', created.secret);
-      console.log(`✓ Webhook créé (${url}). Son secret est dans .env.local (STRIPE_WEBHOOK_SECRET) : copie-le dans Netlify.`);
+      if (!created.secret) fail('Stripe n’a pas renvoyé le secret du webhook.');
+      writeEnvLocal('STRIPE_WEBHOOK_SECRET', created.secret);
+      console.log(`✓ Webhook ${existing ? 'recréé' : 'créé'} (${url}) ; son secret est dans .env.local (STRIPE_WEBHOOK_SECRET).`);
     }
   }
 
-  console.log(
-    `\nMode : ${key.startsWith('sk_live') ? 'PRODUCTION' : 'test'}. Les prix sont retrouvés par leur lookup_key. ` +
-      'Copie cette ligne dans .env.local (et dans les variables Netlify) :\n',
-  );
-  console.log(lines.join('\n'));
+  // 4. Variables Netlify
+  if (process.argv.includes('--netlify')) {
+    const token = (process.env.NETLIFY_AUTH_TOKEN ?? '').trim();
+    const siteId = (process.env.NETLIFY_SITE_ID ?? '').trim();
+    if (!token || !siteId) fail('--netlify demande NETLIFY_AUTH_TOKEN et NETLIFY_SITE_ID (Netlify → Site configuration → Site ID).');
+    for (const name of ['STRIPE_WEBHOOK_SECRET', 'STRIPE_PORTAL_CONFIGURATION']) {
+      const value = (process.env[name] ?? '').trim();
+      if (!value) continue;
+      console.log(`✓ Netlify : ${name} ${await setNetlifyVar(token, siteId, name, value)} (valeur non affichée)`);
+    }
+    console.log('  Redéploie le site pour que les nouvelles valeurs soient prises en compte.');
+  }
+
+  console.log(`\nMode : ${key.startsWith('sk_live') ? 'PRODUCTION' : 'test'}. Prix retrouvés par leur lookup_key.`);
   if (!process.argv.includes('--webhook')) {
     console.log(
-      `\nWebhook : relance avec « -- --webhook » une fois le site en ligne, ou crée-le à la main (Developers → Webhooks)\n` +
-        `sur ${url} avec ces événements : ${STRIPE_WEBHOOK_EVENTS.join(', ')}.\n` +
-        'En local : stripe listen --forward-to localhost:3000/api/stripe/webhook (secret affiché par la CLI Stripe).',
+      `Webhook : relance avec « -- --webhook --site=https://… » (et --netlify pour l'enregistrer sur Netlify), ou crée-le\n` +
+        `à la main (Developers → Webhooks) sur ${url} avec : ${STRIPE_WEBHOOK_EVENTS.join(', ')}.`,
     );
   }
 }

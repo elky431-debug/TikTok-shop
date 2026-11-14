@@ -3,7 +3,6 @@ import { getRepo } from '@/lib/db';
 import type { BillingInterval, Profile } from '@/lib/db/types';
 import { env } from '@/lib/env';
 import type { PaidPlanId } from '@/lib/plans';
-import { COACH_COUPON_ID } from './coach-discount';
 import { WITHDRAWAL_CONSENT_VERSION } from './consent';
 import { planFromPrice, priceLookupKey } from './prices';
 import {
@@ -196,7 +195,7 @@ function portalBase(customer: string) {
 /** Identifiants de prix déjà retrouvés (par clé de recherche), pour ne pas interroger Stripe à chaque paiement. */
 const priceCache = new Map<string, string>();
 
-/** Prix actif d'un plan, retrouvé par sa `lookup_key` (posée par « npm run stripe:setup »). */
+/** Prix actif d'un plan, retrouvé par sa `lookup_key` (créée dans Stripe : starter_mensuel, pro_annuel…). */
 export async function stripePriceId(plan: PaidPlanId, interval: BillingInterval): Promise<string> {
   const key = priceLookupKey(plan, interval);
   const cached = priceCache.get(key);
@@ -225,17 +224,16 @@ async function ensureCustomer(profile: Profile): Promise<string> {
 }
 
 /**
- * Session Checkout d'un nouvel abonnement. Avec le code formateur, le coupon « −20 % sur le premier mois » est appliqué
- * d'office (Stripe interdit alors le champ « code promotionnel ») ; sinon ce champ reste affiché. La demande de
- * démarrage immédiat (case cochée avant d'arriver ici) est rappelée sous le bouton de paiement et gardée dans les
- * métadonnées de la session et de l'abonnement.
+ * Session Checkout d'un nouvel abonnement. Le champ « code promotionnel » de Stripe est toujours affiché : les codes
+ * (dont le code personnel de chaque formateur) se créent dans le tableau de bord Stripe. La demande de démarrage
+ * immédiat (case cochée avant d'arriver ici) est rappelée sous le bouton de paiement et gardée dans les métadonnées de
+ * la session et de l'abonnement.
  */
 export function checkoutSessionParams(input: {
   customer: string;
   userId: string;
   price: string;
   siteUrl: string;
-  coachDiscount?: boolean;
   consentAt?: string;
 }): Stripe.Checkout.SessionCreateParams {
   const consent: Record<string, string> = input.consentAt
@@ -248,7 +246,8 @@ export function checkoutSessionParams(input: {
     line_items: [{ price: input.price, quantity: 1 }],
     subscription_data: { metadata: { user_id: input.userId, ...consent } },
     metadata: { user_id: input.userId, ...consent },
-    ...(input.coachDiscount ? { discounts: [{ coupon: COACH_COUPON_ID }] } : { allow_promotion_codes: true }),
+    // Codes promotionnels (dont ceux des formateurs, créés dans Stripe) : champ affiché sur la page de paiement.
+    allow_promotion_codes: true,
     custom_text: {
       submit: {
         message:
@@ -264,7 +263,7 @@ export function checkoutSessionParams(input: {
 export class StripeBilling implements BillingProvider {
   readonly name = 'stripe' as const;
 
-  async createCheckout({ profile, plan, interval, coachDiscount, consentAt }: CheckoutInput) {
+  async createCheckout({ profile, plan, interval, consentAt }: CheckoutInput) {
     const price = await stripePriceId(plan, interval);
     // Déjà abonné : changement de plan dans le portail, directement sur l'écran de confirmation du nouveau prix
     // (prorata calculé et affiché par Stripe), pas de second abonnement.
@@ -273,7 +272,7 @@ export class StripeBilling implements BillingProvider {
 
     const customer = await ensureCustomer(profile);
     const session = await getStripe().checkout.sessions.create(
-      checkoutSessionParams({ customer, userId: profile.id, price, siteUrl: env.siteUrl, coachDiscount, consentAt }),
+      checkoutSessionParams({ customer, userId: profile.id, price, siteUrl: env.siteUrl, consentAt }),
     );
     if (!session.url) throw new Error('Stripe n’a pas renvoyé d’URL de paiement.');
     return session.url;
