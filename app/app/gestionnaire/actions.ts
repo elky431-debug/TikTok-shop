@@ -6,7 +6,8 @@ import { requireOnboardedViewer } from '@/lib/auth/session';
 import { getRepo } from '@/lib/db';
 import { ensureBoard, saveBoard } from '@/lib/v2/board';
 import { parseDate } from '@/lib/v2/earnings';
-import { isPipelineStatus, SAMPLE_KIND, TRACK_KIND, withStatus, type PipelineStatus, type ProductTrack, type SampleData } from '@/lib/v2/manager';
+import { noteSampleOnLaunch, setProductStage } from '@/lib/v2/launch-store';
+import { isPipelineStatus, SAMPLE_KIND, type PipelineStatus, type ProductStage, type SampleData } from '@/lib/v2/manager';
 import { moveItem, safeUrl, setPostedDetails } from '@/lib/v2/planning';
 import { displayName } from '@/lib/product-name';
 import { parisDate } from '@/lib/utils';
@@ -36,21 +37,20 @@ async function followed(userId: string, productId: string) {
   return saved && product ? { saved, product } : null;
 }
 
-async function setStage(userId: string, productId: string, status: PipelineStatus) {
-  const repo = getRepo();
-  const records = await repo.listRecords<ProductTrack>(userId, TRACK_KIND);
-  const record = records.find((r) => r.data.product_id === productId) ?? null;
-  const next = withStatus(record?.data ?? null, productId, status, parisDate());
-  if (next !== record?.data) await repo.saveRecord<ProductTrack>(userId, TRACK_KIND, next, record?.id);
+/** Avancement automatique du statut (vers l'avant seulement, comme les étapes du parcours de lancement). */
+function advance(userId: string, productId: string, status: PipelineStatus) {
+  return setProductStage(getRepo(), userId, productId, status, 'auto', parisDate());
 }
 
-/** Statut d'un produit (pastille cliquable ou choix dans la liste). */
+/** Statut d'un produit choisi à la main (menu déroulant du tableau « Produits en cours »). */
 export async function setStageAction(formData: FormData) {
   const { profile } = await viewer();
   const productId = String(formData.get('produit') ?? '');
   const status = String(formData.get('statut') ?? '');
-  if (!isPipelineStatus(status) || !(await followed(profile.id, productId))) back(formData, String(formData.get('onglet') ?? 'gestion'), 'erreur=produit');
-  await setStage(profile.id, productId, status as PipelineStatus);
+  const valid = status === 'a_lancer' || isPipelineStatus(status);
+  if (!valid || !(await followed(profile.id, productId))) back(formData, String(formData.get('onglet') ?? 'gestion'), 'erreur=produit');
+  await setProductStage(getRepo(), profile.id, productId, status as ProductStage, 'manuel', parisDate());
+  revalidatePath('/app/lancer');
   back(formData, String(formData.get('onglet') ?? 'gestion'), 'ok=statut');
 }
 
@@ -62,7 +62,7 @@ export async function requestSampleAction(formData: FormData) {
   if (!found) back(formData, 'echantillons', 'erreur=produit');
   const today = parisDate();
   const date = parseDate(String(formData.get('date') ?? '')) ?? today;
-  await repo.saveRecord<SampleData>(profile.id, SAMPLE_KIND, {
+  const created = await repo.saveRecord<SampleData>(profile.id, SAMPLE_KIND, {
     product_id: found.product.id,
     product_name: displayName(found.product),
     requested_at: date > today ? today : date,
@@ -73,9 +73,8 @@ export async function requestSampleAction(formData: FormData) {
         .trim()
         .slice(0, 300) || null,
   });
-  const tracks = await repo.listRecords<ProductTrack>(profile.id, TRACK_KIND);
-  const current = tracks.find((t) => t.data.product_id === found.product.id)?.data.status;
-  if (!current || current === 'arrete') await setStage(profile.id, found.product.id, 'echantillon_demande');
+  await advance(profile.id, found.product.id, 'echantillon_demande');
+  await noteSampleOnLaunch(repo, profile.id, found.product.id, created.id, 'demande');
   back(formData, 'echantillons', 'ok=demande');
 }
 
@@ -101,9 +100,8 @@ export async function receiveSampleAction(formData: FormData) {
   const record = await sample(profile.id, String(formData.get('id') ?? ''));
   if (!record) back(formData, 'echantillons', 'erreur=echantillon');
   await repo.saveRecord<SampleData>(profile.id, SAMPLE_KIND, { ...record.data, received_at: parisDate() }, record.id);
-  const tracks = await repo.listRecords<ProductTrack>(profile.id, TRACK_KIND);
-  const current = tracks.find((t) => t.data.product_id === record.data.product_id)?.data.status;
-  if (!current || current === 'echantillon_demande') await setStage(profile.id, record.data.product_id, 'echantillon_recu');
+  await advance(profile.id, record.data.product_id, 'echantillon_recu');
+  await noteSampleOnLaunch(repo, profile.id, record.data.product_id, record.id, 'recu');
   back(formData, 'echantillons', 'ok=recu');
 }
 
@@ -150,8 +148,6 @@ export async function saveVideoAction(formData: FormData) {
     sales: optionalInt(formData.get('ventes')),
   });
   await saveBoard(repo, profile.id, record, plan);
-  const tracks = await repo.listRecords<ProductTrack>(profile.id, TRACK_KIND);
-  const current = tracks.find((t) => t.data.product_id === found.product.id)?.data.status;
-  if (current && current !== 'en_ligne' && current !== 'arrete') await setStage(profile.id, found.product.id, 'en_ligne');
+  await advance(profile.id, found.product.id, 'en_ligne');
   back(formData, 'videos', 'ok=video');
 }

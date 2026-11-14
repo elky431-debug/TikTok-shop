@@ -64,8 +64,10 @@ export const STAGE_TONES: Record<ProductStage, string> = {
   a_lancer: 'bg-fg/[0.06] text-muted',
   echantillon_demande: 'bg-warn-soft text-warn',
   echantillon_recu: 'bg-cyan-soft text-cyan-ink',
+  scripts_prets: 'bg-cyan-soft text-cyan-ink',
   en_tournage: 'bg-rose-soft text-rose-ink',
   en_ligne: 'bg-gain-soft text-gain',
+  termine: 'bg-gain-soft text-gain',
   arrete: 'bg-fg/[0.06] text-subtle',
 };
 
@@ -74,8 +76,10 @@ const STAGE_VARS: Record<ProductStage, string> = {
   a_lancer: '--subtle',
   echantillon_demande: '--warn',
   echantillon_recu: '--cyan-ink',
+  scripts_prets: '--cyan-ink',
   en_tournage: '--rose-ink',
   en_ligne: '--gain',
+  termine: '--gain',
   arrete: '--muted',
 };
 
@@ -85,8 +89,10 @@ export function useStageColors(): Record<ProductStage, string> {
     a_lancer: '#8a8b91',
     echantillon_demande: '#b45309',
     echantillon_recu: '#00777a',
+    scripts_prets: '#00777a',
     en_tournage: '#c8103f',
     en_ligne: '#0e7a43',
+    termine: '#0e7a43',
     arrete: '#5f6068',
   });
   useEffect(() => {

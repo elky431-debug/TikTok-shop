@@ -31,7 +31,9 @@ describe('gestionnaire · statuts', () => {
   it('passe d’un statut au suivant, et déduit le statut des vidéos tant qu’on n’en a pas choisi', () => {
     expect(nextStage('a_lancer')).toBe('echantillon_demande');
     expect(nextStage('echantillon_demande')).toBe('echantillon_recu');
-    expect(nextStage('en_ligne')).toBe('arrete');
+    expect(nextStage('echantillon_recu')).toBe('scripts_prets');
+    expect(nextStage('en_ligne')).toBe('termine');
+    expect(nextStage('termine')).toBe('arrete');
     expect(nextStage('arrete')).toBe('echantillon_demande');
     const board = newBoard({ productId: 'p', productName: 'P' });
     expect(stageOf(null, null)).toBe('a_lancer');

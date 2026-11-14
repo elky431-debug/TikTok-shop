@@ -14,7 +14,11 @@ import { planProgress, type PublicationPlan } from './planning';
  * vidéos restent dans le tableau de publication (`publication`), les commissions dans les fiches `gain` de l'ancien
  * « Mes gains ». Seuls le statut de chaque produit et les échantillons sont de nouvelles fiches.
  */
-export const PIPELINE_STATUSES = ['echantillon_demande', 'echantillon_recu', 'en_tournage', 'en_ligne', 'arrete'] as const;
+/**
+ * Statuts d'un produit, dans l'ordre du parcours « Lancer un produit » (lib/v2/launch.ts) : chaque étape validée fait
+ * avancer le statut tout seul, et il reste modifiable à la main. `arrete` = lancement abandonné.
+ */
+export const PIPELINE_STATUSES = ['echantillon_demande', 'echantillon_recu', 'scripts_prets', 'en_tournage', 'en_ligne', 'termine', 'arrete'] as const;
 export type PipelineStatus = (typeof PIPELINE_STATUSES)[number];
 /** Statut affiché : un produit qu'on vient de suivre est « à lancer » tant qu'on ne lui en a pas donné. */
 export type ProductStage = PipelineStatus | 'a_lancer';
@@ -23,10 +27,34 @@ export const STAGE_LABELS: Record<ProductStage, string> = {
   a_lancer: 'À lancer',
   echantillon_demande: 'Échantillon demandé',
   echantillon_recu: 'Échantillon reçu',
+  scripts_prets: 'Scripts prêts',
   en_tournage: 'En tournage',
   en_ligne: 'En ligne',
-  arrete: 'Arrêté',
+  termine: 'Terminé',
+  arrete: 'Abandonné',
 };
+
+/** Tous les statuts, dans l'ordre du menu déroulant. */
+export const ALL_STAGES: ProductStage[] = ['a_lancer', ...PIPELINE_STATUSES];
+
+/** Produit fini ou abandonné : il quitte « Produits en cours » (il reste dans l'historique des lancements). */
+export const isClosedStage = (stage: ProductStage) => stage === 'termine' || stage === 'arrete';
+
+/** Rang dans le parcours (les statuts de fin n'ont pas de rang : on n'y avance jamais tout seul). */
+const STAGE_RANK: Partial<Record<ProductStage, number>> = {
+  a_lancer: 0,
+  echantillon_demande: 1,
+  echantillon_recu: 2,
+  scripts_prets: 3,
+  en_tournage: 4,
+  en_ligne: 5,
+};
+
+/** Avancement automatique : seulement vers l'avant, et jamais sur un produit terminé ou abandonné. */
+export function shouldAdvance(current: ProductStage, target: PipelineStatus): boolean {
+  if (isClosedStage(current) || isClosedStage(target)) return false;
+  return (STAGE_RANK[target] ?? 0) > (STAGE_RANK[current] ?? 0);
+}
 
 export const isPipelineStatus = (value: unknown): value is PipelineStatus => PIPELINE_STATUSES.includes(value as PipelineStatus);
 
@@ -177,7 +205,16 @@ export async function loadManager(repo: Repo, userId: string, opts: { today: str
       });
     }
   }
-  const order: Record<ProductStage, number> = { en_tournage: 0, echantillon_recu: 1, echantillon_demande: 2, en_ligne: 3, a_lancer: 4, arrete: 5 };
+  const order: Record<ProductStage, number> = {
+    en_tournage: 0,
+    scripts_prets: 1,
+    echantillon_recu: 2,
+    echantillon_demande: 3,
+    en_ligne: 4,
+    a_lancer: 5,
+    termine: 6,
+    arrete: 7,
+  };
   products.sort((a, b) => order[a.stage] - order[b.stage] || b.commissionsCents - a.commissionsCents);
   videos.sort((a, b) => (b.postedAt ?? '').localeCompare(a.postedAt ?? '') || b.n - a.n);
 

@@ -1308,3 +1308,15 @@ R31. **Comparaison aux références** : deux images côte à côte (capture EtSm
      serveurs de TikTok et de l'hébergeur des photos produits ont été ouverts dans l'environnement de travail
      (aucun effet sur le site). Tests d'intégration Stripe : derrière un proxy HTTPS, ils utilisent le client `fetch` de
      Stripe (le même client sert au test et au code testé).
+213. **Lancer un produit, étape 1 : modèle et statuts** (14 novembre). Un lancement = une fiche `lancement` par produit
+     (étape où reprendre, étapes validées, échantillon, scripts gardés, en cours / terminé / abandonné). Tout le reste
+     vit où il vivait déjà (produit suivi, tableau des vidéos et calendrier, fiche échantillon, statut `suivi_produit`,
+     gains) : une étape validée met donc à jour le dashboard, les compteurs et le calendrier sans rien recopier. Deux
+     statuts s'ajoutent : « Scripts prêts » et « Terminé » ; « Arrêté » devient « Abandonné ». Le statut avance tout seul
+     (vers l'avant seulement, jamais sur un produit terminé ou abandonné) quand une étape le justifie — échantillon
+     demandé ou reçu, scripts gardés, première vidéo tournée, première vidéo en ligne — y compris depuis les fenêtres
+     du dashboard. Il se corrige à la main par un menu déroulant dans « Produits en cours » ; « Terminé » ou
+     « Abandonné » ferment aussi le lancement, un autre statut le rouvre. Les produits terminés ou abandonnés quittent
+     le tableau (lien vers l'historique). Lancer un produit le suit (limite du plan vérifiée côté serveur) ; relancer un
+     produit fermé ouvre un nouveau lancement. Conseil des résultats sans promesse : après 6 vidéos en ligne sans vente
+     notée, proposer un autre produit.

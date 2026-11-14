@@ -44,8 +44,8 @@ import {
   annualSeries,
   byDay,
   managerKpis,
-  nextStage,
-  PIPELINE_STATUSES,
+  ALL_STAGES,
+  isClosedStage,
   STAGE_LABELS,
   type ManagerData,
   type ManagerVideo,
@@ -148,25 +148,35 @@ function Hidden({ filtre, tab }: { filtre: string; tab?: string }) {
   );
 }
 
-/** Pastille de statut cliquable : passe au statut suivant (comme les commandes d'EtSmart). */
-function StageChip({ productId, stage, filtre, tab }: { productId: string; stage: ProductStage; filtre: string; tab: string }) {
-  const next = nextStage(stage);
+/**
+ * Statut d'un produit : il suit le parcours « Lancer un produit » tout seul, et se corrige ici d'un clic (menu
+ * déroulant, enregistré dès qu'on choisit).
+ */
+function StageSelect({ productId, productName, stage, filtre, tab }: { productId: string; productName: string; stage: ProductStage; filtre: string; tab: string }) {
   return (
     <form action={setStageAction}>
       <Hidden filtre={filtre} tab={tab} />
       <input type="hidden" name="produit" value={productId} />
-      <input type="hidden" name="statut" value={next} />
-      <button
-        type="submit"
-        title={`Passer à « ${STAGE_LABELS[next]} »`}
-        aria-label={`${STAGE_LABELS[stage]} : passer à « ${STAGE_LABELS[next]} »`}
+      <label className="sr-only" htmlFor={`statut-${productId}`}>
+        Statut de {productName}
+      </label>
+      <select
+        id={`statut-${productId}`}
+        name="statut"
+        defaultValue={stage}
+        onChange={(e) => e.currentTarget.form?.requestSubmit()}
         className={cn(
-          'inline-flex w-fit select-none whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold transition-shadow hover:ring-1 hover:ring-fg/20',
+          'cursor-pointer appearance-none rounded-full border-0 py-1 pl-2.5 pr-7 text-xs font-semibold transition-shadow hover:ring-1 hover:ring-fg/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan',
+          "bg-[length:12px] bg-[right_0.5rem_center] bg-no-repeat bg-[url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235F6068' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")]",
           STAGE_TONES[stage],
         )}
       >
-        {STAGE_LABELS[stage]}
-      </button>
+        {ALL_STAGES.map((s) => (
+          <option key={s} value={s}>
+            {STAGE_LABELS[s]}
+          </option>
+        ))}
+      </select>
     </form>
   );
 }
@@ -176,6 +186,8 @@ function StageChip({ productId, stage, filtre, tab }: { productId: string; stage
 // ---------------------------------------------------------------------------------------------------------------------
 
 function ProductsTab({ data, filtre }: { data: ManagerData; filtre: string }) {
+  const open = data.products.filter((p) => !isClosedStage(p.stage));
+  const closed = data.products.length - open.length;
   return (
     <div className={panelClass}>
       <div className="overflow-x-auto rounded-xl border border-line">
@@ -191,16 +203,17 @@ function ProductsTab({ data, filtre }: { data: ManagerData; filtre: string }) {
             </tr>
           </thead>
           <tbody>
-            {data.products.map((p) => (
+            {open.map((p) => (
               <tr key={p.id} className="border-b border-line/60 transition-colors last:border-0 hover:bg-fg/[0.03]">
                 <td className="px-3 py-2.5">
-                  <Link href={`/app/mes-produits/${encodeURIComponent(p.id)}`} className="flex min-w-[12rem] items-center gap-3 hover:text-cyan-ink">
+                  {/* Chaque ligne ouvre son lancement, à l'étape où il en est. */}
+                  <Link href={`/app/lancer/produit/${encodeURIComponent(p.id)}`} className="flex min-w-[12rem] items-center gap-3 hover:text-cyan-ink">
                     <ProductImage src={p.image} fallback={p.fallback} alt="" className="h-10 w-10 rounded-xl" />
                     <span className="line-clamp-2 font-medium">{p.name}</span>
                   </Link>
                 </td>
                 <td className="px-3 py-2.5">
-                  <StageChip productId={p.id} stage={p.stage} filtre={filtre} tab="produits" />
+                  <StageSelect productId={p.id} productName={p.name} stage={p.stage} filtre={filtre} tab="produits" />
                 </td>
                 <td className="num whitespace-nowrap px-3 py-2.5 text-right">
                   {p.videosPosted} / {p.videosGoal}
@@ -223,6 +236,16 @@ function ProductsTab({ data, filtre }: { data: ManagerData; filtre: string }) {
           </tbody>
         </table>
       </div>
+      {!open.length ? <p className="mt-3 text-sm text-muted">Aucun produit en cours : lance un produit pour le retrouver ici.</p> : null}
+      {closed ? (
+        <p className="mt-3 text-sm text-muted">
+          {closed} produit{closed > 1 ? 's' : ''} terminé{closed > 1 ? 's' : ''} ou abandonné{closed > 1 ? 's' : ''} :{' '}
+          <Link href="/app/lancer#historique" className="font-semibold text-fg underline underline-offset-2">
+            voir l’historique
+          </Link>
+          .
+        </p>
+      ) : null}
     </div>
   );
 }
